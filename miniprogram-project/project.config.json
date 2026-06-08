@@ -1,0 +1,18 @@
+{
+  "description": "新晴 2.0 小程序第一版",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "urlCheck": true,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "latest",
+  "appid": "touristappid",
+  "projectname": "xinqing-2-mini",
+  "condition": {}
+}

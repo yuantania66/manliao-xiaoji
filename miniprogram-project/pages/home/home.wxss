@@ -1,0 +1,85 @@
+.hero {
+  position: absolute;
+  left: 22px;
+  top: 66px;
+  width: 346px;
+}
+
+.date {
+  display: block;
+  height: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.title {
+  display: block;
+  margin-top: 31px;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 40px;
+}
+
+.lead {
+  display: block;
+  margin-top: 30px;
+  width: 260px;
+  white-space: pre-line;
+  font-size: 14px;
+  line-height: 24px;
+}
+
+.home-leaf {
+  left: 238px;
+  top: 170px;
+}
+
+.choice {
+  position: absolute;
+  left: 22px;
+  width: 346px;
+  height: 144px;
+  border-radius: 22px;
+  text-align: left;
+}
+
+.chat-card {
+  top: 330px;
+  background: #fffdf9;
+}
+
+.note-card {
+  top: 498px;
+  background: #e8f0ea;
+}
+
+.choice-title {
+  position: absolute;
+  left: 20px;
+  top: 26px;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+}
+
+.choice-copy {
+  position: absolute;
+  left: 20px;
+  top: 72px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.choice-action {
+  position: absolute;
+  left: 20px;
+  top: 112px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.home-tab-line {
+  left: 80px;
+}

@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  CANCELLED
+  BLOCKED
+}
+
+enum VerificationScene {
+  LOGIN
+  CANCEL_ACCOUNT
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum MessageStatus {
+  SAVED
+  BLOCKED
+  FALLBACK
+  REWRITTEN
+}
+
+enum AiSourceType {
+  CHAT
+  NOTE_SLIP
+  INSIGHT
+}
+
+enum AiGenerationStatus {
+  GENERATED
+  REWRITTEN
+  FALLBACK
+  FAILED
+}
+
+enum AiRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRISIS
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  phone              String?            @unique
+  wechatOpenid       String?            @unique
+  nickname           String?
+  avatarUrl          String?
+  status             UserStatus         @default(ACTIVE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  sessions           Session[]
+  verificationCodes  VerificationCode[]
+  chatSessions       ChatSession[]
+  chatMessages       ChatMessage[]
+  notes              Note[]
+  aiGenerations      AiGeneration[]
+  aiJudgeResults     AiJudgeResult[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model VerificationCode {
+  id         String            @id @default(cuid())
+  userId     String?
+  phone      String
+  scene      VerificationScene
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime          @default(now())
+  user       User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([phone, scene])
+  @@index([expiresAt])
+}
+
+model ChatSession {
+  id            String        @id @default(cuid())
+  userId        String
+  title         String?
+  lastMessage   String?
+  lastMessageAt DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      ChatMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+model ChatMessage {
+  id             String        @id @default(cuid())
+  sessionId      String
+  userId         String
+  role           MessageRole
+  content        String
+  status         MessageStatus @default(SAVED)
+  aiGenerationId String?
+  createdAt      DateTime      @default(now())
+  session        ChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiGeneration   AiGeneration? @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Note {
+  id         String   @id @default(cuid())
+  userId     String
+  content    String
+  moodName   String?
+  moodIcon   String?
+  mediaUrls  Json?
+  recordDate DateTime @db.Date
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordDate])
+  @@index([userId, createdAt])
+}
+
+model AiGeneration {
+  id             String             @id @default(cuid())
+  userId         String
+  sessionId      String?
+  sourceType     AiSourceType
+  sourceId       String?
+  model          String
+  promptVersion  String
+  inputText      String
+  outputText     String
+  rewriteOfId    String?
+  latencyMs      Int?
+  tokenInput     Int?
+  tokenOutput    Int?
+  status         AiGenerationStatus
+  createdAt      DateTime           @default(now())
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages       ChatMessage[]
+  judgeResults   AiJudgeResult[]
+
+  @@index([userId, createdAt])
+  @@index([sessionId, createdAt])
+  @@index([sourceType, sourceId])
+}
+
+model AiJudgeResult {
+  id              String       @id @default(cuid())
+  generationId    String
+  userId          String
+  passed          Boolean
+  riskLevel       AiRiskLevel
+  issues          Json
+  rewriteRequired Boolean
+  reason          String
+  rawResult       Json?
+  judgeModel      String
+  promptVersion   String
+  createdAt       DateTime     @default(now())
+  generation      AiGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([generationId])
+  @@index([userId, createdAt])
+}

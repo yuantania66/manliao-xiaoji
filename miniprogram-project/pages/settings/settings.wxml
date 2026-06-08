@@ -1,0 +1,48 @@
+<view class="screen settings-screen">
+  <view class="status">9:41</view>
+  <button class="back-link" bindtap="goBack">‹ 返回</button>
+  <block wx:if="{{!current}}">
+    <text class="settings-kicker sage">我的</text>
+    <text class="settings-title">设置</text>
+    <text class="settings-lead body-copy">这里放着隐私、注销和反馈相关的内容。</text>
+    <view class="settings-card card">
+      <block wx:for="{{settings}}" wx:key="key">
+        <button class="setting-row" data-key="{{item.key}}" bindtap="openDetail">
+          <view>
+            <text class="setting-title-text">{{item.title}}</text>
+            <text class="setting-copy muted">{{item.copy}}</text>
+          </view>
+          <text class="muted">›</text>
+        </button>
+      </block>
+    </view>
+    <text class="settings-version muted">新晴 v2.0.0\n慢慢说，也慢慢回看。</text>
+  </block>
+
+  <block wx:else>
+    <text class="settings-kicker sage">设置</text>
+    <text class="settings-title">{{detail[current].title}}</text>
+    <text class="settings-lead body-copy">{{detail[current].lead}}</text>
+    <scroll-view class="settings-card detail-card card" scroll-y>
+      <block wx:for="{{detail[current].rows}}" wx:key="*this">
+        <view class="setting-row">
+          <text>{{item}}</text>
+          <text class="muted">{{current === 'feedback' ? '›' : ''}}</text>
+        </view>
+      </block>
+    </scroll-view>
+    <view wx:if="{{current === 'privacy'}}" class="settings-note card">
+      <text>不会把你的小记正文用于公开展示，也不会在未登录时上传到云端同步。</text>
+    </view>
+    <view wx:if="{{current === 'terms'}}" class="settings-note card">
+      <text>新晴是日常陪伴与记录工具，不替代专业医疗、心理咨询或紧急救助。</text>
+    </view>
+    <view wx:if="{{current === 'cancel'}}" class="settings-note card">
+      <text>提交注销前，正式版会要求再次验证身份。</text>
+    </view>
+    <view wx:if="{{current === 'feedback'}}" class="settings-note card">
+      <text>反馈会帮助我们继续把新晴打磨得更顺手。</text>
+    </view>
+  </block>
+  <view class="bottom-indicator"></view>
+</view>

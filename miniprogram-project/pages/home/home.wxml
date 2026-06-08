@@ -1,0 +1,36 @@
+<view class="screen home-screen">
+  <view class="status">9:41</view>
+  <view class="hero">
+    <text class="date sage">{{dateLabel}}</text>
+    <text class="title">{{prompt.title}}</text>
+    <text class="lead body-copy">{{prompt.lead}}</text>
+    <view class="leaf home-leaf">
+      <view class="leaf-stem"></view>
+      <view class="leaf-branch"></view>
+      <view class="leaf-bud one"></view>
+      <view class="leaf-bud two"></view>
+      <view class="leaf-bud three"></view>
+    </view>
+  </view>
+
+  <button class="choice chat-card" bindtap="goChat">
+    <text class="choice-title">聊聊</text>
+    <text class="choice-copy body-copy">{{prompt.chat}}</text>
+    <text class="choice-action sage">慢慢说 ›</text>
+  </button>
+
+  <button class="choice note-card" bindtap="goNote">
+    <text class="choice-title">记一下</text>
+    <text class="choice-copy body-copy">{{prompt.note}}</text>
+    <text class="choice-action sage">写一点 ›</text>
+  </button>
+
+  <view class="tabbar">
+    <view class="tab-line home-tab-line"></view>
+    <view class="tab-items">
+      <text class="tab-active">此刻</text>
+      <text class="tab-muted" bindtap="goMe">我的</text>
+    </view>
+  </view>
+  <view class="bottom-indicator"></view>
+</view>

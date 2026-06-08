@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@source "../app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+
+:root {
+  --page-bg: #fbf7f0;
+  --card-warm: #fffdf9;
+  --card-sage: #e8f0ea;
+  --ink: #2d2926;
+  --body: #6d665f;
+  --soft-copy: #8f877f;
+  --muted: #a49a91;
+  --sage: #71877b;
+  --line: #e8ded4;
+  --background: var(--page-bg);
+  --foreground: var(--ink);
+  --radius: 18px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --radius-sm: calc(var(--radius) - 14px);
+  --radius-md: calc(var(--radius) - 10px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 12px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+button {
+  font: inherit;
+}
+
+.note-scrollbar {
+  scrollbar-color: rgba(113, 135, 123, 0.34) transparent;
+  scrollbar-width: thin;
+}
+
+.note-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.note-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 18px 0 10px;
+}
+
+.note-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(113, 135, 123, 0.28);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.note-scrollbar:hover::-webkit-scrollbar-thumb,
+.note-scrollbar:focus::-webkit-scrollbar-thumb {
+  background: rgba(113, 135, 123, 0.48);
+  background-clip: content-box;
+}
+
+.phone-frame {
+  contain: layout paint;
+}
+
+@media (max-width: 389px) {
+  .phone-frame {
+    transform-origin: top center;
+  }
+}

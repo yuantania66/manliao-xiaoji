@@ -1,0 +1,154 @@
+.add-note {
+  position: absolute;
+  right: 22px;
+  top: 50px;
+  height: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.history-title {
+  position: absolute;
+  left: 22px;
+  top: 78px;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 40px;
+}
+
+.history-lead {
+  position: absolute;
+  left: 22px;
+  top: 132px;
+  width: 330px;
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.search {
+  position: absolute;
+  left: 22px;
+  top: 178px;
+  width: 346px;
+  height: 44px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 20px;
+  top: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.search-input {
+  position: absolute;
+  left: 48px;
+  right: 20px;
+  top: 0;
+  height: 44px;
+  color: #6d665f;
+  font-size: 12px;
+  line-height: 44px;
+}
+
+.calendar-card {
+  position: absolute;
+  left: 22px;
+  top: 242px;
+  width: 346px;
+  height: 56px;
+  border-radius: 18px;
+  background: #e8f0ea;
+}
+
+.calendar-title {
+  position: absolute;
+  left: 20px;
+  top: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.calendar-copy {
+  position: absolute;
+  left: 110px;
+  top: 18px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.arrow {
+  position: absolute;
+  right: 20px;
+  top: 16px;
+  color: #a49a91;
+  font-size: 22px;
+  line-height: 22px;
+}
+
+.month {
+  position: absolute;
+  left: 22px;
+  top: 356px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.entry {
+  position: absolute;
+  left: 22px;
+  width: 346px;
+}
+
+.entry.first {
+  top: 402px;
+  height: 126px;
+  border-bottom: 1px solid #e8ded4;
+}
+
+.entry.second {
+  top: 556px;
+  height: 136px;
+  border-bottom: 1px solid #e8ded4;
+}
+
+.entry.second-alone {
+  top: 402px;
+}
+
+.entry-date {
+  display: block;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.entry-title {
+  display: block;
+  margin-top: 9px;
+  width: 210px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.entry-body {
+  display: block;
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.empty {
+  position: absolute;
+  left: 22px;
+  top: 374px;
+  width: 346px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 20px;
+}

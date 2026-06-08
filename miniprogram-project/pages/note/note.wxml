@@ -1,0 +1,65 @@
+<view class="screen note-screen">
+  <view class="status">9:41</view>
+  <button class="back-link" bindtap="goBack">‹ 返回</button>
+
+  <text class="note-date sage">{{dateLabel}}</text>
+  <text class="note-title">{{prompt.title}}</text>
+  <text class="note-lead body-copy">{{prompt.lead}}</text>
+
+  <view class="note-card">
+    <textarea class="note-textarea" maxlength="500" value="{{note}}" placeholder="此刻想到的，就从这里开始写。" bindinput="updateNote" />
+    <view class="note-footer">
+      <text class="counter muted">{{count}} / 500</text>
+      <button class="mood-link sage" bindtap="chooseMood">☼ {{mood}}</button>
+    </view>
+  </view>
+
+  <button class="media-button" bindtap="chooseMedia">
+    <text class="plus">+</text>
+    <text class="media-title">添加图片/视频</text>
+    <text class="media-sub muted">照片/短视频</text>
+  </button>
+
+  <button class="save-button {{note ? 'save-active' : 'save-disabled'}}" bindtap="openSlip">收好</button>
+
+  <view class="leaf note-leaf">
+    <view class="leaf-stem"></view>
+    <view class="leaf-branch"></view>
+    <view class="leaf-bud one"></view>
+    <view class="leaf-bud two"></view>
+    <view class="leaf-bud three"></view>
+  </view>
+
+  <button class="history-link sage" bindtap="goHistory">我的小记 ›</button>
+  <view wx:if="{{slipOpen}}" class="slip-layer">
+    <view class="slip-overlay"></view>
+    <view class="slip-panel">
+      <text class="slip-kicker sage">小笺</text>
+      <button class="slip-close" bindtap="closeSlip">×</button>
+      <view class="slip-card {{shareClass}}">
+        <view class="slip-paper"></view>
+        <view class="slip-photo">
+          <view class="photo-tile photo-tile-1"></view>
+          <view class="photo-tile photo-tile-2"></view>
+          <view class="photo-tile photo-tile-3"></view>
+        </view>
+        <view class="slip-accent"></view>
+        <text class="slip-date muted">{{dateLabel}}</text>
+        <text class="slip-title">{{shareQuote}}</text>
+        <view class="slip-line"></view>
+        <text class="slip-body body-copy">{{shareNote}}</text>
+        <text class="slip-brand sage">新晴</text>
+        <text class="slip-brand-note muted">来新晴，收一张小笺</text>
+        <view class="slip-qr">
+          <block wx:for="{{[0,1,2,3,4,5,6,7,8]}}" wx:key="*this">
+            <view class="qr-dot qr-dot-{{index}}"></view>
+          </block>
+        </view>
+      </view>
+      <button class="slip-share" bindtap="shareSlip">分享给朋友</button>
+      <button class="slip-save" bindtap="saveSlip">保存图片</button>
+      <button class="slip-continue sage" bindtap="closeSlip">继续写一点</button>
+    </view>
+  </view>
+  <view class="bottom-indicator"></view>
+</view>

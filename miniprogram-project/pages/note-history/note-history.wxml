@@ -1,0 +1,25 @@
+<view class="screen history-screen">
+  <view class="status">9:41</view>
+  <button class="back-link" bindtap="goBack">‹ 返回</button>
+  <button class="add-note sage" bindtap="goNote">+ 记一下</button>
+  <text class="history-title">我的小记</text>
+  <text class="history-lead body-copy">按时间回看文字、图片和视频，不用一次看完。</text>
+  <view class="search card">
+    <text class="search-icon sage">⌕</text>
+    <input class="search-input" value="{{searchQuery}}" placeholder="查找小记内容" bindinput="updateSearch" />
+  </view>
+  <view class="calendar-card"><text class="calendar-title">心情日历</text><text class="calendar-copy sage">按天气回看某一天</text><text class="arrow">›</text></view>
+  <text wx:if="{{showFirst || showSecond}}" class="month sage">2026 年 6 月</text>
+  <view wx:if="{{showFirst}}" class="entry first">
+    <text class="entry-date muted">6 月 2 日 · 星期二</text>
+    <text class="entry-title">先放在这里。今晚不用一直握着它。</text>
+    <text class="entry-body body-copy">今天有点累，不太想解释。</text>
+  </view>
+  <view wx:if="{{showSecond}}" class="entry second {{showFirst ? '' : 'second-alone'}}">
+    <text class="entry-date muted">6 月 1 日 · 星期一</text>
+    <text class="entry-title">晚风吹过来的时候，我轻了一点。</text>
+    <text class="entry-body body-copy">回家路上的风</text>
+  </view>
+  <text wx:if="{{!showFirst && !showSecond}}" class="empty muted">没找到相关小记。</text>
+  <view class="bottom-indicator"></view>
+</view>

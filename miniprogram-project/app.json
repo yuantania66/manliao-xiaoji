@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/chat/chat",
+    "pages/note/note",
+    "pages/note-history/note-history",
+    "pages/me/me",
+    "pages/settings/settings"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#fbf7f0",
+    "backgroundTextStyle": "dark"
+  },
+  "permission": {
+    "scope.writePhotosAlbum": {
+      "desc": "用于在你主动保存小笺图片时写入相册"
+    }
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

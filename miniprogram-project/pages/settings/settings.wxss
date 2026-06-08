@@ -1,0 +1,117 @@
+.settings-kicker {
+  position: absolute;
+  left: 22px;
+  top: 92px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.settings-title {
+  position: absolute;
+  left: 22px;
+  top: 122px;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 40px;
+}
+
+.settings-lead {
+  position: absolute;
+  left: 22px;
+  top: 174px;
+  width: 330px;
+  font-size: 14px;
+  line-height: 24px;
+}
+
+.settings-card {
+  position: absolute;
+  left: 22px;
+  top: 252px;
+  width: 346px;
+  height: 304px;
+  overflow: hidden;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 76px;
+  padding: 0 20px;
+  border-bottom: 1px solid #e8ded4;
+  background: transparent;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.setting-title-text {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.setting-copy {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.detail-card {
+  height: 284px;
+}
+
+.detail-card .setting-row {
+  align-items: flex-start;
+  min-height: 76px;
+  height: auto;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  color: #6d665f;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+.clear-button {
+  position: absolute;
+  left: 22px;
+  top: 536px;
+  width: 346px;
+  height: 52px;
+  border-radius: 20px;
+  background: #fffdf9;
+  color: #71877b;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 52px;
+}
+
+.settings-version {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 706px;
+  white-space: pre-line;
+  text-align: center;
+  font-size: 11px;
+  line-height: 17px;
+}
+
+.settings-note {
+  position: absolute;
+  left: 22px;
+  top: 568px;
+  width: 346px;
+  min-height: 72px;
+  padding: 18px 20px;
+  color: #6d665f;
+  font-size: 12px;
+  line-height: 20px;
+}

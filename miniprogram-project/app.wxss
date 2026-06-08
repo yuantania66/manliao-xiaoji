@@ -1,0 +1,178 @@
+page {
+  min-height: 100vh;
+  background: #fbf7f0;
+  color: #2d2926;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+}
+
+view,
+text,
+button,
+textarea {
+  box-sizing: border-box;
+}
+
+button {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  line-height: inherit;
+}
+
+button::after {
+  border: 0;
+}
+
+.screen {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #fbf7f0;
+}
+
+.status {
+  position: absolute;
+  left: 20px;
+  top: 10px;
+  width: 80px;
+  height: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.back-link {
+  position: absolute;
+  left: 22px;
+  top: 50px;
+  height: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  color: #71877b;
+}
+
+.bottom-indicator {
+  position: fixed;
+  left: 50%;
+  bottom: 10px;
+  width: 100px;
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: #2d2926;
+  z-index: 20;
+}
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 70px;
+  border-top: 1px solid #e8ded4;
+  background: #fffdf9;
+  z-index: 10;
+}
+
+.tab-line {
+  position: absolute;
+  top: 11px;
+  width: 36px;
+  height: 3px;
+  border-radius: 2px;
+  background: #71877b;
+}
+
+.tab-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding-top: 22px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.tab-muted {
+  color: #a49a91;
+}
+
+.tab-active {
+  color: #2d2926;
+}
+
+.card {
+  border-radius: 22px;
+  background: #fffdf9;
+}
+
+.sage {
+  color: #71877b;
+}
+
+.body-copy {
+  color: #6d665f;
+}
+
+.muted {
+  color: #a49a91;
+}
+
+.leaf {
+  position: absolute;
+  width: 125px;
+  height: 115px;
+}
+
+.leaf-stem {
+  position: absolute;
+  left: 55px;
+  top: 20px;
+  width: 4px;
+  height: 92px;
+  border-radius: 4px;
+  background: #71877b;
+  transform: rotate(30deg);
+}
+
+.leaf-branch {
+  position: absolute;
+  left: 58px;
+  top: 32px;
+  width: 45px;
+  height: 28px;
+  border-top: 4px solid #71877b;
+  border-radius: 50%;
+  transform: rotate(-18deg);
+}
+
+.leaf-bud {
+  position: absolute;
+  width: 28px;
+  height: 46px;
+  border-radius: 50%;
+}
+
+.leaf-bud.one {
+  left: 18px;
+  top: 18px;
+  background: #dcebe4;
+  transform: rotate(-28deg);
+}
+
+.leaf-bud.two {
+  left: 72px;
+  top: 4px;
+  background: #dcebe4;
+  transform: rotate(28deg);
+}
+
+.leaf-bud.three {
+  left: 98px;
+  top: 20px;
+  background: #f1d4c8;
+  transform: rotate(35deg);
+}
