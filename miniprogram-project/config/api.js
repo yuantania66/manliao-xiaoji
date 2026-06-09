@@ -4,11 +4,11 @@ const API_BASE_URL_KEY = "xinqing_api_base_url";
 const API_BASE_URLS = {
   local: "",
   lan: "",
-  trial: "",
-  production: ""
+  trial: "https://xinqing.studio",
+  production: "https://xinqing.studio"
 };
 
-const DEFAULT_API_ENV = "local";
+const DEFAULT_API_ENV = "trial";
 
 const getStorageValue = (key) => {
   try {

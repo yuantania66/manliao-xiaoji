@@ -14,17 +14,19 @@
 const API_BASE_URLS = {
   local: "http://127.0.0.1:3000",
   lan: "http://你的局域网IP:3000",
-  trial: "https://你的测试域名",
-  production: "https://你的正式域名"
+  trial: "https://xinqing.studio",
+  production: "https://xinqing.studio"
 };
 ```
 
-微信开发者工具模拟器可尝试 `local`。真机调试通常需要使用 `lan` 或 HTTPS 测试域名。
+当前默认环境是 `trial`，会请求 `https://xinqing.studio`。
+
+微信开发者工具模拟器如需连接本机服务，可临时设置 `local` 或直接覆盖 API 地址。真机调试建议使用 HTTPS 测试域名。
 
 也可以在调试控制台临时覆盖：
 
 ```js
-wx.setStorageSync("xinqing_api_base_url", "http://你的局域网IP:3000")
+wx.setStorageSync("xinqing_api_base_url", "https://xinqing.studio")
 ```
 
 清除覆盖：
