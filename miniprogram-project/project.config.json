@@ -8,11 +8,12 @@
     "es6": true,
     "enhance": true,
     "postcss": true,
-    "minified": true
+    "minified": true,
+    "minifyWXML": true
   },
   "compileType": "miniprogram",
   "libVersion": "latest",
-  "appid": "touristappid",
+  "appid": "wx1ae47edde7eb61e8",
   "projectname": "xinqing-2-mini",
   "condition": {}
 }
