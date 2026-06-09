@@ -4,6 +4,7 @@
     "pages/chat/chat",
     "pages/note/note",
     "pages/note-history/note-history",
+    "pages/note-detail/note-detail",
     "pages/me/me",
     "pages/settings/settings"
   ],

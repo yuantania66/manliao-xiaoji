@@ -1,0 +1,14 @@
+@import "../note/note.wxss";
+
+.delete-button {
+  position: absolute;
+  left: 92rpx;
+  right: 92rpx;
+  bottom: 142rpx;
+  height: 88rpx;
+  border-radius: 999rpx;
+  background: rgba(129, 98, 84, 0.08);
+  color: #816254;
+  font-size: 28rpx;
+  border: 0;
+}

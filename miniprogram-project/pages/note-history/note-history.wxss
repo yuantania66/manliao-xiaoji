@@ -103,22 +103,8 @@
   position: absolute;
   left: 22px;
   width: 346px;
-}
-
-.entry.first {
-  top: 402px;
   height: 126px;
   border-bottom: 1px solid #e8ded4;
-}
-
-.entry.second {
-  top: 556px;
-  height: 136px;
-  border-bottom: 1px solid #e8ded4;
-}
-
-.entry.second-alone {
-  top: 402px;
 }
 
 .entry-date {

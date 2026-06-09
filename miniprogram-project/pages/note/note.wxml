@@ -20,7 +20,7 @@
     <text class="media-sub muted">照片/短视频</text>
   </button>
 
-  <button class="save-button {{note ? 'save-active' : 'save-disabled'}}" bindtap="openSlip">收好</button>
+  <button class="save-button {{note ? 'save-active' : 'save-disabled'}}" loading="{{saving}}" bindtap="openSlip">收好</button>
 
   <view class="leaf note-leaf">
     <view class="leaf-stem"></view>

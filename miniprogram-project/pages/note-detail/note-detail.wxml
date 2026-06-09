@@ -1,0 +1,20 @@
+<view class="screen note-screen">
+  <view class="status">9:41</view>
+  <button class="back-link" bindtap="goBack">‹ 返回</button>
+
+  <text class="note-date sage">{{note.recordDate || ''}}</text>
+  <text class="note-title">小记详情</text>
+  <text class="note-lead body-copy">{{loading ? '正在取回这条小记。' : '可以轻轻改一下，也可以删除。'}}</text>
+
+  <view class="note-card">
+    <textarea class="note-textarea" maxlength="500" value="{{content}}" placeholder="此刻想到的，就从这里开始写。" bindinput="updateContent" />
+    <view class="note-footer">
+      <text class="counter muted">{{count}} / 500</text>
+      <text class="mood-link sage">☼ {{note.moodName || '未选择心情'}}</text>
+    </view>
+  </view>
+
+  <button class="save-button {{content ? 'save-active' : 'save-disabled'}}" loading="{{saving}}" bindtap="save">保存修改</button>
+  <button class="delete-button" loading="{{saving}}" bindtap="remove">删除小记</button>
+  <view class="bottom-indicator"></view>
+</view>

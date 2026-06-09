@@ -1,3 +1,5 @@
+const { createNote } = require("../../api/notes");
+
 Page({
   data: {
     dateLabel: "",
@@ -11,7 +13,8 @@ Page({
     slipOpen: false,
     shareQuote: "先放在这里。",
     shareNote: "从小记里，收下一句话。",
-    shareClass: "share-ticket"
+    shareClass: "share-ticket",
+    saving: false
   },
 
   onLoad() {
@@ -29,6 +32,12 @@ Page({
       dateLabel: this.formatDate(new Date()),
       prompt: prompts[Math.floor(Math.random() * prompts.length)]
     });
+  },
+
+  onShow() {
+    if (!getApp().globalData.loggedIn) {
+      wx.showToast({ title: "请先登录后再写小记", icon: "none" });
+    }
   },
 
   formatDate(date) {
@@ -120,14 +129,46 @@ Page({
   },
 
   openSlip() {
-    if (!this.data.note.trim()) return;
+    const content = this.data.note.trim();
+    if (!content) {
+      wx.showToast({ title: "先写一点内容吧", icon: "none" });
+      return;
+    }
+    if (content.length > 500) {
+      wx.showToast({ title: "小记不能超过 500 字", icon: "none" });
+      return;
+    }
+    if (this.data.saving) return;
+    if (!getApp().globalData.loggedIn) {
+      wx.showToast({ title: "请先登录后再保存", icon: "none" });
+      return;
+    }
     const next = this.getShareQuote(this.data.note, this.data.mood);
-    this.setData({
-      slipOpen: true,
-      shareQuote: next.quote,
-      shareNote: next.caption,
-      shareClass: this.pickShareClass(next.quote)
-    });
+    this.setData({ saving: true });
+    createNote({
+      content,
+      moodName: this.data.mood === "选择心情" ? undefined : this.data.mood,
+      recordDate: this.toDateOnly(new Date()),
+      mediaUrls: []
+    })
+      .then(() => {
+        this.setData({
+          slipOpen: true,
+          shareQuote: next.quote,
+          shareNote: next.caption,
+          shareClass: this.pickShareClass(next.quote)
+        });
+      })
+      .finally(() => {
+        this.setData({ saving: false });
+      });
+  },
+
+  toDateOnly(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   },
 
   closeSlip() {

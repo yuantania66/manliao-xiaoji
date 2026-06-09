@@ -1,6 +1,9 @@
+const { logout } = require("../../api/auth");
+
 Page({
   data: {
     current: "",
+    loggedIn: false,
     settings: [
       { key: "terms", title: "用户服务协议", copy: "查看新晴的服务边界与使用规则" },
       { key: "privacy", title: "隐私政策", copy: "查看数据如何被保存与使用" },
@@ -46,6 +49,10 @@ Page({
     }
   },
 
+  onShow() {
+    this.setData({ loggedIn: !!getApp().globalData.loggedIn });
+  },
+
   goBack() {
     if (this.data.current) {
       this.setData({ current: "" });
@@ -56,5 +63,13 @@ Page({
 
   openDetail(event) {
     this.setData({ current: event.currentTarget.dataset.key });
+  },
+
+  logout() {
+    logout().then(() => {
+      getApp().clearAuth();
+      this.setData({ loggedIn: false });
+      wx.showToast({ title: "已退出登录", icon: "success" });
+    });
   }
 });

@@ -11,7 +11,7 @@
   <view class="profile-card">
     <view class="avatar">晴</view>
     <text class="profile-name">{{loggedIn ? '我的新晴' : '游客模式'}}</text>
-    <text class="profile-copy muted">{{loggedIn ? '已连续登录 28 天' : '内容仅保存在本机'}}</text>
+    <text class="profile-copy muted">{{loggedIn ? '已登录，可同步记录' : '内容仅保存在本机'}}</text>
     <button class="settings" bindtap="goSettings">设置</button>
     <button wx:if="{{!loggedIn}}" class="login-button" bindtap="openLogin">登录</button>
     <view wx:if="{{!loggedIn}}" class="agree-row">
@@ -59,18 +59,18 @@
           value="{{phoneCode}}"
           bindinput="onPhoneCodeInput"
         />
-        <button class="code-button" bindtap="sendPhoneCode">{{phoneCodeSent ? '重新获取' : '获取验证码'}}</button>
+        <button class="code-button" loading="{{loginLoading}}" bindtap="sendPhoneCode">{{phoneCodeSent ? '重新获取' : '获取验证码'}}</button>
       </view>
       <text class="phone-tip {{phoneError ? 'phone-error' : ''}}">
         {{phoneError || (phoneCodeSent ? '验证码已发送，请查看短信' : '获取验证码后即可登录')}}
       </text>
-      <button class="phone-submit {{phoneCodeSent && phoneCode.length === 6 ? 'phone-submit-active' : ''}}" bindtap="phoneLogin">
+      <button class="phone-submit {{phoneCodeSent && phoneCode.length === 6 ? 'phone-submit-active' : ''}}" loading="{{loginLoading}}" bindtap="phoneLogin">
         登录
       </button>
     </block>
     <block wx:else>
       <button class="phone-login" bindtap="openPhoneLogin">☎  手机号码登录</button>
-      <button class="wechat-login" bindtap="login">◌  微信一键登录</button>
+      <button class="wechat-login" loading="{{loginLoading}}" bindtap="login">◌  微信一键登录</button>
     </block>
   </view>
 

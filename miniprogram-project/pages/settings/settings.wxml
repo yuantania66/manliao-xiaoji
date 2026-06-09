@@ -15,6 +15,13 @@
           <text class="muted">›</text>
         </button>
       </block>
+      <button wx:if="{{loggedIn}}" class="setting-row" bindtap="logout">
+        <view>
+          <text class="setting-title-text">退出登录</text>
+          <text class="setting-copy muted">清除本机登录状态</text>
+        </view>
+        <text class="muted">›</text>
+      </button>
     </view>
     <text class="settings-version muted">新晴 v2.0.0\n慢慢说，也慢慢回看。</text>
   </block>
