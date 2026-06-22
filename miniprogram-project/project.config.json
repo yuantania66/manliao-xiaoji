@@ -1,19 +1,12 @@
 {
-  "description": "新晴 2.0 小程序第一版",
-  "packOptions": {
-    "ignore": []
-  },
+  "appid": "",
+  "projectname": "xinqing-miniapp",
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
   "setting": {
-    "urlCheck": true,
     "es6": true,
     "enhance": true,
     "postcss": true,
-    "minified": true,
-    "minifyWXML": true
-  },
-  "compileType": "miniprogram",
-  "libVersion": "latest",
-  "appid": "wx1ae47edde7eb61e8",
-  "projectname": "xinqing-2-mini",
-  "condition": {}
+    "minified": true
+  }
 }

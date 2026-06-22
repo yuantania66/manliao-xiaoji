@@ -1,34 +1,33 @@
 const { request } = require("../utils/request");
 
-const listNotes = (params = {}) => {
-  const query = Object.keys(params)
-    .filter((key) => params[key] !== undefined && params[key] !== "")
-    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-    .join("&");
-  return request({
-    url: `/api/notes${query ? `?${query}` : ""}`,
-    method: "GET"
+const listNotes = (params = "") =>
+  request({
+    url: `/api/notes${params}`
   });
-};
 
-const createNote = (data) =>
+const createNote = ({ content, mood, images = [], videos = [] }) =>
   request({
     url: "/api/notes",
     method: "POST",
-    data
+    data: {
+      content,
+      moodName: mood ? mood.name : undefined,
+      moodIcon: mood ? mood.icon : undefined,
+      images,
+      videos
+    }
   });
 
 const getNote = (noteId) =>
   request({
-    url: `/api/notes/${noteId}`,
-    method: "GET"
+    url: `/api/notes/${noteId}`
   });
 
-const updateNote = (noteId, data) =>
+const updateNote = (noteId, content) =>
   request({
     url: `/api/notes/${noteId}`,
     method: "PATCH",
-    data
+    data: { content }
   });
 
 const deleteNote = (noteId) =>
@@ -38,9 +37,9 @@ const deleteNote = (noteId) =>
   });
 
 module.exports = {
-  createNote,
-  deleteNote,
-  getNote,
   listNotes,
-  updateNote
+  createNote,
+  getNote,
+  updateNote,
+  deleteNote
 };

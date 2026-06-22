@@ -4,7 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { apiRequest } from "@/lib/client-api";
+import { getStoredAuth, saveAuth } from "@/lib/client-auth";
+
 const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+const GUEST_MODE_KEY = "xinqingGuestMode";
+const LOCAL_DEMO_TOKEN_PREFIX = "local_demo_";
 
 const formatLocalDate = (date: Date) =>
   `${date.getMonth() + 1} 月 ${date.getDate()} 日 · 星期${
@@ -59,18 +64,77 @@ const baseActions = [
   },
 ];
 
+type AuthUser = {
+  id: string;
+  phone: string | null;
+  wechatOpenid: string | null;
+  nickname: string | null;
+  avatarUrl: string | null;
+  status: string;
+  createdAt: string;
+};
+
 export default function Home() {
   const [todayLabel, setTodayLabel] = useState(formatLocalDate(new Date()));
   const [prompt, setPrompt] = useState(homePrompts[0]);
   const [chatCopy, setChatCopy] = useState(chatCopies[0]);
   const [noteCopy, setNoteCopy] = useState(noteCopies[0]);
+  const [needsEntryChoice, setNeedsEntryChoice] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   useEffect(() => {
     setTodayLabel(formatLocalDate(new Date()));
     setPrompt(homePrompts[Math.floor(Math.random() * homePrompts.length)]);
     setChatCopy(chatCopies[Math.floor(Math.random() * chatCopies.length)]);
     setNoteCopy(noteCopies[Math.floor(Math.random() * noteCopies.length)]);
+
+    const forceEntryChoice = new URLSearchParams(window.location.search).get("entry") === "1";
+    const isLoggedIn = Boolean(getStoredAuth()?.token);
+    const isGuestMode = window.sessionStorage.getItem(GUEST_MODE_KEY) === "true";
+    setNeedsEntryChoice(forceEntryChoice || (!isLoggedIn && !isGuestMode));
   }, []);
+
+  const enterGuestMode = () => {
+    window.sessionStorage.setItem(GUEST_MODE_KEY, "true");
+    setNeedsEntryChoice(false);
+  };
+
+  const loginDirectly = async () => {
+    setIsLoggingIn(true);
+    setLoginError("");
+
+    try {
+      const data = await apiRequest<{ user: AuthUser; token: string; expiresAt: string }>(
+        "/api/auth/wechat",
+        {
+          method: "POST",
+          auth: false,
+          body: { code: `web_home_${Date.now()}` },
+        }
+      );
+      saveAuth(data);
+      window.sessionStorage.removeItem(GUEST_MODE_KEY);
+      setNeedsEntryChoice(false);
+    } catch {
+      saveAuth({
+        token: `${LOCAL_DEMO_TOKEN_PREFIX}${Date.now()}`,
+        user: {
+          id: "local-demo-user",
+          phone: null,
+          wechatOpenid: "local_demo",
+          nickname: "本地演示用户",
+          avatarUrl: null,
+          status: "ACTIVE",
+          createdAt: new Date().toISOString(),
+        },
+      });
+      window.sessionStorage.setItem(GUEST_MODE_KEY, "true");
+      setNeedsEntryChoice(false);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   const actions = useMemo(
     () =>
@@ -85,9 +149,6 @@ export default function Home() {
     <main className="min-h-svh bg-[var(--page-bg)] text-[var(--ink)] md:grid md:place-items-center md:p-8">
       <section className="phone-frame relative mx-auto h-svh min-h-[844px] w-full max-w-[390px] overflow-hidden bg-[var(--page-bg)] md:h-[844px] md:rounded-[30px] md:shadow-[0_30px_80px_rgba(45,41,38,0.14)]">
         <div className="absolute inset-x-0 top-0 h-[30px] bg-[var(--page-bg)]" />
-        <div className="absolute left-5 top-2.5 h-4 w-20 text-[11px] font-semibold leading-4 text-[var(--ink)]">
-          9:41
-        </div>
 
         <div className="px-[22px] pt-[62px]">
           <p className="h-[18px] text-xs leading-[18px] text-[var(--muted)]">
@@ -157,6 +218,43 @@ export default function Home() {
             </Link>
           </div>
         </nav>
+
+        {needsEntryChoice ? (
+          <div className="absolute inset-0 z-[2147483500] bg-[var(--ink)]/12 px-[22px] pb-[88px] pt-[420px]">
+            <div className="rounded-[22px] bg-[var(--card-warm)] px-6 pb-6 pt-7 shadow-[0_24px_70px_rgba(45,41,38,0.16)]">
+              <p className="text-xs font-semibold leading-[18px] text-[var(--sage)]">
+                新晴
+              </p>
+              <h2 className="mt-4 text-[24px] font-semibold leading-[34px] text-[var(--ink)]">
+                先选择一种方式
+              </h2>
+              <p className="mt-3 whitespace-pre-line text-[13px] leading-[22px] text-[var(--body)]">
+                登录后可以保存聊天和小记。
+                {"\n"}也可以先轻轻试用一会儿。
+              </p>
+              <button
+                type="button"
+                onClick={loginDirectly}
+                disabled={isLoggingIn}
+                className="mt-6 flex h-11 w-full items-center justify-center rounded-[15px] bg-[var(--sage)] text-[13px] font-semibold text-[var(--card-warm)] disabled:bg-[#d8d1c9]"
+              >
+                {isLoggingIn ? "登录中" : "登录"}
+              </button>
+              {loginError ? (
+                <p className="mt-3 text-center text-[11px] leading-[16px] text-[#b9826e]">
+                  {loginError}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={enterGuestMode}
+                className="mx-auto mt-4 block bg-transparent text-xs leading-[18px] text-[var(--muted)]"
+              >
+                游客模式
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="absolute bottom-2.5 left-1/2 h-1 w-[100px] -translate-x-1/2 rounded-sm bg-[var(--ink)]" />
       </section>

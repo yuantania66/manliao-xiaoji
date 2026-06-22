@@ -1,0 +1,32 @@
+.intro {
+  margin-top: 22rpx;
+}
+
+.cancel-card {
+  margin-top: 64rpx;
+  padding: 44rpx;
+}
+
+.cancel-title {
+  margin-bottom: 24rpx;
+  color: #2d2926;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.danger {
+  width: 100%;
+  height: 92rpx;
+  margin-top: 42rpx;
+  border-radius: 30rpx;
+  background: #b9826e;
+  color: #fffdf9;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.tip {
+  margin-top: 24rpx;
+  text-align: center;
+  font-size: 24rpx;
+}

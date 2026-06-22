@@ -1,20 +1,46 @@
-<view class="screen note-screen">
-  <view class="status">9:41</view>
-  <button class="back-link" bindtap="goBack">‹ 返回</button>
+<view class="page note-detail-page">
+  <view class="back detail-back" style="top: {{backTop}}px;" bindtap="goBack">‹ 返回</view>
 
-  <text class="note-date sage">{{note.recordDate || ''}}</text>
-  <text class="note-title">小记详情</text>
-  <text class="note-lead body-copy">{{loading ? '正在取回这条小记。' : '可以轻轻改一下，也可以删除。'}}</text>
-
-  <view class="note-card">
-    <textarea class="note-textarea" maxlength="500" value="{{content}}" placeholder="此刻想到的，就从这里开始写。" bindinput="updateContent" />
-    <view class="note-footer">
-      <text class="counter muted">{{count}} / 500</text>
-      <text class="mood-link sage">☼ {{note.moodName || '未选择心情'}}</text>
+  <view wx:if="{{note}}" class="detail-actions">
+    <view class="detail-menu-button" bindtap="toggleMenu">···</view>
+    <view wx:if="{{isMenuOpen}}" class="menu-mask" bindtap="closeMenu"></view>
+    <view wx:if="{{isMenuOpen}}" class="detail-menu">
+      <view class="delete-menu-item" bindtap="deleteCurrentNote">
+        <view class="delete-icon">
+          <view class="delete-icon-handle"></view>
+          <view class="delete-icon-lid"></view>
+          <view class="delete-icon-body"></view>
+        </view>
+        <text>{{isDeleting ? "删除中" : "删除小记"}}</text>
+      </view>
     </view>
   </view>
 
-  <button class="save-button {{content ? 'save-active' : 'save-disabled'}}" loading="{{saving}}" bindtap="save">保存修改</button>
-  <button class="delete-button" loading="{{saving}}" bindtap="remove">删除小记</button>
-  <view class="bottom-indicator"></view>
+  <view wx:if="{{note}}" class="detail-content">
+    <view class="detail-date">{{note.dateLabel}}</view>
+
+    <view wx:if="{{note.hasText}}" class="text-content">{{note.content}}</view>
+
+    <view wx:if="{{note.hasImages}}" class="media-grid {{note.imageGridClass}}">
+      <image
+        wx:for="{{note.images}}"
+        wx:key="url"
+        class="image-content"
+        src="{{item.url}}"
+        mode="aspectFill"
+        bindtap="previewImage"
+        data-url="{{item.url}}"
+      />
+    </view>
+
+    <view wx:if="{{!note.hasText && !note.hasImages}}" class="empty-content">这条小记暂时没有内容。</view>
+
+    <view class="detail-divider"></view>
+    <view class="detail-meta">
+      <view wx:if="{{note.hasMood}}" class="mood-pill">☼ {{note.mood.name}} · {{note.mood.desc}}</view>
+      <view class="detail-time">{{note.dateLabel}}</view>
+    </view>
+  </view>
+
+  <view wx:else class="body empty">{{statusText || "这条小记暂时找不到。"}}</view>
 </view>

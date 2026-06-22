@@ -1,39 +1,16 @@
-const { getCurrentUser } = require("./api/auth");
-const { clearAuth, getToken, getUser } = require("./utils/token");
+const { getAuth } = require("./utils/auth");
 
 App({
   globalData: {
-    loggedIn: false,
-    token: "",
-    user: null
+    user: null,
+    token: ""
   },
 
   onLaunch() {
-    const token = getToken();
-    const user = getUser();
-    this.globalData.token = token;
-    this.globalData.user = user;
-    this.globalData.loggedIn = !!token;
-
-    if (token) {
-      getCurrentUser()
-        .then((currentUser) => {
-          this.globalData.user = currentUser;
-          this.globalData.loggedIn = true;
-        })
-        .catch(() => {
-          this.clearAuth();
-        });
+    const auth = getAuth();
+    if (auth && auth.token) {
+      this.globalData.user = auth.user || null;
+      this.globalData.token = auth.token;
     }
-  },
-
-  setAuth({ token = "", user = null } = {}) {
-    this.globalData.token = token;
-    this.globalData.user = user;
-    this.globalData.loggedIn = !!token;
-  },
-
-  clearAuth() {
-    clearAuth();
   }
 });

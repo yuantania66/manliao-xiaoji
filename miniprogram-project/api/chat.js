@@ -1,10 +1,6 @@
 const { request } = require("../utils/request");
 
-const listSessions = () =>
-  request({
-    url: "/api/chat/sessions?pageSize=20",
-    method: "GET"
-  });
+const listSessions = () => request({ url: "/api/chat/sessions?pageSize=20" });
 
 const createSession = () =>
   request({
@@ -15,8 +11,7 @@ const createSession = () =>
 
 const listMessages = (sessionId) =>
   request({
-    url: `/api/chat/sessions/${sessionId}/messages?pageSize=50`,
-    method: "GET"
+    url: `/api/chat/sessions/${sessionId}/messages?pageSize=50`
   });
 
 const sendMessage = (sessionId, content) =>
@@ -26,9 +21,15 @@ const sendMessage = (sessionId, content) =>
     data: { content }
   });
 
+const searchMessages = (query) =>
+  request({
+    url: `/api/chat/search?q=${encodeURIComponent(query)}`
+  });
+
 module.exports = {
+  listSessions,
   createSession,
   listMessages,
-  listSessions,
-  sendMessage
+  sendMessage,
+  searchMessages
 };

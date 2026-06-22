@@ -1,0 +1,32 @@
+<view class="page page-with-fixed-back">
+  <navigator url="/pages/me/me" class="back fixed-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
+  <block wx:if="{{!authorized}}">
+    <view class="eyebrow auth-label">授权确认</view>
+    <view class="title">允许新晴整理你的记录吗？</view>
+    <view class="body auth-copy">新晴观察会从你的聊天和小记里，整理最近常出现的词。它只用于回看和自我记录，不做判断，也不做诊断。</view>
+    <view class="auth-card card">
+      <view class="auth-title">授权后，新晴会使用你的记录生成观察。</view>
+      <view class="body">你可以先不同意，返回继续聊天或写小记。新晴不会把这些内容作为心理诊断依据。</view>
+    </view>
+    <button class="primary-button auth-button" bindtap="authorize">同意并查看新晴观察</button>
+    <navigator url="/pages/me/me" class="secondary-button auth-secondary" hover-class="none">暂时不授权</navigator>
+  </block>
+  <block wx:else>
+    <view class="title">新晴观察</view>
+    <view class="body intro">从聊天和小记里整理出最近常出现的词。<br />它不是判断，也不是答案。</view>
+    <view class="muted tone-help">颜色来自记录里的情绪语气，不是词本身。</view>
+    <view class="eyebrow range-title">观察范围</view>
+    <view class="range-row">
+      <button wx:for="{{ranges}}" wx:key="key" class="{{range === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="changeRange">{{item.label}}</button>
+    </view>
+    <view class="word-grid">
+      <view wx:for="{{words}}" wx:key="word" class="word {{item.sentiment}}">
+        <text>{{item.word}}</text><text>{{item.count}}</text>
+      </view>
+    </view>
+    <view class="quote-card card">
+      <view>“有些词反复出现，<br />也许只是因为最近它们离你比较近。”</view>
+      <text>可以切换时间范围，看这些词是慢慢淡了，还是还在身边。</text>
+    </view>
+  </block>
+</view>

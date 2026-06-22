@@ -1,27 +1,22 @@
-<view class="screen history-screen">
-  <view class="status">9:41</view>
-  <button class="back-link" bindtap="goBack">‹ 返回</button>
-  <button class="add-note sage" bindtap="goNote">+ 记一下</button>
-  <text class="history-title">我的小记</text>
-  <text class="history-lead body-copy">按时间回看文字、图片和视频，不用一次看完。</text>
-  <view class="search card">
-    <text class="search-icon sage">⌕</text>
-    <input class="search-input" value="{{searchQuery}}" placeholder="查找小记内容" bindinput="updateSearch" />
+<view class="page note-history-page">
+  <navigator url="/pages/note/note" class="back history-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
+  <navigator url="/pages/note/note" class="add-link" hover-class="none">+ 记一下</navigator>
+  <view class="title">我的小记</view>
+  <view class="body intro">{{introText}}</view>
+  <view class="search-box">⌕<input value="{{query}}" bindinput="onInput" placeholder="查找小记内容" /></view>
+  <view wx:if="{{statusText}}" class="history-status">{{statusText}}</view>
+  <navigator url="/pages/note-calendar/note-calendar" class="calendar-entry card-sage" hover-class="none">
+    <view class="entry-title">心情日历</view>
+    <view class="entry-copy">按天气回看某一天</view>
+    <view class="entry-arrow">›</view>
+  </navigator>
+  <view wx:if="{{isEmpty}}" class="empty body">还没有小记。先给今天留一句话。</view>
+  <view wx:for="{{notes}}" wx:key="id" class="note-item">
+    <navigator url="/pages/note-detail/note-detail?id={{item.id}}&date={{item.dateKey}}" hover-class="none">
+      <view class="note-date">{{item.dateLabel}}</view>
+      <view class="note-title">{{item.title}}</view>
+      <view class="note-body">{{item.content}}</view>
+      <view wx:if="{{item.mood}}" class="note-mood">{{item.mood.name}} · {{item.mood.desc}}</view>
+    </navigator>
   </view>
-  <view class="calendar-card">
-    <text class="calendar-title">心情日历</text>
-    <text class="calendar-copy sage">{{calendarSummary}}</text>
-    <text class="arrow">›</text>
-  </view>
-  <text wx:if="{{filteredNotes.length > 0}}" class="month sage">我的记录</text>
-  <block wx:for="{{filteredNotes}}" wx:key="id">
-    <view class="entry" style="top: {{item.top}}px;" data-id="{{item.id}}" bindtap="openNote">
-      <text class="entry-date muted">{{item.dateLabel}}</text>
-      <text class="entry-title">{{item.moodName || '小记'}}</text>
-      <text class="entry-body body-copy">{{item.preview}}</text>
-    </view>
-  </block>
-  <text wx:if="{{loading}}" class="empty muted">正在加载小记...</text>
-  <text wx:if="{{!loading && filteredNotes.length === 0}}" class="empty muted">没找到相关小记。</text>
-  <view class="bottom-indicator"></view>
 </view>

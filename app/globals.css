@@ -77,6 +77,37 @@ button {
   background-clip: content-box;
 }
 
+.chat-scrollbar {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(113, 135, 123, 0.24) transparent;
+  scrollbar-width: thin;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 12px 0;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(113, 135, 123, 0.22);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.chat-scrollbar:hover::-webkit-scrollbar-thumb,
+.chat-scrollbar:focus::-webkit-scrollbar-thumb,
+.chat-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(113, 135, 123, 0.46);
+  background-clip: content-box;
+}
+
 .phone-frame {
   contain: layout paint;
 }

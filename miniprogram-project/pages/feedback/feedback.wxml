@@ -1,0 +1,13 @@
+<view class="page page-with-fixed-back">
+  <navigator url="/pages/settings/settings" class="back fixed-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
+  <view class="eyebrow">设置</view>
+  <view class="title">意见反馈</view>
+  <view class="body intro">哪里不顺、哪里想改，都可以慢慢告诉我们。</view>
+  <view class="type-row">
+    <button wx:for="{{types}}" wx:key="*this" class="{{type === item ? 'active' : ''}}" data-type="{{item}}" bindtap="chooseType">{{item}}</button>
+  </view>
+  <textarea class="feedback-input" maxlength="300" value="{{content}}" bindinput="onInput" placeholder="反馈内容" />
+  <view class="counter">{{contentLength}} / 300</view>
+  <button class="primary-button" bindtap="submit">提交反馈</button>
+  <view class="muted current">当前类型：{{type}}</view>
+</view>

@@ -1,36 +1,40 @@
-<view class="screen home-screen">
-  <view class="status">9:41</view>
-  <view class="hero">
-    <text class="date sage">{{dateLabel}}</text>
-    <text class="title">{{prompt.title}}</text>
-    <text class="lead body-copy">{{prompt.lead}}</text>
-    <view class="leaf home-leaf">
-      <view class="leaf-stem"></view>
-      <view class="leaf-branch"></view>
-      <view class="leaf-bud one"></view>
-      <view class="leaf-bud two"></view>
-      <view class="leaf-bud three"></view>
-    </view>
+<view class="page home-page" style="padding-top: {{pageTop}}px;">
+  <view class="date">{{todayLabel}}</view>
+  <view class="home-title">{{prompt.title}}</view>
+  <view class="home-lead">{{prompt.lead}}</view>
+
+  <view class="leaf" aria-hidden="true">
+    <view class="leaf-circle"></view>
+    <view class="leaf-stem"></view>
+    <view class="leaf-one"></view>
+    <view class="leaf-two"></view>
   </view>
 
-  <button class="choice chat-card" bindtap="goChat">
-    <text class="choice-title">聊聊</text>
-    <text class="choice-copy body-copy">{{prompt.chat}}</text>
-    <text class="choice-action sage">慢慢说 ›</text>
-  </button>
+  <view class="action-card warm" bindtap="goChat">
+    <view class="action-title">聊聊</view>
+    <view class="action-copy">{{chatCopy}}</view>
+    <view class="action-link">慢慢说  ›</view>
+  </view>
 
-  <button class="choice note-card" bindtap="goNote">
-    <text class="choice-title">记一下</text>
-    <text class="choice-copy body-copy">{{prompt.note}}</text>
-    <text class="choice-action sage">写一点 ›</text>
-  </button>
+  <view class="action-card sage" bindtap="goNote">
+    <view class="action-title">记一下</view>
+    <view class="action-copy">{{noteCopy}}</view>
+    <view class="action-link">写一点  ›</view>
+  </view>
 
-  <view class="tabbar">
-    <view class="tab-line home-tab-line"></view>
-    <view class="tab-items">
-      <text class="tab-active">此刻</text>
-      <text class="tab-muted" bindtap="goMe">我的</text>
+  <view class="bottom-bar">
+    <navigator url="/pages/home/home" hover-class="none">此刻</navigator>
+    <navigator url="/pages/me/me" hover-class="none">我的</navigator>
+  </view>
+
+  <view wx:if="{{showEntry}}" class="entry-layer">
+    <view class="entry-mask"></view>
+    <view class="entry-sheet" style="bottom: {{entryBottom}}px;">
+      <view class="entry-title">欢迎来到新晴</view>
+      <view class="entry-copy">登录后可以同步记录，也可以先用游客模式体验。</view>
+      <view wx:if="{{entryError}}" class="entry-error">{{entryError}}</view>
+      <button class="primary-button" disabled="{{isLoggingIn}}" bindtap="handleLogin">{{isLoggingIn ? "登录中..." : "登录"}}</button>
+      <button class="guest-text" bindtap="enterGuest">游客模式</button>
     </view>
   </view>
-  <view class="bottom-indicator"></view>
 </view>

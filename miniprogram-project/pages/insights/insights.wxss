@@ -1,0 +1,114 @@
+.auth-label {
+  margin-top: 72rpx;
+}
+
+.auth-copy {
+  margin-top: 36rpx;
+}
+
+.auth-card {
+  margin-top: 56rpx;
+  padding: 44rpx;
+}
+
+.auth-title {
+  margin-bottom: 24rpx;
+  color: #71877b;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 44rpx;
+}
+
+.auth-button {
+  margin-top: 56rpx;
+}
+
+.auth-secondary {
+  display: block;
+  margin-top: 26rpx;
+}
+
+.intro {
+  margin-top: 28rpx;
+}
+
+.tone-help {
+  margin-top: 20rpx;
+  font-size: 22rpx;
+}
+
+.range-title {
+  margin-top: 48rpx;
+}
+
+.range-row {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 26rpx;
+}
+
+.range-row button {
+  height: 68rpx;
+  border-radius: 34rpx;
+  background: #fffdf9;
+  padding: 0 38rpx;
+  color: #71877b;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.range-row .active {
+  background: #71877b;
+  color: #fffdf9;
+}
+
+.word-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32rpx;
+  margin-top: 68rpx;
+}
+
+.word {
+  display: flex;
+  justify-content: space-between;
+  height: 96rpx;
+  border-radius: 30rpx;
+  padding: 0 32rpx;
+  align-items: center;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.positive {
+  background: #ddebf3;
+  color: #5f8290;
+}
+
+.neutral {
+  background: #f8ecc8;
+  color: #9b8349;
+}
+
+.negative {
+  background: #f4e4d3;
+  color: #b9826e;
+}
+
+.quote-card {
+  margin-top: 90rpx;
+  padding: 42rpx 44rpx;
+  color: #71877b;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 48rpx;
+}
+
+.quote-card text {
+  display: block;
+  margin-top: 28rpx;
+  color: #6d665f;
+  font-size: 24rpx;
+  font-weight: 400;
+  line-height: 38rpx;
+}

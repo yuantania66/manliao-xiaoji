@@ -1,0 +1,64 @@
+@import "../chat-calendar/chat-calendar.wxss";
+
+.active-day {
+  color: #8a6f33;
+}
+
+.active-day text {
+  position: relative;
+  z-index: 2;
+  color: #8a6f33;
+  font-weight: 600;
+}
+
+.note-active-day {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.weather-mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62rpx;
+  height: 62rpx;
+  transform: translate(-50%, -50%);
+  opacity: 0.88;
+}
+
+.weather-sun {
+  position: absolute;
+  left: 19rpx;
+  top: 19rpx;
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  border: 5rpx solid #d6b47b;
+}
+
+.weather-ray {
+  position: absolute;
+  left: 29rpx;
+  top: 2rpx;
+  width: 5rpx;
+  height: 13rpx;
+  border-radius: 999rpx;
+  background: #d6b47b;
+  transform-origin: 2.5rpx 29rpx;
+}
+
+.weather-ray-one {
+  box-shadow: 0 45rpx 0 #d6b47b;
+}
+
+.weather-ray-two {
+  transform: rotate(60deg);
+  box-shadow: 0 45rpx 0 #d6b47b;
+}
+
+.weather-ray-three {
+  transform: rotate(120deg);
+  box-shadow: 0 45rpx 0 #d6b47b;
+}

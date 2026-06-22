@@ -1,0 +1,53 @@
+.close {
+  position: fixed;
+  width: 56rpx;
+  height: 56rpx;
+  color: #71877b;
+  font-size: 46rpx;
+  line-height: 56rpx;
+  text-align: center;
+  z-index: 10;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  height: 96rpx;
+  margin-top: 70rpx;
+  border-radius: 32rpx;
+  background: #fffdf9;
+  padding: 0 42rpx;
+  color: #71877b;
+  font-size: 30rpx;
+}
+
+.search-box input {
+  flex: 1;
+  color: #6d665f;
+  font-size: 28rpx;
+}
+
+.help {
+  margin-top: 72rpx;
+}
+
+.search-status {
+  margin-top: 30rpx;
+  color: #71877b;
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 34rpx;
+}
+
+.result-card {
+  margin-top: 52rpx;
+  padding: 36rpx 40rpx;
+}
+
+.result-title {
+  color: #2d2926;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 44rpx;
+}

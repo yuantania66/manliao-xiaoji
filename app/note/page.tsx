@@ -40,6 +40,26 @@ type SlipQuote = {
   caption: string;
 };
 
+type WritableFileStreamLike = {
+  write: (data: Blob) => Promise<void>;
+  close: () => Promise<void>;
+};
+
+type FileHandleLike = {
+  createWritable: () => Promise<WritableFileStreamLike>;
+};
+
+type SaveFilePickerWindow = Window &
+  typeof globalThis & {
+    showSaveFilePicker?: (options: {
+      suggestedName: string;
+      types: Array<{
+        description: string;
+        accept: Record<string, string[]>;
+      }>;
+    }) => Promise<FileHandleLike>;
+  };
+
 const moods: Mood[] = [
   { name: "晴朗", desc: "轻松", tone: "#f4e4d3", icon: "sun" },
   { name: "晴转多云", desc: "有点累", tone: "#e8f0ea", icon: "sunCloud" },
@@ -707,11 +727,11 @@ function SharePreview({
           {captionMedium}
         </div>
         <div className="absolute left-[58px] top-[288px] h-px w-[184px] bg-[var(--line)]" />
-        <p className="absolute left-[58px] top-[312px] w-[160px] text-xs leading-[20px] text-[var(--body)]">
+        <p className="absolute left-[58px] top-[312px] w-[134px] text-xs leading-[20px] text-[var(--body)]">
           来自新晴的一张小票：<br />
-          {captionShort}
+          {limitText(captionShort, 14)}
         </p>
-        <QrMark className="left-[58px] top-[336px] scale-[0.72] origin-top-left" />
+        <QrMark className="left-[206px] top-[312px] scale-[0.72] origin-top-left" />
       </div>
     );
   }
@@ -880,14 +900,44 @@ function NoteContent() {
     try {
       setSlipActionFeedback("正在生成图片...");
       const blob = await buildSlipPngBlob();
+      const fileName = `xinqing-note-${Date.now()}.png`;
+      const pickerWindow = window as SaveFilePickerWindow;
+
+      if (pickerWindow.showSaveFilePicker) {
+        const handle = await pickerWindow.showSaveFilePicker({
+          suggestedName: fileName,
+          types: [
+            {
+              description: "PNG 图片",
+              accept: { "image/png": [".png"] },
+            },
+          ],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        setSlipActionFeedback("图片已保存");
+        return;
+      }
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `xinqing-note-${Date.now()}.png`;
+      link.download = fileName;
+      link.rel = "noopener";
+      link.style.display = "none";
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
-      setSlipActionFeedback("图片已保存到下载目录");
-    } catch {
+      window.setTimeout(() => {
+        link.remove();
+        URL.revokeObjectURL(url);
+      }, 30000);
+      setSlipActionFeedback("已发起下载，请查看浏览器下载记录");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setSlipActionFeedback("已取消保存");
+        return;
+      }
       setSlipActionFeedback("保存失败，请稍后再试");
     }
   };
@@ -930,9 +980,6 @@ function NoteContent() {
     <main className="min-h-svh bg-[var(--page-bg)] text-[var(--ink)] md:grid md:place-items-center md:p-8">
       <section className="phone-frame relative mx-auto h-svh min-h-[844px] w-full max-w-[390px] overflow-hidden bg-[var(--page-bg)] md:h-[844px] md:rounded-[30px] md:shadow-[0_30px_80px_rgba(45,41,38,0.14)]">
         <div className="absolute inset-x-0 top-0 h-[30px] bg-[var(--page-bg)]" />
-        <div className="absolute left-5 top-2.5 h-4 w-20 text-[11px] font-semibold leading-4 text-[var(--ink)]">
-          9:41
-        </div>
 
         <Link
           href="/"
@@ -950,7 +997,7 @@ function NoteContent() {
           type="button"
           aria-label="打开小记菜单"
           aria-expanded={isMenuOpen}
-          className="absolute left-[328px] top-[78px] z-[2147483601] h-[22px] w-10 text-center text-lg font-semibold leading-[22px] text-[var(--sage)]"
+          className="absolute left-[328px] top-[78px] z-20 h-[22px] w-10 text-center text-lg font-semibold leading-[22px] text-[var(--sage)]"
           onClick={() => setIsMenuOpen((open) => !open)}
         >
           ···
@@ -961,10 +1008,10 @@ function NoteContent() {
             <button
               type="button"
               aria-label="关闭小记菜单"
-              className="absolute inset-0 z-[2147483599] bg-[var(--page-bg)]/60"
+              className="absolute inset-0 z-30 bg-[var(--page-bg)]/60"
               onClick={() => setIsMenuOpen(false)}
             />
-            <div className="absolute left-[174px] top-[108px] z-[2147483600] h-[126px] w-[194px] rounded-2xl bg-[var(--card-warm)]">
+            <div className="absolute left-[174px] top-[108px] z-40 h-[126px] w-[194px] rounded-2xl bg-[var(--card-warm)]">
               <Link
                 href="/note/calendar"
                 className="absolute left-[22px] top-6 flex h-[22px] w-[150px] items-center gap-3 text-left text-sm font-semibold leading-[22px] text-[var(--ink)]"
@@ -1078,7 +1125,7 @@ function NoteContent() {
               : "absolute left-[286px] top-[552px] h-[58px] w-[82px] rounded-2xl bg-[#d8d1c9] text-[13px] font-semibold leading-5 text-[var(--card-warm)]"
           }
         >
-          收好
+          记一下
         </button>
 
         <Image
@@ -1100,9 +1147,6 @@ function NoteContent() {
 
         {isMoodPickerOpen ? (
           <div className="absolute inset-0 z-50 bg-[var(--page-bg)]">
-            <div className="absolute left-5 top-2.5 h-4 w-20 text-[11px] font-semibold leading-4">
-              9:41
-            </div>
             <button
               type="button"
               aria-label="关闭心情选择"

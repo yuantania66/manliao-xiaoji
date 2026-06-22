@@ -1,0 +1,49 @@
+.intro {
+  margin-top: 22rpx;
+}
+
+.type-row {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 64rpx;
+}
+
+.type-row button {
+  height: 68rpx;
+  border-radius: 34rpx;
+  background: #fffdf9;
+  padding: 0 30rpx;
+  color: #71877b;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.type-row .active {
+  background: #71877b;
+  color: #fffdf9;
+}
+
+.feedback-input {
+  width: 100%;
+  height: 260rpx;
+  margin-top: 42rpx;
+  border-radius: 32rpx;
+  background: #fffdf9;
+  padding: 32rpx;
+  color: #2d2926;
+  font-size: 28rpx;
+  line-height: 46rpx;
+}
+
+.counter {
+  margin: 16rpx 0 34rpx;
+  color: #a49a91;
+  text-align: right;
+  font-size: 24rpx;
+}
+
+.current {
+  margin-top: 26rpx;
+  text-align: center;
+  font-size: 24rpx;
+}

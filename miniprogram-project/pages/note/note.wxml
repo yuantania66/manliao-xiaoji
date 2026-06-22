@@ -1,65 +1,186 @@
-<view class="screen note-screen">
-  <view class="status">9:41</view>
-  <button class="back-link" bindtap="goBack">‹ 返回</button>
+<view class="page note-page" style="padding-top: {{pageTop}}px;">
+  <navigator url="/pages/home/home" class="back note-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
+  <view class="note-menu-button" bindtap="toggleMenu">···</view>
 
-  <text class="note-date sage">{{dateLabel}}</text>
-  <text class="note-title">{{prompt.title}}</text>
-  <text class="note-lead body-copy">{{prompt.lead}}</text>
+  <view wx:if="{{isMenuOpen}}" class="menu-layer" bindtap="toggleMenu"></view>
+  <view wx:if="{{isMenuOpen}}" class="note-menu">
+    <navigator url="/pages/note-calendar/note-calendar" class="menu-item" hover-class="none">
+      <view class="menu-icon">
+        <image class="menu-icon-image" src="/assets/menu-calendar.svg" mode="aspectFit" />
+      </view>
+      <text>小记日历</text>
+    </navigator>
+    <view class="menu-line"></view>
+    <navigator url="/pages/note-search/note-search" class="menu-item" hover-class="none">
+      <view class="menu-icon">
+        <image class="menu-icon-image" src="/assets/menu-search.svg" mode="aspectFit" />
+      </view>
+      <text>查找小记内容</text>
+    </navigator>
+  </view>
+
+  <view class="note-title">{{prompt.title}}</view>
+  <view class="date">{{todayLabel}}</view>
+  <view class="note-lead">{{prompt.lead}}</view>
+  <view wx:if="{{statusText}}" class="mode-notice">{{statusText}}</view>
 
   <view class="note-card">
-    <textarea class="note-textarea" maxlength="500" value="{{note}}" placeholder="此刻想到的，就从这里开始写。" bindinput="updateNote" />
+    <textarea class="note-textarea" maxlength="500" value="{{content}}" bindinput="onInput" placeholder="此刻想到的，就从这里开始写。" placeholder-class="note-textarea-placeholder" />
     <view class="note-footer">
-      <text class="counter muted">{{count}} / 500</text>
-      <button class="mood-link sage" bindtap="chooseMood">☼ {{mood}}</button>
-    </view>
-  </view>
-
-  <button class="media-button" bindtap="chooseMedia">
-    <text class="plus">+</text>
-    <text class="media-title">添加图片/视频</text>
-    <text class="media-sub muted">照片/短视频</text>
-  </button>
-
-  <button class="save-button {{note ? 'save-active' : 'save-disabled'}}" loading="{{saving}}" bindtap="openSlip">收好</button>
-
-  <view class="leaf note-leaf">
-    <view class="leaf-stem"></view>
-    <view class="leaf-branch"></view>
-    <view class="leaf-bud one"></view>
-    <view class="leaf-bud two"></view>
-    <view class="leaf-bud three"></view>
-  </view>
-
-  <button class="history-link sage" bindtap="goHistory">我的小记 ›</button>
-  <view wx:if="{{slipOpen}}" class="slip-layer">
-    <view class="slip-overlay"></view>
-    <view class="slip-panel">
-      <text class="slip-kicker sage">小笺</text>
-      <button class="slip-close" bindtap="closeSlip">×</button>
-      <view class="slip-card {{shareClass}}">
-        <view class="slip-paper"></view>
-        <view class="slip-photo">
-          <view class="photo-tile photo-tile-1"></view>
-          <view class="photo-tile photo-tile-2"></view>
-          <view class="photo-tile photo-tile-3"></view>
+      <view class="counter">{{contentLength}} / 500</view>
+      <view class="mood-button" bindtap="openMoodPicker">
+        <view wx:if="{{selectedMood && selectedMood.name === '晴朗'}}" class="selected-mood-icon mood-icon mood-icon-0">
+          <view class="icon-part sun-core"></view>
+          <view class="icon-part sun-rays"></view>
         </view>
-        <view class="slip-accent"></view>
-        <text class="slip-date muted">{{dateLabel}}</text>
-        <text class="slip-title">{{shareQuote}}</text>
-        <view class="slip-line"></view>
-        <text class="slip-body body-copy">{{shareNote}}</text>
-        <text class="slip-brand sage">新晴</text>
-        <text class="slip-brand-note muted">来新晴，收一张小笺</text>
-        <view class="slip-qr">
-          <block wx:for="{{[0,1,2,3,4,5,6,7,8]}}" wx:key="*this">
-            <view class="qr-dot qr-dot-{{index}}"></view>
-          </block>
+        <view wx:if="{{selectedMood && selectedMood.name === '晴转多云'}}" class="selected-mood-icon mood-icon mood-icon-1">
+          <view class="icon-part cloud-sun"></view>
+          <view class="icon-part cloud-body"></view>
         </view>
+        <view wx:if="{{selectedMood && selectedMood.name === '多云'}}" class="selected-mood-icon mood-icon mood-icon-2">
+          <view class="icon-part cloud-sun"></view>
+          <view class="icon-part cloud-body"></view>
+        </view>
+        <view wx:if="{{selectedMood && selectedMood.name === '阴天'}}" class="selected-mood-icon mood-icon mood-icon-3">
+          <view class="icon-part cloud-body"></view>
+        </view>
+        <view wx:if="{{selectedMood && selectedMood.name === '小雨'}}" class="selected-mood-icon mood-icon mood-icon-4">
+          <view class="icon-part cloud-body"></view>
+          <view class="icon-part rain rain-one"></view>
+          <view class="icon-part rain rain-two"></view>
+          <view class="icon-part rain rain-three"></view>
+        </view>
+        <view wx:if="{{selectedMood && selectedMood.name === '暴雨'}}" class="selected-mood-icon mood-icon mood-icon-5">
+          <view class="icon-part cloud-body"></view>
+          <view class="icon-part rain rain-one"></view>
+          <view class="icon-part rain rain-two"></view>
+          <view class="icon-part rain rain-three"></view>
+        </view>
+        <view wx:if="{{selectedMood && selectedMood.name === '雾'}}" class="selected-mood-icon mood-icon mood-icon-6">
+          <view class="icon-part fog fog-one"></view>
+          <view class="icon-part fog fog-two"></view>
+          <view class="icon-part fog fog-three"></view>
+        </view>
+        <view wx:if="{{selectedMood && selectedMood.name === '彩虹'}}" class="selected-mood-icon mood-icon mood-icon-7">
+          <view class="icon-part rainbow rainbow-one"></view>
+          <view class="icon-part rainbow rainbow-two"></view>
+          <view class="icon-part rainbow rainbow-three"></view>
+        </view>
+        <view wx:if="{{selectedMood && selectedMood.name === '月夜'}}" class="selected-mood-icon mood-icon mood-icon-8">
+          <view class="icon-part moon-base"></view>
+          <view class="icon-part moon-cut"></view>
+        </view>
+        <view wx:if="{{!selectedMood}}" class="selected-mood-placeholder">☼</view>
+        <text>{{selectedMood ? selectedMood.name : "选择心情"}}</text>
+        <view wx:if="{{selectedMood}}" class="mood-clear" catchtap="clearMood">×</view>
       </view>
-      <button class="slip-share" bindtap="shareSlip">分享给朋友</button>
-      <button class="slip-save" bindtap="saveSlip">保存图片</button>
-      <button class="slip-continue sage" bindtap="closeSlip">继续写一点</button>
     </view>
   </view>
-  <view class="bottom-indicator"></view>
+
+  <view wx:if="{{hasMedia}}" class="media-preview-list">
+    <view wx:for="{{mediaItems}}" wx:key="url" class="media-preview-item">
+      <image class="media-preview-image" src="{{item.url}}" mode="aspectFill" />
+      <view class="media-remove" catchtap="removeMedia" data-index="{{index}}">×</view>
+    </view>
+  </view>
+
+  <button wx:if="{{isDevRuntime}}" class="dev-media-test" bindtap="fillMediaLimitTest">生成 9 张图片测试</button>
+
+  <view class="note-actions">
+    <button class="media-button" bindtap="chooseMedia">+ <text class="media-title">添加图片</text><text class="media-sub">{{mediaCount}} / 9</text></button>
+    <button class="save-note" disabled="{{!hasContent || isSaving}}" bindtap="saveNote">{{isSaving ? "保存中" : "记一下"}}</button>
+  </view>
+
+  <view class="note-leaf" aria-hidden="true">
+    <view class="leaf-circle"></view>
+    <view class="leaf-stem"></view>
+    <view class="leaf-one"></view>
+    <view class="leaf-two"></view>
+  </view>
+
+  <navigator url="/pages/note-history/note-history" class="history-link" hover-class="none">我的小记 ›</navigator>
+
+  <view wx:if="{{isMoodPickerOpen}}" class="mood-layer">
+    <view class="mood-eyebrow">小记</view>
+    <view class="mood-close" bindtap="closeMoodPicker">×</view>
+    <view class="mood-title">给此刻选一种天气。</view>
+    <view class="mood-copy">也可以跳过。只是给这一刻留一个小标记。</view>
+    <view class="mood-grid">
+      <view wx:for="{{moods}}" wx:for-item="item" wx:for-index="index" wx:key="name" wx:if="{{index < 8}}" class="mood-card mood-card-{{index}}" bindtap="chooseMood" data-index="{{index}}">
+        <view class="mood-icon mood-icon-{{index}}">
+          <view class="icon-part sun-core"></view>
+          <view class="icon-part sun-rays"></view>
+          <view class="icon-part cloud-sun"></view>
+          <view class="icon-part cloud-body"></view>
+          <view class="icon-part rain rain-one"></view>
+          <view class="icon-part rain rain-two"></view>
+          <view class="icon-part rain rain-three"></view>
+          <view class="icon-part fog fog-one"></view>
+          <view class="icon-part fog fog-two"></view>
+          <view class="icon-part fog fog-three"></view>
+          <view class="icon-part rainbow rainbow-one"></view>
+          <view class="icon-part rainbow rainbow-two"></view>
+          <view class="icon-part rainbow rainbow-three"></view>
+        </view>
+        <view class="mood-name">{{item.name}}</view>
+        <view class="mood-desc">{{item.desc}}</view>
+        <view class="mood-hit" bindtap="chooseMood" data-index="{{index}}"></view>
+      </view>
+    </view>
+    <view class="mood-card mood-card-wide mood-card-8" bindtap="chooseMood" data-index="8">
+      <view class="mood-icon mood-icon-8">
+        <view class="icon-part moon-base"></view>
+        <view class="icon-part moon-cut"></view>
+      </view>
+      <view class="mood-name">{{moods[8].name}}</view>
+      <view class="mood-desc">{{moods[8].desc}}</view>
+      <view class="mood-hit" bindtap="chooseMood" data-index="8"></view>
+    </view>
+    <view class="skip-mood" bindtap="closeMoodPicker">暂时跳过</view>
+    <view class="mood-note">之后仍然可以在小记里补上或修改。</view>
+  </view>
+
+  <view wx:if="{{isSlipOpen}}" class="slip-layer">
+    <view class="slip-mask"></view>
+    <view class="slip-sheet">
+      <view class="eyebrow">小笺</view>
+      <button class="slip-close" bindtap="closeSlip">×</button>
+      <view class="slip-card {{slipStyle}}">
+        <view class="slip-tapes">
+          <view class="slip-tape slip-tape-one"></view>
+          <view class="slip-tape slip-tape-two"></view>
+          <view class="slip-tape slip-tape-three"></view>
+        </view>
+        <view class="slip-hero-panel"></view>
+        <view class="slip-side-dots slip-side-dots-left"></view>
+        <view class="slip-side-dots slip-side-dots-right"></view>
+        <view class="slip-mini-card slip-mini-card-one">{{slip.caption}}</view>
+        <view class="slip-mini-card slip-mini-card-two">{{slip.quote}}</view>
+        <view class="slip-leaf">
+          <view class="slip-leaf-circle"></view>
+          <view class="slip-leaf-stem"></view>
+          <view class="slip-leaf-petal slip-leaf-petal-left"></view>
+          <view class="slip-leaf-petal slip-leaf-petal-right"></view>
+        </view>
+        <view class="slip-notch slip-notch-left"></view>
+        <view class="slip-notch slip-notch-right"></view>
+        <view class="slip-date">{{todayLabel}}</view>
+        <view class="slip-quote">{{slip.quote}}</view>
+        <view class="slip-dash"></view>
+        <view class="slip-caption">{{slip.caption}}</view>
+        <view class="qr">
+          <view wx:for="{{qrDots}}" wx:key="*this" class="dot" style="left: {{item[0] * 10 + 10}}rpx; top: {{item[1] * 10 + 10}}rpx;"></view>
+        </view>
+        <view class="slip-brand">新晴 · 慢慢回看</view>
+      </view>
+      <view class="slip-actions">
+        <button class="secondary-button share-button">分享给朋友</button>
+        <button class="primary-button image-button" loading="{{isSavingImage}}" disabled="{{isSavingImage}}" bindtap="saveImage">保存图片</button>
+      </view>
+      <view wx:if="{{regenerateRemaining > 0}}" class="regenerate-button" bindtap="regenerateSlip">{{regenerateText}}</view>
+      <view wx:else class="regenerate-button regenerate-button-disabled">{{regenerateText}}</view>
+      <view class="feedback">{{slipFeedback}}</view>
+    </view>
+  </view>
+  <canvas canvas-id="slipCanvas" class="slip-canvas"></canvas>
 </view>

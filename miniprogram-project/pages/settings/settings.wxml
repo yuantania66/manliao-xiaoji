@@ -1,55 +1,11 @@
-<view class="screen settings-screen">
-  <view class="status">9:41</view>
-  <button class="back-link" bindtap="goBack">‹ 返回</button>
-  <block wx:if="{{!current}}">
-    <text class="settings-kicker sage">我的</text>
-    <text class="settings-title">设置</text>
-    <text class="settings-lead body-copy">这里放着隐私、注销和反馈相关的内容。</text>
-    <view class="settings-card card">
-      <block wx:for="{{settings}}" wx:key="key">
-        <button class="setting-row" data-key="{{item.key}}" bindtap="openDetail">
-          <view>
-            <text class="setting-title-text">{{item.title}}</text>
-            <text class="setting-copy muted">{{item.copy}}</text>
-          </view>
-          <text class="muted">›</text>
-        </button>
-      </block>
-      <button wx:if="{{loggedIn}}" class="setting-row" bindtap="logout">
-        <view>
-          <text class="setting-title-text">退出登录</text>
-          <text class="setting-copy muted">清除本机登录状态</text>
-        </view>
-        <text class="muted">›</text>
-      </button>
-    </view>
-    <text class="settings-version muted">新晴 v2.0.0\n慢慢说，也慢慢回看。</text>
-  </block>
-
-  <block wx:else>
-    <text class="settings-kicker sage">设置</text>
-    <text class="settings-title">{{detail[current].title}}</text>
-    <text class="settings-lead body-copy">{{detail[current].lead}}</text>
-    <scroll-view class="settings-card detail-card card" scroll-y>
-      <block wx:for="{{detail[current].rows}}" wx:key="*this">
-        <view class="setting-row">
-          <text>{{item}}</text>
-          <text class="muted">{{current === 'feedback' ? '›' : ''}}</text>
-        </view>
-      </block>
-    </scroll-view>
-    <view wx:if="{{current === 'privacy'}}" class="settings-note card">
-      <text>不会把你的小记正文用于公开展示，也不会在未登录时上传到云端同步。</text>
-    </view>
-    <view wx:if="{{current === 'terms'}}" class="settings-note card">
-      <text>新晴是日常陪伴与记录工具，不替代专业医疗、心理咨询或紧急救助。</text>
-    </view>
-    <view wx:if="{{current === 'cancel'}}" class="settings-note card">
-      <text>提交注销前，正式版会要求再次验证身份。</text>
-    </view>
-    <view wx:if="{{current === 'feedback'}}" class="settings-note card">
-      <text>反馈会帮助我们继续把新晴打磨得更顺手。</text>
-    </view>
-  </block>
-  <view class="bottom-indicator"></view>
+<view class="page page-with-fixed-back">
+  <navigator url="/pages/me/me" class="back fixed-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
+  <view class="eyebrow">我的</view>
+  <view class="title">设置</view>
+  <view class="body intro">这里放着隐私、注销和反馈相关的内容。</view>
+  <navigator url="/pages/privacy/privacy" class="setting-card card" hover-class="none">隐私政策<text>查看数据如何被保存与使用</text><view>›</view></navigator>
+  <navigator url="/pages/cancel/cancel" class="setting-card card" hover-class="none">账号注销<text>了解注销前需要确认的事项</text><view>›</view></navigator>
+  <navigator url="/pages/feedback/feedback" class="setting-card card" hover-class="none">意见反馈<text>把问题或建议告诉我们</text><view>›</view></navigator>
+  <button class="logout" bindtap="logout">退出登录</button>
+  <view class="version">新晴 v2.0.0<br />慢慢说，也慢慢回看。</view>
 </view>

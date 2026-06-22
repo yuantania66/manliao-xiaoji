@@ -1,109 +1,21 @@
-<view class="screen me-screen">
-  <view class="status">9:41</view>
-  <block wx:for="{{tiles}}" wx:key="*this">
-    <view class="tile tile-{{index}}"></view>
-  </block>
-
-  <text class="brand sage">新晴</text>
-  <text class="me-title">{{loggedIn ? '我的新晴' : '欢迎来到新晴'}}</text>
-  <text class="me-lead body-copy">{{loggedIn ? '你的记录、观察和设置都在这里。' : '登录后可同步小记与观察，也可以继续游客模式。'}}</text>
-
-  <view class="profile-card">
+<view class="page me-page" style="padding-top: {{pageTop}}px;">
+  <view class="eyebrow">新晴</view>
+  <view class="title">{{isLoggedIn ? "我的新晴" : "欢迎来到新晴"}}</view>
+  <view class="profile-card card-sage">
     <view class="avatar">晴</view>
-    <text class="profile-name">{{loggedIn ? '我的新晴' : '游客模式'}}</text>
-    <text class="profile-copy muted">{{loggedIn ? '已登录，可同步记录' : '内容仅保存在本机'}}</text>
-    <button class="settings" bindtap="goSettings">设置</button>
-    <button wx:if="{{!loggedIn}}" class="login-button" bindtap="openLogin">登录</button>
-    <view wx:if="{{!loggedIn}}" class="agree-row">
-      <button class="agree-check {{agreed ? 'agree-check-on' : ''}}" bindtap="toggleAgreement">{{agreed ? '✓' : ''}}</button>
-      <text class="agree muted">我已阅读并同意</text>
-      <button class="legal-link" data-type="terms" bindtap="openLegal">用户服务协议</button>
-      <text class="agree muted">和</text>
-      <button class="legal-link" data-type="privacy" bindtap="openLegal">隐私政策</button>
-    </view>
+    <view class="profile-title">{{isLoggedIn ? "我的新晴" : "游客模式"}}</view>
+    <view class="body">{{isLoggedIn ? "已连续登录 28 天" : "内容仅保存在本机"}}</view>
+    <navigator url="/pages/settings/settings" class="settings-link" hover-class="none">设置</navigator>
   </view>
-
-  <view class="insight-card card">
-    <text class="insight-title">新晴观察</text>
-    <text class="insight-copy body-copy">从聊天和小记里整理出的主题</text>
-    <text class="insight-arrow muted">›</text>
+  <button wx:if="{{!isLoggedIn}}" class="primary-button login-button" bindtap="login">登录</button>
+  <navigator url="/pages/insights/insights" class="insight-entry card" hover-class="none">
+    <view class="entry-title">新晴观察</view>
+    <view class="entry-copy">从聊天和小记里整理出的主题</view>
+    <view class="entry-arrow">›</view>
+  </navigator>
+  <view class="version">新晴 v2.0.0<br />慢慢说，也慢慢回看。</view>
+  <view class="bottom-bar">
+    <navigator url="/pages/home/home" hover-class="none">此刻</navigator>
+    <navigator url="/pages/me/me" hover-class="none">我的</navigator>
   </view>
-
-  <text class="version muted">新晴 v2.0.0\n慢慢说，也慢慢回看。</text>
-
-  <view wx:if="{{loginPanelOpen}}" class="login-mask" bindtap="closeLogin"></view>
-  <view wx:if="{{loginPanelOpen}}" class="login-panel {{loginMode === 'phone' ? 'login-panel-phone' : ''}}">
-    <text class="login-title">{{loginMode === 'phone' ? '手机号码登录' : '选择登录方式'}}</text>
-    <button class="login-close" bindtap="closeLogin">×</button>
-    <block wx:if="{{loginMode === 'phone'}}">
-      <button class="login-back" bindtap="backToLoginMethods">‹ 其他登录方式</button>
-      <view class="phone-field">
-        <input
-          aria-label="手机号码"
-          class="phone-input"
-          maxlength="11"
-          placeholder="输入手机号码"
-          type="number"
-          value="{{phone}}"
-          bindinput="onPhoneInput"
-        />
-      </view>
-      <view class="code-field">
-        <input
-          aria-label="手机验证码"
-          class="code-input"
-          disabled="{{!phoneCodeSent}}"
-          maxlength="6"
-          placeholder="输入验证码"
-          type="number"
-          value="{{phoneCode}}"
-          bindinput="onPhoneCodeInput"
-        />
-        <button class="code-button" loading="{{loginLoading}}" bindtap="sendPhoneCode">{{phoneCodeSent ? '重新获取' : '获取验证码'}}</button>
-      </view>
-      <text class="phone-tip {{phoneError ? 'phone-error' : ''}}">
-        {{phoneError || (phoneCodeSent ? '验证码已发送，请查看短信' : '获取验证码后即可登录')}}
-      </text>
-      <button class="phone-submit {{phoneCodeSent && phoneCode.length === 6 ? 'phone-submit-active' : ''}}" loading="{{loginLoading}}" bindtap="phoneLogin">
-        登录
-      </button>
-    </block>
-    <block wx:else>
-      <button class="phone-login" bindtap="openPhoneLogin">☎  手机号码登录</button>
-      <button class="wechat-login" loading="{{loginLoading}}" bindtap="login">◌  微信一键登录</button>
-    </block>
-  </view>
-
-  <view wx:if="{{legalPanel}}" class="legal-mask" bindtap="closeLegal"></view>
-  <view wx:if="{{legalPanel}}" class="legal-panel">
-    <text class="legal-title">{{legalPanel === 'terms' ? '用户服务协议' : '隐私政策'}}</text>
-    <button class="legal-close" bindtap="closeLegal">×</button>
-    <scroll-view class="legal-content" scroll-y>
-      <block wx:if="{{legalPanel === 'terms'}}">
-        <text class="legal-subtitle">服务说明</text>
-        <text class="legal-copy">新晴提供情绪记录、小记、慢慢说、心情回看等陪伴式功能。新晴不提供医疗诊断、心理治疗或危机干预服务，内容仅用于自我记录与日常陪伴。</text>
-        <text class="legal-subtitle">使用规则</text>
-        <text class="legal-copy">你应保证填写内容合法、真实，不发布违法、侵权、骚扰或伤害他人的内容。若你出现自伤、轻生或其他紧急风险，请立即联系身边可信的人或当地紧急服务。</text>
-        <text class="legal-subtitle">账号与数据</text>
-        <text class="legal-copy">游客模式下内容优先保存在本机。登录后，你的小记、聊天和设置可用于账号同步、历史回看和安全维护。注销账号后，相关数据将按页面提示清空或匿名化处理。</text>
-      </block>
-      <block wx:else>
-        <text class="legal-subtitle">信息收集</text>
-        <text class="legal-copy">我们会在必要场景中处理你主动填写的小记、聊天内容、心情标记、反馈内容，以及登录所需的手机号、验证码状态或微信登录标识。</text>
-        <text class="legal-subtitle">权限用途</text>
-        <text class="legal-copy">当你主动添加图片或视频时，新晴会调用媒体选择能力；当你主动保存小笺图片时，可能请求相册写入权限。拒绝授权不会影响无需该权限的基础功能。</text>
-        <text class="legal-subtitle">共享与保护</text>
-        <text class="legal-copy">我们不会把你的小记、聊天或心情记录公开展示。为实现登录、同步、安全维护和反馈处理，可能与基础技术服务方共享必要信息，并要求其遵守保密义务。</text>
-      </block>
-    </scroll-view>
-  </view>
-
-  <view class="tabbar">
-    <view class="tab-line me-tab-line"></view>
-    <view class="tab-items">
-      <text class="tab-muted" bindtap="goHome">此刻</text>
-      <text class="tab-active">我的</text>
-    </view>
-  </view>
-  <view class="bottom-indicator"></view>
 </view>

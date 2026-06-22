@@ -2,6 +2,8 @@ node_modules/
 .next/
 out/
 _snapshots/
+tsconfig.tsbuildinfo
+miniprogram-project/project.private.config.json
 
 .env*
 !.env.example

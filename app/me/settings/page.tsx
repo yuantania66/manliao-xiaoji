@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { apiRequest } from "@/lib/client-api";
+import { clearAuth } from "@/lib/client-auth";
+
 const settingItems = [
   { title: "隐私政策", href: "/me/settings/privacy", copy: "查看数据如何被保存与使用" },
   { title: "账号注销", href: "/me/settings/cancel", copy: "了解注销前需要确认的事项" },
@@ -12,13 +15,22 @@ const settingItems = [
 export default function SettingsPage() {
   const router = useRouter();
 
+  const logout = async () => {
+    try {
+      await apiRequest<{ loggedOut: boolean }>("/api/auth/logout", {
+        method: "POST",
+      });
+    } catch {
+      // Local auth must be cleared even if the session has already expired.
+    } finally {
+      clearAuth();
+      router.push("/me?state=guest");
+    }
+  };
+
   return (
     <main className="min-h-svh bg-[var(--page-bg)] text-[var(--ink)] md:grid md:place-items-center md:p-8">
       <section className="phone-frame relative mx-auto h-svh min-h-[844px] w-full max-w-[390px] overflow-hidden bg-[var(--page-bg)] md:h-[844px] md:rounded-[30px] md:shadow-[0_30px_80px_rgba(45,41,38,0.14)]">
-        <div className="absolute left-5 top-2.5 h-4 w-20 text-[11px] font-semibold leading-4">
-          9:41
-        </div>
-
         <Link
           href="/me"
           className="absolute left-[22px] top-[50px] h-5 w-20 text-[13px] font-semibold leading-[18px] text-[var(--sage)]"
@@ -64,10 +76,7 @@ export default function SettingsPage() {
         <button
           type="button"
           className="absolute left-[22px] top-[512px] h-[52px] w-[346px] rounded-[20px] bg-[var(--card-warm)] text-[13px] font-semibold leading-5 text-[#b9826e]"
-          onClick={() => {
-            window.localStorage.removeItem("xinqingLoggedIn");
-            router.push("/me?state=guest");
-          }}
+          onClick={logout}
         >
           退出登录
         </button>

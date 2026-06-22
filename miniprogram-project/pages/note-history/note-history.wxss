@@ -1,140 +1,114 @@
-.add-note {
-  position: absolute;
-  right: 22px;
-  top: 50px;
-  height: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 20px;
+.note-history-page {
+  padding-top: 154rpx;
 }
 
-.history-title {
-  position: absolute;
-  left: 22px;
-  top: 78px;
-  font-size: 30px;
-  font-weight: 600;
-  line-height: 40px;
+.history-back {
+  position: fixed;
+  left: 42rpx;
+  top: 96rpx;
+  z-index: 25;
 }
 
-.history-lead {
-  position: absolute;
-  left: 22px;
-  top: 132px;
-  width: 330px;
-  font-size: 13px;
-  line-height: 22px;
+.add-link {
+  position: fixed;
+  right: 44rpx;
+  top: 100rpx;
+  color: #71877b;
+  font-size: 26rpx;
+  font-weight: 700;
 }
 
-.search {
-  position: absolute;
-  left: 22px;
-  top: 178px;
-  width: 346px;
-  height: 44px;
+.intro {
+  margin-top: 22rpx;
 }
 
-.search-icon {
-  position: absolute;
-  left: 20px;
-  top: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 18px;
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  height: 88rpx;
+  margin-top: 42rpx;
+  border-radius: 32rpx;
+  background: #fffdf9;
+  padding: 0 40rpx;
+  color: #71877b;
 }
 
-.search-input {
-  position: absolute;
-  left: 48px;
-  right: 20px;
-  top: 0;
-  height: 44px;
+.search-box input {
+  flex: 1;
   color: #6d665f;
-  font-size: 12px;
-  line-height: 44px;
+  font-size: 26rpx;
 }
 
-.calendar-card {
-  position: absolute;
-  left: 22px;
-  top: 242px;
-  width: 346px;
-  height: 56px;
-  border-radius: 18px;
-  background: #e8f0ea;
+.calendar-entry {
+  position: relative;
+  height: 112rpx;
+  margin-top: 36rpx;
+  padding: 32rpx 40rpx;
 }
 
-.calendar-title {
-  position: absolute;
-  left: 20px;
-  top: 16px;
-  font-size: 15px;
+.history-status {
+  margin-top: 24rpx;
+  color: #71877b;
+  font-size: 22rpx;
   font-weight: 600;
-  line-height: 22px;
-}
-
-.calendar-copy {
-  position: absolute;
-  left: 110px;
-  top: 18px;
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.arrow {
-  position: absolute;
-  right: 20px;
-  top: 16px;
-  color: #a49a91;
-  font-size: 22px;
-  line-height: 22px;
-}
-
-.month {
-  position: absolute;
-  left: 22px;
-  top: 356px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 18px;
-}
-
-.entry {
-  position: absolute;
-  left: 22px;
-  width: 346px;
-  height: 126px;
-  border-bottom: 1px solid #e8ded4;
-}
-
-.entry-date {
-  display: block;
-  font-size: 12px;
-  line-height: 18px;
+  line-height: 34rpx;
 }
 
 .entry-title {
-  display: block;
-  margin-top: 9px;
-  width: 210px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
+  color: #2d2926;
+  font-size: 30rpx;
+  font-weight: 700;
 }
 
-.entry-body {
-  display: block;
-  margin-top: 14px;
-  font-size: 12px;
-  line-height: 18px;
+.entry-copy {
+  position: absolute;
+  left: 220rpx;
+  top: 36rpx;
+  color: #71877b;
+  font-size: 24rpx;
+}
+
+.entry-arrow {
+  position: absolute;
+  right: 36rpx;
+  top: 28rpx;
+  color: #71877b;
+  font-size: 40rpx;
+}
+
+.note-item {
+  padding: 42rpx 0;
+  border-bottom: 1rpx solid #e8ded4;
+}
+
+.note-date {
+  color: #a49a91;
+  font-size: 24rpx;
+}
+
+.note-title {
+  margin-top: 18rpx;
+  color: #2d2926;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 44rpx;
+}
+
+.note-body {
+  margin-top: 20rpx;
+  color: #6d665f;
+  font-size: 26rpx;
+  line-height: 42rpx;
+}
+
+.note-mood {
+  margin-top: 20rpx;
+  color: #71877b;
+  font-size: 24rpx;
 }
 
 .empty {
-  position: absolute;
-  left: 22px;
-  top: 374px;
-  width: 346px;
+  margin-top: 80rpx;
   text-align: center;
-  font-size: 12px;
-  line-height: 20px;
 }

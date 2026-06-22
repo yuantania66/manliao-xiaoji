@@ -28,10 +28,6 @@ function NoteHistoryContent() {
   return (
     <main className="min-h-svh bg-[var(--page-bg)] text-[var(--ink)] md:grid md:place-items-center md:p-8">
       <section className="phone-frame relative mx-auto h-svh min-h-[844px] w-full max-w-[390px] overflow-hidden bg-[var(--page-bg)] md:h-[844px] md:rounded-[30px] md:shadow-[0_30px_80px_rgba(45,41,38,0.14)]">
-        <div className="absolute left-5 top-2.5 h-4 w-20 text-[11px] font-semibold leading-4">
-          9:41
-        </div>
-
         <Link
           href="/note"
           className="absolute left-[22px] top-[50px] h-5 w-20 text-[13px] font-semibold leading-[30px] text-[var(--sage)]"

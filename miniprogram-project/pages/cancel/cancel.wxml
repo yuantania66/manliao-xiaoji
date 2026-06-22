@@ -1,0 +1,12 @@
+<view class="page page-with-fixed-back">
+  <navigator url="/pages/settings/settings" class="back fixed-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
+  <view class="eyebrow">设置</view>
+  <view class="title">账号注销</view>
+  <view class="body intro">注销会触发二次验证，确认后所有数据都会被清空。</view>
+  <view class="card cancel-card">
+    <view class="cancel-title">注销后会发生什么</view>
+    <view class="body">账号资料、登录状态、云端同步记录会被清空。本机小记、聊天记录、心情日历和新晴观察也会被清空。</view>
+  </view>
+  <button class="danger" bindtap="cancelAccount">注销账号</button>
+  <view class="muted tip">二次验证用于避免误触。确认后不可恢复。</view>
+</view>

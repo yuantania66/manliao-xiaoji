@@ -1,24 +1,110 @@
 "use client";
 
 import Link from "next/link";
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 
-const history = [
-  "我在。你可以再多说一点点，也可以就停在这里。",
-  "听起来这件事在你心里停了一会儿。",
-  "不用急，想说到哪里，就说到哪里。",
-];
+import { apiRequest, ClientApiError } from "@/lib/client-api";
+
+type SearchResult = {
+  id: string;
+  sessionId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt: string;
+};
+
+type SearchResponse = {
+  items: SearchResult[];
+};
+
+const GUEST_CHAT_CACHE_KEY = "xinqingGuestChatCache";
+const GUEST_SESSION_ID = "guest-session";
+
+const formatResultDate = (value: string) =>
+  new Intl.DateTimeFormat("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(value));
+
+const searchGuestMessages = (query: string): SearchResult[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const messages = JSON.parse(
+      window.sessionStorage.getItem(GUEST_CHAT_CACHE_KEY) || "[]"
+    ) as Array<{
+      id: string;
+      role: "user" | "assistant";
+      text: string;
+      createdAt: string;
+    }>;
+
+    return messages
+      .filter((message) => message.text.includes(query))
+      .slice()
+      .reverse()
+      .map((message) => ({
+        id: message.id,
+        sessionId: GUEST_SESSION_ID,
+        role: message.role,
+        content: message.text,
+        createdAt: message.createdAt,
+      }));
+  } catch {
+    return [];
+  }
+};
 
 export default function ChatSearchPage() {
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const trimmedQuery = query.trim();
-  const results = useMemo(() => {
+  useEffect(() => {
+    let cancelled = false;
+
     if (!trimmedQuery) {
-      return [];
+      setResults([]);
+      setErrorMessage("");
+      setIsSearching(false);
+      return;
     }
 
-    return history.filter((item) => item.includes(trimmedQuery));
+    setIsSearching(true);
+    setErrorMessage("");
+
+    const timer = window.setTimeout(() => {
+      apiRequest<SearchResponse>(`/api/chat/search?q=${encodeURIComponent(trimmedQuery)}`)
+        .then((data) => {
+          if (cancelled) return;
+          setResults(data.items);
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
+          const guestResults = searchGuestMessages(trimmedQuery);
+          setResults(guestResults);
+          setErrorMessage(
+            guestResults.length > 0
+              ? ""
+              : error instanceof ClientApiError && error.code === "UNAUTHORIZED"
+                ? ""
+                : ""
+          );
+        })
+        .finally(() => {
+          if (!cancelled) setIsSearching(false);
+        });
+    }, 220);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [trimmedQuery]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -28,9 +114,6 @@ export default function ChatSearchPage() {
   return (
     <main className="min-h-svh bg-[var(--page-bg)] text-[var(--ink)] md:grid md:place-items-center md:p-8">
       <section className="phone-frame relative mx-auto h-svh min-h-[844px] w-full max-w-[390px] overflow-hidden bg-[var(--page-bg)] md:h-[844px] md:rounded-[30px] md:shadow-[0_30px_80px_rgba(45,41,38,0.14)]">
-        <div className="absolute left-5 top-2.5 h-4 w-20 text-[11px] font-semibold leading-4">
-          9:41
-        </div>
         <Link
           href="/chat"
           aria-label="关闭查找聊天内容"
@@ -63,7 +146,7 @@ export default function ChatSearchPage() {
           可以搜索自己说过的话，也可以搜索新晴的回应。
         </p>
 
-        {trimmedQuery && results.length === 0 ? (
+        {trimmedQuery && !isSearching && results.length === 0 ? (
           <section className="absolute left-[22px] top-[300px] h-[92px] w-[346px] rounded-[18px] bg-[var(--card-warm)]">
             <h2 className="absolute left-6 top-[22px] h-[22px] w-[170px] text-base font-semibold leading-[22px]">
               没有搜索结果
@@ -74,15 +157,30 @@ export default function ChatSearchPage() {
           </section>
         ) : null}
 
+        {trimmedQuery && isSearching ? (
+          <section className="absolute left-[22px] top-[300px] h-[92px] w-[346px] rounded-[18px] bg-[var(--card-warm)]">
+            <h2 className="absolute left-6 top-[22px] h-[22px] w-[170px] text-base font-semibold leading-[22px]">
+              正在查找
+            </h2>
+            <p className="absolute left-6 top-[52px] h-[18px] w-[280px] text-xs leading-[18px] text-[var(--body)]">
+              正在从真实聊天里找。
+            </p>
+          </section>
+        ) : null}
+
         {results.length > 0 ? (
-          <div className="absolute left-[22px] top-[300px] flex w-[346px] flex-col gap-3">
+          <div className="note-scrollbar absolute left-[22px] top-[300px] flex max-h-[330px] w-[346px] flex-col gap-3 overflow-y-auto pr-1">
             {results.map((result) => (
-              <article
-                key={result}
-                className="min-h-[72px] rounded-[18px] bg-[var(--card-warm)] px-6 py-[18px] text-xs leading-[20px] text-[var(--body)]"
+              <Link
+                key={result.id}
+                href={`/chat?date=${result.createdAt.slice(0, 10)}&sessionId=${result.sessionId}&messageId=${result.id}`}
+                className="block min-h-[86px] rounded-[18px] bg-[var(--card-warm)] px-6 py-[16px] text-xs leading-[20px] text-[var(--body)]"
               >
-                {result}
-              </article>
+                <span className="mb-1 block text-[10px] leading-4 text-[var(--muted)]">
+                  {result.role === "user" ? "我" : "新晴"} · {formatResultDate(result.createdAt)}
+                </span>
+                <span>{result.content}</span>
+              </Link>
             ))}
           </div>
         ) : null}

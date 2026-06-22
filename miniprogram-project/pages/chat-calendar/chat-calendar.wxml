@@ -1,0 +1,28 @@
+<view class="page calendar-page">
+  <navigator url="/pages/chat/chat" class="close" style="top: {{closeTop}}px; right: {{closeRight}}px;" hover-class="none">×</navigator>
+  <view class="eyebrow">聊聊</view>
+  <view class="title">聊天日历</view>
+  <view class="body intro">有手写爱心的日子，代表你曾经来这里聊过。</view>
+  <view wx:if="{{statusText}}" class="calendar-status">{{statusText}}</view>
+  <view class="calendar card">
+    <view class="month-arrow month-prev" bindtap="prevMonth">‹</view>
+    <view class="month">{{monthTitle}}</view>
+    <view class="month-arrow month-next" bindtap="nextMonth">›</view>
+    <view class="week-row">
+      <text wx:for="{{weeks}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="week-line"></view>
+    <view class="days">
+      <view wx:for="{{cells}}" wx:key="key" class="day-cell">
+        <navigator wx:if="{{item.active}}" url="/pages/chat/chat?date={{item.date}}&sessionId={{item.sessionId}}" class="active-day" hover-class="none">
+          <image class="heart" src="/assets/hand-heart.svg" mode="aspectFit" />
+          <text class="heart-day">{{item.day}}</text>
+        </navigator>
+        <text wx:elif="{{item.day}}" class="normal-day">{{item.day}}</text>
+      </view>
+    </view>
+    <view class="calendar-hint">点开有爱心的日期，回到那一段聊天。</view>
+    <view class="calendar-note">有手写爱心的日期，代表那天聊过天。<br />点开日期，可以回到当天慢慢看。</view>
+  </view>
+  <navigator url="/pages/chat/chat" class="back bottom-back" hover-class="none">‹ 返回聊天</navigator>
+</view>

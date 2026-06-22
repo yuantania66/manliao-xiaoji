@@ -2,21 +2,24 @@
   "pages": [
     "pages/home/home",
     "pages/chat/chat",
+    "pages/chat-calendar/chat-calendar",
+    "pages/chat-search/chat-search",
     "pages/note/note",
     "pages/note-history/note-history",
+    "pages/note-calendar/note-calendar",
     "pages/note-detail/note-detail",
+    "pages/note-search/note-search",
     "pages/me/me",
-    "pages/settings/settings"
+    "pages/insights/insights",
+    "pages/settings/settings",
+    "pages/privacy/privacy",
+    "pages/feedback/feedback",
+    "pages/cancel/cancel"
   ],
   "window": {
     "navigationStyle": "custom",
-    "backgroundColor": "#fbf7f0",
-    "backgroundTextStyle": "dark"
-  },
-  "permission": {
-    "scope.writePhotosAlbum": {
-      "desc": "用于在你主动保存小笺图片时写入相册"
-    }
+    "backgroundTextStyle": "light",
+    "backgroundColor": "#fbf7f0"
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

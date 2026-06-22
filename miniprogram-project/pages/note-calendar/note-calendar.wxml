@@ -1,0 +1,30 @@
+<view class="page calendar-page" style="padding-top: {{pageTop}}px;">
+  <navigator url="/pages/note/note" class="close" style="top: {{closeTop}}px; right: {{closeRight}}px;" hover-class="none">×</navigator>
+  <view class="eyebrow">我的小记</view>
+  <view class="title">心情日历</view>
+  <view class="body intro">点开有天气的日期，可以回看那天的小记。</view>
+  <view wx:if="{{statusText}}" class="calendar-status">{{statusText}}</view>
+  <view class="calendar card">
+    <view class="month">{{monthTitle}}</view>
+    <view class="week-row">
+      <text wx:for="{{weeks}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="days">
+      <view wx:for="{{cells}}" wx:key="key" class="day-cell">
+        <navigator wx:if="{{item.active}}" url="/pages/note-history/note-history?date={{item.date}}" class="active-day note-active-day" hover-class="none">
+          <view class="weather-mark">
+            <view class="weather-sun"></view>
+            <view class="weather-ray weather-ray-one"></view>
+            <view class="weather-ray weather-ray-two"></view>
+            <view class="weather-ray weather-ray-three"></view>
+          </view>
+          <text>{{item.day}}</text>
+        </navigator>
+        <text wx:elif="{{item.day}}" class="normal-day">{{item.day}}</text>
+      </view>
+    </view>
+    <view class="calendar-hint">点开有天气的日期，回到那一天的小记。</view>
+    <view class="calendar-note">有天气标记的日期，代表那天写过小记。<br />点开日期，可以回到当天慢慢看。</view>
+  </view>
+  <navigator url="/pages/note/note" class="back bottom-back" hover-class="none">‹ 返回小记</navigator>
+</view>

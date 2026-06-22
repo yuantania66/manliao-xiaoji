@@ -1,0 +1,16 @@
+<view class="page search-page" style="padding-top: {{pageTop}}px;">
+  <navigator url="/pages/note/note" class="close" style="top: {{closeTop}}px; right: {{closeRight}}px;" hover-class="none">×</navigator>
+  <view class="eyebrow">小记</view>
+  <view class="title">查找小记内容</view>
+  <view class="search-box">⌕<input value="{{query}}" bindinput="onInput" placeholder="输入查找内容" /></view>
+  <view class="body help">可以搜索自己写过的小记，也可以搜索某个天气心情。</view>
+  <view wx:if="{{statusText}}" class="search-status">{{statusText}}</view>
+  <view wx:if="{{showEmpty}}" class="result-card card">
+    <view class="result-title">没有搜索结果</view>
+    <view class="body">换一句更短的话试试。</view>
+  </view>
+  <navigator wx:for="{{results}}" wx:key="id" class="result-card card" url="/pages/note-detail/note-detail?id={{item.id}}&date={{item.dateKey}}" hover-class="none">
+    <view class="result-title">{{item.content}}</view>
+    <view class="body">{{item.dateLabel}}</view>
+  </navigator>
+</view>

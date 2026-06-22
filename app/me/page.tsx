@@ -3,7 +3,20 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { apiRequest, ClientApiError } from "@/lib/client-api";
+import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
+
 type ProfileState = "guest" | "logged";
+
+type AuthUser = {
+  id: string;
+  phone: string | null;
+  wechatOpenid: string | null;
+  nickname: string | null;
+  avatarUrl: string | null;
+  status: string;
+  createdAt: string;
+};
 
 const collageTiles = [
   { left: -62.14, top: 118, width: 102.516, height: 121.777, rotate: 18, color: "#f4e4d3" },
@@ -29,9 +42,7 @@ const getInitialProfileState = (): ProfileState => {
     return "logged";
   }
 
-  return window.localStorage.getItem("xinqingLoggedIn") === "true"
-    ? "logged"
-    : "guest";
+  return getStoredAuth()?.token ? "logged" : "guest";
 };
 
 export default function MePage() {
@@ -45,13 +56,42 @@ export default function MePage() {
   const [phoneCode, setPhoneCode] = useState("");
   const [phoneCodeSent, setPhoneCodeSent] = useState(false);
   const [phoneError, setPhoneError] = useState("");
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [devCodeHint, setDevCodeHint] = useState("");
 
   useEffect(() => {
+    const storedAuth = getStoredAuth();
     setProfileState(getInitialProfileState());
+
+    if (!storedAuth?.token) {
+      setIsAuthChecking(false);
+      return;
+    }
+
+    let cancelled = false;
+    apiRequest<{ user: AuthUser }>("/api/auth/me")
+      .then(({ user }) => {
+        if (cancelled) return;
+        saveAuth({ token: storedAuth.token, expiresAt: storedAuth.expiresAt, user });
+        setProfileState("logged");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        clearAuth();
+        setProfileState("guest");
+      })
+      .finally(() => {
+        if (!cancelled) setIsAuthChecking(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const isLogged = profileState === "logged";
-  const prototypePhoneCode = "246810";
 
   const openLoginPanel = () => {
     if (!hasAgreed) {
@@ -63,6 +103,7 @@ export default function MePage() {
     setPhoneCode("");
     setPhoneCodeSent(false);
     setPhoneError("");
+    setDevCodeHint("");
     setIsLoginPanelOpen(true);
   };
 
@@ -71,14 +112,109 @@ export default function MePage() {
     setPhoneError("");
   };
 
-  const finishLogin = () => {
+  const finishLogin = ({
+    token,
+    expiresAt,
+    user,
+  }: {
+    token: string;
+    expiresAt?: string;
+    user?: AuthUser;
+  }) => {
     if (!hasAgreed) {
       setIsAgreementPromptOpen(true);
       return;
     }
-    window.localStorage.setItem("xinqingLoggedIn", "true");
+    saveAuth({ token, expiresAt, user });
     setProfileState("logged");
     setIsLoginPanelOpen(false);
+  };
+
+  const getErrorMessage = (error: unknown) => {
+    if (error instanceof ClientApiError) return error.message;
+    if (error instanceof Error) return error.message;
+    return "服务暂时不可用，请稍后再试";
+  };
+
+  const sendPhoneCode = async () => {
+    if (phone.length !== 11) {
+      setPhoneError("请输入 11 位手机号码");
+      return;
+    }
+
+    setIsSendingCode(true);
+    setPhoneError("");
+    setDevCodeHint("");
+
+    try {
+      const data = await apiRequest<{ expiresIn: number; devCode?: string }>("/api/auth/code", {
+        method: "POST",
+        auth: false,
+        body: { phone, scene: "login" },
+      });
+      setPhoneCodeSent(true);
+      setPhoneCode("");
+      setDevCodeHint(data.devCode ? `开发环境验证码：${data.devCode}` : "验证码已发送");
+    } catch (error) {
+      setPhoneError(getErrorMessage(error));
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const loginWithPhone = async () => {
+    if (phone.length !== 11) {
+      setPhoneError("请输入 11 位手机号码");
+      return;
+    }
+    if (!phoneCodeSent) {
+      setPhoneError("请先获取验证码");
+      return;
+    }
+    if (phoneCode.length !== 6) {
+      setPhoneError("请输入 6 位验证码");
+      return;
+    }
+
+    setIsLoggingIn(true);
+    setPhoneError("");
+
+    try {
+      const data = await apiRequest<{ user: AuthUser; token: string; expiresAt: string }>(
+        "/api/auth/phone",
+        {
+          method: "POST",
+          auth: false,
+          body: { phone, code: phoneCode },
+        }
+      );
+      finishLogin(data);
+    } catch (error) {
+      setPhoneError(getErrorMessage(error));
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const loginWithWechat = async () => {
+    setIsLoggingIn(true);
+    setPhoneError("");
+
+    try {
+      const data = await apiRequest<{ user: AuthUser; token: string; expiresAt: string }>(
+        "/api/auth/wechat",
+        {
+          method: "POST",
+          auth: false,
+          body: { code: `web_mock_${Date.now()}` },
+        }
+      );
+      finishLogin(data);
+    } catch (error) {
+      setPhoneError(getErrorMessage(error));
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const agreeAndContinue = () => {
@@ -89,16 +225,13 @@ export default function MePage() {
     setPhoneCode("");
     setPhoneCodeSent(false);
     setPhoneError("");
+    setDevCodeHint("");
     setIsLoginPanelOpen(true);
   };
 
   return (
     <main className="min-h-svh bg-[var(--page-bg)] text-[var(--ink)] md:grid md:place-items-center md:p-8">
       <section className="phone-frame relative mx-auto h-svh min-h-[844px] w-full max-w-[390px] overflow-hidden bg-[var(--page-bg)] md:h-[844px] md:rounded-[30px] md:shadow-[0_30px_80px_rgba(45,41,38,0.14)]">
-        <div className="absolute left-5 top-2.5 h-4 w-20 text-[11px] font-semibold leading-4">
-          9:41
-        </div>
-
         {collageTiles.map((tile) => (
           <div
             key={`${tile.left}-${tile.top}`}
@@ -127,7 +260,9 @@ export default function MePage() {
           {isLogged ? "我的新晴" : "欢迎来到新晴"}
         </h1>
         <p className="absolute left-[42px] top-[178px] h-12 w-[292px] text-sm leading-6 text-[var(--body)]">
-          {isLogged
+          {isAuthChecking
+            ? "正在确认登录状态。"
+            : isLogged
             ? "你的记录、观察和设置都在这里。"
             : "登录后可同步小记与观察，也可以继续游客模式。"}
         </p>
@@ -195,12 +330,14 @@ export default function MePage() {
           ) : null}
         </section>
 
-        <section
+        <Link
+          href="/me/insights"
           className={
             isLogged
               ? "absolute left-[22px] top-[430px] h-[104px] w-[346px] rounded-[22px] bg-[var(--card-warm)]"
               : "absolute left-[22px] top-[470px] h-[104px] w-[346px] rounded-[22px] bg-[var(--card-warm)]"
           }
+          aria-label="查看新晴观察"
         >
           <h2 className="absolute left-5 top-[26px] h-[26px] w-[250px] text-lg font-semibold leading-[26px]">
             新晴观察
@@ -211,7 +348,7 @@ export default function MePage() {
           <span className="absolute left-[314px] top-[40px] h-[26px] w-5 text-[22px] leading-[26px] text-[var(--muted)]">
             ›
           </span>
-        </section>
+        </Link>
 
         <p className="absolute inset-x-0 top-[628px] h-[34px] whitespace-pre-line text-center text-[11px] leading-[17px] text-[var(--muted)]">
           {"新晴 v2.0.0\n慢慢说，也慢慢回看。"}
@@ -303,18 +440,11 @@ export default function MePage() {
                     />
                     <button
                       type="button"
-                      className="absolute right-4 top-0 h-12 text-xs font-semibold text-[var(--sage)]"
-                      onClick={() => {
-                        if (phone.length !== 11) {
-                          setPhoneError("请输入 11 位手机号码");
-                          return;
-                        }
-                        setPhoneCodeSent(true);
-                        setPhoneCode("");
-                        setPhoneError("");
-                      }}
+                      className="absolute right-4 top-0 h-12 text-xs font-semibold text-[var(--sage)] disabled:text-[var(--muted)]"
+                      disabled={isSendingCode}
+                      onClick={sendPhoneCode}
                     >
-                      {phoneCodeSent ? "重新获取" : "获取验证码"}
+                      {isSendingCode ? "发送中" : phoneCodeSent ? "重新获取" : "获取验证码"}
                     </button>
                   </div>
                   <p
@@ -324,32 +454,19 @@ export default function MePage() {
                         : "absolute left-6 top-[210px] h-5 w-[298px] text-center text-[11px] leading-5 text-[var(--muted)]"
                     }
                   >
-                    {phoneError || (phoneCodeSent ? "验证码已发送。原型验证码：246810" : "获取验证码后即可登录")}
+                    {phoneError || devCodeHint || "获取验证码后即可登录"}
                   </p>
                   <button
                     type="button"
                     className={
-                      phoneCodeSent && phoneCode.length === 6
+                      phoneCodeSent && phoneCode.length === 6 && !isLoggingIn
                         ? "absolute left-6 bottom-6 h-12 w-[298px] rounded-[18px] bg-[var(--sage)] text-[13px] font-semibold text-[var(--card-warm)]"
                         : "absolute left-6 bottom-6 h-12 w-[298px] rounded-[18px] bg-[#d8d1c9] text-[13px] font-semibold text-[var(--card-warm)]"
                     }
-                    onClick={() => {
-                      if (phone.length !== 11) {
-                        setPhoneError("请输入 11 位手机号码");
-                        return;
-                      }
-                      if (!phoneCodeSent) {
-                        setPhoneError("请先获取验证码");
-                        return;
-                      }
-                      if (phoneCode !== prototypePhoneCode) {
-                        setPhoneError("验证码不正确，请重新输入");
-                        return;
-                      }
-                      finishLogin();
-                    }}
+                    disabled={isLoggingIn}
+                    onClick={loginWithPhone}
                   >
-                    登录
+                    {isLoggingIn ? "登录中" : "登录"}
                   </button>
                 </>
               ) : loginMode === "wechat" ? (
@@ -384,10 +501,11 @@ export default function MePage() {
                   </button>
                   <button
                     type="button"
-                    className="absolute right-6 bottom-6 h-11 w-[130px] rounded-[18px] bg-[var(--sage)] text-[13px] font-semibold text-[var(--card-warm)]"
-                    onClick={finishLogin}
+                    className="absolute right-6 bottom-6 h-11 w-[130px] rounded-[18px] bg-[var(--sage)] text-[13px] font-semibold text-[var(--card-warm)] disabled:bg-[#d8d1c9]"
+                    disabled={isLoggingIn}
+                    onClick={loginWithWechat}
                   >
-                    允许并登录
+                    {isLoggingIn ? "登录中" : "允许并登录"}
                   </button>
                 </>
               ) : (

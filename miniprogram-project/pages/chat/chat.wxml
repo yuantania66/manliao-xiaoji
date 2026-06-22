@@ -1,35 +1,44 @@
-<view class="screen chat-screen">
-  <view class="status">9:41</view>
-  <button class="back-link" bindtap="goBack">‹ 返回</button>
-  <button class="more" bindtap="toggleMenu">···</button>
+<view class="page chat-page" style="padding-top: {{pageTop}}px;">
+  <navigator url="/pages/home/home" class="back chat-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
+  <view class="chat-title">慢慢说。</view>
+  <view class="menu-button" bindtap="toggleMenu">···</view>
 
-  <view wx:if="{{menuOpen}}" class="mask" bindtap="closeMenu"></view>
-  <view wx:if="{{menuOpen}}" class="overflow-menu">
-    <text class="menu-item">♡ 聊天日历</text>
-    <view class="divider"></view>
-    <text class="menu-item second">⌕ 查找聊天内容</text>
+  <view wx:if="{{isMenuOpen}}" class="menu-layer" bindtap="toggleMenu"></view>
+  <view wx:if="{{isMenuOpen}}" class="chat-menu">
+    <view class="menu-item" bindtap="goCalendar">
+      <view class="menu-icon calendar-icon">
+        <image class="menu-icon-image" src="/assets/menu-calendar.svg" mode="aspectFit" />
+      </view>
+      <text>聊天日历</text>
+    </view>
+    <view class="menu-line"></view>
+    <view class="menu-item" bindtap="goSearch">
+      <view class="menu-icon search-icon">
+        <image class="menu-icon-image" src="/assets/menu-search.svg" mode="aspectFit" />
+      </view>
+      <text>查找聊天内容</text>
+    </view>
   </view>
 
-  <text class="chat-title">慢慢说。</text>
-  <view class="leaf chat-leaf">
-    <view class="leaf-stem"></view>
-    <view class="leaf-branch"></view>
-    <view class="leaf-bud one"></view>
-    <view class="leaf-bud two"></view>
-    <view class="leaf-bud three"></view>
-  </view>
-
-  <text wx:if="{{messages.length === 0}}" class="empty-copy">{{loading ? '正在取回聊天。' : '不用急。\\n想说到哪里，就说到哪里。'}}</text>
-
-  <scroll-view class="message-list" scroll-y>
-    <block wx:for="{{messages}}" wx:key="index">
-      <view class="bubble {{item.role === 'user' ? 'user-bubble' : 'ai-bubble'}}">{{item.text}}</view>
-    </block>
+  <scroll-view class="messages" style="bottom: {{messagesBottom}}px;" scroll-y enhanced scroll-with-animation scroll-into-view="{{scrollTarget}}" scroll-top="{{scrollTop}}" bindscroll="onMessagesScroll">
+    <view class="messages-content">
+      <view wx:if="{{statusText}}" class="mode-notice">{{statusText}}</view>
+      <view wx:if="{{isEmpty}}" class="empty-copy">可以从一点点开始。</view>
+      <block wx:for="{{messages}}" wx:key="id">
+        <view id="msg-{{item.id}}" class="message-row {{item.role === 'user' ? 'message-user' : 'message-ai'}} {{item.isSelectedTarget ? 'message-selected' : ''}}">
+          <view wx:if="{{item.timeLabel}}" class="message-time">{{item.timeLabel}}</view>
+          <view class="message-bubble">
+            <text wx:for="{{item.parts}}" wx:for-item="part" wx:for-index="partIndex" wx:key="partIndex" class="{{part.highlight ? 'message-highlight' : ''}}">{{part.text}}</text>
+          </view>
+        </view>
+      </block>
+      <view wx:if="{{isTyping}}" class="typing">...</view>
+      <view id="chat-bottom" class="chat-bottom-anchor"></view>
+    </view>
   </scroll-view>
 
-  <view class="chat-input">
-    <input class="chat-field" placeholder="说点什么。" value="{{input}}" bindinput="updateInput" confirm-type="send" bindconfirm="sendMessage" />
-    <button class="send-button" loading="{{sending}}" bindtap="sendMessage">发送</button>
-  </view>
-  <view class="bottom-indicator"></view>
+  <form class="chat-input" style="bottom: {{inputBottom}}px;" bindsubmit="sendMessage">
+    <input name="content" value="{{input}}" focus="{{inputFocus}}" confirm-hold="{{true}}" bindinput="onInput" bindconfirm="sendMessage" confirm-type="send" placeholder="说点什么" />
+    <button form-type="submit" disabled="{{!canSend || isSending}}">发送</button>
+  </form>
 </view>

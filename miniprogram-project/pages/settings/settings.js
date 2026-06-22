@@ -1,75 +1,22 @@
-const { logout } = require("../../api/auth");
+const { clearAuth } = require("../../utils/auth");
+const { getSafeLayout } = require("../../utils/layout");
 
 Page({
   data: {
-    current: "",
-    loggedIn: false,
-    settings: [
-      { key: "terms", title: "用户服务协议", copy: "查看新晴的服务边界与使用规则" },
-      { key: "privacy", title: "隐私政策", copy: "查看数据如何被保存与使用" },
-      { key: "cancel", title: "账号注销", copy: "了解注销前需要确认的事项" },
-      { key: "feedback", title: "意见反馈", copy: "把问题或建议告诉我们" }
-    ],
-    detail: {
-      terms: {
-        title: "用户服务协议",
-        lead: "使用新晴前，请先了解服务边界和账号规则。",
-        rows: [
-          "新晴提供情绪记录、小记、慢慢说、心情回看等陪伴式功能，帮助你整理日常感受。",
-          "新晴不提供医疗诊断、心理治疗或危机干预服务，也不承诺任何疗效。若你出现自伤、轻生或其他紧急风险，请立即联系身边可信的人或当地紧急服务。",
-          "你应保证填写内容合法、真实，不发布违法、侵权、骚扰或伤害他人的内容。",
-          "游客模式下内容优先保存在本机。登录后，相关内容可用于账号同步、历史回看和安全维护。",
-          "如你注销账号，账号资料、登录状态、聊天、小记、心情日历和本机缓存等数据将按产品提示清空或匿名化处理，清空后不可恢复。"
-        ]
-      },
-      privacy: {
-        title: "隐私政策",
-        lead: "新晴小程序隐私政策",
-        rows: [
-          "我们会在必要场景中处理你主动填写或上传的小记文字、聊天内容、心情与天气标记、图片或视频选择记录、意见反馈内容。",
-          "使用手机号登录时，我们会处理你的手机号和验证码验证状态；使用微信登录时，会根据微信小程序规则处理必要的登录标识。",
-          "当你主动添加图片或视频时，新晴会调用媒体选择能力；当你主动保存小笺图片时，可能请求相册写入权限。拒绝授权不会影响无需该权限的基础功能。",
-          "游客模式下，你的内容优先保存在本机。登录后，为实现跨设备同步或账号服务，相关内容可能保存至服务端。",
-          "未经你的主动分享或法律法规要求，我们不会公开披露你的小记正文、聊天内容或心情记录。",
-          "你有权查询、更正、删除、复制或导出你的个人信息，也可以撤回授权、关闭同步或注销账号。",
-          "新晴不面向未成年人提供服务。若你未满十八周岁，请停止注册、登录或使用新晴。",
-          "如你对个人信息保护事项有疑问、意见或投诉，可以通过“设置 - 意见反馈”联系我们。"
-        ]
-      },
-      cancel: {
-        title: "账号注销",
-        lead: "注销会触发二次验证，确认后所有数据都会被清空。",
-        rows: ["向绑定手机号发送验证码", "验证码通过后立即注销", "账号与所有本机/云端数据会被清空", "清空后不可恢复"]
-      },
-      feedback: {
-        title: "意见反馈",
-        lead: "哪里不顺、哪里想改，都可以告诉我们。",
-        rows: ["使用问题", "功能建议", "其他"]
-      }
-    }
+    backTop: 54
   },
 
-  onShow() {
-    this.setData({ loggedIn: !!getApp().globalData.loggedIn });
-  },
-
-  goBack() {
-    if (this.data.current) {
-      this.setData({ current: "" });
-      return;
-    }
-    wx.navigateBack({ delta: 1 });
-  },
-
-  openDetail(event) {
-    this.setData({ current: event.currentTarget.dataset.key });
+  onLoad() {
+    const layout = getSafeLayout();
+    this.setData({ backTop: layout.backTop });
   },
 
   logout() {
-    logout().then(() => {
-      getApp().clearAuth();
-      this.setData({ loggedIn: false });
-      wx.showToast({ title: "已退出登录", icon: "success" });
-    });
+    clearAuth();
+    wx.removeStorageSync("xinqingGuestMode");
+    wx.removeStorageSync("xinqingMiniChatMessages");
+    wx.removeStorageSync("xinqingMiniNotes");
+    wx.showToast({ title: "已退出登录", icon: "none" });
+    setTimeout(() => wx.navigateBack(), 600);
   }
 });

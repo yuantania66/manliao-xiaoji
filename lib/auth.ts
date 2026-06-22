@@ -7,6 +7,9 @@ import { AppError } from "./errors";
 
 const getSessionSecret = () => {
   const secret = process.env.SESSION_SECRET;
+  if (!secret && process.env.NODE_ENV !== "production") {
+    return "xinqing-local-development-session-secret";
+  }
   if (!secret) throw new AppError("INTERNAL_ERROR", "SESSION_SECRET 未配置", 500);
   return secret;
 };

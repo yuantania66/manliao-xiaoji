@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     const { month, start, end } = parseMonth(searchParams.get("month"));
     const timeZone = searchParams.get("timeZone") || "Asia/Shanghai";
 
-    const [notes, chatMessages] = await prisma.$transaction([
+    const [notes, chatMessages, chatSessions] = await prisma.$transaction([
       prisma.note.findMany({
         where: {
           userId: user.id,
@@ -92,6 +92,17 @@ export async function GET(request: NextRequest) {
           createdAt: true,
         },
       }),
+      prisma.chatSession.findMany({
+        where: {
+          userId: user.id,
+          lastMessageAt: { gte: start, lt: end },
+        },
+        orderBy: { lastMessageAt: "asc" },
+        select: {
+          id: true,
+          lastMessageAt: true,
+        },
+      }),
     ]);
 
     const days = new Map<string, CalendarDay>();
@@ -113,6 +124,19 @@ export async function GET(request: NextRequest) {
       day.chatMessageCount += 1;
       if (!day.chatSessionIds.includes(message.sessionId)) {
         day.chatSessionIds.push(message.sessionId);
+      }
+    }
+
+    for (const session of chatSessions) {
+      if (!session.lastMessageAt) continue;
+      const date = formatDateInTimeZone(session.lastMessageAt, timeZone);
+      if (!date.startsWith(month)) continue;
+      const day = ensureDay(days, date);
+      if (day.chatMessageCount === 0) {
+        day.chatMessageCount = 1;
+      }
+      if (!day.chatSessionIds.includes(session.id)) {
+        day.chatSessionIds.push(session.id);
       }
     }
 
