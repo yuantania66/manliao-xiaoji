@@ -6,8 +6,10 @@ import { hashVerificationCode, requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { isValidPhone } from "@/lib/validation";
+import { sendVerificationSms } from "@/services/sms/smsService";
 
 const CODE_TTL_SECONDS = 300;
+const CODE_RESEND_COOLDOWN_SECONDS = 60;
 
 const readJson = async (request: Request) => {
   try {
@@ -31,6 +33,24 @@ const parseScene = (value: unknown) => {
 
 const createCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
+const assertCanSendCode = async (phone: string, scene: VerificationScene) => {
+  const latestCode = await prisma.verificationCode.findFirst({
+    where: { phone, scene },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+
+  if (!latestCode) return;
+
+  const retryAt = latestCode.createdAt.getTime() + CODE_RESEND_COOLDOWN_SECONDS * 1000;
+  const retryAfter = Math.ceil((retryAt - Date.now()) / 1000);
+  if (retryAfter > 0) {
+    throw new AppError("RATE_LIMITED", "验证码发送太频繁，请稍后再试", 429, {
+      retryAfter,
+    });
+  }
+};
+
 export async function POST(request: NextRequest) {
   try {
     const body = await readJson(request);
@@ -48,11 +68,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    await assertCanSendCode(phone, scene);
+
     const code = createCode();
     const expiresAt = new Date(Date.now() + CODE_TTL_SECONDS * 1000);
     const user = await prisma.user.findUnique({ where: { phone } });
 
-    await prisma.verificationCode.create({
+    const verificationCode = await prisma.verificationCode.create({
       data: {
         phone,
         scene,
@@ -61,6 +83,13 @@ export async function POST(request: NextRequest) {
         userId: user?.id,
       },
     });
+
+    try {
+      await sendVerificationSms({ phone, scene, code });
+    } catch (error) {
+      await prisma.verificationCode.delete({ where: { id: verificationCode.id } }).catch(() => null);
+      throw error;
+    }
 
     return ok({
       expiresIn: CODE_TTL_SECONDS,

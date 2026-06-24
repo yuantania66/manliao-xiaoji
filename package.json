@@ -19,7 +19,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.3.0",
-    "tailwindcss": "^4.1.8"
+    "tailwindcss": "^4.1.8",
+    "tencentcloud-sdk-nodejs": "^4.1.254"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.8",

@@ -78,3 +78,14 @@
 - [x] 注销后意见反馈保留为匿名记录，`userId` 已置空。
 - [x] 生产环境部署完成，PM2 `manliaoxiaoji` 重启成功，`https://manliaoxiaoji.com/api/health` 返回 `production` 且数据库 connected。
 - [x] 生产 HTTPS 注销闭环通过：生产验证码接口不返回 `devCode`，注销成功后旧 token 失效，测试用户数据已清理。
+
+## 2026-06-24 短信验证码接入记录
+
+- [x] 已添加腾讯云短信 SDK 依赖 `tencentcloud-sdk-nodejs`。
+- [x] 已新增短信服务层，生产环境调用腾讯云 `SendSms`，开发环境保持 `devCode`。
+- [x] 已补充腾讯云短信环境变量示例。
+- [x] 验证码接口已加 60 秒发送冷却，同手机号同场景重复发送返回 429。
+- [x] `npm run build` 通过，短信服务类型和 Next 构建通过。
+- [ ] 腾讯云短信签名审核通过。
+- [ ] 腾讯云短信正文模板审核通过。
+- [ ] 生产服务器配置腾讯云短信环境变量后，完成真实手机号收码测试。
