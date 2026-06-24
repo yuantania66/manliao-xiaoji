@@ -98,7 +98,7 @@ export default function MePage() {
       setIsAgreementPromptOpen(true);
       return;
     }
-    setLoginMode("methods");
+    setLoginMode("wechat");
     setPhone("");
     setPhoneCode("");
     setPhoneCodeSent(false);
@@ -220,7 +220,7 @@ export default function MePage() {
   const agreeAndContinue = () => {
     setHasAgreed(true);
     setIsAgreementPromptOpen(false);
-    setLoginMode("methods");
+    setLoginMode("wechat");
     setPhone("");
     setPhoneCode("");
     setPhoneCodeSent(false);
@@ -378,9 +378,9 @@ export default function MePage() {
               className={
                 loginMode === "phone"
                   ? "absolute inset-x-[22px] bottom-[92px] z-50 h-[322px] rounded-[24px] bg-[var(--card-warm)] shadow-[0_18px_50px_rgba(45,41,38,0.12)]"
-                  : loginMode === "wechat"
+                : loginMode === "wechat"
                     ? "absolute inset-x-[22px] bottom-[92px] z-50 h-[258px] rounded-[24px] bg-[var(--card-warm)] shadow-[0_18px_50px_rgba(45,41,38,0.12)]"
-                  : "absolute inset-x-[22px] bottom-[92px] z-50 h-[216px] rounded-[24px] bg-[var(--card-warm)] shadow-[0_18px_50px_rgba(45,41,38,0.12)]"
+                  : "absolute inset-x-[22px] bottom-[92px] z-50 h-[154px] rounded-[24px] bg-[var(--card-warm)] shadow-[0_18px_50px_rgba(45,41,38,0.12)]"
               }
             >
               <h2 className="absolute left-6 top-6 h-[26px] w-[240px] text-lg font-semibold leading-[26px]">
@@ -471,16 +471,6 @@ export default function MePage() {
                 </>
               ) : loginMode === "wechat" ? (
                 <>
-                  <button
-                    type="button"
-                    className="absolute left-6 top-[52px] h-6 text-xs font-semibold leading-5 text-[var(--sage)]"
-                    onClick={() => {
-                      setLoginMode("methods");
-                      setPhoneError("");
-                    }}
-                  >
-                    ‹ 其他登录方式
-                  </button>
                   <div className="absolute left-6 top-[88px] flex h-14 w-[298px] items-center rounded-[20px] bg-[var(--card-sage)] px-4">
                     <span className="mr-3 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--sage)] text-base font-semibold text-[var(--card-warm)]">
                       微
@@ -495,7 +485,7 @@ export default function MePage() {
                   <button
                     type="button"
                     className="absolute left-6 bottom-6 h-11 w-[130px] rounded-[18px] bg-[var(--page-bg)] text-[13px] font-semibold text-[var(--body)]"
-                    onClick={() => setLoginMode("methods")}
+                    onClick={closeLoginPanel}
                   >
                     取消
                   </button>
@@ -512,25 +502,7 @@ export default function MePage() {
                 <>
                   <button
                     type="button"
-                    className="absolute left-6 top-[72px] h-12 w-[298px] rounded-[18px] bg-[var(--card-sage)] text-left text-[13px] font-semibold leading-5 text-[var(--ink)]"
-                    onClick={() => {
-                      setLoginMode("phone");
-                      setPhone("");
-                      setPhoneCode("");
-                      setPhoneCodeSent(false);
-                      setPhoneError("");
-                    }}
-                  >
-                    <span className="absolute left-5 top-3.5 text-base leading-5 text-[var(--sage)]">
-                      ☎
-                    </span>
-                    <span className="absolute left-[54px] top-3.5">
-                      手机号码登录
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="absolute left-6 top-[134px] h-12 w-[298px] rounded-[18px] bg-[var(--sage)] text-left text-[13px] font-semibold leading-5 text-[var(--card-warm)]"
+                    className="absolute left-6 top-[82px] h-12 w-[298px] rounded-[18px] bg-[var(--sage)] text-left text-[13px] font-semibold leading-5 text-[var(--card-warm)]"
                     onClick={() => setLoginMode("wechat")}
                   >
                     <span className="absolute left-5 top-3.5 text-base leading-5">
@@ -646,7 +618,7 @@ export default function MePage() {
                       你主动输入的小记、聊天内容、图片视频、心情与日期信息，会用于在产品内展示、保存和生成回看内容。未经你的主动分享或法律法规要求，我们不会公开披露这些内容。
                     </p>
                     <p className="mt-3">
-                      使用手机号登录时，我们会处理你的手机号和验证码验证状态；使用微信登录时，会根据微信小程序规则处理必要的登录标识。
+                      使用微信登录时，我们会根据微信小程序规则处理必要的登录标识。
                     </p>
                     <p className="mt-3">
                       你可以查看、更正、删除自己的内容，也可以通过账号注销清空账号及相关数据。游客模式下，内容优先保存在本机。
