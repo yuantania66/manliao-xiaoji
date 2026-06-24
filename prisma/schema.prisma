@@ -65,6 +65,7 @@ model User {
   chatSessions       ChatSession[]
   chatMessages       ChatMessage[]
   notes              Note[]
+  feedbacks          Feedback[]
   aiGenerations      AiGeneration[]
   aiJudgeResults     AiJudgeResult[]
 }
@@ -141,6 +142,20 @@ model Note {
 
   @@index([userId, recordDate])
   @@index([userId, createdAt])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String?
+  type      String
+  content   String
+  contact   String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
 
 model AiGeneration {

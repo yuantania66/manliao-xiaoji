@@ -4,8 +4,8 @@ const API_BASE_URL_KEY = "xinqing_api_base_url";
 const API_BASE_URLS = {
   local: "http://127.0.0.1:3002",
   lan: "http://192.168.1.96:3002",
-  trial: "https://xinqing.studio",
-  prod: "https://xinqing.studio"
+  trial: "https://manliaoxiaoji.com",
+  prod: "https://manliaoxiaoji.com"
 };
 
 const DEFAULT_API_ENV = "local";

@@ -50,3 +50,31 @@
 - [ ] 开发者工具模拟器使用正确的本机或局域网 API 地址。
 - [ ] 真机调试使用局域网 IP 或 HTTPS 测试域名。
 - [ ] 体验版和正式版使用微信后台已配置的 HTTPS 合法域名。
+
+## 2026-06-23 本地自动化测试记录
+
+- [x] `npm run build` 通过，Next 页面和 API 路由可完成生产构建。
+- [x] `npx prisma validate` 通过，Prisma schema 有效。
+- [x] 小程序所有 `.js` 文件通过 `node --check` 语法检查。
+- [x] 本地 dev server 页面 200 检查通过：`/`、`/chat`、`/chat/search`、`/chat/calendar`、`/note`、`/note/history`、`/note/search`、`/note/calendar`、`/note/detail`、`/me`、`/me/settings`、`/me/settings/privacy`、`/me/settings/feedback`、`/me/settings/cancel`、`/me/insights`。
+- [x] 未登录鉴权检查通过：`/api/notes`、`/api/calendar`、`/api/chat/sessions`、`/api/chat/search`、`/api/uploads/notes` 均返回 401。
+- [x] 微信登录接口空请求体校验通过，返回 400 validation error。
+- [x] 已修复本机开发数据库账号认证，`/api/health` 返回 database connected。
+- [x] 已应用 Prisma migration `20260608154611_init_backend`。
+- [x] 登录、小记创建/删除、图片上传成功路径、上传文件静态访问、聊天发送、搜索、日历数据聚合、退出登录完整接口闭环通过。
+- [x] 意见反馈 API 创建和数据库写入通过，测试反馈已清理。
+- [x] 生产域名 `https://manliaoxiaoji.com` HTTPS/API 可达性检查通过，未登录鉴权和反馈参数校验正常。
+
+## 2026-06-24 账号注销本地测试记录
+
+- [x] `npm run build` 通过，新增 `/api/auth/cancel` 可完成生产构建。
+- [x] 小程序所有 `.js` 文件通过 `node --check` 语法检查。
+- [x] 匿名请求注销验证码被拒绝，返回 401。
+- [x] 已登录用户请求非本人手机号注销验证码被拒绝，返回 403。
+- [x] 当前登录用户请求本人手机号注销验证码成功。
+- [x] 验证码注销成功后，旧 token 访问 `/api/auth/me` 返回 401。
+- [x] 注销后用户状态变为 `CANCELLED`，手机号和微信 openid 已清空。
+- [x] 注销后 session、验证码、小记、聊天会话、AI 生成记录、AI 审核记录均已清理。
+- [x] 注销后意见反馈保留为匿名记录，`userId` 已置空。
+- [x] 生产环境部署完成，PM2 `manliaoxiaoji` 重启成功，`https://manliaoxiaoji.com/api/health` 返回 `production` 且数据库 connected。
+- [x] 生产 HTTPS 注销闭环通过：生产验证码接口不返回 `devCode`，注销成功后旧 token 失效，测试用户数据已清理。

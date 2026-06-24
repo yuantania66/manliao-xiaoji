@@ -144,7 +144,7 @@
     <view class="slip-mask"></view>
     <view class="slip-sheet">
       <view class="eyebrow">小笺</view>
-      <button class="slip-close" bindtap="closeSlip">×</button>
+      <view class="slip-close" bindtap="closeSlip"></view>
       <view class="slip-card {{slipStyle}}">
         <view class="slip-tapes">
           <view class="slip-tape slip-tape-one"></view>
@@ -171,7 +171,7 @@
         <view class="qr">
           <view wx:for="{{qrDots}}" wx:key="*this" class="dot" style="left: {{item[0] * 10 + 10}}rpx; top: {{item[1] * 10 + 10}}rpx;"></view>
         </view>
-        <view class="slip-brand">新晴 · 慢慢回看</view>
+        <view class="slip-brand">慢聊小记</view>
       </view>
       <view class="slip-actions">
         <button class="secondary-button share-button">分享给朋友</button>

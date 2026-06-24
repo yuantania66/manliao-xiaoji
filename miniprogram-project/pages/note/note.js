@@ -2,6 +2,7 @@ const { formatDateLabel, createNote: createLocalNote } = require("../../utils/lo
 const { getSafeLayout } = require("../../utils/layout");
 const { getDataMode } = require("../../utils/auth");
 const { createNote: createRemoteNote } = require("../../api/notes");
+const { uploadNoteImages } = require("../../api/uploads");
 
 const prompts = [
   { title: "今天想记下什么？", lead: "开心的、不开心的，或者只是一件小事，\n都可以放在这里。" },
@@ -39,6 +40,7 @@ const qrDots = [
 ];
 
 const DAILY_REGENERATE_LIMIT = 3;
+const SLIP_IMAGE_NAMESPACE = "MLXJ";
 const TEST_IMAGE_URL = "/assets/test-note-photo.svg";
 
 const pick = (items) => items[Math.floor(Math.random() * items.length)];
@@ -54,6 +56,44 @@ const getRegenerateText = (remaining) => {
 
 const CANVAS_WIDTH = 540;
 const CANVAS_HEIGHT = 652;
+
+const padTime = (value) => String(value).padStart(2, "0");
+
+const getSlipImageFileName = () => {
+  const now = new Date();
+  const datePart = [
+    now.getFullYear(),
+    padTime(now.getMonth() + 1),
+    padTime(now.getDate())
+  ].join("");
+  const timePart = [
+    padTime(now.getHours()),
+    padTime(now.getMinutes()),
+    padTime(now.getSeconds())
+  ].join("");
+  return `${SLIP_IMAGE_NAMESPACE}_${datePart}${timePart}.png`;
+};
+
+const copyToNamespacedSlipImage = (tempFilePath) => {
+  if (!wx.getFileSystemManager || !wx.env || !wx.env.USER_DATA_PATH) {
+    return Promise.resolve(tempFilePath);
+  }
+
+  const fileSystem = wx.getFileSystemManager();
+  if (!fileSystem.copyFile) {
+    return Promise.resolve(tempFilePath);
+  }
+
+  const filePath = `${wx.env.USER_DATA_PATH}/${getSlipImageFileName()}`;
+  return new Promise((resolve) => {
+    fileSystem.copyFile({
+      srcPath: tempFilePath,
+      destPath: filePath,
+      success: () => resolve(filePath),
+      fail: () => resolve(tempFilePath)
+    });
+  });
+};
 
 const setFont = (ctx, size, color, weight = "normal") => {
   if (ctx.setFontSize) ctx.setFontSize(size);
@@ -178,7 +218,7 @@ const drawSlipCanvas = (ctx, data) => {
     drawTextBlock(ctx, quote, 72, 388, 390, 42, 2, 30, "#2d2926", "700");
     drawTextBlock(ctx, caption, 72, 474, 360, 30, 2, 20, "#6d665f");
     drawQr(ctx, 404, 532, 66, "#71877b");
-    drawTextBlock(ctx, "新晴 · 慢慢回看", 72, 584, 220, 26, 1, 18, "#71877b", "700");
+    drawTextBlock(ctx, "慢聊小记", 72, 584, 220, 26, 1, 18, "#71877b", "700");
     return;
   }
 
@@ -187,7 +227,7 @@ const drawSlipCanvas = (ctx, data) => {
     drawTextBlock(ctx, caption, 70, 278, 350, 34, 3, 22, "#6d665f");
     drawLeaf(ctx, 338, 408, 1);
     drawQr(ctx, 68, 540, 64, "#71877b");
-    drawTextBlock(ctx, "新晴 · 慢慢回看", 150, 554, 230, 26, 1, 18, "#71877b", "700");
+    drawTextBlock(ctx, "慢聊小记", 150, 554, 230, 26, 1, 18, "#71877b", "700");
     return;
   }
 
@@ -199,7 +239,7 @@ const drawSlipCanvas = (ctx, data) => {
     drawRoundRect(ctx, 132, 338, 266, 78, 16, "#fffdf9");
     drawTextBlock(ctx, quote, 156, 360, 210, 28, 1, 18, "#6d665f");
     drawQr(ctx, 78, 528, 60, "#71877b");
-    drawTextBlock(ctx, "新晴 · 慢慢回看", 158, 542, 220, 26, 1, 18, "#71877b", "700");
+    drawTextBlock(ctx, "慢聊小记", 158, 542, 220, 26, 1, 18, "#71877b", "700");
     return;
   }
 
@@ -212,7 +252,7 @@ const drawSlipCanvas = (ctx, data) => {
     drawTextBlock(ctx, quote, 140, 428, 240, 28, 1, 20, "#6d665f", "700");
     drawLeaf(ctx, 350, 500, 0.82);
     drawQr(ctx, 70, 540, 64, "#71877b");
-    drawTextBlock(ctx, "新晴 · 慢慢回看", 150, 554, 220, 26, 1, 18, "#71877b", "700");
+    drawTextBlock(ctx, "慢聊小记", 150, 554, 220, 26, 1, 18, "#71877b", "700");
     return;
   }
 
@@ -225,7 +265,7 @@ const drawSlipCanvas = (ctx, data) => {
     drawDashes(ctx, 62, 326, 416, "#c8cec5");
     drawTextBlock(ctx, caption, 62, 430, 390, 40, 2, 26, "#6d665f");
     drawQr(ctx, 62, 530, 80, "#71877b");
-    drawTextBlock(ctx, "新晴 · 慢慢回看", 166, 546, 240, 36, 1, 24, "#71877b", "700");
+    drawTextBlock(ctx, "慢聊小记", 166, 546, 240, 36, 1, 24, "#71877b", "700");
     return;
   }
 
@@ -234,7 +274,7 @@ const drawSlipCanvas = (ctx, data) => {
   drawDashes(ctx, 62, 326, 416, "#d7cfc8");
   drawTextBlock(ctx, caption, 62, 440, 432, 40, 2, 26, "#6d665f");
   drawQr(ctx, 62, 530, 80, "#71877b");
-  drawTextBlock(ctx, "新晴 · 慢慢回看", 166, 546, 240, 36, 1, 24, "#71877b", "700");
+  drawTextBlock(ctx, "慢聊小记", 166, 546, 240, 36, 1, 24, "#71877b", "700");
 };
 
 const isDevelopRuntime = () => {
@@ -459,10 +499,21 @@ Page({
       .map((item) => ({ url: item.url }));
     const payload = { content, mood: this.data.selectedMood, images, videos: [] };
     const save = dataMode === "authenticated"
-      ? createRemoteNote(payload)
+      ? uploadNoteImages(images.map((item) => item.url))
+          .then((items) =>
+            createRemoteNote({
+              content,
+              mood: this.data.selectedMood,
+              mediaUrls: items.map((item) => item.url)
+            })
+          )
       : Promise.resolve(createLocalNote(payload));
 
-    this.setData({ isSaving: true, dataMode, statusText: "" });
+    this.setData({
+      isSaving: true,
+      dataMode,
+      statusText: dataMode === "authenticated" && images.length ? "正在上传图片..." : ""
+    });
     save
       .then(() => {
         const slip = getSlip(content, this.data.selectedMood);
@@ -552,13 +603,14 @@ Page({
   saveImage() {
     if (this.data.isSavingImage) return;
     this.setData({ isSavingImage: true, slipFeedback: "正在生成图片..." });
-    let generatedFilePath = "";
     this.createSlipImage()
       .then((filePath) => {
-        generatedFilePath = filePath;
         if (!filePath) {
           throw new Error("图片生成失败");
         }
+        return copyToNamespacedSlipImage(filePath);
+      })
+      .then((filePath) => {
         return new Promise((resolve, reject) => {
           wx.saveImageToPhotosAlbum({
             filePath,
@@ -568,14 +620,8 @@ Page({
         });
       })
       .then(() => {
-        this.setData({ slipFeedback: "已保存到相册，已打开预览确认" });
+        this.setData({ slipFeedback: "已保存到相册" });
         wx.showToast({ title: "已保存到相册", icon: "success" });
-        if (generatedFilePath && wx.previewImage) {
-          wx.previewImage({
-            current: generatedFilePath,
-            urls: [generatedFilePath]
-          });
-        }
       })
       .catch((error) => {
         const errMsg = (error && error.errMsg) || "";
@@ -584,7 +630,7 @@ Page({
         if (isAuthError) {
           wx.showModal({
             title: "需要相册权限",
-            content: "请允许新晴保存图片到相册。",
+            content: "请允许慢聊小记保存图片到相册。",
             confirmText: "去设置",
             success: (res) => {
               if (res.confirm && wx.openSetting) wx.openSetting();

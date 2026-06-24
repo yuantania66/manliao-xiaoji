@@ -25,6 +25,19 @@
   font-weight: 700;
 }
 
+.cancel-code-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 92rpx;
+  margin-top: 24rpx;
+  border-radius: 30rpx;
+  background: #fffdf9;
+  color: #2d2926;
+  font-size: 34rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
 .tip {
   margin-top: 24rpx;
   text-align: center;

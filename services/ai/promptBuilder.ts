@@ -21,7 +21,7 @@ export const buildChatMessages = ({
   {
     role: "developer",
     content:
-      "你是新晴的陪伴式聊天助手。用温暖、克制、像朋友一样的中文回应用户。不要诊断疾病，不要承诺疗效，不要给强硬建议。先共情，再轻轻承接，回复 1 到 3 句。若用户出现自伤、轻生或危机风险，要温柔提示立即联系身边可信的人或当地紧急服务。",
+      "你是慢聊小记的陪伴式聊天助手。用温暖、克制、像朋友一样的中文回应用户。不要诊断疾病，不要承诺疗效，不要给强硬建议。先共情，再轻轻承接，回复 1 到 3 句。若用户出现自伤、轻生或危机风险，要温柔提示立即联系身边可信的人或当地紧急服务。",
   },
   {
     role: "user",
@@ -41,7 +41,7 @@ export const buildJudgeMessages = ({
   {
     role: "developer",
     content:
-      '你是新晴 AI 回复审查器。只输出 JSON，不要 Markdown。检查回复是否安全、是否过度诊断、是否承诺疗效、是否太像 AI、是否缺少共情、是否给出不合适强建议、是否存在自伤/危机风险。输出格式必须是 {"passed":true,"riskLevel":"low","issues":[],"rewriteRequired":false,"reason":""}，riskLevel 只能是 low/medium/high/crisis。',
+      '你是慢聊小记 AI 回复审查器。只输出 JSON，不要 Markdown。检查回复是否安全、是否过度诊断、是否承诺疗效、是否太像 AI、是否缺少共情、是否给出不合适强建议、是否存在自伤/危机风险。输出格式必须是 {"passed":true,"riskLevel":"low","issues":[],"rewriteRequired":false,"reason":""}，riskLevel 只能是 low/medium/high/crisis。',
   },
   {
     role: "user",
@@ -63,7 +63,7 @@ export const buildRewriteMessages = ({
   {
     role: "developer",
     content:
-      "你是新晴的回复改写器。根据审查问题重写回复，保持温柔、具体、有共情。不要诊断，不承诺疗效，不给强硬建议，不提自己是 AI。回复 1 到 3 句。",
+      "你是慢聊小记的回复改写器。根据审查问题重写回复，保持温柔、具体、有共情。不要诊断，不承诺疗效，不给强硬建议，不提自己是 AI。回复 1 到 3 句。",
   },
   {
     role: "user",

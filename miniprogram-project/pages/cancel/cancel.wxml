@@ -5,8 +5,29 @@
   <view class="body intro">注销会触发二次验证，确认后所有数据都会被清空。</view>
   <view class="card cancel-card">
     <view class="cancel-title">注销后会发生什么</view>
-    <view class="body">账号资料、登录状态、云端同步记录会被清空。本机小记、聊天记录、心情日历和新晴观察也会被清空。</view>
+    <view class="body">账号资料、登录状态、云端同步记录会被清空。本机小记、聊天记录、心情日历和慢聊小记观察也会被清空。</view>
   </view>
-  <button class="danger" bindtap="cancelAccount">注销账号</button>
-  <view class="muted tip">二次验证用于避免误触。确认后不可恢复。</view>
+  <view wx:if="{{confirmStep === 'sms'}}" class="card cancel-card">
+    <view class="cancel-title">二次验证</view>
+    <view class="body">
+      {{needsCode ? "验证码会发送到 " + maskedPhone : "当前账号未绑定手机，确认后将直接注销。"}}
+    </view>
+    <button wx:if="{{needsCode}}" class="primary-button" loading="{{isSendingCode}}" disabled="{{isSendingCode}}" bindtap="sendCancelCode">
+      {{isSendingCode ? "发送中" : codeSent ? "重新发送验证码" : "发送验证码"}}
+    </button>
+    <input
+      wx:if="{{needsCode}}"
+      class="cancel-code-input"
+      value="{{code}}"
+      maxlength="6"
+      type="number"
+      bindinput="onCodeInput"
+      placeholder="输入 6 位验证码"
+    />
+  </view>
+  <button wx:if="{{confirmStep === 'risk'}}" class="danger" bindtap="nextStep">下一步</button>
+  <button wx:else class="danger" loading="{{isCancelling}}" disabled="{{isCancelling}}" bindtap="cancelAccount">
+    {{isCancelling ? "注销中" : "确认注销"}}
+  </button>
+  <view class="muted tip">{{statusText || "二次验证用于避免误触。确认后不可恢复。"}}</view>
 </view>

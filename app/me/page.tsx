@@ -254,10 +254,10 @@ export default function MePage() {
         ))}
 
         <p className="absolute left-[42px] top-[92px] h-[18px] w-20 text-[13px] font-semibold leading-[18px] text-[var(--sage)]">
-          新晴
+          慢聊小记
         </p>
         <h1 className="absolute left-[42px] top-32 h-10 w-[300px] text-[30px] font-semibold leading-10">
-          {isLogged ? "我的新晴" : "欢迎来到新晴"}
+          {isLogged ? "我的慢聊小记" : "欢迎来到慢聊小记"}
         </h1>
         <p className="absolute left-[42px] top-[178px] h-12 w-[292px] text-sm leading-6 text-[var(--body)]">
           {isAuthChecking
@@ -278,7 +278,7 @@ export default function MePage() {
             晴
           </div>
           <h2 className="absolute left-[100px] top-[30px] h-[26px] w-[150px] text-lg font-semibold leading-[26px]">
-            {isLogged ? "我的新晴" : "游客模式"}
+            {isLogged ? "我的慢聊小记" : "游客模式"}
           </h2>
           <p className="absolute left-[100px] top-[60px] h-[18px] w-[190px] text-xs leading-[18px] text-[var(--muted)]">
             {isLogged ? "已连续登录 28 天" : "内容仅保存在本机"}
@@ -337,10 +337,10 @@ export default function MePage() {
               ? "absolute left-[22px] top-[430px] h-[104px] w-[346px] rounded-[22px] bg-[var(--card-warm)]"
               : "absolute left-[22px] top-[470px] h-[104px] w-[346px] rounded-[22px] bg-[var(--card-warm)]"
           }
-          aria-label="查看新晴观察"
+          aria-label="查看慢聊小记观察"
         >
           <h2 className="absolute left-5 top-[26px] h-[26px] w-[250px] text-lg font-semibold leading-[26px]">
-            新晴观察
+            慢聊小记观察
           </h2>
           <p className="absolute left-5 top-[58px] h-[18px] w-[280px] text-xs leading-[18px] text-[var(--body)]">
             从聊天和小记里整理出的主题
@@ -351,7 +351,7 @@ export default function MePage() {
         </Link>
 
         <p className="absolute inset-x-0 top-[628px] h-[34px] whitespace-pre-line text-center text-[11px] leading-[17px] text-[var(--muted)]">
-          {"新晴 v2.0.0\n慢慢说，也慢慢回看。"}
+          {"慢聊小记 v2.0.0\n慢慢聊，轻轻记。"}
         </p>
 
         <nav className="absolute inset-x-0 bottom-0 h-[70px] border-t border-[var(--line)] bg-[var(--card-warm)]">
@@ -486,11 +486,11 @@ export default function MePage() {
                       微
                     </span>
                     <span className="text-[13px] font-semibold leading-5 text-[var(--ink)]">
-                      使用微信身份登录新晴
+                      使用微信身份登录慢聊小记
                     </span>
                   </div>
                   <p className="absolute left-6 top-[158px] w-[298px] text-xs leading-5 text-[var(--body)]">
-                    登录后可同步小记、聊天回看和新晴观察。新晴不会在未获得你确认前公开展示你的内容。
+                    登录后可同步小记、聊天回看和慢聊小记观察。慢聊小记不会在未获得你确认前公开展示你的内容。
                   </p>
                   <button
                     type="button"
@@ -557,7 +557,7 @@ export default function MePage() {
             <section className="absolute left-[22px] top-[304px] z-[70] h-[244px] w-[346px] rounded-[24px] bg-[var(--card-warm)] px-6 py-6 shadow-[0_18px_50px_rgba(45,41,38,0.12)]">
               <h2 className="text-lg font-semibold leading-7">请先确认协议</h2>
               <p className="mt-3 text-xs leading-5 text-[var(--body)]">
-                登录前需要阅读并同意新晴的用户服务协议和隐私政策。
+                登录前需要阅读并同意慢聊小记的用户服务协议和隐私政策。
               </p>
               <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
                 你可以先查看内容，再决定是否继续登录。
@@ -619,18 +619,18 @@ export default function MePage() {
               <div className="mt-5 h-[468px] overflow-y-auto pr-1 text-xs leading-6 text-[var(--body)] [scrollbar-color:#d8d1c9_transparent] [scrollbar-width:thin]">
                 {legalPanel === "terms" ? (
                   <>
-                    <p className="font-semibold text-[var(--ink)]">新晴用户服务协议</p>
+                    <p className="font-semibold text-[var(--ink)]">慢聊小记用户服务协议</p>
                     <p className="mt-3">
-                      欢迎使用新晴。你在注册、登录或使用新晴前，应当阅读并理解本协议。你点击同意或继续使用，即表示你接受本协议。
+                      欢迎使用慢聊小记。你在注册、登录或使用慢聊小记前，应当阅读并理解本协议。你点击同意或继续使用，即表示你接受本协议。
                     </p>
                     <p className="mt-3">
-                      新晴提供聊天、小记、心情记录、内容回看等服务。你应当以真实、合法、善意的方式使用产品，不得上传违法、侵权、骚扰或危害他人的内容。
+                      慢聊小记提供聊天、小记、心情记录、内容回看等服务。你应当以真实、合法、善意的方式使用产品，不得上传违法、侵权、骚扰或危害他人的内容。
                     </p>
                     <p className="mt-3">
-                      你保留自己记录内容的权利。为提供保存、展示、同步和回看功能，新晴会在必要范围内处理你主动提交的内容。
+                      你保留自己记录内容的权利。为提供保存、展示、同步和回看功能，慢聊小记会在必要范围内处理你主动提交的内容。
                     </p>
                     <p className="mt-3">
-                      新晴不面向未成年人提供服务。若你未满十八周岁，请停止注册、登录或使用。
+                      慢聊小记不面向未成年人提供服务。若你未满十八周岁，请停止注册、登录或使用。
                     </p>
                     <p className="mt-3">
                       如你注销账号，账号资料、登录状态、聊天、小记、心情日历和本机缓存等数据将按产品提示清空，清空后不可恢复。
@@ -638,9 +638,9 @@ export default function MePage() {
                   </>
                 ) : (
                   <>
-                    <p className="font-semibold text-[var(--ink)]">新晴隐私政策</p>
+                    <p className="font-semibold text-[var(--ink)]">慢聊小记隐私政策</p>
                     <p className="mt-3">
-                      新晴重视你的隐私。我们仅在实现登录、内容保存、同步、回看、安全维护和反馈处理等必要场景中收集和使用信息。
+                      慢聊小记重视你的隐私。我们仅在实现登录、内容保存、同步、回看、安全维护和反馈处理等必要场景中收集和使用信息。
                     </p>
                     <p className="mt-3">
                       你主动输入的小记、聊天内容、图片视频、心情与日期信息，会用于在产品内展示、保存和生成回看内容。未经你的主动分享或法律法规要求，我们不会公开披露这些内容。
@@ -652,7 +652,7 @@ export default function MePage() {
                       你可以查看、更正、删除自己的内容，也可以通过账号注销清空账号及相关数据。游客模式下，内容优先保存在本机。
                     </p>
                     <p className="mt-3">
-                      新晴不面向未成年人提供服务。若发现未成年人使用，我们有权停止服务并清除相关数据。
+                      慢聊小记不面向未成年人提供服务。若发现未成年人使用，我们有权停止服务并清除相关数据。
                     </p>
                   </>
                 )}

@@ -103,11 +103,17 @@
 .messages {
   position: fixed;
   left: 42rpx;
+  right: 12rpx;
   top: 312rpx;
-  width: 673rpx;
+  width: auto;
   box-sizing: border-box;
   overflow-x: hidden;
   padding-right: 0;
+}
+
+.messages-content {
+  min-height: 100%;
+  width: 673rpx;
 }
 
 .mode-notice {

@@ -2,7 +2,7 @@ import { SettingsShell } from "../settings-shell";
 
 export default function PrivacyPolicyPage() {
   return (
-    <SettingsShell title="隐私政策" lead="新晴小程序隐私政策">
+    <SettingsShell title="隐私政策" lead="慢聊小记小程序隐私政策">
       <article className="note-scrollbar absolute left-[22px] top-[236px] bottom-[44px] w-[346px] overflow-y-auto rounded-[24px] bg-[var(--card-warm)] px-5 py-6 text-[12px] leading-6 text-[var(--body)]">
         <p className="text-right text-[11px] leading-5 text-[var(--muted)]">
           更新日期：2026 年 6 月 8 日
@@ -11,19 +11,19 @@ export default function PrivacyPolicyPage() {
         </p>
 
         <h2 className="mt-5 text-center text-[16px] font-semibold leading-7 text-[var(--ink)]">
-          新晴小程序隐私政策
+          慢聊小记小程序隐私政策
         </h2>
 
         <p className="mt-5">
-          新晴重视用户的个人信息与隐私保护。本政策适用于你通过新晴小程序及相关服务使用小记、慢慢说、心情日历、我的新晴及意见反馈等功能时，我们对个人信息的处理活动。
+          慢聊小记重视用户的个人信息与隐私保护。本政策适用于你通过慢聊小记小程序及相关服务使用小记、慢慢说、心情日历、我的慢聊小记及意见反馈等功能时，我们对个人信息的处理活动。
         </p>
         <p className="mt-4">
-          在使用新晴前，请你仔细阅读并理解本政策。你使用或继续使用新晴服务，即表示你理解并同意我们按照本政策处理相关信息。
+          在使用慢聊小记前，请你仔细阅读并理解本政策。你使用或继续使用慢聊小记服务，即表示你理解并同意我们按照本政策处理相关信息。
         </p>
 
         <h3 className="mt-6 font-semibold text-[var(--ink)]">一、我们如何收集和使用信息</h3>
         <p className="mt-3">
-          为向你提供基础服务，我们可能收集你主动填写或上传的信息，包括小记文字、聊天内容、心情与天气标记、图片或视频选择记录、意见反馈内容。上述信息主要用于记录展示、历史回看、生成新晴观察、处理反馈以及改善产品体验。
+          为向你提供基础服务，我们可能收集你主动填写或上传的信息，包括小记文字、聊天内容、心情与天气标记、图片或视频选择记录、意见反馈内容。上述信息主要用于记录展示、历史回看、生成慢聊小记观察、处理反馈以及改善产品体验。
         </p>
         <p className="mt-3">
           为保障服务正常运行，我们可能收集设备型号、操作系统、微信小程序运行信息、页面访问记录、点击操作、异常日志等基础信息，用于安全风控、故障排查和统计分析。
@@ -51,7 +51,7 @@ export default function PrivacyPolicyPage() {
 
         <h3 className="mt-6 font-semibold text-[var(--ink)]">六、未成年人保护</h3>
         <p className="mt-3">
-          新晴不面向未成年人提供服务。若你未满十八周岁，请停止注册、登录或使用新晴。若我们发现相关账号使用者为未成年人，将有权停止提供服务并清除相关数据。
+          慢聊小记不面向未成年人提供服务。若你未满十八周岁，请停止注册、登录或使用慢聊小记。若我们发现相关账号使用者为未成年人，将有权停止提供服务并清除相关数据。
         </p>
 
         <h3 className="mt-6 font-semibold text-[var(--ink)]">七、本政策的更新</h3>

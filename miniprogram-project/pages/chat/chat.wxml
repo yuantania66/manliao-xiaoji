@@ -20,7 +20,7 @@
     </view>
   </view>
 
-  <scroll-view class="messages" style="bottom: {{messagesBottom}}px;" scroll-y enhanced scroll-with-animation scroll-into-view="{{scrollTarget}}" scroll-top="{{scrollTop}}" bindscroll="onMessagesScroll">
+  <scroll-view class="messages" style="bottom: {{messagesBottom}}px;" scroll-y enhanced show-scrollbar="{{true}}" scroll-with-animation scroll-into-view="{{scrollTarget}}" scroll-top="{{scrollTop}}" bindscroll="onMessagesScroll">
     <view class="messages-content">
       <view wx:if="{{statusText}}" class="mode-notice">{{statusText}}</view>
       <view wx:if="{{isEmpty}}" class="empty-copy">可以从一点点开始。</view>

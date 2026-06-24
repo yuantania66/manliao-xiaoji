@@ -22,15 +22,16 @@
     <view class="action-link">写一点  ›</view>
   </view>
 
-  <view class="bottom-bar">
-    <navigator url="/pages/home/home" hover-class="none">此刻</navigator>
-    <navigator url="/pages/me/me" hover-class="none">我的</navigator>
+  <view class="bottom-bar {{activeTab === 'me' ? 'is-me' : 'is-home'}} {{switchingTab ? 'is-switching' : ''}}">
+    <view class="bottom-indicator"></view>
+    <button class="bottom-item {{activeTab === 'home' ? 'active' : ''}}" data-tab="home" bindtap="switchTab">此刻</button>
+    <button class="bottom-item {{activeTab === 'me' ? 'active' : ''}}" data-tab="me" bindtap="switchTab">我的</button>
   </view>
 
   <view wx:if="{{showEntry}}" class="entry-layer">
     <view class="entry-mask"></view>
     <view class="entry-sheet" style="bottom: {{entryBottom}}px;">
-      <view class="entry-title">欢迎来到新晴</view>
+      <view class="entry-title">欢迎来到慢聊小记</view>
       <view class="entry-copy">登录后可以同步记录，也可以先用游客模式体验。</view>
       <view wx:if="{{entryError}}" class="entry-error">{{entryError}}</view>
       <button class="primary-button" disabled="{{isLoggingIn}}" bindtap="handleLogin">{{isLoggingIn ? "登录中..." : "登录"}}</button>

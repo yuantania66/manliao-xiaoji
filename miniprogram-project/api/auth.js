@@ -13,7 +13,24 @@ const getMe = () =>
     url: "/api/auth/me"
   });
 
+const sendCode = ({ phone, scene = "login" }) =>
+  request({
+    url: "/api/auth/code",
+    method: "POST",
+    auth: scene !== "login",
+    data: { phone, scene }
+  });
+
+const cancelAccount = ({ code, confirm = false } = {}) =>
+  request({
+    url: "/api/auth/cancel",
+    method: "POST",
+    data: confirm ? { confirm: true } : { code }
+  });
+
 module.exports = {
   loginWithWechat,
-  getMe
+  getMe,
+  sendCode,
+  cancelAccount
 };

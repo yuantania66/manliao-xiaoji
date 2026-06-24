@@ -83,7 +83,7 @@ const shareVariants: ShareVariant[] = [
     ink: "#2d2926",
     body: "#6d665f",
     quote: "先放在这里。",
-    note: "新晴 · 小笺票根",
+    note: "慢聊小记 · 小笺票根",
   },
   {
     name: "Share 02 / Polaroid moment",
@@ -107,7 +107,7 @@ const shareVariants: ShareVariant[] = [
     ink: "#2d2926",
     body: "#6d665f",
     quote: "不用急。",
-    note: "慢慢说，也慢慢回看。",
+    note: "慢慢聊，轻轻记。",
   },
   {
     name: "Share 04 / Photo postcard",
@@ -143,7 +143,7 @@ const shareVariants: ShareVariant[] = [
     ink: "#fffdf9",
     body: "#6d665f",
     quote: "这一格，也算被看见。",
-    note: "新晴替你留下一帧。",
+    note: "慢聊小记替你留下一帧。",
   },
   {
     name: "Share 07 / Minimal ticket full",
@@ -167,7 +167,7 @@ const shareVariants: ShareVariant[] = [
     ink: "#2d2926",
     body: "#6d665f",
     quote: "把风景留给心里那一小块。",
-    note: "新晴，收一张小笺。",
+    note: "慢聊小记，收一张小笺。",
   },
   {
     name: "Share 09 / Receipt full",
@@ -251,10 +251,27 @@ const slipQuoteRules: Array<{
 
 const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 
+const padDatePart = (value: number) => String(value).padStart(2, "0");
+
 const formatLocalDate = (date: Date) =>
   `${date.getMonth() + 1} 月 ${date.getDate()} 日 · 星期${
     weekDays[date.getDay()]
   }`;
+
+const getSlipImageFileName = () => {
+  const now = new Date();
+  const datePart = [
+    now.getFullYear(),
+    padDatePart(now.getMonth() + 1),
+    padDatePart(now.getDate()),
+  ].join("");
+  const timePart = [
+    padDatePart(now.getHours()),
+    padDatePart(now.getMinutes()),
+    padDatePart(now.getSeconds()),
+  ].join("");
+  return `MLXJ_${datePart}${timePart}.png`;
+};
 
 const formatNoteDate = (date: string) => {
   const [, month, day] = date.split("-");
@@ -633,7 +650,7 @@ function SharePreview({
         <ShareIllustration className="left-[160px] top-[200px] h-[100px] w-[130px]" />
         <QrMark className="left-[50px] top-[296px]" />
         <p className="absolute left-[106px] top-[310px] text-xs font-semibold leading-[18px] text-[var(--sage)]">
-          新晴 · 慢慢回看
+          慢聊小记
         </p>
       </div>
     );
@@ -665,7 +682,7 @@ function SharePreview({
         </div>
         <QrMark className="left-[220px] top-[292px]" />
         <p className="absolute left-[54px] top-[330px] text-xs font-semibold text-[var(--sage)]">
-          新晴
+          慢聊小记
         </p>
       </div>
     );
@@ -728,7 +745,7 @@ function SharePreview({
         </div>
         <div className="absolute left-[58px] top-[288px] h-px w-[184px] bg-[var(--line)]" />
         <p className="absolute left-[58px] top-[312px] w-[134px] text-xs leading-[20px] text-[var(--body)]">
-          来自新晴的一张小票：<br />
+          来自慢聊小记的一张小票：<br />
           {limitText(captionShort, 14)}
         </p>
         <QrMark className="left-[206px] top-[312px] scale-[0.72] origin-top-left" />
@@ -788,7 +805,7 @@ function SharePreview({
       </p>
       <QrMark className="left-[48px] top-[314px]" />
       <p className="absolute left-[104px] top-[326px] text-xs font-semibold leading-[18px] text-[var(--sage)]">
-        {isMinimal ? "新晴 · 慢慢回看" : "新晴 · 小笺票根"}
+        {isMinimal ? "慢聊小记" : "慢聊小记 · 小笺票根"}
       </p>
     </div>
   );
@@ -850,7 +867,7 @@ function NoteContent() {
       <rect x="52" y="270" width="270" height="1" fill="#e8ded4"/>
       <rect x="52" y="302" width="210" height="56" rx="16" fill="${shareVariant.soft}"/>
       <text x="72" y="335" font-size="14" fill="${shareVariant.body}">${escapeXml(captionLabel)}</text>
-      <text x="52" y="430" font-size="15" font-weight="700" fill="${shareVariant.accent}">新晴</text>
+      <text x="52" y="430" font-size="15" font-weight="700" fill="${shareVariant.accent}">慢聊小记</text>
       <text x="52" y="452" font-size="11" fill="#a49a91">${escapeXml(captionLabel)}</text>
       <rect x="270" y="390" width="48" height="48" rx="12" fill="#fffdf9" opacity="0.58"/>
       ${qrDots
@@ -900,7 +917,7 @@ function NoteContent() {
     try {
       setSlipActionFeedback("正在生成图片...");
       const blob = await buildSlipPngBlob();
-      const fileName = `xinqing-note-${Date.now()}.png`;
+      const fileName = getSlipImageFileName();
       const pickerWindow = window as SaveFilePickerWindow;
 
       if (pickerWindow.showSaveFilePicker) {
@@ -947,10 +964,10 @@ function NoteContent() {
       setSlipActionFeedback("正在准备分享...");
       const shareText = `${slipQuote.quote}\n${limitText(slipQuote.caption, 36)}`;
       const blob = await buildSlipPngBlob();
-      const file = new File([blob], "xinqing-note.png", { type: "image/png" });
+      const file = new File([blob], getSlipImageFileName(), { type: "image/png" });
       if (navigator.canShare?.({ files: [file] }) && navigator.share) {
         await navigator.share({
-          title: "新晴小笺",
+          title: "慢聊小记小笺",
           text: shareText,
           files: [file],
         });
@@ -959,7 +976,7 @@ function NoteContent() {
       }
       if (navigator.share) {
         await navigator.share({
-          title: "新晴小笺",
+          title: "慢聊小记小笺",
           text: shareText,
         });
         setSlipActionFeedback("已打开分享面板");

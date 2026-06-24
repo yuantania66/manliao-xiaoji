@@ -3,7 +3,7 @@
   <view class="eyebrow">聊聊</view>
   <view class="title">查找聊天内容</view>
   <view class="search-box">⌕<input value="{{query}}" bindinput="onInput" placeholder="输入查找内容" /></view>
-  <view class="body help">可以搜索自己说过的话，也可以搜索新晴的回应。</view>
+  <view class="body help">可以搜索自己说过的话，也可以搜索慢聊小记的回应。</view>
   <view wx:if="{{statusText}}" class="search-status">{{statusText}}</view>
   <view wx:if="{{showEmpty}}" class="result-card card">
     <view class="result-title">没有搜索结果</view>

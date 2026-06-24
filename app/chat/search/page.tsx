@@ -143,7 +143,7 @@ export default function ChatSearchPage() {
         </div>
 
         <p className="absolute left-[22px] top-60 h-[22px] w-[340px] text-[13px] leading-[22px] text-[var(--body)]">
-          可以搜索自己说过的话，也可以搜索新晴的回应。
+          可以搜索自己说过的话，也可以搜索慢聊小记的回应。
         </p>
 
         {trimmedQuery && !isSearching && results.length === 0 ? (
@@ -177,7 +177,7 @@ export default function ChatSearchPage() {
                 className="block min-h-[86px] rounded-[18px] bg-[var(--card-warm)] px-6 py-[16px] text-xs leading-[20px] text-[var(--body)]"
               >
                 <span className="mb-1 block text-[10px] leading-4 text-[var(--muted)]">
-                  {result.role === "user" ? "我" : "新晴"} · {formatResultDate(result.createdAt)}
+                  {result.role === "user" ? "我" : "慢聊小记"} · {formatResultDate(result.createdAt)}
                 </span>
                 <span>{result.content}</span>
               </Link>

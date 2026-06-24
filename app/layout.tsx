@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "新晴 2.0",
+  title: "慢聊小记 2.0",
   description: "温暖治愈的情绪陪伴首页",
 };
 

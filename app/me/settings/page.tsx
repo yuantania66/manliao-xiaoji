@@ -82,7 +82,7 @@ export default function SettingsPage() {
         </button>
 
         <p className="absolute left-1/2 top-[706px] h-[34px] w-[330px] -translate-x-1/2 whitespace-pre-line text-center text-[11px] leading-[17px] text-[var(--muted)]">
-          {"新晴 v2.0.0\n慢慢说，也慢慢回看。"}
+          {"慢聊小记 v2.0.0\n慢慢聊，轻轻记。"}
         </p>
 
         <div className="absolute bottom-2.5 left-1/2 h-1 w-[100px] -translate-x-1/2 rounded-sm bg-[var(--ink)]" />

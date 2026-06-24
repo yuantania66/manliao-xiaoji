@@ -98,22 +98,22 @@ export default function InsightsPage() {
               授权确认
             </p>
             <h1 className="absolute left-[22px] top-[132px] h-[76px] w-[310px] text-[28px] font-semibold leading-[38px]">
-              允许新晴整理你的记录吗？
+              允许慢聊小记整理你的记录吗？
             </h1>
             <div className="absolute left-[22px] top-[228px] w-[322px] text-sm leading-6 text-[var(--body)]">
-              <p>新晴观察会从你的聊天和小记里，整理最近常出现的词。</p>
+              <p>慢聊小记观察会从你的聊天和小记里，整理最近常出现的词。</p>
               <p>它只用于回看和自我记录，不做判断，也不做诊断。</p>
             </div>
 
             <section className="absolute left-[22px] top-[326px] h-[188px] w-[346px] rounded-[18px] bg-[var(--card-warm)] px-[22px] py-[24px]">
               <p className="text-sm font-semibold leading-[22px] text-[var(--sage)]">
-                授权后，新晴会使用你的记录生成观察。
+                授权后，慢聊小记会使用你的记录生成观察。
               </p>
               <p className="mt-4 text-xs leading-5 text-[var(--body)]">
                 你可以先不同意，返回继续聊天或写小记。之后想查看观察时，也可以再来授权。
               </p>
               <p className="mt-4 text-[11px] leading-4 text-[var(--muted)]">
-                新晴不会把这些内容作为心理诊断依据。
+                慢聊小记不会把这些内容作为心理诊断依据。
               </p>
             </section>
 
@@ -122,7 +122,7 @@ export default function InsightsPage() {
               className="absolute left-[22px] top-[560px] h-[52px] w-[346px] rounded-[26px] bg-[var(--sage)] text-[13px] font-semibold leading-5 text-[var(--card-warm)]"
               onClick={authorizeInsights}
             >
-              同意并查看新晴观察
+              同意并查看慢聊小记观察
             </button>
 
             <Link
@@ -135,7 +135,7 @@ export default function InsightsPage() {
         ) : (
           <>
             <h1 className="absolute left-[22px] top-[100px] h-[38px] w-[300px] text-[28px] font-semibold leading-[38px]">
-              新晴观察
+              慢聊小记观察
             </h1>
             <div className="absolute left-[22px] top-[148px] w-[315px] text-sm leading-6 text-[var(--body)]">
               <p>从聊天和小记里整理出最近常出现的词。</p>

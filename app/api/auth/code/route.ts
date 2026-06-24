@@ -1,7 +1,8 @@
+import { NextRequest } from "next/server";
 import { VerificationScene } from "@prisma/client";
 
 import { failFromError, ok } from "@/lib/api-response";
-import { hashVerificationCode } from "@/lib/auth";
+import { hashVerificationCode, requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { isValidPhone } from "@/lib/validation";
@@ -30,7 +31,7 @@ const parseScene = (value: unknown) => {
 
 const createCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await readJson(request);
     const phone = typeof body.phone === "string" ? body.phone.trim() : "";
@@ -38,6 +39,13 @@ export async function POST(request: Request) {
 
     if (!isValidPhone(phone)) {
       throw new AppError("VALIDATION_ERROR", "请输入 11 位手机号码", 400, { field: "phone" });
+    }
+
+    if (scene === VerificationScene.CANCEL_ACCOUNT) {
+      const currentUser = await requireUser(request);
+      if (!currentUser.phone || currentUser.phone !== phone) {
+        throw new AppError("FORBIDDEN", "只能向当前账号绑定手机号发送注销验证码", 403);
+      }
     }
 
     const code = createCode();

@@ -1,27 +1,27 @@
-# 新晴图片存储方案
+# 慢聊小记图片存储方案
 
 ## 当前结论
 
-当前小程序已经支持选择图片、最多 9 张、详情页宫格展示和预览，但“图片上传/持久化”还没有真正闭环。
+当前小程序已经支持选择图片、最多 9 张、详情页宫格展示和预览；登录用户的小记图片上传/持久化链路已经接入内测版服务端中转方案。
 
-后端 `Note` 模型已有 `mediaUrls` 字段，`POST /api/notes` 也只接受 `mediaUrls` 数组；小程序当前提交小记时仍在传 `images`，因此登录用户的小记图片不会按后端契约持久化。
+后端 `Note` 模型使用 `mediaUrls` 字段，`POST /api/notes` 接受 `mediaUrls` 数组；小程序保存登录用户小记前会先通过 `wx.uploadFile` 上传图片，再把返回 URL 写入 `mediaUrls`。游客模式仍只保留本地临时图片。
 
-## P0 内测方案
+## P0 内测方案状态
 
-先采用服务端中转上传，避免一次性接入复杂对象存储：
+已先采用服务端中转上传，避免一次性接入复杂对象存储：
 
-1. 新增 `POST /api/uploads/notes`
-2. 小程序使用 `wx.uploadFile` 上传图片
-3. 后端校验登录态、文件类型、大小和数量
-4. 后端保存到服务器持久目录
-5. 接口返回可访问的 HTTPS 图片 URL
-6. 小程序创建小记时把这些 URL 写入 `mediaUrls`
-7. 历史页和详情页统一读取 `mediaUrls`
+1. 已新增 `POST /api/uploads/notes`
+2. 小程序已使用 `wx.uploadFile` 上传图片
+3. 后端已校验登录态、文件类型和单文件大小
+4. 后端已保存到服务器持久目录
+5. 接口已返回可访问的图片 URL
+6. 小程序创建小记时已把这些 URL 写入 `mediaUrls`
+7. 历史页和详情页已统一读取 `mediaUrls`
 
 建议环境变量：
 
 - `UPLOAD_DIR`: 服务器本地持久化目录，例如 `/var/www/xinqing/uploads`
-- `UPLOAD_PUBLIC_BASE_URL`: 图片访问根地址，例如 `https://xinqing.studio/uploads`
+- `UPLOAD_PUBLIC_BASE_URL`: 图片访问根地址，例如 `https://manliaoxiaoji.com/uploads`
 - `MAX_NOTE_MEDIA_COUNT`: 默认 `9`
 - `MAX_NOTE_IMAGE_SIZE_MB`: 默认 `10`
 
@@ -43,7 +43,7 @@ Content-Type: multipart/form-data
   "data": {
     "items": [
       {
-        "url": "https://xinqing.studio/uploads/notes/xxx.jpg",
+        "url": "https://manliaoxiaoji.com/uploads/notes/xxx.jpg",
         "type": "image",
         "size": 123456
       }
@@ -60,7 +60,7 @@ Content-Type: multipart/form-data
   "moodName": "晴晴",
   "moodIcon": "sun",
   "mediaUrls": [
-    "https://xinqing.studio/uploads/notes/xxx.jpg"
+    "https://manliaoxiaoji.com/uploads/notes/xxx.jpg"
   ]
 }
 ```
@@ -80,9 +80,7 @@ Content-Type: multipart/form-data
 
 ## 下一步实施清单
 
-1. 新增后端上传接口
-2. 小程序新增 upload API client
-3. 小程序保存小记前先上传图片
-4. `api/notes.js` 从 `images` 改为 `mediaUrls`
-5. 历史页/详情页统一读取 `mediaUrls`
-6. 真机验证上传、预览、保存图片和弱网失败提示
+1. 真机验证上传、预览、保存图片和弱网失败提示
+2. 生产环境确认 `UPLOAD_DIR` 使用持久化目录
+3. 生产环境确认 `UPLOAD_PUBLIC_BASE_URL` 使用 HTTPS 图片访问根地址
+4. 进入更大规模测试前迁移到对象存储

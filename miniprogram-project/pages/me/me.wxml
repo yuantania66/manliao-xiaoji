@@ -1,21 +1,22 @@
 <view class="page me-page" style="padding-top: {{pageTop}}px;">
-  <view class="eyebrow">新晴</view>
-  <view class="title">{{isLoggedIn ? "我的新晴" : "欢迎来到新晴"}}</view>
+  <view class="eyebrow">慢聊小记</view>
+  <view class="title">{{isLoggedIn ? "我的慢聊小记" : "欢迎来到慢聊小记"}}</view>
   <view class="profile-card card-sage">
     <view class="avatar">晴</view>
-    <view class="profile-title">{{isLoggedIn ? "我的新晴" : "游客模式"}}</view>
+    <view class="profile-title">{{isLoggedIn ? "我的慢聊小记" : "游客模式"}}</view>
     <view class="body">{{isLoggedIn ? "已连续登录 28 天" : "内容仅保存在本机"}}</view>
     <navigator url="/pages/settings/settings" class="settings-link" hover-class="none">设置</navigator>
   </view>
   <button wx:if="{{!isLoggedIn}}" class="primary-button login-button" bindtap="login">登录</button>
   <navigator url="/pages/insights/insights" class="insight-entry card" hover-class="none">
-    <view class="entry-title">新晴观察</view>
+    <view class="entry-title">慢聊小记观察</view>
     <view class="entry-copy">从聊天和小记里整理出的主题</view>
     <view class="entry-arrow">›</view>
   </navigator>
-  <view class="version">新晴 v2.0.0<br />慢慢说，也慢慢回看。</view>
-  <view class="bottom-bar">
-    <navigator url="/pages/home/home" hover-class="none">此刻</navigator>
-    <navigator url="/pages/me/me" hover-class="none">我的</navigator>
+  <view class="version">慢聊小记 v2.0.0<br />慢慢聊，轻轻记。</view>
+  <view class="bottom-bar {{activeTab === 'me' ? 'is-me' : 'is-home'}} {{switchingTab ? 'is-switching' : ''}}">
+    <view class="bottom-indicator"></view>
+    <button class="bottom-item {{activeTab === 'home' ? 'active' : ''}}" data-tab="home" bindtap="switchTab">此刻</button>
+    <button class="bottom-item {{activeTab === 'me' ? 'active' : ''}}" data-tab="me" bindtap="switchTab">我的</button>
   </view>
 </view>

@@ -122,10 +122,6 @@
   line-height: 36rpx;
 }
 
-.bottom-bar navigator {
-  color: #2d2926;
-}
-
 .entry-layer {
   position: fixed;
   left: 0;

@@ -51,7 +51,7 @@
 - JS 语法检查：`node --check pages/chat/chat.js` 通过。
 - 小程序预览编译：`wechatwebdevtools cli preview --project ... --compile-condition pages/chat/chat` 通过，包体 `64.9 KB`。
 - 第二轮静态 Review：已按 Web 390px 画布换算到 750rpx 复核标题、消息区、气泡和输入框。预计相似度约 90%-93%。
-- 第二轮真实截图 Review：已拿到微信开发者工具模拟器截图 `/tmp/xinqing-miniapp-chat-real.png`。发现三点菜单因为动态安全区偏向中间，已改为 Web 固定坐标。
+- 第二轮真实截图 Review：已拿到微信开发者工具模拟器截图 `/tmp/manliao-xiaoji-miniapp-chat-real.png`。发现三点菜单因为动态安全区偏向中间，已改为 Web 固定坐标。
 - 第三轮坐标 Review：通过 `miniprogram-automator` 测到三点按钮实际盒子约 `184px` 宽、消息容器约 `401px` 宽，均明显偏离 Web。已清除 button 默认盒模型，并修正消息容器盒模型，避免右侧气泡被挤出屏幕。
 - 第四轮坐标 Review：清除 button 默认盒模型后，三点按钮在小程序中仍被强制撑宽，因此改为 `view` 保留 `bindtap`；`scroll-view` left/right 收缩不稳定，因此改为 Web 等价固定宽度 `673rpx`。
 - 第五轮真实机安全区 Review：用户截图显示三点菜单与微信胶囊距离过近。由于 Web 无微信胶囊，小程序端优先避让系统胶囊，将三点菜单从 `top: 150rpx` 调整到 `top: 192rpx`，菜单面板从 `top: 208rpx` 调整到 `top: 250rpx`。

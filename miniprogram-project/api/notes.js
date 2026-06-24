@@ -5,7 +5,7 @@ const listNotes = (params = "") =>
     url: `/api/notes${params}`
   });
 
-const createNote = ({ content, mood, images = [], videos = [] }) =>
+const createNote = ({ content, mood, mediaUrls = [] }) =>
   request({
     url: "/api/notes",
     method: "POST",
@@ -13,8 +13,7 @@ const createNote = ({ content, mood, images = [], videos = [] }) =>
       content,
       moodName: mood ? mood.name : undefined,
       moodIcon: mood ? mood.icon : undefined,
-      images,
-      videos
+      mediaUrls
     }
   });
 

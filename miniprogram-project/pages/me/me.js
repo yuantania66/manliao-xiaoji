@@ -5,7 +5,9 @@ const { loginWithWechat } = require("../../api/auth");
 Page({
   data: {
     pageTop: 92,
-    isLoggedIn: false
+    isLoggedIn: false,
+    activeTab: "me",
+    switchingTab: false
   },
 
   onShow() {
@@ -48,5 +50,25 @@ Page({
         this.setData({ isLoggedIn: true });
       }
     });
+  },
+
+  switchTab(event) {
+    const tab = event.currentTarget.dataset.tab;
+    const routes = {
+      home: "/pages/home/home",
+      me: "/pages/me/me"
+    };
+    if (!routes[tab] || tab === this.data.activeTab) return;
+
+    if (this.tabSwitchTimer) clearTimeout(this.tabSwitchTimer);
+    this.setData({ activeTab: tab, switchingTab: true });
+    this.tabSwitchTimer = setTimeout(() => {
+      this.tabSwitchTimer = null;
+      wx.redirectTo({ url: routes[tab] });
+    }, 190);
+  },
+
+  onUnload() {
+    if (this.tabSwitchTimer) clearTimeout(this.tabSwitchTimer);
   }
 });

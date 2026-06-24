@@ -7,5 +7,5 @@
   <navigator url="/pages/cancel/cancel" class="setting-card card" hover-class="none">账号注销<text>了解注销前需要确认的事项</text><view>›</view></navigator>
   <navigator url="/pages/feedback/feedback" class="setting-card card" hover-class="none">意见反馈<text>把问题或建议告诉我们</text><view>›</view></navigator>
   <button class="logout" bindtap="logout">退出登录</button>
-  <view class="version">新晴 v2.0.0<br />慢慢说，也慢慢回看。</view>
+  <view class="version">慢聊小记 v2.0.0<br />慢慢聊，轻轻记。</view>
 </view>

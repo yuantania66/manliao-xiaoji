@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { apiRequest } from "@/lib/client-api";
+
 import { SettingsShell } from "../settings-shell";
 
 const feedbackTypes = ["使用问题", "功能建议", "其他"];
@@ -10,7 +12,32 @@ export default function FeedbackPage() {
   const [type, setType] = useState(feedbackTypes[0]);
   const [content, setContent] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const canSubmit = content.trim().length > 0;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const canSubmit = content.trim().length > 0 && !isSubmitting;
+
+  const submitFeedback = async () => {
+    if (!canSubmit) return;
+    setIsSubmitting(true);
+    setError("");
+    setSubmitted(false);
+    try {
+      await apiRequest<{ id: string }>("/api/feedback", {
+        method: "POST",
+        auth: false,
+        body: {
+          type,
+          content,
+        },
+      });
+      setContent("");
+      setSubmitted(true);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "提交失败，请稍后再试");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <SettingsShell title="意见反馈" lead="哪里不顺、哪里想改，都可以慢慢告诉我们。">
@@ -41,6 +68,7 @@ export default function FeedbackPage() {
           onChange={(event) => {
             setContent(event.target.value);
             setSubmitted(false);
+            setError("");
           }}
           className="note-scrollbar mt-3 h-[146px] w-full resize-none rounded-[18px] bg-[var(--page-bg)] px-4 py-4 text-sm leading-6 text-[var(--body)] outline-none placeholder:text-[var(--muted)]"
         />
@@ -57,12 +85,12 @@ export default function FeedbackPage() {
             ? "absolute left-[22px] top-[616px] h-[52px] w-[346px] rounded-[20px] bg-[var(--sage)] text-[13px] font-semibold leading-5 text-[var(--card-warm)]"
             : "absolute left-[22px] top-[616px] h-[52px] w-[346px] rounded-[20px] bg-[#d8d1c9] text-[13px] font-semibold leading-5 text-[var(--card-warm)]"
         }
-        onClick={() => setSubmitted(true)}
+        onClick={submitFeedback}
       >
-        {submitted ? "已收到，谢谢你" : "提交反馈"}
+        {isSubmitting ? "提交中" : submitted ? "已收到，谢谢你" : "提交反馈"}
       </button>
       <p className="absolute left-[42px] top-[690px] w-[306px] text-center text-[11px] leading-[18px] text-[var(--muted)]">
-        当前类型：{type}
+        {error || (submitted ? "反馈已保存，我们会认真看。" : `当前类型：${type}`)}
       </p>
     </SettingsShell>
   );

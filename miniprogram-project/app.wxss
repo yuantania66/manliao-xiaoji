@@ -132,9 +132,52 @@ button::after {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  color: #2d2926;
+  overflow: hidden;
   font-size: 26rpx;
   font-weight: 700;
+}
+
+.bottom-indicator {
+  position: absolute;
+  left: 25%;
+  top: 22rpx;
+  width: 72rpx;
+  height: 6rpx;
+  border-radius: 999rpx;
+  background: #71877b;
+  opacity: 0.96;
+  transform: translateX(-50%);
+  transition: left 180ms cubic-bezier(0.2, 0.8, 0.2, 1), width 180ms ease, opacity 180ms ease;
+}
+
+.bottom-bar.is-me .bottom-indicator {
+  left: 75%;
+}
+
+.bottom-bar.is-switching .bottom-indicator {
+  width: 84rpx;
+  opacity: 1;
+}
+
+.bottom-item {
+  position: relative;
+  display: flex;
+  width: 50%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #a49a91;
+  line-height: 140rpx;
+  transition: color 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+.bottom-item.active {
+  color: #2d2926;
+  transform: translateY(-1rpx);
+}
+
+.bottom-bar.is-switching .bottom-item:not(.active) {
+  opacity: 0.74;
 }
 
 .safe-bottom {

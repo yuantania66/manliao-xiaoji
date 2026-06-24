@@ -8,6 +8,6 @@
   </view>
   <textarea class="feedback-input" maxlength="300" value="{{content}}" bindinput="onInput" placeholder="反馈内容" />
   <view class="counter">{{contentLength}} / 300</view>
-  <button class="primary-button" bindtap="submit">提交反馈</button>
-  <view class="muted current">当前类型：{{type}}</view>
+  <button class="primary-button" loading="{{isSubmitting}}" disabled="{{isSubmitting}}" bindtap="submit">{{isSubmitting ? "提交中" : "提交反馈"}}</button>
+  <view class="muted current">{{statusText || "当前类型：" + type}}</view>
 </view>

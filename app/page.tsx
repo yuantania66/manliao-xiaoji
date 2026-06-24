@@ -209,11 +209,11 @@ export default function Home() {
 
         <nav className="absolute inset-x-0 bottom-0 h-[70px] border-t border-[var(--line)] bg-[var(--card-warm)]">
           <div className="absolute left-20 top-[11px] h-[3px] w-9 rounded-sm bg-[var(--sage)]" />
-          <div className="grid h-full grid-cols-2 pt-[22px] text-center text-[13px] font-semibold leading-5 text-[var(--ink)]">
-            <Link href="/" aria-label="此刻">
+          <div className="grid h-full grid-cols-2 pt-[22px] text-center text-[13px] font-semibold leading-5">
+            <Link href="/" className="text-[var(--ink)]" aria-label="此刻">
               此刻
             </Link>
-            <Link href="/me" aria-label="进入我的页面">
+            <Link href="/me" className="text-[var(--muted)]" aria-label="进入我的页面">
               我的
             </Link>
           </div>
@@ -223,7 +223,7 @@ export default function Home() {
           <div className="absolute inset-0 z-[2147483500] bg-[var(--ink)]/12 px-[22px] pb-[88px] pt-[420px]">
             <div className="rounded-[22px] bg-[var(--card-warm)] px-6 pb-6 pt-7 shadow-[0_24px_70px_rgba(45,41,38,0.16)]">
               <p className="text-xs font-semibold leading-[18px] text-[var(--sage)]">
-                新晴
+                慢聊小记
               </p>
               <h2 className="mt-4 text-[24px] font-semibold leading-[34px] text-[var(--ink)]">
                 先选择一种方式

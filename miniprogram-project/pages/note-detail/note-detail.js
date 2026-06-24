@@ -36,7 +36,7 @@ const normalizeRemoteNote = (note) => ({
   dateKey: note.dateKey || (/^\d{4}-\d{2}-\d{2}$/.test(note.recordDate || "") ? note.recordDate : ""),
   dateLabel: note.dateLabel || note.recordDate || note.createdAt,
   mood: note.moodName ? { name: note.moodName, desc: note.moodIcon || "" } : note.mood || null,
-  images: mediaFrom(note, ["images", "imageUrls", "photos", "mediaImages"]),
+  images: mediaFrom(note, ["mediaUrls", "images", "imageUrls", "photos", "mediaImages"]),
   videos: []
 });
 

@@ -9,7 +9,9 @@ const TEST_IMAGE_URL = "/assets/test-note-photo.svg";
 const titleOf = (content, note = {}) => {
   const trimmed = content.trim();
   if (!trimmed && note.displayTitle) return note.displayTitle;
-  if (!trimmed && note.images) return "图片小记";
+  if (!trimmed && ((note.images && note.images.length) || (note.mediaUrls && note.mediaUrls.length))) {
+    return "图片小记";
+  }
   return trimmed.length > 18 ? `${trimmed.slice(0, 17)}...` : trimmed || "这一刻已经被收下。";
 };
 
@@ -104,6 +106,7 @@ const normalizeRemoteNote = (note) => ({
   dateKey: note.recordDate,
   dateLabel: note.recordDate || note.createdAt,
   mood: note.moodName ? { name: note.moodName, desc: note.moodIcon || "" } : null,
+  images: Array.isArray(note.mediaUrls) ? note.mediaUrls.map((url) => ({ url })).slice(0, 9) : [],
   title: titleOf(note.content, note)
 });
 

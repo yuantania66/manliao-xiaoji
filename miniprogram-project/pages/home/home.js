@@ -36,7 +36,9 @@ Page({
     noteCopy: noteCopies[0],
     showEntry: false,
     isLoggingIn: false,
-    entryError: ""
+    entryError: "",
+    activeTab: "home",
+    switchingTab: false
   },
 
   onLoad(options) {
@@ -99,5 +101,25 @@ Page({
 
   goNote() {
     wx.navigateTo({ url: "/pages/note/note" });
+  },
+
+  switchTab(event) {
+    const tab = event.currentTarget.dataset.tab;
+    const routes = {
+      home: "/pages/home/home",
+      me: "/pages/me/me"
+    };
+    if (!routes[tab] || tab === this.data.activeTab) return;
+
+    if (this.tabSwitchTimer) clearTimeout(this.tabSwitchTimer);
+    this.setData({ activeTab: tab, switchingTab: true });
+    this.tabSwitchTimer = setTimeout(() => {
+      this.tabSwitchTimer = null;
+      wx.redirectTo({ url: routes[tab] });
+    }, 190);
+  },
+
+  onUnload() {
+    if (this.tabSwitchTimer) clearTimeout(this.tabSwitchTimer);
   }
 });

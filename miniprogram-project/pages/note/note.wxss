@@ -800,18 +800,31 @@
 
 .slip-close {
   position: absolute;
-  right: -58rpx;
-  top: 30rpx;
+  right: 30rpx;
+  top: 28rpx;
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 64rpx;
   height: 64rpx;
-  color: #a49a91;
-  text-align: center;
-  font-size: 44rpx;
-  line-height: 64rpx;
+}
+
+.slip-close::before,
+.slip-close::after {
+  content: "";
+  position: absolute;
+  left: 17rpx;
+  top: 30rpx;
+  width: 30rpx;
+  height: 4rpx;
+  border-radius: 999rpx;
+  background: #a49a91;
+}
+
+.slip-close::before {
+  transform: rotate(45deg);
+}
+
+.slip-close::after {
+  transform: rotate(-45deg);
 }
 
 .slip-sheet .eyebrow {
