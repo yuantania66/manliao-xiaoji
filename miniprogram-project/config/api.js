@@ -8,7 +8,7 @@ const API_BASE_URLS = {
   prod: "https://manliaoxiaoji.com"
 };
 
-const DEFAULT_API_ENV = "local";
+const DEFAULT_API_ENV = "prod";
 const API_TIMEOUT = 15000;
 
 const getStorageValue = (key) => {

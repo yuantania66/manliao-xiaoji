@@ -50,6 +50,7 @@
 - [ ] 开发者工具模拟器使用正确的本机或局域网 API 地址。
 - [ ] 真机调试使用局域网 IP 或 HTTPS 测试域名。
 - [ ] 体验版和正式版使用微信后台已配置的 HTTPS 合法域名。
+- [ ] 外网访问 `https://manliaoxiaoji.com/api/health` 已解除 DNSPod webblock 拦截。
 
 ## 2026-06-23 本地自动化测试记录
 
