@@ -37,13 +37,22 @@ type CachedChat = {
   messages: Message[];
 };
 
+type GuestAiUsage = {
+  date: string;
+  count: number;
+};
+
 export type InitialChatData = CachedChat | null;
 
 const CHAT_CACHE_PREFIX = "xinqingChatCache";
 const GUEST_MODE_KEY = "xinqingGuestMode";
 const GUEST_CHAT_CACHE_KEY = "xinqingGuestChatCache";
+const GUEST_AI_USAGE_KEY = "xinqingGuestAiUsage";
+const GUEST_AI_DAILY_LIMIT = 3;
 const GUEST_SESSION_ID = "guest-session";
 const LOCAL_DEMO_TOKEN_PREFIX = "local_demo_";
+const GUEST_AI_LIMIT_MESSAGE =
+  "今天的游客体验次数用完啦。登录后可以继续慢慢说，也能保存聊天回看。";
 
 const TYPEWRITER_STEP_MIN = 2;
 const TYPEWRITER_STEP_MAX = 5;
@@ -161,12 +170,44 @@ const writeGuestMessages = (messages: Message[]) => {
   window.sessionStorage.setItem(GUEST_CHAT_CACHE_KEY, JSON.stringify(messages));
 };
 
-const createGuestReply = (text: string) => {
-  if (text.length <= 8) {
-    return "我在。你可以慢慢说，不用一次讲清楚。";
-  }
+const getTodayKey = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 
-  return "听起来这件事在你心里停了一会儿。我们可以先从最靠近你的那一点开始。";
+const readGuestAiUsage = (): GuestAiUsage => {
+  const today = getTodayKey();
+  if (typeof window === "undefined") return { date: today, count: 0 };
+
+  try {
+    const usage = JSON.parse(window.localStorage.getItem(GUEST_AI_USAGE_KEY) || "null") as
+      | GuestAiUsage
+      | null;
+    return usage?.date === today ? usage : { date: today, count: 0 };
+  } catch {
+    return { date: today, count: 0 };
+  }
+};
+
+const writeGuestAiUsage = (usage: GuestAiUsage) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(GUEST_AI_USAGE_KEY, JSON.stringify(usage));
+};
+
+const getGuestAiRemaining = () =>
+  Math.max(GUEST_AI_DAILY_LIMIT - readGuestAiUsage().count, 0);
+
+const incrementGuestAiUsage = () => {
+  const usage = readGuestAiUsage();
+  const next = {
+    date: usage.date,
+    count: Math.min(usage.count + 1, GUEST_AI_DAILY_LIMIT),
+  };
+  writeGuestAiUsage(next);
+  return Math.max(GUEST_AI_DAILY_LIMIT - next.count, 0);
 };
 
 function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
@@ -384,29 +425,66 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     setErrorMessage("");
 
     if (isGuestMode) {
-      const replyId = `guest-reply-${Date.now()}`;
-      const replyText = createGuestReply(text);
-      window.setTimeout(() => {
-        const assistantMessage: Message = {
-          id: replyId,
-          role: "assistant",
-          text: replyText,
-          createdAt: new Date().toISOString(),
-        };
-        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+      const replacePendingAssistant = async (assistantMessage: Message) => {
+        setTypingMessageIds((current) =>
+          current.filter((id) => id !== pendingAssistantId).concat(assistantMessage.id)
+        );
         setMessages((current) => {
           const next = current.map((message) =>
-            message.id === pendingAssistantId ? assistantMessage : message
+            message.id === pendingAssistantId ? { ...assistantMessage, text: "" } : message
           );
           writeGuestMessages(next);
           return next;
         });
-      }, 620);
-      setMessages((current) => {
-        const next = [...current];
-        writeGuestMessages(next);
-        return next;
-      });
+        await revealAssistantReply(assistantMessage.id, assistantMessage.text);
+        setMessages((current) => {
+          writeGuestMessages(current);
+          return current;
+        });
+      };
+
+      if (getGuestAiRemaining() <= 0) {
+        const assistantMessage: Message = {
+          id: `guest-limit-${Date.now()}`,
+          role: "assistant",
+          text: GUEST_AI_LIMIT_MESSAGE,
+          createdAt: new Date().toISOString(),
+        };
+        await replacePendingAssistant(assistantMessage);
+        return;
+      }
+
+      try {
+        const data = await apiRequest<{
+          assistantMessage: ChatMessageResponse;
+          fallbackUsed: boolean;
+        }>("/api/chat/guest", {
+          method: "POST",
+          auth: false,
+          body: {
+            content: text,
+            recentMessages: messages.slice(-8).map((message) => ({
+              role: message.role,
+              content: message.text,
+            })),
+          },
+        });
+        incrementGuestAiUsage();
+        await replacePendingAssistant({
+          id: data.assistantMessage.id,
+          role: "assistant",
+          text: data.assistantMessage.content,
+          createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
+        });
+      } catch (error) {
+        setMessages((current) =>
+          current.filter(
+            (message) => message.id !== pendingAssistantId && message.id !== optimisticId
+          )
+        );
+        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+        setErrorMessage(getErrorMessage(error));
+      }
       return;
     }
 
