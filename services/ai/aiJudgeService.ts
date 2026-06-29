@@ -1,7 +1,7 @@
 import { AppError } from "@/lib/errors";
 
 import { buildJudgeMessages, JUDGE_PROMPT_VERSION } from "./promptBuilder";
-import { callModel } from "./modelProvider";
+import { callModel, getDefaultAiModel, isAiProviderConfigured } from "./modelProvider";
 import {
   AiConversationMessage,
   AiJudgeIssue,
@@ -71,7 +71,7 @@ const runLocalJudge = ({
   };
 };
 
-export const getJudgeModel = () => process.env.AI_JUDGE_MODEL?.trim() || "gpt-4.1-mini";
+export const getJudgeModel = () => process.env.AI_JUDGE_MODEL?.trim() || getDefaultAiModel();
 
 export const judgeReply = async ({
   userMessage,
@@ -82,7 +82,7 @@ export const judgeReply = async ({
   assistantReply: string;
   recentMessages: AiConversationMessage[];
 }): Promise<AiJudgeResult & { judgeModel: string; promptVersion: string }> => {
-  if (!process.env.OPENAI_API_KEY?.trim()) {
+  if (!isAiProviderConfigured()) {
     return {
       ...runLocalJudge({ userMessage, assistantReply }),
       judgeModel: "local-heuristic",

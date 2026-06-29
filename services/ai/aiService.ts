@@ -1,10 +1,10 @@
 import { AppError } from "@/lib/errors";
 
 import { buildChatMessages, CHAT_PROMPT_VERSION, FALLBACK_PROMPT_VERSION } from "./promptBuilder";
-import { callModel } from "./modelProvider";
+import { callModel, getDefaultAiModel } from "./modelProvider";
 import { AiConversationMessage, AiGenerationResult, AiRiskLevel } from "./types";
 
-export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || "gpt-4.1-mini";
+export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel();
 
 export const generateChatReply = async ({
   userMessage,

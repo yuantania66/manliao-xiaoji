@@ -33,7 +33,7 @@
 
 - [ ] HTTPS 生效后，在微信公众平台配置合法域名。
 - [ ] 配置生产数据库备份。
-- [ ] 配置生产 `OPENAI_API_KEY`。
+- [ ] 配置生产 AI Provider，例如 `AI_PROVIDER=deepseek` + `DEEPSEEK_API_KEY`，或 `AI_PROVIDER=zhipu` + `ZHIPU_API_KEY`。
 
 ## 常用命令
 

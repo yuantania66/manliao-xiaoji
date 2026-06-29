@@ -1,9 +1,9 @@
 import { buildRewriteMessages, REWRITE_PROMPT_VERSION } from "./promptBuilder";
-import { callModel } from "./modelProvider";
+import { callModel, getDefaultAiModel, isAiProviderConfigured } from "./modelProvider";
 import { getFallbackReply } from "./aiService";
 import { AiConversationMessage, AiGenerationResult, AiJudgeResult } from "./types";
 
-export const getRewriteModel = () => process.env.AI_REWRITE_MODEL?.trim() || "gpt-4.1-mini";
+export const getRewriteModel = () => process.env.AI_REWRITE_MODEL?.trim() || getDefaultAiModel();
 
 export const rewriteChatReply = async ({
   userMessage,
@@ -16,7 +16,7 @@ export const rewriteChatReply = async ({
   judgeResult: AiJudgeResult;
   recentMessages: AiConversationMessage[];
 }): Promise<AiGenerationResult> => {
-  if (!process.env.OPENAI_API_KEY?.trim()) {
+  if (!isAiProviderConfigured()) {
     return {
       text: getFallbackReply(judgeResult.riskLevel),
       model: "mock:rewrite",

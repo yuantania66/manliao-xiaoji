@@ -11,5 +11,9 @@ functions that use:
 - `promptBuilder.ts` for prompt construction and versioning
 - `modelProvider.ts` for provider-specific API calls
 
-This placeholder is part of the backend foundation module. The actual AI
-implementation will be added in a later module.
+Supported providers are selected with `AI_PROVIDER`:
+
+- `openai` uses `OPENAI_API_KEY` and the OpenAI Responses API.
+- `deepseek` uses `DEEPSEEK_API_KEY` and an OpenAI-compatible chat completions API.
+- `zhipu` uses `ZHIPU_API_KEY` and an OpenAI-compatible chat completions API.
+- `mock` or a missing provider key returns a local safe fallback for development.
