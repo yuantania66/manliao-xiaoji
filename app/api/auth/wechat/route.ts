@@ -21,12 +21,16 @@ const mockOpenIdFromCode = (code: string) =>
 const getWechatOpenId = async (code: string) => {
   const appId = process.env.WECHAT_APP_ID?.trim();
   const appSecret = process.env.WECHAT_APP_SECRET?.trim();
-  const allowMock = process.env.APP_ENV !== "production";
+  const allowMock =
+    process.env.APP_ENV !== "production" ||
+    (process.env.ALLOW_WEB_MOCK_LOGIN === "true" && code.startsWith("web_mock_"));
 
   if (!appId || !appSecret) {
     if (allowMock) return mockOpenIdFromCode(code);
     throw new AppError("INTERNAL_ERROR", "微信登录配置未完成", 500);
   }
+
+  if (allowMock) return mockOpenIdFromCode(code);
 
   const url = new URL("https://api.weixin.qq.com/sns/jscode2session");
   url.searchParams.set("appid", appId);
