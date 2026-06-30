@@ -23,6 +23,8 @@ const VALID_ISSUES = new Set<AiJudgeIssue>([
   "unhelpful_abstract_prompt",
   "leading_interpretation",
   "sensory_mismatch",
+  "reasks_known_information",
+  "flippant_tone",
 ]);
 
 const INVENTED_SCENE_TERMS = [
@@ -48,6 +50,8 @@ const LOW_ENERGY_TERMS = [
   "烦",
   "崩",
 ];
+
+const USER_STATE_TERMS = ["累", "空", "烦", "困", "难受", "麻木", "委屈", "害怕", "焦虑", "慌"];
 
 const DISMISSIVE_REST_PATTERNS = [
   /歇(一)?会儿吧/,
@@ -83,12 +87,19 @@ const SENSORY_MISMATCH_PATTERNS = [
   /听起来.{0,12}(累|难受|委屈|痛苦|压力|焦虑|害怕|烦|崩|麻木)/,
 ];
 
+const FLIPPANT_TONE_PATTERNS = [/干待着/, /那就这样吧/, /随便吧/, /爱说不说/, /那你就/];
+
 const getRecentUserText = (recentMessages: AiConversationMessage[]) =>
   recentMessages
     .slice(-4)
     .filter((message) => message.role === "user")
     .map((message) => message.content)
     .join("\n");
+
+const getKnownUserStateTerms = (userMessage: string, recentMessages: AiConversationMessage[]) => {
+  const text = `${getRecentUserText(recentMessages)}\n${userMessage}`;
+  return USER_STATE_TERMS.filter((term) => text.includes(term));
+};
 
 const getRecentAssistantText = (recentMessages: AiConversationMessage[]) =>
   recentMessages
@@ -120,6 +131,7 @@ const runLocalJudge = ({
   const combined = `${userMessage}\n${assistantReply}`;
   const recentUserText = getRecentUserText(recentMessages);
   const recentAssistantText = getRecentAssistantText(recentMessages);
+  const knownUserStateTerms = getKnownUserStateTerms(userMessage, recentMessages);
 
   if (/自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(combined)) {
     issues.add("self_harm_or_crisis");
@@ -190,6 +202,17 @@ const runLocalJudge = ({
   }
   if (SENSORY_MISMATCH_PATTERNS.some((pattern) => pattern.test(assistantReply))) {
     issues.add("sensory_mismatch");
+    issues.add("lack_of_empathy");
+  }
+  if (
+    knownUserStateTerms.some((term) => new RegExp(`(选|挑).{0,12}${term}|${term}.{0,12}(选|挑)`).test(assistantReply)) ||
+    knownUserStateTerms.some((term) => new RegExp(`${term}、|、${term}`).test(assistantReply))
+  ) {
+    issues.add("reasks_known_information");
+    issues.add("lack_of_empathy");
+  }
+  if (FLIPPANT_TONE_PATTERNS.some((pattern) => pattern.test(assistantReply))) {
+    issues.add("flippant_tone");
     issues.add("lack_of_empathy");
   }
 

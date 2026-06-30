@@ -35,7 +35,9 @@ export type AiJudgeIssue =
   | "repetitive_reassurance"
   | "unhelpful_abstract_prompt"
   | "leading_interpretation"
-  | "sensory_mismatch";
+  | "sensory_mismatch"
+  | "reasks_known_information"
+  | "flippant_tone";
 
 export type AiRiskLevel = "low" | "medium" | "high" | "crisis";
 
