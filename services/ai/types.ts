@@ -31,7 +31,8 @@ export type AiJudgeIssue =
   | "inappropriate_strong_advice"
   | "self_harm_or_crisis"
   | "invented_scene"
-  | "dismissive_rest_advice";
+  | "dismissive_rest_advice"
+  | "repetitive_reassurance";
 
 export type AiRiskLevel = "low" | "medium" | "high" | "crisis";
 

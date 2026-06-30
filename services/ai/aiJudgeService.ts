@@ -19,6 +19,7 @@ const VALID_ISSUES = new Set<AiJudgeIssue>([
   "self_harm_or_crisis",
   "invented_scene",
   "dismissive_rest_advice",
+  "repetitive_reassurance",
 ]);
 
 const INVENTED_SCENE_TERMS = [
@@ -54,6 +55,19 @@ const DISMISSIVE_REST_PATTERNS = [
   /早点睡/,
 ];
 
+const UNCERTAIN_TERMS = ["不知道说什么", "不知道怎么说", "说不上来", "不知道"];
+
+const REASSURANCE_TERMS = ["我在这儿", "陪着你", "陪你", "没关系", "不用说清楚", "只说一点点"];
+
+const MICRO_ENTRY_TERMS = ["身体累", "心里累", "都累", "一个词", "选一个", "哪一", "最重", "最明显"];
+
+const getRecentAssistantText = (recentMessages: AiConversationMessage[]) =>
+  recentMessages
+    .slice(-4)
+    .filter((message) => message.role === "assistant")
+    .map((message) => message.content)
+    .join("\n");
+
 const normalizeRiskLevel = (value: unknown): AiRiskLevel => {
   if (value === "medium" || value === "high" || value === "crisis") return value;
   return "low";
@@ -67,12 +81,15 @@ const normalizeIssues = (value: unknown): AiJudgeIssue[] => {
 const runLocalJudge = ({
   userMessage,
   assistantReply,
+  recentMessages,
 }: {
   userMessage: string;
   assistantReply: string;
+  recentMessages: AiConversationMessage[];
 }): AiJudgeResult => {
   const issues = new Set<AiJudgeIssue>();
   const combined = `${userMessage}\n${assistantReply}`;
+  const recentAssistantText = getRecentAssistantText(recentMessages);
 
   if (/自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(combined)) {
     issues.add("self_harm_or_crisis");
@@ -102,6 +119,15 @@ const runLocalJudge = ({
     DISMISSIVE_REST_PATTERNS.some((pattern) => pattern.test(assistantReply))
   ) {
     issues.add("dismissive_rest_advice");
+    issues.add("lack_of_empathy");
+  }
+  if (
+    UNCERTAIN_TERMS.some((term) => userMessage.includes(term)) &&
+    REASSURANCE_TERMS.some((term) => recentAssistantText.includes(term)) &&
+    REASSURANCE_TERMS.some((term) => assistantReply.includes(term)) &&
+    !MICRO_ENTRY_TERMS.some((term) => assistantReply.includes(term))
+  ) {
+    issues.add("repetitive_reassurance");
     issues.add("lack_of_empathy");
   }
 
@@ -135,7 +161,7 @@ export const judgeReply = async ({
 }): Promise<AiJudgeResult & { judgeModel: string; promptVersion: string }> => {
   if (getJudgeMode() === "local" || !isAiProviderConfigured()) {
     return {
-      ...runLocalJudge({ userMessage, assistantReply }),
+      ...runLocalJudge({ userMessage, assistantReply, recentMessages }),
       judgeModel: "local-heuristic",
       promptVersion: JUDGE_PROMPT_VERSION,
     };
@@ -171,7 +197,7 @@ export const judgeReply = async ({
   } catch (error) {
     if (error instanceof AppError) throw new AppError("AI_JUDGE_FAILED", error.message, 502);
     return {
-      ...runLocalJudge({ userMessage, assistantReply }),
+      ...runLocalJudge({ userMessage, assistantReply, recentMessages }),
       judgeModel: "local-heuristic",
       promptVersion: JUDGE_PROMPT_VERSION,
     };

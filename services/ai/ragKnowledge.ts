@@ -20,7 +20,14 @@ const KNOWLEDGE_ITEMS: RagKnowledgeItem[] = [
     title: "用户短答或不知道",
     triggers: ["不知道", "还好", "嗯", "没有", "随便", "说不上来", "不知道怎么说"],
     guidance:
-      "用户短答时不要硬追问，也不要解释用户为什么这样。可以说“不知道也可以”“先不用说清楚”，然后停住。",
+      "用户短答时不要硬追问，也不要解释用户为什么这样。可以说“不知道也可以”“先不用说清楚”。如果前面已经安抚过，不要重复“我在这儿/陪着你”，改给一个很小的表达入口。",
+  },
+  {
+    id: "low-energy-stuck-next-step",
+    title: "低能量后不知道怎么说",
+    triggers: ["不知道说什么", "不知道怎么说", "说不上来", "不知道"],
+    guidance:
+      "如果用户前面表达累或低能量，本轮又说不知道说什么，不要继续只安慰或重复“我在这儿/陪着你”。给一个低压力入口，例如“那不用说完整，可以只选一个：身体累、心里累，还是都累。”",
   },
   {
     id: "avoid-invented-scenes",
@@ -143,6 +150,13 @@ const scoreItem = ({
     score += 5;
   }
   if (item.id === "short-uncertain-answer" && userMessage.trim().length <= 8) score += 2;
+  if (
+    item.id === "low-energy-stuck-next-step" &&
+    /不知道|说不上来|不知道怎么说|不知道说什么/.test(userMessage) &&
+    /累|疲惫|没力气|撑不住|耗尽|压力|烦/.test(recentText)
+  ) {
+    score += 6;
+  }
   if (item.id === "avoid-invented-scenes") score += 1;
 
   return score;
