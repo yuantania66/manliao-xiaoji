@@ -45,8 +45,24 @@ const getInitialProfileState = (): ProfileState => {
   return getStoredAuth()?.token ? "logged" : "guest";
 };
 
+const getMembershipDays = (createdAt?: string) => {
+  if (!createdAt) return null;
+  const createdTime = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdTime)) return null;
+
+  const diffDays = Math.floor((Date.now() - createdTime) / (24 * 60 * 60 * 1000));
+  return Math.max(diffDays + 1, 1);
+};
+
+const getProfileSubtitle = (isLogged: boolean, user: AuthUser | null) => {
+  if (!isLogged) return "内容仅保存在本机";
+  const membershipDays = getMembershipDays(user?.createdAt);
+  return membershipDays ? `已加入 ${membershipDays} 天` : "已登录";
+};
+
 export default function MePage() {
   const [profileState, setProfileState] = useState<ProfileState>("guest");
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isLoginPanelOpen, setIsLoginPanelOpen] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
   const [isAgreementPromptOpen, setIsAgreementPromptOpen] = useState(false);
@@ -64,8 +80,10 @@ export default function MePage() {
   useEffect(() => {
     const storedAuth = getStoredAuth();
     setProfileState(getInitialProfileState());
+    setCurrentUser(storedAuth?.user ?? null);
 
     if (!storedAuth?.token) {
+      setCurrentUser(null);
       setIsAuthChecking(false);
       return;
     }
@@ -75,11 +93,13 @@ export default function MePage() {
       .then(({ user }) => {
         if (cancelled) return;
         saveAuth({ token: storedAuth.token, expiresAt: storedAuth.expiresAt, user });
+        setCurrentUser(user);
         setProfileState("logged");
       })
       .catch(() => {
         if (cancelled) return;
         clearAuth();
+        setCurrentUser(null);
         setProfileState("guest");
       })
       .finally(() => {
@@ -126,6 +146,7 @@ export default function MePage() {
       return;
     }
     saveAuth({ token, expiresAt, user });
+    setCurrentUser(user ?? null);
     setProfileState("logged");
     setIsLoginPanelOpen(false);
   };
@@ -281,7 +302,7 @@ export default function MePage() {
             {isLogged ? "我的慢聊小记" : "游客模式"}
           </h2>
           <p className="absolute left-[100px] top-[60px] h-[18px] w-[190px] text-xs leading-[18px] text-[var(--muted)]">
-            {isLogged ? "已连续登录 28 天" : "内容仅保存在本机"}
+            {getProfileSubtitle(isLogged, currentUser)}
           </p>
           <Link
             href="/me/settings"

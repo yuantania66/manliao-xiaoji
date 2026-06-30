@@ -4,7 +4,7 @@
   <view class="profile-card card-sage">
     <view class="avatar">晴</view>
     <view class="profile-title">{{isLoggedIn ? "我的慢聊小记" : "游客模式"}}</view>
-    <view class="body">{{isLoggedIn ? "已连续登录 28 天" : "内容仅保存在本机"}}</view>
+    <view class="body">{{membershipText}}</view>
     <navigator url="/pages/settings/settings" class="settings-link" hover-class="none">设置</navigator>
   </view>
   <button wx:if="{{!isLoggedIn}}" class="primary-button login-button" bindtap="login">登录</button>

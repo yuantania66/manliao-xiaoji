@@ -2,17 +2,36 @@ const { getAuth, saveAuth } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
 const { loginWithWechat } = require("../../api/auth");
 
+const getMembershipDays = (createdAt) => {
+  if (!createdAt) return null;
+  const createdTime = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdTime)) return null;
+  const diffDays = Math.floor((Date.now() - createdTime) / (24 * 60 * 60 * 1000));
+  return Math.max(diffDays + 1, 1);
+};
+
+const getMembershipText = (auth) => {
+  if (!auth) return "内容仅保存在本机";
+  const membershipDays = getMembershipDays(auth.user && auth.user.createdAt);
+  return membershipDays ? `已加入 ${membershipDays} 天` : "已登录";
+};
+
 Page({
   data: {
     pageTop: 92,
     isLoggedIn: false,
+    membershipText: "内容仅保存在本机",
     activeTab: "me",
     switchingTab: false
   },
 
   onShow() {
     this.updateSafeLayout();
-    this.setData({ isLoggedIn: Boolean(getAuth()) });
+    const auth = getAuth();
+    this.setData({
+      isLoggedIn: Boolean(auth),
+      membershipText: getMembershipText(auth)
+    });
   },
 
   updateSafeLayout() {
@@ -26,7 +45,10 @@ Page({
         loginWithWechat(code || `mini_me_${Date.now()}`)
           .then((auth) => {
             saveAuth(auth);
-            this.setData({ isLoggedIn: true });
+            this.setData({
+              isLoggedIn: true,
+              membershipText: getMembershipText(auth)
+            });
           })
           .catch(() => {
             saveAuth({
@@ -36,7 +58,7 @@ Page({
                 nickname: "本地演示用户"
               }
             });
-            this.setData({ isLoggedIn: true });
+            this.setData({ isLoggedIn: true, membershipText: "已登录" });
           });
       },
       fail: () => {
@@ -47,7 +69,7 @@ Page({
             nickname: "本地演示用户"
           }
         });
-        this.setData({ isLoggedIn: true });
+        this.setData({ isLoggedIn: true, membershipText: "已登录" });
       }
     });
   },
