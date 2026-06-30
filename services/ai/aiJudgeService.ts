@@ -55,9 +55,6 @@ const runLocalJudge = ({
   if (/你必须|你应该立刻|马上辞职|分手吧|必须马上/.test(assistantReply)) {
     issues.add("inappropriate_strong_advice");
   }
-  if (!/听见|理解|难受|辛苦|陪|在这里|不急|慢慢|可以/.test(assistantReply)) {
-    issues.add("lack_of_empathy");
-  }
 
   const issueList = [...issues];
   const hasCrisis = issueList.includes("self_harm_or_crisis");
@@ -73,6 +70,11 @@ const runLocalJudge = ({
 
 export const getJudgeModel = () => process.env.AI_JUDGE_MODEL?.trim() || getDefaultAiModel();
 
+const getJudgeMode = () => {
+  const mode = process.env.AI_JUDGE_MODE?.trim().toLowerCase();
+  return mode === "model" ? "model" : "local";
+};
+
 export const judgeReply = async ({
   userMessage,
   assistantReply,
@@ -82,7 +84,7 @@ export const judgeReply = async ({
   assistantReply: string;
   recentMessages: AiConversationMessage[];
 }): Promise<AiJudgeResult & { judgeModel: string; promptVersion: string }> => {
-  if (!isAiProviderConfigured()) {
+  if (getJudgeMode() === "local" || !isAiProviderConfigured()) {
     return {
       ...runLocalJudge({ userMessage, assistantReply }),
       judgeModel: "local-heuristic",

@@ -54,10 +54,10 @@ const LOCAL_DEMO_TOKEN_PREFIX = "local_demo_";
 const GUEST_AI_LIMIT_MESSAGE =
   "今天的游客体验次数用完啦。登录后可以继续慢慢说，也能保存聊天回看。";
 
-const TYPEWRITER_STEP_MIN = 2;
-const TYPEWRITER_STEP_MAX = 5;
-const TYPEWRITER_DELAY_MIN_MS = 190;
-const TYPEWRITER_DELAY_MAX_MS = 380;
+const TYPEWRITER_STEP_MIN = 6;
+const TYPEWRITER_STEP_MAX = 12;
+const TYPEWRITER_DELAY_MIN_MS = 28;
+const TYPEWRITER_DELAY_MAX_MS = 55;
 
 const sleep = (delay: number) =>
   new Promise((resolve) => window.setTimeout(resolve, delay));
@@ -76,8 +76,8 @@ const getNextTypingIndex = (text: string, currentIndex: number) => {
 
 const getTypingDelay = (latestText: string) => {
   const lastChar = latestText.at(-1);
-  if (lastChar && /[。！？.!?\n]/.test(lastChar)) return 640;
-  if (lastChar && /[，、；：,;:]/.test(lastChar)) return 420;
+  if (lastChar && /[。！？.!?\n]/.test(lastChar)) return 140;
+  if (lastChar && /[，、；：,;:]/.test(lastChar)) return 80;
   return (
     TYPEWRITER_DELAY_MIN_MS +
     Math.floor(Math.random() * (TYPEWRITER_DELAY_MAX_MS - TYPEWRITER_DELAY_MIN_MS + 1))
