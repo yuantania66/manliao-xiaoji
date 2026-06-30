@@ -29,7 +29,8 @@ export type AiJudgeIssue =
   | "ai_like_tone"
   | "lack_of_empathy"
   | "inappropriate_strong_advice"
-  | "self_harm_or_crisis";
+  | "self_harm_or_crisis"
+  | "invented_scene";
 
 export type AiRiskLevel = "low" | "medium" | "high" | "crisis";
 

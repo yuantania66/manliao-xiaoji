@@ -17,7 +17,20 @@ const VALID_ISSUES = new Set<AiJudgeIssue>([
   "lack_of_empathy",
   "inappropriate_strong_advice",
   "self_harm_or_crisis",
+  "invented_scene",
 ]);
+
+const INVENTED_SCENE_TERMS = [
+  "月亮",
+  "云",
+  "窗外",
+  "空气",
+  "泡茶",
+  "热茶",
+  "听雨",
+  "雨声",
+  "发呆",
+];
 
 const normalizeRiskLevel = (value: unknown): AiRiskLevel => {
   if (value === "medium" || value === "high" || value === "crisis") return value;
@@ -54,6 +67,13 @@ const runLocalJudge = ({
   }
   if (/你必须|你应该立刻|马上辞职|分手吧|必须马上/.test(assistantReply)) {
     issues.add("inappropriate_strong_advice");
+  }
+  if (
+    INVENTED_SCENE_TERMS.some(
+      (term) => assistantReply.includes(term) && !userMessage.includes(term)
+    )
+  ) {
+    issues.add("invented_scene");
   }
 
   const issueList = [...issues];
