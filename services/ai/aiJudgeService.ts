@@ -18,6 +18,7 @@ const VALID_ISSUES = new Set<AiJudgeIssue>([
   "inappropriate_strong_advice",
   "self_harm_or_crisis",
   "invented_scene",
+  "dismissive_rest_advice",
 ]);
 
 const INVENTED_SCENE_TERMS = [
@@ -30,6 +31,27 @@ const INVENTED_SCENE_TERMS = [
   "听雨",
   "雨声",
   "发呆",
+];
+
+const LOW_ENERGY_TERMS = [
+  "我累了",
+  "好累",
+  "累了",
+  "疲惫",
+  "没力气",
+  "撑不住",
+  "耗尽",
+  "烦",
+  "崩",
+];
+
+const DISMISSIVE_REST_PATTERNS = [
+  /歇(一)?会儿吧/,
+  /休息(一下|一会儿)?吧/,
+  /不用硬撑/,
+  /去睡(一)?觉/,
+  /睡(一)?觉就好了/,
+  /早点睡/,
 ];
 
 const normalizeRiskLevel = (value: unknown): AiRiskLevel => {
@@ -74,6 +96,13 @@ const runLocalJudge = ({
     )
   ) {
     issues.add("invented_scene");
+  }
+  if (
+    LOW_ENERGY_TERMS.some((term) => userMessage.includes(term)) &&
+    DISMISSIVE_REST_PATTERNS.some((pattern) => pattern.test(assistantReply))
+  ) {
+    issues.add("dismissive_rest_advice");
+    issues.add("lack_of_empathy");
   }
 
   const issueList = [...issues];
