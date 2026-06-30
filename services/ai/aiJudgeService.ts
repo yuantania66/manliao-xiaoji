@@ -22,6 +22,7 @@ const VALID_ISSUES = new Set<AiJudgeIssue>([
   "repetitive_reassurance",
   "unhelpful_abstract_prompt",
   "leading_interpretation",
+  "sensory_mismatch",
 ]);
 
 const INVENTED_SCENE_TERMS = [
@@ -67,12 +68,20 @@ const ABSTRACT_PROMPT_PATTERNS = [
   /想说(点|些)?什么/,
   /发生了什么/,
   /为什么/,
+  /因为什么/,
   /多说(一点|一些)/,
   /聊聊/,
   /展开说说/,
 ];
 
 const INFERRED_STATE_TERMS = ["身体", "心里", "沉", "压着", "委屈", "害怕", "焦虑", "难过", "空"];
+
+const SENSORY_MISMATCH_PATTERNS = [
+  /听(到|见).{0,8}(感受|感觉|情绪|累|难受|委屈|痛苦|压力)/,
+  /(感受|感觉|情绪|累|难受|委屈|痛苦|压力).{0,8}听(到|见)/,
+  /听起来.{0,8}(感觉|感受)/,
+  /听起来.{0,12}(累|难受|委屈|痛苦|压力|焦虑|害怕|烦|崩|麻木)/,
+];
 
 const getRecentUserText = (recentMessages: AiConversationMessage[]) =>
   recentMessages
@@ -160,6 +169,14 @@ const runLocalJudge = ({
     issues.add("lack_of_empathy");
   }
   if (
+    LOW_ENERGY_TERMS.some((term) => userMessage.includes(term)) &&
+    ABSTRACT_PROMPT_PATTERNS.some((pattern) => pattern.test(assistantReply)) &&
+    !MICRO_ENTRY_TERMS.some((term) => assistantReply.includes(term))
+  ) {
+    issues.add("unhelpful_abstract_prompt");
+    issues.add("lack_of_empathy");
+  }
+  if (
     /是不是/.test(assistantReply) &&
     INFERRED_STATE_TERMS.some(
       (term) =>
@@ -170,6 +187,10 @@ const runLocalJudge = ({
     !/(还是|选一个|哪个)/.test(assistantReply)
   ) {
     issues.add("leading_interpretation");
+  }
+  if (SENSORY_MISMATCH_PATTERNS.some((pattern) => pattern.test(assistantReply))) {
+    issues.add("sensory_mismatch");
+    issues.add("lack_of_empathy");
   }
 
   const issueList = [...issues];

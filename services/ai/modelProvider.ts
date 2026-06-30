@@ -98,8 +98,8 @@ const mockResponse = ({
   const lastUser = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
   const hasCrisis = /自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(lastUser);
   const text = hasCrisis
-    ? "我听见你现在真的很难受。请先不要一个人扛着，马上联系身边可信的人，或拨打当地紧急求助电话。"
-    : "听起来你正在认真地撑过这一刻。可以不用急着整理清楚，我会在这里陪你慢慢说。";
+    ? "你现在说到这些，我会先把安全放在最前面。请先不要一个人扛着，马上联系身边可信的人，或拨打当地紧急求助电话。"
+    : "嗯，先不用整理清楚。可以只从一个很小的地方开始说。";
 
   return {
     text,

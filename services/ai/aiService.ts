@@ -30,7 +30,7 @@ export const getFallbackReply = (riskLevel: AiRiskLevel = "low") => {
     return "我很在意你刚刚说的这些。请先把自己放到安全的地方，立刻联系身边可信的人，或拨打当地紧急求助电话。";
   }
 
-  return "我听见了。这个部分我们可以先轻轻放在这里，不急着解释完整。";
+  return "嗯，先不用解释完整。这个部分可以先放在这里，慢慢来。";
 };
 
 export const createFallbackGeneration = ({
