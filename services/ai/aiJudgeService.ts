@@ -20,6 +20,8 @@ const VALID_ISSUES = new Set<AiJudgeIssue>([
   "invented_scene",
   "dismissive_rest_advice",
   "repetitive_reassurance",
+  "unhelpful_abstract_prompt",
+  "leading_interpretation",
 ]);
 
 const INVENTED_SCENE_TERMS = [
@@ -61,6 +63,24 @@ const REASSURANCE_TERMS = ["我在这儿", "陪着你", "陪你", "没关系", "
 
 const MICRO_ENTRY_TERMS = ["身体累", "心里累", "都累", "一个词", "选一个", "哪一", "最重", "最明显"];
 
+const ABSTRACT_PROMPT_PATTERNS = [
+  /想说(点|些)?什么/,
+  /发生了什么/,
+  /为什么/,
+  /多说(一点|一些)/,
+  /聊聊/,
+  /展开说说/,
+];
+
+const INFERRED_STATE_TERMS = ["身体", "心里", "沉", "压着", "委屈", "害怕", "焦虑", "难过", "空"];
+
+const getRecentUserText = (recentMessages: AiConversationMessage[]) =>
+  recentMessages
+    .slice(-4)
+    .filter((message) => message.role === "user")
+    .map((message) => message.content)
+    .join("\n");
+
 const getRecentAssistantText = (recentMessages: AiConversationMessage[]) =>
   recentMessages
     .slice(-4)
@@ -89,6 +109,7 @@ const runLocalJudge = ({
 }): AiJudgeResult => {
   const issues = new Set<AiJudgeIssue>();
   const combined = `${userMessage}\n${assistantReply}`;
+  const recentUserText = getRecentUserText(recentMessages);
   const recentAssistantText = getRecentAssistantText(recentMessages);
 
   if (/自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(combined)) {
@@ -129,6 +150,26 @@ const runLocalJudge = ({
   ) {
     issues.add("repetitive_reassurance");
     issues.add("lack_of_empathy");
+  }
+  if (
+    UNCERTAIN_TERMS.some((term) => userMessage.includes(term)) &&
+    ABSTRACT_PROMPT_PATTERNS.some((pattern) => pattern.test(assistantReply)) &&
+    !MICRO_ENTRY_TERMS.some((term) => assistantReply.includes(term))
+  ) {
+    issues.add("unhelpful_abstract_prompt");
+    issues.add("lack_of_empathy");
+  }
+  if (
+    /是不是/.test(assistantReply) &&
+    INFERRED_STATE_TERMS.some(
+      (term) =>
+        assistantReply.includes(term) &&
+        !userMessage.includes(term) &&
+        !recentUserText.includes(term)
+    ) &&
+    !/(还是|选一个|哪个)/.test(assistantReply)
+  ) {
+    issues.add("leading_interpretation");
   }
 
   const issueList = [...issues];
