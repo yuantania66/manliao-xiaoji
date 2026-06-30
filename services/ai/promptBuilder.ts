@@ -1,4 +1,5 @@
 import { AiConversationMessage, AiJudgeResult, AiModelMessage } from "./types";
+import { retrieveAiGuidance } from "./ragKnowledge";
 
 export const CHAT_PROMPT_VERSION = "chat-v1";
 export const JUDGE_PROMPT_VERSION = "judge-v1";
@@ -17,17 +18,21 @@ export const buildChatMessages = ({
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
-}): AiModelMessage[] => [
-  {
-    role: "developer",
-    content:
-      "你是慢聊小记的陪伴式聊天助手。用温暖、克制、像朋友一样的中文回应用户。不要诊断疾病，不要承诺疗效，不要给强硬建议。不要编造用户没有提到的天气、时间、窗外、月亮、云、场景或经历；不要把天气或时间延展成感官描写；不要主动建议看风景、泡茶、听雨、发呆等动作，除非用户自己提到想做。用户纠正你或补充事实时，只简短确认事实，不追问、不延展；如果上一轮助手跑偏，要轻轻收回来。用户只说“不知道”“还好”“嗯”这类短答时，不要硬追问，也不要替用户解释原因。一般情况下先接住情绪，再轻轻问一个可选的小问题；如果已经连续追问过，就只陪一句。回复 1 到 2 句，每句尽量短，不要展开解释或总结太多。若用户出现自伤、轻生或危机风险，要温柔提示立即联系身边可信的人或当地紧急服务。",
-  },
-  {
-    role: "user",
-    content: `最近对话：\n${formatHistory(recentMessages) || "暂无"}\n\n用户刚刚说：${userMessage}`,
-  },
-];
+}): AiModelMessage[] => {
+  const guidance = retrieveAiGuidance({ userMessage, recentMessages });
+
+  return [
+    {
+      role: "developer",
+      content:
+        "你是慢聊小记的陪伴式聊天助手。用温暖、克制、像朋友一样的中文回应用户。不要诊断疾病，不要承诺疗效，不要给强硬建议。回复 1 到 2 句，每句尽量短。",
+    },
+    {
+      role: "user",
+      content: `本轮相关回复指南：\n${guidance || "无特别指南，保持短、稳、少脑补。"}\n\n最近对话：\n${formatHistory(recentMessages) || "暂无"}\n\n用户刚刚说：${userMessage}`,
+    },
+  ];
+};
 
 export const buildJudgeMessages = ({
   userMessage,
@@ -59,14 +64,18 @@ export const buildRewriteMessages = ({
   originalReply: string;
   judgeResult: AiJudgeResult;
   recentMessages: AiConversationMessage[];
-}): AiModelMessage[] => [
-  {
-    role: "developer",
-    content:
-      "你是慢聊小记的回复改写器。根据审查问题重写回复，保持温柔、具体、有共情。不要诊断，不承诺疗效，不给强硬建议，不提自己是 AI。不要编造用户没有提到的天气、时间、窗外、月亮、云、场景或经历；不要把天气或时间延展成感官描写；不要主动建议看风景、泡茶、听雨、发呆等动作，除非用户自己提到想做。回复 1 到 2 句，每句尽量短。",
-  },
-  {
-    role: "user",
-    content: `最近对话：\n${formatHistory(recentMessages) || "暂无"}\n\n用户输入：${userMessage}\n\n原回复：${originalReply}\n\n审查问题：${judgeResult.issues.join(", ") || "无"}\n审查原因：${judgeResult.reason}`,
-  },
-];
+}): AiModelMessage[] => {
+  const guidance = retrieveAiGuidance({ userMessage, recentMessages });
+
+  return [
+    {
+      role: "developer",
+      content:
+        "你是慢聊小记的回复改写器。根据审查问题重写回复，保持温柔、具体、有共情。不要诊断，不承诺疗效，不给强硬建议，不提自己是 AI。回复 1 到 2 句，每句尽量短。",
+    },
+    {
+      role: "user",
+      content: `本轮相关回复指南：\n${guidance || "无特别指南，保持短、稳、少脑补。"}\n\n最近对话：\n${formatHistory(recentMessages) || "暂无"}\n\n用户输入：${userMessage}\n\n原回复：${originalReply}\n\n审查问题：${judgeResult.issues.join(", ") || "无"}\n审查原因：${judgeResult.reason}`,
+    },
+  ];
+};
