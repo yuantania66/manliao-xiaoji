@@ -25,6 +25,7 @@ const VALID_ISSUES = new Set<AiJudgeIssue>([
   "sensory_mismatch",
   "reasks_known_information",
   "flippant_tone",
+  "missed_user_correction",
 ]);
 
 const INVENTED_SCENE_TERMS = [
@@ -85,9 +86,15 @@ const SENSORY_MISMATCH_PATTERNS = [
   /(感受|感觉|情绪|累|难受|委屈|痛苦|压力).{0,8}听(到|见)/,
   /听起来.{0,8}(感觉|感受)/,
   /听起来.{0,12}(累|难受|委屈|痛苦|压力|焦虑|害怕|烦|崩|麻木)/,
+  /没听好/,
+  /没听进去/,
+  /听懂了/,
+  /听明白了/,
 ];
 
 const FLIPPANT_TONE_PATTERNS = [/干待着/, /那就这样吧/, /随便吧/, /爱说不说/, /那你就/];
+const USER_CORRECTION_PATTERN = /不是这个问题|我已经说过了|你还问|别再让我|不是这样|不对|你说话像模板|一直在套模板/;
+const CORRECTION_ACK_PATTERN = /你说得对|是我|你说了|没接住|问偏了|说偏了|不该|不追问|不选了|套模板/;
 
 const getRecentUserText = (recentMessages: AiConversationMessage[]) =>
   recentMessages
@@ -213,6 +220,13 @@ const runLocalJudge = ({
   }
   if (FLIPPANT_TONE_PATTERNS.some((pattern) => pattern.test(assistantReply))) {
     issues.add("flippant_tone");
+    issues.add("lack_of_empathy");
+  }
+  if (
+    USER_CORRECTION_PATTERN.test(userMessage) &&
+    !CORRECTION_ACK_PATTERN.test(assistantReply)
+  ) {
+    issues.add("missed_user_correction");
     issues.add("lack_of_empathy");
   }
 

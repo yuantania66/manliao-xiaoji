@@ -162,6 +162,10 @@ const sensoryMismatchPatterns = [
   /听(到|见).{0,8}(感受|感觉|情绪|累|难受|委屈|痛苦|压力)/,
   /(感受|感觉|情绪|累|难受|委屈|痛苦|压力).{0,8}听(到|见)/,
   /听起来.{0,12}(累|难受|委屈|痛苦|压力|焦虑|害怕|烦|崩|麻木)/,
+  /没听好/,
+  /没听进去/,
+  /听懂了/,
+  /听明白了/,
 ];
 
 const inventedSceneTerms = ["月亮", "云", "窗外", "空气", "泡茶", "热茶", "听雨", "雨声", "发呆"];
@@ -247,7 +251,7 @@ const evaluateReply = ({ userMessage, assistantReply, history }) => {
 
   if (
     /不是这个问题|我已经说过了|你还问|别再让我/.test(userMessage) &&
-    /你说得对|是我|问偏了|说偏了|没接住|没有接住|不该|不追问|不选了/.test(assistantReply) === false
+    /你说得对|是我|你说了|问偏了|说偏了|没接住|没有接住|不该|不追问|不选了|套模板/.test(assistantReply) === false
   ) {
     failures.push("missed_user_correction");
   }

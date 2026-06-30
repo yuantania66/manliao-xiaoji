@@ -25,9 +25,24 @@ export const generateChatReply = async ({
   };
 };
 
-export const getFallbackReply = (riskLevel: AiRiskLevel = "low") => {
+const USER_CORRECTION_PATTERN = /不是这个问题|我已经说过了|你还问|别再让我|不是这样|不对|你说话像模板|一直在套模板/;
+
+export const getFallbackReply = ({
+  inputText = "",
+  riskLevel = "low",
+}: {
+  inputText?: string;
+  riskLevel?: AiRiskLevel;
+} = {}) => {
   if (riskLevel === "crisis") {
     return "我很在意你刚刚说的这些。请先把自己放到安全的地方，立刻联系身边可信的人，或拨打当地紧急求助电话。";
+  }
+
+  if (USER_CORRECTION_PATTERN.test(inputText)) {
+    if (/累/.test(inputText)) {
+      return "是我刚才没接住。你已经说了累，就先停在这里。";
+    }
+    return "是我刚才没接住。先回到你刚刚说的这句。";
   }
 
   return "嗯，先不用解释完整。这个部分可以先放在这里，慢慢来。";
@@ -45,7 +60,7 @@ export const createFallbackGeneration = ({
   }
 
   return {
-    text: getFallbackReply(riskLevel),
+    text: getFallbackReply({ inputText, riskLevel }),
     model: "fallback",
     promptVersion: FALLBACK_PROMPT_VERSION,
     latencyMs: 0,

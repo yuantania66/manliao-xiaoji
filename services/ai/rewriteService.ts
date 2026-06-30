@@ -18,7 +18,7 @@ export const rewriteChatReply = async ({
 }): Promise<AiGenerationResult> => {
   if (!isAiProviderConfigured()) {
     return {
-      text: getFallbackReply(judgeResult.riskLevel),
+      text: getFallbackReply({ inputText: userMessage, riskLevel: judgeResult.riskLevel }),
       model: "mock:rewrite",
       promptVersion: REWRITE_PROMPT_VERSION,
       latencyMs: 0,

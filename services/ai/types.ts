@@ -37,7 +37,8 @@ export type AiJudgeIssue =
   | "leading_interpretation"
   | "sensory_mismatch"
   | "reasks_known_information"
-  | "flippant_tone";
+  | "flippant_tone"
+  | "missed_user_correction";
 
 export type AiRiskLevel = "low" | "medium" | "high" | "crisis";
 
