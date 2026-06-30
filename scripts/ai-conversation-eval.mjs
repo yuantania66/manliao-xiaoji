@@ -169,7 +169,7 @@ const sensoryMismatchPatterns = [
 ];
 
 const inventedSceneTerms = ["月亮", "云", "窗外", "空气", "泡茶", "热茶", "听雨", "雨声", "发呆"];
-const abstractPromptPatterns = [/想说(点|些)?什么/, /发生了什么/, /为什么/, /因为什么/, /多说(一点|一些)/, /展开说说/];
+const abstractPromptPatterns = [/想说(点|些)?什么/, /想说的/, /直接说/, /发生了什么/, /为什么/, /因为什么/, /多说(一点|一些)/, /展开说说/];
 const dismissiveRestPatterns = [/歇(一)?会儿吧/, /休息(一下|一会儿)?吧/, /不用硬撑/, /去睡(一)?觉/, /睡(一)?觉就好了/, /早点睡/];
 const flippantTonePatterns = [/干待着/, /那就这样吧/, /随便吧/, /爱说不说/, /那你就/];
 const reassurancePattern = /我在这儿|陪着你|陪你|没关系|不用说清楚|只说一点点/;

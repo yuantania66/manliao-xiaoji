@@ -71,6 +71,8 @@ const MICRO_ENTRY_TERMS = ["身体累", "心里累", "都累", "一个词", "选
 
 const ABSTRACT_PROMPT_PATTERNS = [
   /想说(点|些)?什么/,
+  /想说的/,
+  /直接说/,
   /发生了什么/,
   /为什么/,
   /因为什么/,
