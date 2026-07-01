@@ -14,6 +14,7 @@ const CRISIS_PATTERN = /自杀|轻生|不想活|伤害自己|结束生命|割腕
 const CORRECTION_PATTERN = /不是这样|不是这个|不对|现在是|其实|我说的是|我都已经说了|已经说了|还问我/;
 const ADVICE_PATTERN = /怎么办|怎么做|建议|要不要|该不该|帮我想|你觉得/;
 const VAGUE_OR_STUCK_PATTERN = /不知道|说不上来|没什么|随便|都行|不知道怎么说|不知道说什么/;
+const NO_FOLLOW_UP_PATTERN = /别追问|别问|别让我想|别让我想太多/;
 const LOW_ENERGY_OR_DISTRESS_PATTERN =
   /累|疲惫|没力气|撑不住|耗尽|难受|烦|崩|压力|委屈|害怕|焦虑|慌|空|麻木/;
 
@@ -81,7 +82,7 @@ const detectSignals = ({
     isCrisis: CRISIS_PATTERN.test(userMessage),
     isCorrection: CORRECTION_PATTERN.test(userMessage),
     asksForAdvice: ADVICE_PATTERN.test(userMessage),
-    isVagueOrStuck: VAGUE_OR_STUCK_PATTERN.test(userMessage),
+    isVagueOrStuck: VAGUE_OR_STUCK_PATTERN.test(userMessage) || NO_FOLLOW_UP_PATTERN.test(userMessage),
     hasLowEnergyOrDistress: LOW_ENERGY_OR_DISTRESS_PATTERN.test(userMessage),
     knownUserKeywords,
     previousAssistantMove: detectPreviousAssistantMove(recentMessages),
@@ -102,10 +103,10 @@ const chooseMove = (signals: ConversationSignals) => {
     return "微入口：不要重复安抚；给一个具体、容易回答的入口，例如二选一、一个词、身体/心里哪个更重。不要把猜测包装成“是不是……”，不要让用户在已经说过的词里再选一次。";
   }
   if (signals.isVagueOrStuck) {
-    return "允许模糊：先允许说不清，再给一个很小的表达入口；不要问抽象大问题，也不要替用户判断状态。";
+    return "允许模糊：先允许说不清，再给一个很小的表达入口；不要问抽象大问题，也不要替用户判断状态。如果用户说别追问，就不要再问问题，可以给非追问入口，例如“回个句号也行”。";
   }
   if (signals.hasLowEnergyOrDistress) {
-    return "接住感受：准确反映用户已经说出的感受，再给一个轻微入口；不要直接建议休息或转移注意，不要问“因为什么/想多说一点吗”。";
+    return "接住感受：准确反映用户已经说出的感受，再给一个表达上的小入口；不要直接建议休息、歇会儿、安静待会儿、不说话或转移注意，不要问“因为什么/想多说一点吗”。";
   }
 
   return "贴近复述：只回应用户明确说出的内容，必要时问一个具体小问题。";
@@ -127,8 +128,10 @@ export const buildResponsePolicyGuidance = ({
     `- 用户已经给出的关键信息：${signals.knownUserKeywords.join("、") || "暂无明确关键词"}`,
     "- 每轮只做一个帮助动作：反映、修正、微入口、小建议或安全支持，不要混在一起。",
     "- 不要让用户重复提供已经说过的信息；如果用户已经说了“累/烦/空/难受”等，就不要再把这些词列成选项让用户挑。",
+    "- 如果前文已经围绕“累”聊过，后续短答不要再问“身体累还是心里累”；换成承认已经知道累，并给更轻的表达方式。",
+    "- 首轮低能量回复不能把对话关掉；不要说“先安静待会儿也行/想歇会儿吗/不说话也行/待着就好”，要留下一个表达上的小入口，而不是行动建议。",
     "- 如果用户没有给出新信息，不要重复上一轮同一种安慰话术；换成更具体、更容易回答的入口。",
-    "- 用户模糊、短答或卡住时，不要问“想说什么/直接说你想说的/为什么/发生了什么”这类大问题；给一个低压力选项或一个词入口。",
+    "- 用户模糊、短答或卡住时，不要问“想说什么/你想说什么都行/等你想说的时候再说/直接说你想说的/为什么/发生了什么”这类大问题；给一个低压力选项、一个词入口，或“回个句号也行”这种非追问入口。",
     "- 微入口只能提供可选入口，不能预设答案；少用“是不是……”，除非用户已经明确说过同一件事。",
     "- 选项要自然口语，不要造词或为了对仗写出别扭表达。",
     "- 用户指出你说错、问偏或太模板时，承认并收住；不要赌气、摆烂、讽刺或用“那就……”把责任推回用户。",

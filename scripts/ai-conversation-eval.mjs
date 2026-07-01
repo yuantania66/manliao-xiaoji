@@ -9,7 +9,7 @@ const scenarios = [
   {
     name: "low_energy_stuck",
     turns: [
-      "我累了",
+      "我有点累",
       "我不知道说什么",
       "我都已经说了累了，你还问我哪个字？",
       "就是不想动",
@@ -169,11 +169,12 @@ const sensoryMismatchPatterns = [
 ];
 
 const inventedSceneTerms = ["月亮", "云", "窗外", "空气", "泡茶", "热茶", "听雨", "雨声", "发呆"];
-const abstractPromptPatterns = [/想说(点|些)?什么/, /想说的/, /直接说/, /发生了什么/, /为什么/, /因为什么/, /多说(一点|一些)/, /展开说说/];
-const dismissiveRestPatterns = [/歇(一)?会儿吧/, /休息(一下|一会儿)?吧/, /不用硬撑/, /去睡(一)?觉/, /睡(一)?觉就好了/, /早点睡/];
+const abstractPromptPatterns = [/想说(点|些)?什么/, /想说什么都行/, /想说的时候/, /想说的/, /直接说/, /发生了什么/, /为什么/, /因为什么/, /多说(一点|一些)/, /展开说说/];
+const dismissiveRestPatterns = [/歇(一)?会儿吧/, /想歇(一)?会儿/, /歇(一)?歇/, /休息(一下|一会儿)?吧/, /不用硬撑/, /去睡(一)?觉/, /睡(一)?觉就好了/, /早点睡/];
 const flippantTonePatterns = [/干待着/, /那就这样吧/, /随便吧/, /爱说不说/, /那你就/];
+const closedConversationPatterns = [/安静待(一)?会儿/, /先待(一)?会儿/, /想歇(一)?会儿/, /不说话也行/, /不用说话/, /待着就好/, /先放在这里/];
 const reassurancePattern = /我在这儿|陪着你|陪你|没关系|不用说清楚|只说一点点/;
-const microEntryPattern = /身体|心里|哪个|哪种|选一个|一个词|先停|不用解释|不用分析|只看|点个头|点一下|发个表情|表情/;
+const microEntryPattern = /身体|心里|哪个|哪种|选一个|一个字|说个字|一个词|说个词|句号|先停|不用解释|不用分析|只看|点个头|点一下|发个表情|表情/;
 const knownStateTerms = ["累", "空", "烦", "困", "难受", "麻木", "委屈", "害怕", "焦虑", "慌"];
 
 const getText = (messages, role) =>
@@ -247,6 +248,14 @@ const evaluateReply = ({ userMessage, assistantReply, history }) => {
 
   if (flippantTonePatterns.some((pattern) => pattern.test(assistantReply))) {
     failures.push("flippant_tone");
+  }
+
+  if (
+    /累|疲惫|没力气|撑不住|耗尽/.test(userMessage) &&
+    closedConversationPatterns.some((pattern) => pattern.test(assistantReply)) &&
+    !microEntryPattern.test(assistantReply)
+  ) {
+    failures.push("closed_conversation");
   }
 
   if (
