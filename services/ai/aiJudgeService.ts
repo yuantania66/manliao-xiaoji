@@ -40,6 +40,7 @@ const INVENTED_SCENE_TERMS = [
   "听雨",
   "雨声",
   "发呆",
+  "发个呆",
 ];
 
 const LOW_ENERGY_TERMS = [
@@ -111,7 +112,6 @@ const CLOSED_CONVERSATION_PATTERNS = [
   /先放在这里/,
 ];
 const MECHANICAL_MICRO_ENTRY_PATTERNS = [/回个句号/, /发个表情/, /回个表情/, /回一个句号/, /回个标点/];
-const NO_FOLLOW_UP_PATTERN = /别追问|别问|别让我想|别让我想太多|不想说/;
 const USER_CORRECTION_PATTERN = /不是这个问题|我已经说过了|你还问|别再让我|不是这样|不对|你说话像模板|一直在套模板/;
 const CORRECTION_ACK_PATTERN = /你说得对|是我|你说了|没接住|问偏了|说偏了|不该|不追问|不选了|套模板/;
 
@@ -249,10 +249,7 @@ const runLocalJudge = ({
     issues.add("closed_conversation");
     issues.add("lack_of_empathy");
   }
-  if (
-    MECHANICAL_MICRO_ENTRY_PATTERNS.some((pattern) => pattern.test(assistantReply)) &&
-    !NO_FOLLOW_UP_PATTERN.test(userMessage)
-  ) {
+  if (MECHANICAL_MICRO_ENTRY_PATTERNS.some((pattern) => pattern.test(assistantReply))) {
     issues.add("mechanical_micro_entry");
     issues.add("lack_of_empathy");
   }

@@ -168,7 +168,7 @@ const sensoryMismatchPatterns = [
   /听明白了/,
 ];
 
-const inventedSceneTerms = ["月亮", "云", "窗外", "空气", "泡茶", "热茶", "听雨", "雨声", "发呆"];
+const inventedSceneTerms = ["月亮", "云", "窗外", "空气", "泡茶", "热茶", "听雨", "雨声", "发呆", "发个呆", "刚醒", "忙了一天", "天气闷", "心口"];
 const abstractPromptPatterns = [/想说(点|些)?什么/, /想说什么都行/, /想说的时候/, /想说的/, /直接说/, /发生了什么/, /为什么/, /因为什么/, /多说(一点|一些)/, /展开说说/];
 const dismissiveRestPatterns = [/歇(一)?会儿吧/, /想歇(一)?会儿/, /歇(一)?歇/, /休息(一下|一会儿)?吧/, /不用硬撑/, /去睡(一)?觉/, /睡(一)?觉就好了/, /早点睡/];
 const flippantTonePatterns = [/干待着/, /那就这样吧/, /随便吧/, /爱说不说/, /那你就/];
@@ -185,6 +185,58 @@ const getText = (messages, role) =>
     .join("\n");
 
 const includesAny = (text, values) => values.some((value) => text.includes(value));
+
+const qualityStateTerms = ["累", "难受", "烦", "空", "困", "麻木", "委屈", "害怕", "焦虑", "慌", "压力", "孤单", "纠结"];
+const correctionPattern = /不是这个问题|我已经说过了|你还问|别再让我|不是这样|不对|你说话像模板|一直在套模板|别编场景/;
+const repairPattern = /是我|没接住|问偏了|说偏了|你说得对|不该|不圆|不追问|你已经说了|不编了/;
+const lowPressurePattern = /必须|应该立刻|马上|挑一个说|选一个说|回个句号|发个表情|让我知道你在/;
+
+const evaluateQuality = ({ userMessage, assistantReply, history }) => {
+  const userHistory = `${getText(history, "user")}\n${userMessage}`;
+  const knownTerms = qualityStateTerms.filter((term) => userHistory.includes(term));
+  const hasQuestion = /[?？]/.test(assistantReply);
+  const isCorrection = correctionPattern.test(userMessage);
+  const isLowExpression = /不知道|说不上来|没什么|算了|嗯|别追问|别让我想/.test(userMessage);
+  const isLowEnergyOrDistress = /累|疲惫|没力气|撑不住|耗尽|难受|烦|崩|压力|委屈|害怕|焦虑|慌|空|麻木/.test(userHistory);
+  const sentenceCount = assistantReply
+    .split(/[。！？!?]|\n+/)
+    .map((part) => part.trim())
+    .filter(Boolean).length;
+
+  const acknowledged =
+    knownTerms.some((term) => assistantReply.includes(term)) ||
+    /不知道也|说不清也|是我|没接住|嗯|确实|这会儿/.test(assistantReply);
+  const concise = assistantReply.length <= 90 && sentenceCount <= 2;
+  const repairAligned = !isCorrection || repairPattern.test(assistantReply);
+  const lowPressure = !lowPressurePattern.test(assistantReply);
+  const allowsARespectfulPause = /停在这|先停|不追问|不问|不说也行|不用回答|这句就够了|就够了|收住/.test(
+    assistantReply
+  );
+  const naturalOpening =
+    isCorrection ||
+    /别追问|别问|别让我想|不想说/.test(userMessage) ||
+    hasQuestion ||
+    allowsARespectfulPause ||
+    /不用|可以先|只看|一点点|一个词|一个字|半句|这个字/.test(assistantReply);
+
+  const issues = [];
+  if (!acknowledged) issues.push("weak_acknowledgement");
+  if (!concise) issues.push("too_long_or_busy");
+  if (!repairAligned) issues.push("weak_repair");
+  if (!lowPressure) issues.push("pressuring_language");
+  if ((isLowExpression || isLowEnergyOrDistress) && !naturalOpening) {
+    issues.push("weak_natural_continuation");
+  }
+
+  return {
+    acknowledged,
+    concise,
+    repairAligned,
+    lowPressure,
+    naturalOpening,
+    issues,
+  };
+};
 
 const evaluateReply = ({ userMessage, assistantReply, history }) => {
   const failures = [];
@@ -251,10 +303,7 @@ const evaluateReply = ({ userMessage, assistantReply, history }) => {
     failures.push("flippant_tone");
   }
 
-  if (
-    mechanicalMicroEntryPatterns.some((pattern) => pattern.test(assistantReply)) &&
-    !/别追问|别问|别让我想|别让我想太多|不想说/.test(userMessage)
-  ) {
+  if (mechanicalMicroEntryPatterns.some((pattern) => pattern.test(assistantReply))) {
     failures.push("mechanical_micro_entry");
   }
 
@@ -324,6 +373,7 @@ const run = async () => {
           });
           const assistantReply = data.assistantMessage.content;
           const failures = evaluateReply({ userMessage, assistantReply, history });
+          const quality = evaluateQuality({ userMessage, assistantReply, history });
 
           results.push({
             scenario: scenario.name,
@@ -331,6 +381,7 @@ const run = async () => {
             userMessage,
             assistantReply,
             failures,
+            quality,
             fallbackUsed: data.fallbackUsed,
             rewriteAttempted: data.rewriteAttempted,
           });
@@ -364,6 +415,20 @@ const run = async () => {
     for (const failure of result.failures) acc[failure] = (acc[failure] || 0) + 1;
     return acc;
   }, {});
+  const qualityIssueResults = results.filter((result) => result.quality?.issues?.length > 0);
+  const byQualityIssue = qualityIssueResults.reduce((acc, result) => {
+    for (const issue of result.quality.issues) acc[issue] = (acc[issue] || 0) + 1;
+    return acc;
+  }, {});
+  const qualitySummary = {
+    acknowledgedReplies: results.filter((result) => result.quality?.acknowledged).length,
+    conciseReplies: results.filter((result) => result.quality?.concise).length,
+    repairAlignedReplies: results.filter((result) => result.quality?.repairAligned).length,
+    lowPressureReplies: results.filter((result) => result.quality?.lowPressure).length,
+    naturalOpeningReplies: results.filter((result) => result.quality?.naturalOpening).length,
+    qualityIssueReplies: qualityIssueResults.length,
+    byQualityIssue,
+  };
 
   console.log(
     JSON.stringify(
@@ -375,7 +440,15 @@ const run = async () => {
         failedReplies: failed.length,
         passRate: `${Math.round(((results.length - failed.length) / results.length) * 1000) / 10}%`,
         byFailure,
+        qualitySummary,
         failures: failed,
+        qualityWarnings: qualityIssueResults.slice(0, 20).map((result) => ({
+          scenario: result.scenario,
+          turn: result.turn,
+          userMessage: result.userMessage,
+          assistantReply: result.assistantReply,
+          qualityIssues: result.quality.issues,
+        })),
       },
       null,
       2

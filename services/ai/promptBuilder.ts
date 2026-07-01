@@ -1,10 +1,11 @@
 import { AiConversationMessage, AiJudgeResult, AiModelMessage } from "./types";
+import { buildInteractionPlanGuidance } from "./interactionPlan";
 import { retrieveAiGuidance } from "./ragKnowledge";
 import { buildResponsePolicyGuidance } from "./responsePolicy";
 
-export const CHAT_PROMPT_VERSION = "chat-v2";
+export const CHAT_PROMPT_VERSION = "chat-v3-plan";
 export const JUDGE_PROMPT_VERSION = "judge-v2";
-export const REWRITE_PROMPT_VERSION = "rewrite-v2";
+export const REWRITE_PROMPT_VERSION = "rewrite-v3-plan";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
 
 const formatHistory = (recentMessages: AiConversationMessage[]) =>
@@ -21,17 +22,18 @@ export const buildChatMessages = ({
   recentMessages: AiConversationMessage[];
 }): AiModelMessage[] => {
   const guidance = retrieveAiGuidance({ userMessage, recentMessages });
+  const interactionPlan = buildInteractionPlanGuidance({ userMessage, recentMessages });
   const responsePolicy = buildResponsePolicyGuidance({ userMessage, recentMessages });
 
   return [
     {
       role: "developer",
       content:
-        "你是慢聊小记的陪伴式聊天助手。用温暖、克制、像朋友一样的中文回应用户。不要诊断疾病，不要承诺疗效，不要给强硬建议。回复 1 到 2 句，每句尽量短。优先遵守通用回应策略，再参考本轮相关回复指南。",
+        "你是慢聊小记的陪伴式聊天助手。用温暖、克制、像朋友一样的中文回应用户。回复 1 到 2 句，每句尽量短。先执行本轮互动计划，让用户自然接得下去；再参考知识指南和护栏。不要诊断疾病，不要承诺疗效，不要给强硬建议。",
     },
     {
       role: "user",
-      content: `${responsePolicy}\n\n本轮相关回复指南：\n${guidance || "无特别指南，保持短、稳、少脑补。"}\n\n最近对话：\n${formatHistory(recentMessages) || "暂无"}\n\n用户刚刚说：${userMessage}`,
+      content: `${interactionPlan}\n\n本轮相关回复指南：\n${guidance || "无特别指南，保持短、稳、少脑补。"}\n\n必要护栏：\n${responsePolicy}\n\n最近对话：\n${formatHistory(recentMessages) || "暂无"}\n\n用户刚刚说：${userMessage}`,
     },
   ];
 };
@@ -68,17 +70,18 @@ export const buildRewriteMessages = ({
   recentMessages: AiConversationMessage[];
 }): AiModelMessage[] => {
   const guidance = retrieveAiGuidance({ userMessage, recentMessages });
+  const interactionPlan = buildInteractionPlanGuidance({ userMessage, recentMessages });
   const responsePolicy = buildResponsePolicyGuidance({ userMessage, recentMessages });
 
   return [
     {
       role: "developer",
       content:
-        "你是慢聊小记的回复改写器。根据审查问题和通用回应策略重写回复，保持温柔、具体、有共情。不要诊断，不承诺疗效，不给强硬建议，不提自己是 AI。回复 1 到 2 句，每句尽量短。",
+        "你是慢聊小记的回复改写器。先按本轮互动计划重写，再处理审查问题。保持温柔、具体、有共情。不要诊断，不承诺疗效，不给强硬建议，不提自己是 AI。回复 1 到 2 句，每句尽量短。",
     },
     {
       role: "user",
-      content: `${responsePolicy}\n\n本轮相关回复指南：\n${guidance || "无特别指南，保持短、稳、少脑补。"}\n\n最近对话：\n${formatHistory(recentMessages) || "暂无"}\n\n用户输入：${userMessage}\n\n原回复：${originalReply}\n\n审查问题：${judgeResult.issues.join(", ") || "无"}\n审查原因：${judgeResult.reason}`,
+      content: `${interactionPlan}\n\n本轮相关回复指南：\n${guidance || "无特别指南，保持短、稳、少脑补。"}\n\n必要护栏：\n${responsePolicy}\n\n最近对话：\n${formatHistory(recentMessages) || "暂无"}\n\n用户输入：${userMessage}\n\n原回复：${originalReply}\n\n审查问题：${judgeResult.issues.join(", ") || "无"}\n审查原因：${judgeResult.reason}`,
     },
   ];
 };
