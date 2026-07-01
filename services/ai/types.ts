@@ -39,7 +39,8 @@ export type AiJudgeIssue =
   | "reasks_known_information"
   | "flippant_tone"
   | "missed_user_correction"
-  | "closed_conversation";
+  | "closed_conversation"
+  | "mechanical_micro_entry";
 
 export type AiRiskLevel = "low" | "medium" | "high" | "crisis";
 
