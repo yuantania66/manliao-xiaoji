@@ -2,6 +2,7 @@ import { AppError } from "@/lib/errors";
 
 import { buildChatMessages, CHAT_PROMPT_VERSION, FALLBACK_PROMPT_VERSION } from "./promptBuilder";
 import { callModel, getDefaultAiModel } from "./modelProvider";
+import { buildSlowChatState } from "./slowChatOS";
 import { AiConversationMessage, AiGenerationResult, AiRiskLevel } from "./types";
 
 const LOW_INFORMATION_PROMPT_VERSION = "low-info-v1";
@@ -10,12 +11,6 @@ export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaul
 
 export const isLowInformationInput = (inputText: string) =>
   /^([0-9０-９]+|[一二三四五六七八九十零〇]+|[嗯啊哦好行对是]|[a-zA-Z])$/.test(inputText.trim());
-
-const getRecentText = (recentMessages: AiConversationMessage[]) =>
-  recentMessages
-    .slice(-6)
-    .map((message) => message.content)
-    .join("\n");
 
 const normalizeDigit = (inputText: string) => {
   const normalized = inputText.trim().replace(/[０-９]/g, (char) =>
@@ -37,19 +32,13 @@ const getRecentNumericUserValue = (recentMessages: AiConversationMessage[]) => {
 const getIntensityText = ({
   value,
   previousValue,
-  recentText,
+  primarySignal,
 }: {
   value: number;
   previousValue: number | null;
-  recentText: string;
+  primarySignal: string;
 }) => {
-  const subject = /累|疲惫|没力气|撑不住|耗尽/.test(recentText)
-    ? "累"
-    : /烦/.test(recentText)
-      ? "烦"
-      : /难受|堵|空|麻木|委屈|焦虑|慌|压力/.test(recentText)
-        ? "这个感觉"
-        : "这件事";
+  const subject = primarySignal || "这件事";
 
   if (previousValue !== null) {
     if (value < previousValue) {
@@ -83,19 +72,27 @@ export const createLowInformationGeneration = ({
   recentMessages: AiConversationMessage[];
 }): AiGenerationResult => {
   const token = inputText.trim();
-  const recentText = getRecentText(recentMessages);
+  const state = buildSlowChatState({ userMessage: inputText, recentMessages });
   const number = normalizeDigit(token);
   const previousNumber = getRecentNumericUserValue(recentMessages);
   let text = "我收到这个很短的回应了。先不用把话说完整。";
 
   if (number !== null) {
-    text = getIntensityText({ value: number, previousValue: previousNumber, recentText });
-  } else if (/累|疲惫|没力气|撑不住|耗尽/.test(recentText)) {
-    text = "嗯，累这件事先在这里。你不用把它说完整。";
-  } else if (/烦|难受|堵|空|麻木|委屈|焦虑|慌|压力/.test(recentText)) {
-    text = "嗯，这个感觉我接住了。先不用解释它从哪来。";
-  } else if (/别问|别追问|不想说|先别|不想被教育/.test(recentText)) {
+    text = getIntensityText({
+      value: number,
+      previousValue: previousNumber,
+      primarySignal: state.continuity.primarySignal,
+    });
+  } else if (state.continuity.recentBoundary || state.presenceMode === "quiet") {
     text = "嗯，我收住。你不用再补充。";
+  } else if (state.continuity.primarySignal === "累") {
+    text = state.continuity.repeatedLowInformation ? "还在。" : "嗯，累先在这里。";
+  } else if (state.continuity.primarySignal !== "这件事") {
+    text = state.continuity.repeatedLowInformation
+      ? "嗯，还在。"
+      : `嗯，${state.continuity.primarySignal}先在这里。`;
+  } else if (state.continuity.repeatedLowInformation) {
+    text = "还在这里。";
   }
 
   return {
