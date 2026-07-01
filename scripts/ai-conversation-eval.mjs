@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const BASE_URL = process.env.AI_EVAL_BASE_URL || "http://127.0.0.1:3200";
-const MAX_SCENARIOS = Number(process.env.AI_EVAL_SCENARIOS || "11");
+const MAX_SCENARIOS = Number(process.env.AI_EVAL_SCENARIOS || "12");
 const TURNS_PER_SCENARIO = Number(process.env.AI_EVAL_TURNS || "10");
 const REQUEST_TIMEOUT_MS = Number(process.env.AI_EVAL_TIMEOUT_MS || "30000");
 
@@ -169,6 +169,21 @@ const scenarios = [
       "不知道",
       "就这样",
       "嗯",
+    ],
+  },
+  {
+    name: "numeric_intensity_rising",
+    turns: [
+      "我有点累",
+      "1",
+      "2",
+      "3",
+      "4",
+      "嗯",
+      "4",
+      "5",
+      "算了",
+      "3",
     ],
   },
 ];

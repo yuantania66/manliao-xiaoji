@@ -29,27 +29,58 @@ const getRecentNumericUserValue = (recentMessages: AiConversationMessage[]) => {
   return recentNumericUserMessage ? normalizeDigit(recentNumericUserMessage.content) : null;
 };
 
+const getRecentNumericUserValues = (recentMessages: AiConversationMessage[]) =>
+  recentMessages
+    .filter((message) => message.role === "user")
+    .map((message) => normalizeDigit(message.content))
+    .filter((value): value is number => value !== null);
+
+const isConsecutiveTrend = (values: number[], direction: "up" | "down") => {
+  if (values.length < 3) return false;
+  const recent = values.slice(-3);
+  return recent.every((value, index) => {
+    if (index === 0) return true;
+    return direction === "up" ? value > recent[index - 1] : value < recent[index - 1];
+  });
+};
+
 const getIntensityText = ({
   value,
   previousValue,
+  numericValues,
   primarySignal,
 }: {
   value: number;
   previousValue: number | null;
+  numericValues: number[];
   primarySignal: string;
 }) => {
   const subject = primarySignal || "这件事";
+  const valuesWithCurrent = [...numericValues, value];
+  const risingSequence = isConsecutiveTrend(valuesWithCurrent, "up");
+  const fallingSequence = isConsecutiveTrend(valuesWithCurrent, "down");
 
   if (previousValue !== null) {
     if (value < previousValue) {
-      return value <= 1
-        ? `嗯，又轻了一点。${subject}还在，但已经很低了。`
-        : `嗯，比刚才轻了一点。${subject}还在，但没那么顶了。`;
+      if (fallingSequence) {
+        return value <= 1
+          ? `我看到它一路往下了。${subject}已经很低。`
+          : `它还在往下。先跟着这个变化就好。`;
+      }
+      return value <= 1 ? `嗯，轻下来了。已经很低。` : `嗯，比刚才轻了一点。`;
     }
     if (value > previousValue) {
-      return `嗯，比刚才重了一点。先按现在这个强度接住。`;
+      if (risingSequence) {
+        return value >= 4
+          ? `我看到数字还在往上。先不用解释原因。`
+          : `它还在往上走。先知道这个变化就好。`;
+      }
+      if (value >= 7) {
+        return `嗯，这个数字已经高了。先不急着拆原因。`;
+      }
+      return `嗯，往上了一点。先不用解释为什么。`;
     }
-    return `嗯，差不多还在原处。先不用解释为什么没变。`;
+    return `还停在这个位置。先不用解释为什么没变。`;
   }
 
   if (value <= 1) {
@@ -75,12 +106,14 @@ export const createLowInformationGeneration = ({
   const state = buildSlowChatState({ userMessage: inputText, recentMessages });
   const number = normalizeDigit(token);
   const previousNumber = getRecentNumericUserValue(recentMessages);
+  const numericValues = getRecentNumericUserValues(recentMessages);
   let text = "我收到这个很短的回应了。先不用把话说完整。";
 
   if (number !== null) {
     text = getIntensityText({
       value: number,
       previousValue: previousNumber,
+      numericValues,
       primarySignal: state.continuity.primarySignal,
     });
   } else if (state.continuity.recentBoundary || state.presenceMode === "quiet") {
