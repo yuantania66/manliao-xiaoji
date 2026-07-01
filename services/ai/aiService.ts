@@ -25,6 +25,56 @@ const normalizeDigit = (inputText: string) => {
   return Number.isFinite(value) ? value : null;
 };
 
+const getRecentNumericUserValue = (recentMessages: AiConversationMessage[]) => {
+  const recentNumericUserMessage = recentMessages
+    .slice()
+    .reverse()
+    .find((message) => message.role === "user" && normalizeDigit(message.content) !== null);
+
+  return recentNumericUserMessage ? normalizeDigit(recentNumericUserMessage.content) : null;
+};
+
+const getIntensityText = ({
+  value,
+  previousValue,
+  recentText,
+}: {
+  value: number;
+  previousValue: number | null;
+  recentText: string;
+}) => {
+  const subject = /累|疲惫|没力气|撑不住|耗尽/.test(recentText)
+    ? "累"
+    : /烦/.test(recentText)
+      ? "烦"
+      : /难受|堵|空|麻木|委屈|焦虑|慌|压力/.test(recentText)
+        ? "这个感觉"
+        : "这件事";
+
+  if (previousValue !== null) {
+    if (value < previousValue) {
+      return value <= 1
+        ? `嗯，又轻了一点。${subject}还在，但已经很低了。`
+        : `嗯，比刚才轻了一点。${subject}还在，但没那么顶了。`;
+    }
+    if (value > previousValue) {
+      return `嗯，比刚才重了一点。先按现在这个强度接住。`;
+    }
+    return `嗯，差不多还在原处。先不用解释为什么没变。`;
+  }
+
+  if (value <= 1) {
+    return `嗯，很低的一点点。先这样放着就可以。`;
+  }
+  if (value <= 3) {
+    return `嗯，是有一点，但还没满出来。先不用把它解释清楚。`;
+  }
+  if (value <= 6) {
+    return `嗯，已经有点占着了。先不用急着说原因。`;
+  }
+  return `嗯，挺高了。先不急着拆原因，先把这一下接住。`;
+};
+
 export const createLowInformationGeneration = ({
   inputText,
   recentMessages,
@@ -35,16 +85,11 @@ export const createLowInformationGeneration = ({
   const token = inputText.trim();
   const recentText = getRecentText(recentMessages);
   const number = normalizeDigit(token);
+  const previousNumber = getRecentNumericUserValue(recentMessages);
   let text = "我收到这个很短的回应了。先不用把话说完整。";
 
-  if (number !== null && /几分|多少分|1\s*到\s*10|1\s*-\s*10|十分|评分/.test(recentText)) {
-    if (number <= 3) {
-      text = "嗯，是有一点，但还没满出来。先不用把它解释清楚。";
-    } else if (number <= 6) {
-      text = "嗯，已经有点占着了。先不用急着说原因。";
-    } else {
-      text = "嗯，挺高了。先不急着拆原因，先把这一下接住。";
-    }
+  if (number !== null) {
+    text = getIntensityText({ value: number, previousValue: previousNumber, recentText });
   } else if (/累|疲惫|没力气|撑不住|耗尽/.test(recentText)) {
     text = "嗯，累这件事先在这里。你不用把它说完整。";
   } else if (/烦|难受|堵|空|麻木|委屈|焦虑|慌|压力/.test(recentText)) {
