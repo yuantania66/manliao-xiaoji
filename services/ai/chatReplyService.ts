@@ -9,7 +9,12 @@ import {
 
 import { prisma } from "@/lib/prisma";
 
-import { createFallbackGeneration, generateChatReply } from "./aiService";
+import {
+  createFallbackGeneration,
+  createLowInformationGeneration,
+  generateChatReply,
+  isLowInformationInput,
+} from "./aiService";
 import { judgeReply } from "./aiJudgeService";
 import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
 import { rewriteChatReply } from "./rewriteService";
@@ -169,6 +174,40 @@ export const createReviewedChatReply = async ({
   userMessage: string;
   recentMessages: AiConversationMessage[];
 }) => {
+  if (isLowInformationInput(userMessage)) {
+    const generation = createLowInformationGeneration({
+      inputText: userMessage,
+      recentMessages,
+    });
+    const savedGeneration = await saveGeneration({
+      userId,
+      sessionId,
+      inputText: userMessage,
+      generation,
+      status: AiGenerationStatus.GENERATED,
+    });
+    const judge = createFallbackJudge("low", "低信息输入已使用确定性承接");
+    await saveJudgeResult({
+      userId,
+      generationId: savedGeneration.id,
+      judgeResult: judge,
+    });
+    const assistantMessage = await saveAssistantMessage({
+      userId,
+      sessionId,
+      content: generation.text,
+      status: MessageStatus.SAVED,
+      aiGenerationId: savedGeneration.id,
+    });
+
+    return {
+      assistantMessage: serializeMessage(assistantMessage),
+      judge,
+      rewriteAttempted: false,
+      fallbackUsed: false,
+    };
+  }
+
   let mainGeneration: AiGenerationResult;
   try {
     mainGeneration = await generateChatReply({ userMessage, recentMessages });

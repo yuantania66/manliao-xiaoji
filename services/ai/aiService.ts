@@ -4,7 +4,62 @@ import { buildChatMessages, CHAT_PROMPT_VERSION, FALLBACK_PROMPT_VERSION } from 
 import { callModel, getDefaultAiModel } from "./modelProvider";
 import { AiConversationMessage, AiGenerationResult, AiRiskLevel } from "./types";
 
+const LOW_INFORMATION_PROMPT_VERSION = "low-info-v1";
+
 export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel();
+
+export const isLowInformationInput = (inputText: string) =>
+  /^([0-9０-９]+|[一二三四五六七八九十零〇]+|[嗯啊哦好行对是]|[a-zA-Z])$/.test(inputText.trim());
+
+const getRecentText = (recentMessages: AiConversationMessage[]) =>
+  recentMessages
+    .slice(-6)
+    .map((message) => message.content)
+    .join("\n");
+
+const normalizeDigit = (inputText: string) => {
+  const normalized = inputText.trim().replace(/[０-９]/g, (char) =>
+    String.fromCharCode(char.charCodeAt(0) - 0xff10 + 0x30)
+  );
+  const value = Number(normalized);
+  return Number.isFinite(value) ? value : null;
+};
+
+export const createLowInformationGeneration = ({
+  inputText,
+  recentMessages,
+}: {
+  inputText: string;
+  recentMessages: AiConversationMessage[];
+}): AiGenerationResult => {
+  const token = inputText.trim();
+  const recentText = getRecentText(recentMessages);
+  const number = normalizeDigit(token);
+  let text = "我收到这个很短的回应了。先不用把话说完整。";
+
+  if (number !== null && /几分|多少分|1\s*到\s*10|1\s*-\s*10|十分|评分/.test(recentText)) {
+    if (number <= 3) {
+      text = "嗯，是有一点，但还没满出来。先不用把它解释清楚。";
+    } else if (number <= 6) {
+      text = "嗯，已经有点占着了。先不用急着说原因。";
+    } else {
+      text = "嗯，挺高了。先不急着拆原因，先把这一下接住。";
+    }
+  } else if (/累|疲惫|没力气|撑不住|耗尽/.test(recentText)) {
+    text = "嗯，累这件事先在这里。你不用把它说完整。";
+  } else if (/烦|难受|堵|空|麻木|委屈|焦虑|慌|压力/.test(recentText)) {
+    text = "嗯，这个感觉我接住了。先不用解释它从哪来。";
+  } else if (/别问|别追问|不想说|先别|不想被教育/.test(recentText)) {
+    text = "嗯，我收住。你不用再补充。";
+  }
+
+  return {
+    text,
+    model: "deterministic-low-information",
+    promptVersion: LOW_INFORMATION_PROMPT_VERSION,
+    latencyMs: 0,
+  };
+};
 
 export const generateChatReply = async ({
   userMessage,

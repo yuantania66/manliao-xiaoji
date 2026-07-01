@@ -3,7 +3,12 @@ import { NextRequest } from "next/server";
 import { failFromError, ok } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { requireNonEmptyString } from "@/lib/validation";
-import { createFallbackGeneration, generateChatReply } from "@/services/ai/aiService";
+import {
+  createFallbackGeneration,
+  createLowInformationGeneration,
+  generateChatReply,
+  isLowInformationInput,
+} from "@/services/ai/aiService";
 import { judgeReply } from "@/services/ai/aiJudgeService";
 import { rewriteChatReply } from "@/services/ai/rewriteService";
 import { AiConversationMessage, AiJudgeResult } from "@/services/ai/types";
@@ -126,6 +131,27 @@ export async function POST(request: NextRequest) {
     const content = requireNonEmptyString(body.content, "content", 2000);
     const recentMessages = normalizeRecentMessages(body.recentMessages);
     const createdAt = new Date().toISOString();
+
+    if (isLowInformationInput(content)) {
+      const generation = createLowInformationGeneration({
+        inputText: content,
+        recentMessages,
+      });
+      const judge = createFallbackJudge("low", "低信息输入已使用确定性承接");
+      incrementGuestIpUsage(ip);
+
+      return ok({
+        assistantMessage: {
+          id: `guest-ai-${Date.now()}`,
+          role: "assistant",
+          content: generation.text,
+          createdAt,
+        },
+        judge: serializeJudge(judge),
+        fallbackUsed: false,
+        rewriteAttempted: false,
+      });
+    }
 
     let mainGeneration;
     try {
