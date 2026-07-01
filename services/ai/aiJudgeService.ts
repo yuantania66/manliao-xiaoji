@@ -28,6 +28,7 @@ const VALID_ISSUES = new Set<AiJudgeIssue>([
   "missed_user_correction",
   "closed_conversation",
   "mechanical_micro_entry",
+  "low_information_echo",
 ]);
 
 const INVENTED_SCENE_TERMS = [
@@ -114,6 +115,8 @@ const CLOSED_CONVERSATION_PATTERNS = [
 const MECHANICAL_MICRO_ENTRY_PATTERNS = [/回个句号/, /发个表情/, /回个表情/, /回一个句号/, /回个标点/];
 const USER_CORRECTION_PATTERN = /不是这个问题|我已经说过了|你还问|别再让我|不是这样|不对|你说话像模板|一直在套模板/;
 const CORRECTION_ACK_PATTERN = /你说得对|是我|你说了|没接住|问偏了|说偏了|不该|不追问|不选了|套模板/;
+const LOW_INFORMATION_INPUT_PATTERN =
+  /^([0-9０-９]+|[一二三四五六七八九十零〇]+|[嗯啊哦好行对是]|[a-zA-Z])$/;
 
 const getRecentUserText = (recentMessages: AiConversationMessage[]) =>
   recentMessages
@@ -142,6 +145,22 @@ const normalizeRiskLevel = (value: unknown): AiRiskLevel => {
 const normalizeIssues = (value: unknown): AiJudgeIssue[] => {
   if (!Array.isArray(value)) return [];
   return value.filter((issue): issue is AiJudgeIssue => VALID_ISSUES.has(issue));
+};
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const isLowInformationEcho = (userMessage: string, assistantReply: string) => {
+  const token = userMessage.trim();
+  if (!LOW_INFORMATION_INPUT_PATTERN.test(token)) return false;
+
+  const escaped = escapeRegExp(token);
+  const echoOnlyPattern = new RegExp(`^(嗯|哦|好|行|啊|唔)?[，,\\s]*${escaped}[。.!！]*$`);
+  const repeatedTokenPattern = new RegExp(`^(嗯|哦|好|行|啊|唔)?[，,\\s]*${escaped}[，,。.!！\\s]*`);
+  const isAcknowledgementToken = /^(嗯|啊|哦|好|行|对|是)$/.test(token);
+
+  if (isAcknowledgementToken) return echoOnlyPattern.test(assistantReply.trim());
+
+  return echoOnlyPattern.test(assistantReply.trim()) || repeatedTokenPattern.test(assistantReply.trim());
 };
 
 const runLocalJudge = ({
@@ -251,6 +270,10 @@ const runLocalJudge = ({
   }
   if (MECHANICAL_MICRO_ENTRY_PATTERNS.some((pattern) => pattern.test(assistantReply))) {
     issues.add("mechanical_micro_entry");
+    issues.add("lack_of_empathy");
+  }
+  if (isLowInformationEcho(userMessage, assistantReply)) {
+    issues.add("low_information_echo");
     issues.add("lack_of_empathy");
   }
   if (

@@ -28,6 +28,8 @@ const LOW_ENERGY_PATTERN = /累|疲惫|没力气|撑不住|耗尽|困|不想动/
 const DISTRESS_PATTERN = /难受|烦|崩|压力|委屈|害怕|焦虑|慌|空|麻木|堵/;
 const BOUNDARY_PATTERN = /你也别装懂|别说你永远陪我|我知道你是AI|别替我决定|先别给步骤|不想被教育/;
 const RECENT_BOUNDARY_PATTERN = /别问|别追问|别让我想|先别|别替我|不想被教育|别说你永远|不想说|不说也行/;
+const LOW_INFORMATION_REPLY_PATTERN =
+  /^([0-9０-９]+|[一二三四五六七八九十零〇]+|[嗯嗯啊哦好行对是]|[a-zA-Z])$/;
 
 const KNOWN_TERMS = [
   "累",
@@ -145,6 +147,18 @@ const buildPlan = ({
     };
   }
 
+  if (LOW_INFORMATION_REPLY_PATTERN.test(userMessage.trim())) {
+    return {
+      stage: "receive",
+      move: "steady_reflection",
+      userGiven,
+      relationshipNeed: "用户只给了数字、单字或极短回应，通常是在接上一轮问题；需要把它当作回答来承接，而不是机械复读。",
+      responseShape: "不要回复“嗯，3。”这类复读，也不要用原数字做第一句。数字回答要先翻译成含义，例如“3 分的话，是有一点，但还没满出来”；如果无法判断，就说收到这个回应，并把压力降下来。",
+      naturalOpening: "用户下一句可以继续很短，也可以不解释；助手要帮它接回上文。",
+      successCriteria: "回复比 fallback 更有上下文，不复读短输入，不追问原因，不让用户重新解释。",
+    };
+  }
+
   if (
     recentlySetBoundary &&
     (NO_PRESSURE_PATTERN.test(userMessage) ||
@@ -157,7 +171,7 @@ const buildPlan = ({
       move: "steady_reflection",
       userGiven,
       relationshipNeed: "用户最近刚设过边界，后续短答需要延续这个边界，不要把对话重新推回追问。",
-      responseShape: "只用一句话承接用户刚给出的感受或边界；不问新问题，不要求用户证明还在，不用句号或表情做入口，不引入天气、身体部位或活动场景。",
+      responseShape: "只用一句话承接用户刚给出的感受或边界；不问新问题，不要求用户证明还在，不用“我在这儿/陪着你”收尾，不用句号或表情做入口，不引入天气、身体部位或活动场景。",
       naturalOpening: "用户可以停住，也可以自己补一句；助手不索要回答。",
       successCriteria: "回复让用户感觉边界被记住了，而不是每一轮都重新开始追问。",
     };
@@ -171,7 +185,7 @@ const buildPlan = ({
       userGiven,
       relationshipNeed: "用户表达卡住或低表达意愿，需要减少负担，而不是继续索要解释。",
       responseShape: alreadyGaveFeeling
-        ? "先承接已经给出的那个词；如果前面已经问过，就只用一句话停住，不继续给任务。"
+        ? "先承接已经给出的那个词；如果前面已经问过，就只用一句话停住，不继续给任务，也不要用“我在这儿/陪着你”收尾。"
         : "先允许说不清；如果要给入口，也要具体、很小、自然。",
       naturalOpening: alreadyGaveFeeling
         ? `用户已经给出“${userGiven.join("、")}”，下一句可以围绕它多说半句，也可以只说“嗯”。`

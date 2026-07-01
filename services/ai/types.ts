@@ -40,7 +40,8 @@ export type AiJudgeIssue =
   | "flippant_tone"
   | "missed_user_correction"
   | "closed_conversation"
-  | "mechanical_micro_entry";
+  | "mechanical_micro_entry"
+  | "low_information_echo";
 
 export type AiRiskLevel = "low" | "medium" | "high" | "crisis";
 

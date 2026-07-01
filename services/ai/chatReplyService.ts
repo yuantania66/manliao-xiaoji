@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 
 import { createFallbackGeneration, generateChatReply } from "./aiService";
 import { judgeReply } from "./aiJudgeService";
+import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
 import { rewriteChatReply } from "./rewriteService";
 import { AiConversationMessage, AiGenerationResult, AiJudgeResult, AiRiskLevel } from "./types";
 
@@ -21,6 +22,22 @@ const mapRiskLevel = (riskLevel: AiRiskLevel) => {
   }
   return PrismaAiRiskLevel.LOW;
 };
+
+const getFallbackRiskLevel = (content: string): AiRiskLevel =>
+  /自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(content) ? "crisis" : "low";
+
+const createFallbackJudge = (
+  riskLevel: AiRiskLevel,
+  reason: string
+): AiJudgeResult & { judgeModel: string; promptVersion: string } => ({
+  passed: true,
+  riskLevel,
+  issues: [],
+  rewriteRequired: false,
+  reason,
+  judgeModel: "fallback-local",
+  promptVersion: JUDGE_PROMPT_VERSION,
+});
 
 const serializeMessage = (message: {
   id: string;
@@ -152,7 +169,37 @@ export const createReviewedChatReply = async ({
   userMessage: string;
   recentMessages: AiConversationMessage[];
 }) => {
-  const mainGeneration = await generateChatReply({ userMessage, recentMessages });
+  let mainGeneration: AiGenerationResult;
+  try {
+    mainGeneration = await generateChatReply({ userMessage, recentMessages });
+  } catch {
+    const riskLevel = getFallbackRiskLevel(userMessage);
+    const fallback = createFallbackGeneration({
+      inputText: userMessage,
+      riskLevel,
+    });
+    const savedFallback = await saveGeneration({
+      userId,
+      sessionId,
+      inputText: userMessage,
+      generation: fallback,
+      status: AiGenerationStatus.FALLBACK,
+    });
+    const assistantMessage = await saveAssistantMessage({
+      userId,
+      sessionId,
+      content: fallback.text,
+      status: MessageStatus.FALLBACK,
+      aiGenerationId: savedFallback.id,
+    });
+
+    return {
+      assistantMessage: serializeMessage(assistantMessage),
+      judge: createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback"),
+      rewriteAttempted: false,
+      fallbackUsed: true,
+    };
+  }
   const savedMainGeneration = await saveGeneration({
     userId,
     sessionId,

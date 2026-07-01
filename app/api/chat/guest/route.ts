@@ -104,6 +104,21 @@ const serializeJudge = (judge: AiJudgeResult & { judgeModel: string }) => ({
   reason: judge.reason,
 });
 
+const getFallbackRiskLevel = (content: string): AiJudgeResult["riskLevel"] =>
+  /自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(content) ? "crisis" : "low";
+
+const createFallbackJudge = (
+  riskLevel: AiJudgeResult["riskLevel"],
+  reason: string
+): AiJudgeResult & { judgeModel: string } => ({
+  passed: true,
+  riskLevel,
+  issues: [],
+  rewriteRequired: false,
+  reason,
+  judgeModel: "fallback-local",
+});
+
 export async function POST(request: NextRequest) {
   try {
     const { ip } = assertGuestIpLimit(request);
@@ -112,10 +127,33 @@ export async function POST(request: NextRequest) {
     const recentMessages = normalizeRecentMessages(body.recentMessages);
     const createdAt = new Date().toISOString();
 
-    const mainGeneration = await generateChatReply({
-      userMessage: content,
-      recentMessages,
-    });
+    let mainGeneration;
+    try {
+      mainGeneration = await generateChatReply({
+        userMessage: content,
+        recentMessages,
+      });
+    } catch {
+      const riskLevel = getFallbackRiskLevel(content);
+      const fallback = createFallbackGeneration({
+        inputText: content,
+        riskLevel,
+      });
+      const fallbackJudge = createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback");
+      incrementGuestIpUsage(ip);
+
+      return ok({
+        assistantMessage: {
+          id: `guest-ai-${Date.now()}`,
+          role: "assistant",
+          content: fallback.text,
+          createdAt,
+        },
+        judge: serializeJudge(fallbackJudge),
+        fallbackUsed: true,
+        rewriteAttempted: false,
+      });
+    }
     const firstJudge = await judgeReply({
       userMessage: content,
       assistantReply: mainGeneration.text,
