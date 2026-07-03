@@ -40,6 +40,8 @@ type AiDebugTrace = {
     filteredHistoryCount: number;
     memoryIncluded: boolean;
     memorySource?: string;
+    memoryLayer?: string;
+    memoryTrust?: string;
     filteredHistory: {
       role: string;
       reason: string;
@@ -204,6 +206,10 @@ const getDebugLayers = (trace: AiDebugTrace) =>
 
 const formatEngineDetails = (trace: AiDebugTrace) => {
   const prompt = trace.prompt;
+  const memoryLabel =
+    prompt && prompt.memoryIncluded
+      ? [prompt.memorySource, prompt.memoryLayer, prompt.memoryTrust].filter(Boolean).join(" / ")
+      : "none";
   return [
     prompt
       ? `Prompt: ${prompt.mode} / ${prompt.promptVersion}`
@@ -211,7 +217,7 @@ const formatEngineDetails = (trace: AiDebugTrace) => {
     prompt
       ? `历史: received=${prompt.receivedHistoryCount}, included=${prompt.includedHistoryCount}, filtered=${prompt.filteredHistoryCount}`
       : "历史: unknown",
-    prompt ? `记忆: ${prompt.memoryIncluded ? prompt.memorySource ?? "yes" : "none"}` : "记忆: unknown",
+    prompt ? `记忆: ${memoryLabel}` : "记忆: unknown",
     prompt ? `模型消息: ${prompt.modelMessageRoles.join(" -> ") || "无"}` : "模型消息: unknown",
     prompt
       ? `过滤: ${

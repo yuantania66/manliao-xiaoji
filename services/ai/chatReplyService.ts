@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 
 import { createFallbackGeneration, generateChatReply } from "./aiService";
 import { createSafetyGeneration, isCrisisInput } from "./chatSafety";
+import { createChatMemoryContext, createNoteMemoryContext } from "./dataLayers";
 import { buildAiDebugTrace } from "./debugTrace";
 import { createNoteDraft } from "./noteDraft";
 import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
@@ -57,11 +58,10 @@ const loadMemoryContext = async ({
   });
 
   if (note && isStableMemoryText(note.content)) {
-    return {
-      source: "note",
+    return createNoteMemoryContext({
       text: previewMemory(note.content),
       date: note.recordDate.toISOString().slice(0, 10),
-    };
+    });
   }
 
   const chatMessage = await prisma.chatMessage.findFirst({
@@ -78,11 +78,10 @@ const loadMemoryContext = async ({
   });
 
   if (chatMessage && isStableMemoryText(chatMessage.content)) {
-    return {
-      source: "chat",
+    return createChatMemoryContext({
       text: previewMemory(chatMessage.content),
       date: chatMessage.createdAt.toISOString().slice(0, 10),
-    };
+    });
   }
 
   return null;

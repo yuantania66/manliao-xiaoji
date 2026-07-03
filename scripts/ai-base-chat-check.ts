@@ -92,6 +92,8 @@ const memoryPrompt = buildChatPrompt({
   recentMessages: [],
   memoryContext: {
     source: "note",
+    layer: "user_confirmed_memory",
+    trust: "user_confirmed",
     text: "上周提到工作交接很耗神",
     date: "2026-07-01",
   },
@@ -99,8 +101,29 @@ const memoryPrompt = buildChatPrompt({
 
 assert.equal(memoryPrompt.meta.memoryIncluded, true);
 assert.equal(memoryPrompt.meta.memorySource, "note");
+assert.equal(memoryPrompt.meta.memoryLayer, "user_confirmed_memory");
+assert.equal(memoryPrompt.meta.memoryTrust, "user_confirmed");
+assert(JSON.stringify(memoryPrompt.messages).includes("用户保存过的小记"));
 assert(JSON.stringify(memoryPrompt.messages).includes("上周提到工作交接很耗神"));
 assert(!JSON.stringify(memoryPrompt.messages).includes("不存在的历史"));
+
+const chatMemoryPrompt = buildChatPrompt({
+  userMessage: "今天还是有点累",
+  recentMessages: [],
+  memoryContext: {
+    source: "chat",
+    layer: "raw_conversation",
+    trust: "observed",
+    text: "昨天说过项目有点卡",
+    date: "2026-07-02",
+  },
+});
+
+assert.equal(chatMemoryPrompt.meta.memoryLayer, "raw_conversation");
+assert.equal(chatMemoryPrompt.meta.memoryTrust, "observed");
+assert(JSON.stringify(chatMemoryPrompt.messages).includes("近期聊天线索"));
+assert(JSON.stringify(chatMemoryPrompt.messages).includes("未确认"));
+assert(!JSON.stringify(chatMemoryPrompt.messages).includes("用户保存过的小记"));
 
 const implicitLegacyPrompt = buildChatPrompt({
   userMessage: "b",

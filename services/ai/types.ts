@@ -9,6 +9,8 @@ export type AiConversationMessage = {
 
 export type AiMemoryContext = {
   source: "note" | "chat";
+  layer: "user_confirmed_memory" | "raw_conversation";
+  trust: "user_confirmed" | "observed";
   text: string;
   date?: string;
 };
@@ -46,6 +48,8 @@ export type AiPromptMeta = {
   filteredHistoryCount: number;
   memoryIncluded: boolean;
   memorySource?: AiMemoryContext["source"];
+  memoryLayer?: AiMemoryContext["layer"];
+  memoryTrust?: AiMemoryContext["trust"];
   filteredHistory: {
     role: AiConversationRole;
     reason: string;
@@ -118,6 +122,8 @@ export type AiDebugTrace = {
     filteredHistoryCount: number;
     memoryIncluded: boolean;
     memorySource?: AiMemoryContext["source"];
+    memoryLayer?: AiMemoryContext["layer"];
+    memoryTrust?: AiMemoryContext["trust"];
     filteredHistory: AiPromptMeta["filteredHistory"];
     modelMessageRoles: AiModelRole[];
   };

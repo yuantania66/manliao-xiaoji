@@ -1,4 +1,5 @@
 import { AiConversationMessage, AiMemoryContext, AiModelMessage, AiPromptMeta } from "./types";
+import { formatMemoryContextForPrompt } from "./dataLayers";
 
 export const CHAT_PROMPT_VERSION = "chat-base-product-v4";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
@@ -151,7 +152,7 @@ export const buildChatPrompt = ({
       ? [
           {
             role: "developer" as const,
-            content: `可靠历史：${memoryContext.date ? `${memoryContext.date}，` : ""}${memoryContext.text}\n如果自然，可以轻轻提一句“上次你提到……”。如果不自然，不要硬提；不能添加这里没有的细节。`,
+            content: formatMemoryContextForPrompt(memoryContext),
           },
         ]
       : []),
@@ -169,6 +170,8 @@ export const buildChatPrompt = ({
       filteredHistoryCount: filteredHistory.length,
       memoryIncluded: Boolean(memoryContext),
       memorySource: memoryContext?.source,
+      memoryLayer: memoryContext?.layer,
+      memoryTrust: memoryContext?.trust,
       filteredHistory,
       modelMessageRoles: messages.map((message) => message.role),
     },

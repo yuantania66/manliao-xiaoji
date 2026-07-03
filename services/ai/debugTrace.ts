@@ -32,6 +32,11 @@ export const buildAiDebugTrace = ({
   const filteredHistoryCount = promptMeta?.filteredHistoryCount ?? 0;
   const memoryIncluded = promptMeta?.memoryIncluded ?? false;
   const memorySource = promptMeta?.memorySource;
+  const memoryLayer = promptMeta?.memoryLayer;
+  const memoryTrust = promptMeta?.memoryTrust;
+  const memoryLabel = memoryIncluded
+    ? [memorySource, memoryLayer, memoryTrust].filter(Boolean).join(" / ")
+    : "none";
   const filteredHistory = promptMeta?.filteredHistory ?? [];
   const modelMessageRoles = promptMeta?.modelMessageRoles ?? [];
   const thinkingLayers = [
@@ -58,7 +63,7 @@ export const buildAiDebugTrace = ({
           : `收到 ${receivedHistoryCount} 条历史，送入 ${includedHistoryCount} 条，过滤 ${filteredHistoryCount} 条历史。`,
       evidence: [
         `promptVersion：${promptVersion}`,
-        `memory=${memoryIncluded ? memorySource ?? "yes" : "none"}`,
+        `memory=${memoryLabel}`,
         `messages：${modelMessageRoles.join(" -> ") || "无"}`,
         ...filteredHistory.map((item) => `过滤 ${item.role}: ${item.reason} / ${item.preview}`),
       ],
@@ -85,6 +90,8 @@ export const buildAiDebugTrace = ({
       filteredHistoryCount,
       memoryIncluded,
       memorySource,
+      memoryLayer,
+      memoryTrust,
       filteredHistory,
       modelMessageRoles,
     },
