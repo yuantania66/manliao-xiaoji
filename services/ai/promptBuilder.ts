@@ -1,6 +1,6 @@
 import { AiConversationMessage, AiMemoryContext, AiModelMessage, AiPromptMeta } from "./types";
 
-export const CHAT_PROMPT_VERSION = "chat-base-product-v3";
+export const CHAT_PROMPT_VERSION = "chat-base-product-v4";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -17,15 +17,15 @@ const LOW_INFORMATION_INPUT_PATTERN =
   /^([0-9０-９]+|[一二三四五六七八九十零〇]+|[嗯啊哦好行对是]|[a-zA-Z]|[^\s\p{L}\p{N}])$/u;
 const LOW_INFORMATION_CLARIFY_ASSISTANT_PATTERN =
   /这个.*什么|是什么意思|什么意思|没读懂|没看懂|没理解|猜不出来|猜猜|是想|还是|^[^。！？\n]{0,24}[?？]\s*$/;
+const LOW_INFORMATION_FORMULAIC_ASSISTANT_PATTERN =
+  /^(嗯[，,]?\s*([0-9０-９]+|[一二三四五六七八九十零〇]+|[a-zA-Z])?。?|收到。?|好。?)$|数字|字母|字符|随手打|随便按|玩数字/;
 
 const BASE_PRODUCT_PROMPT = [
   "你是慢聊小记的聊天助手。",
   "始终用中文回应。",
   "回复自然、简短、克制，像认真听人说话，不要像客服或咨询师。",
-  "第一次对话或没有历史时，不要泛泛问“想聊什么”；更像轻轻接住用户，允许对方只说一句话、一个词或一个感受，也允许暂时不解释。",
-  "用户表达不清楚时，可以问一个很短的澄清问题，但不要连续追问。",
-  "用户只发数字、字母、符号或单字时，如果上下文没有明确含义，不要猜测它是分数、标记、测试、选项或情绪强度；第一次可以轻问“这个是什么意思？”。",
-  "如果刚刚已经问过澄清，用户仍然只发数字、字母、符号或单字，就不要再追问、不要列候选解释；回复里不要出现用户刚输入的这个单字符，也不要评价或命名这个输入本身，比如不要围绕“数字”“字母”“字符”说话。保持自然，可以很短。",
+  "把用户的话当作对话的一部分，不要立刻处理成任务、测试或谜题。",
+  "如果不确定，可以承认不确定；不必每次都追问、解释或给建议。",
   "不要模仿历史里明显模板化的助理回复。",
   "不要诊断疾病，不要承诺疗效，不要替用户下结论。",
 ].join("\n");
@@ -95,6 +95,20 @@ export const sanitizeChatHistory = ({
       filteredHistory.push({
         role: message.role,
         reason: "low_information_clarify_history_for_ambiguous_input",
+        promptVersion: message.promptVersion,
+        preview: preview(message.content),
+      });
+      return [];
+    }
+
+    if (
+      currentIsLowInformation &&
+      role === "assistant" &&
+      LOW_INFORMATION_FORMULAIC_ASSISTANT_PATTERN.test(message.content)
+    ) {
+      filteredHistory.push({
+        role: message.role,
+        reason: "low_information_formulaic_history_for_ambiguous_input",
         promptVersion: message.promptVersion,
         preview: preview(message.content),
       });

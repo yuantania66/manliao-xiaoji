@@ -66,9 +66,9 @@ assert(!JSON.stringify(prompt.messages).includes("还在这里"));
 assert(!JSON.stringify(prompt.messages).includes("往上了一点"));
 assert(!JSON.stringify(prompt.messages).includes("\"3\""));
 assert(!JSON.stringify(prompt.messages).includes("\"a\""));
-assert(prompt.messages[0].content.includes("不要猜测"));
-assert(prompt.messages[0].content.includes("不要列候选解释"));
-assert(prompt.messages[0].content.includes("第一次对话"));
+assert(prompt.messages[0].content.includes("不要立刻处理成任务"));
+assert(prompt.messages[0].content.includes("不必每次都追问"));
+assert(!prompt.messages[0].content.includes("数字、字母、符号或单字"));
 
 const baseAssistantPrompt = buildChatPrompt({
   userMessage: "继续",
@@ -127,24 +127,41 @@ const repeatedLowInfoPrompt = buildChatPrompt({
       content: "2是接着刚才的想法，还是现在想换个东西说？",
       promptVersion: CHAT_PROMPT_VERSION,
     },
+    { role: "user", content: "8" },
+    {
+      role: "assistant",
+      content: "8。数字挺好的，收到。",
+      promptVersion: CHAT_PROMPT_VERSION,
+    },
+    { role: "user", content: "9" },
+    {
+      role: "assistant",
+      content: "嗯，9。",
+      promptVersion: CHAT_PROMPT_VERSION,
+    },
   ],
 });
 
-assert.equal(repeatedLowInfoPrompt.meta.filteredHistoryCount, 4);
+assert.equal(repeatedLowInfoPrompt.meta.filteredHistoryCount, 8);
 assert.deepEqual(
   repeatedLowInfoPrompt.messages.map((message) => message.role),
   ["developer", "user"]
 );
-assert(JSON.stringify(repeatedLowInfoPrompt.messages).includes("回复里不要出现用户刚输入的这个单字符"));
-assert(JSON.stringify(repeatedLowInfoPrompt.messages).includes("不要围绕“数字”“字母”“字符”说话"));
 const repeatedLowInfoHistoryText = JSON.stringify(
   repeatedLowInfoPrompt.messages.filter((message) => message.role !== "developer")
 );
 assert(!repeatedLowInfoHistoryText.includes("是什么意思"));
 assert(!repeatedLowInfoHistoryText.includes("想换个东西说"));
+assert(!repeatedLowInfoHistoryText.includes("数字挺好的"));
+assert(!repeatedLowInfoHistoryText.includes("嗯，9"));
 assert(
   repeatedLowInfoPrompt.meta.filteredHistory.some(
     (item) => item.reason === "low_information_clarify_history_for_ambiguous_input"
+  )
+);
+assert(
+  repeatedLowInfoPrompt.meta.filteredHistory.some(
+    (item) => item.reason === "low_information_formulaic_history_for_ambiguous_input"
   )
 );
 
