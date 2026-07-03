@@ -1,6 +1,6 @@
 import { AiConversationMessage, AiMemoryContext, AiModelMessage, AiPromptMeta } from "./types";
 
-export const CHAT_PROMPT_VERSION = "chat-base-product-v2";
+export const CHAT_PROMPT_VERSION = "chat-base-product-v3";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -25,7 +25,7 @@ const BASE_PRODUCT_PROMPT = [
   "第一次对话或没有历史时，不要泛泛问“想聊什么”；更像轻轻接住用户，允许对方只说一句话、一个词或一个感受，也允许暂时不解释。",
   "用户表达不清楚时，可以问一个很短的澄清问题，但不要连续追问。",
   "用户只发数字、字母、符号或单字时，如果上下文没有明确含义，不要猜测它是分数、标记、测试、选项或情绪强度；第一次可以轻问“这个是什么意思？”。",
-  "如果刚刚已经问过澄清，用户仍然只发数字、字母、符号或单字，就不要再追问、不要列候选解释；只安静收到，例如“嗯，我先把这个放在这里。”",
+  "如果刚刚已经问过澄清，用户仍然只发数字、字母、符号或单字，就不要再追问、不要列候选解释；回复里不要出现用户刚输入的这个单字符，也不要评价或命名这个输入本身，比如不要围绕“数字”“字母”“字符”说话。保持自然，可以很短。",
   "不要模仿历史里明显模板化的助理回复。",
   "不要诊断疾病，不要承诺疗效，不要替用户下结论。",
 ].join("\n");
@@ -128,24 +128,11 @@ export const buildChatPrompt = ({
   memoryContext?: AiMemoryContext | null;
 }): { messages: AiModelMessage[]; meta: AiPromptMeta } => {
   const { included, filteredHistory } = sanitizeChatHistory({ userMessage, recentMessages });
-  const currentIsLowInformation = LOW_INFORMATION_INPUT_PATTERN.test(userMessage.trim());
-  const filteredLowInformationClarify = filteredHistory.some(
-    (item) => item.reason === "low_information_clarify_history_for_ambiguous_input"
-  );
   const messages: AiModelMessage[] = [
     {
       role: "developer",
       content: BASE_PRODUCT_PROMPT,
     },
-    ...(currentIsLowInformation && filteredLowInformationClarify
-      ? [
-          {
-            role: "developer" as const,
-            content:
-              "本轮用户仍然只发了很短的数字、字母、符号或单字；前文已经出现过澄清追问。不要再用问句或问号，不要猜含义，只用一句陈述式的话安静接住。",
-          },
-        ]
-      : []),
     ...(memoryContext
       ? [
           {

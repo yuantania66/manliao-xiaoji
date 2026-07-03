@@ -133,9 +133,10 @@ const repeatedLowInfoPrompt = buildChatPrompt({
 assert.equal(repeatedLowInfoPrompt.meta.filteredHistoryCount, 4);
 assert.deepEqual(
   repeatedLowInfoPrompt.messages.map((message) => message.role),
-  ["developer", "developer", "user"]
+  ["developer", "user"]
 );
-assert(JSON.stringify(repeatedLowInfoPrompt.messages).includes("不要再用问句或问号"));
+assert(JSON.stringify(repeatedLowInfoPrompt.messages).includes("回复里不要出现用户刚输入的这个单字符"));
+assert(JSON.stringify(repeatedLowInfoPrompt.messages).includes("不要围绕“数字”“字母”“字符”说话"));
 const repeatedLowInfoHistoryText = JSON.stringify(
   repeatedLowInfoPrompt.messages.filter((message) => message.role !== "developer")
 );
