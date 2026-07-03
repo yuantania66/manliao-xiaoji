@@ -1,6 +1,6 @@
 import { AiConversationMessage, AiMemoryContext, AiModelMessage, AiPromptMeta } from "./types";
 
-export const CHAT_PROMPT_VERSION = "chat-base-product-v1";
+export const CHAT_PROMPT_VERSION = "chat-base-product-v2";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -15,14 +15,17 @@ const LEGACY_ASSISTANT_TEMPLATE_PATTERN =
   /还在这里|先不用解释|比刚才|往上|往下|重了一点|轻了一点|强度|低信息|确定「|标记还是分数|可以只回一个词|不用把话说完整|测试界面|随机按|点方向|第[一二三四五六七八九十0-9]+个「/;
 const LOW_INFORMATION_INPUT_PATTERN =
   /^([0-9０-９]+|[一二三四五六七八九十零〇]+|[嗯啊哦好行对是]|[a-zA-Z]|[^\s\p{L}\p{N}])$/u;
+const LOW_INFORMATION_CLARIFY_ASSISTANT_PATTERN =
+  /这个.*什么|是什么意思|什么意思|没读懂|没看懂|没理解|猜不出来|猜猜|是想|还是|^[^。！？\n]{0,24}[?？]\s*$/;
 
 const BASE_PRODUCT_PROMPT = [
   "你是慢聊小记的聊天助手。",
   "始终用中文回应。",
   "回复自然、简短、克制，像认真听人说话，不要像客服或咨询师。",
   "第一次对话或没有历史时，不要泛泛问“想聊什么”；更像轻轻接住用户，允许对方只说一句话、一个词或一个感受，也允许暂时不解释。",
-  "用户表达不清楚时，直接问一个很短的澄清问题。",
-  "用户只发数字、字母、符号或单字时，如果上下文没有明确含义，不要猜测它是分数、标记、测试、选项或情绪强度；直接问“这个是什么意思？”一类的问题，不要追加候选解释。",
+  "用户表达不清楚时，可以问一个很短的澄清问题，但不要连续追问。",
+  "用户只发数字、字母、符号或单字时，如果上下文没有明确含义，不要猜测它是分数、标记、测试、选项或情绪强度；第一次可以轻问“这个是什么意思？”。",
+  "如果刚刚已经问过澄清，用户仍然只发数字、字母、符号或单字，就不要再追问、不要列候选解释；只安静收到，例如“嗯，我先把这个放在这里。”",
   "不要模仿历史里明显模板化的助理回复。",
   "不要诊断疾病，不要承诺疗效，不要替用户下结论。",
 ].join("\n");
@@ -84,6 +87,20 @@ export const sanitizeChatHistory = ({
       return [];
     }
 
+    if (
+      currentIsLowInformation &&
+      role === "assistant" &&
+      LOW_INFORMATION_CLARIFY_ASSISTANT_PATTERN.test(message.content)
+    ) {
+      filteredHistory.push({
+        role: message.role,
+        reason: "low_information_clarify_history_for_ambiguous_input",
+        promptVersion: message.promptVersion,
+        preview: preview(message.content),
+      });
+      return [];
+    }
+
     const reason = getHistoryFilterReason(message);
     if (reason) {
       filteredHistory.push({
@@ -111,11 +128,24 @@ export const buildChatPrompt = ({
   memoryContext?: AiMemoryContext | null;
 }): { messages: AiModelMessage[]; meta: AiPromptMeta } => {
   const { included, filteredHistory } = sanitizeChatHistory({ userMessage, recentMessages });
+  const currentIsLowInformation = LOW_INFORMATION_INPUT_PATTERN.test(userMessage.trim());
+  const filteredLowInformationClarify = filteredHistory.some(
+    (item) => item.reason === "low_information_clarify_history_for_ambiguous_input"
+  );
   const messages: AiModelMessage[] = [
     {
       role: "developer",
       content: BASE_PRODUCT_PROMPT,
     },
+    ...(currentIsLowInformation && filteredLowInformationClarify
+      ? [
+          {
+            role: "developer" as const,
+            content:
+              "本轮用户仍然只发了很短的数字、字母、符号或单字；前文已经出现过澄清追问。不要再用问句或问号，不要猜含义，只用一句陈述式的话安静接住。",
+          },
+        ]
+      : []),
     ...(memoryContext
       ? [
           {

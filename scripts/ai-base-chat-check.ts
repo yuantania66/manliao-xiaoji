@@ -67,7 +67,7 @@ assert(!JSON.stringify(prompt.messages).includes("往上了一点"));
 assert(!JSON.stringify(prompt.messages).includes("\"3\""));
 assert(!JSON.stringify(prompt.messages).includes("\"a\""));
 assert(prompt.messages[0].content.includes("不要猜测"));
-assert(prompt.messages[0].content.includes("不要追加候选解释"));
+assert(prompt.messages[0].content.includes("不要列候选解释"));
 assert(prompt.messages[0].content.includes("第一次对话"));
 
 const baseAssistantPrompt = buildChatPrompt({
@@ -111,6 +111,41 @@ const implicitLegacyPrompt = buildChatPrompt({
 
 assert.equal(implicitLegacyPrompt.meta.filteredHistoryCount, 1);
 assert.equal(implicitLegacyPrompt.meta.filteredHistory[0].reason, "legacy_template_text");
+
+const repeatedLowInfoPrompt = buildChatPrompt({
+  userMessage: "5",
+  recentMessages: [
+    { role: "user", content: "1" },
+    {
+      role: "assistant",
+      content: "这个1是什么意思？",
+      promptVersion: CHAT_PROMPT_VERSION,
+    },
+    { role: "user", content: "2" },
+    {
+      role: "assistant",
+      content: "2是接着刚才的想法，还是现在想换个东西说？",
+      promptVersion: CHAT_PROMPT_VERSION,
+    },
+  ],
+});
+
+assert.equal(repeatedLowInfoPrompt.meta.filteredHistoryCount, 4);
+assert.deepEqual(
+  repeatedLowInfoPrompt.messages.map((message) => message.role),
+  ["developer", "developer", "user"]
+);
+assert(JSON.stringify(repeatedLowInfoPrompt.messages).includes("不要再用问句或问号"));
+const repeatedLowInfoHistoryText = JSON.stringify(
+  repeatedLowInfoPrompt.messages.filter((message) => message.role !== "developer")
+);
+assert(!repeatedLowInfoHistoryText.includes("是什么意思"));
+assert(!repeatedLowInfoHistoryText.includes("想换个东西说"));
+assert(
+  repeatedLowInfoPrompt.meta.filteredHistory.some(
+    (item) => item.reason === "low_information_clarify_history_for_ambiguous_input"
+  )
+);
 
 const debug = buildAiDebugTrace({
   userMessage: "b",
