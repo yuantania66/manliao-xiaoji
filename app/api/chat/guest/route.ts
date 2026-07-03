@@ -4,7 +4,9 @@ import { failFromError, ok } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { requireNonEmptyString } from "@/lib/validation";
 import { createFallbackGeneration, generateChatReply } from "@/services/ai/aiService";
+import { createSafetyGeneration, isCrisisInput } from "@/services/ai/chatSafety";
 import { buildAiDebugTrace } from "@/services/ai/debugTrace";
+import { createNoteDraft } from "@/services/ai/noteDraft";
 import { AiConversationMessage, AiDebugTrace, AiGenerationResult, AiJudgeResult } from "@/services/ai/types";
 
 type GuestRateLimitRecord = {
@@ -172,6 +174,33 @@ export async function POST(request: NextRequest) {
           })
         : undefined;
 
+    if (isCrisisInput(content)) {
+      const generation = createSafetyGeneration(content);
+      const judge = createFallbackJudge("crisis", "safety gate matched; base model skipped");
+      incrementGuestIpUsage(ip);
+
+      return ok({
+        assistantMessage: {
+          id: `guest-ai-${Date.now()}`,
+          role: "assistant",
+          content: generation.text,
+          createdAt,
+          promptVersion: generation.promptVersion,
+        },
+        judge: serializeJudge(judge),
+        fallbackUsed: false,
+        rewriteAttempted: false,
+        noteDraft: null,
+        debugTrace: maybeDebugTrace({
+          generation,
+          judge,
+          finalSource: "safety",
+          fallbackUsed: false,
+          rewriteAttempted: false,
+        }),
+      });
+    }
+
     let mainGeneration;
     try {
       mainGeneration = await generateChatReply({
@@ -198,6 +227,7 @@ export async function POST(request: NextRequest) {
         judge: serializeJudge(fallbackJudge),
         fallbackUsed: true,
         rewriteAttempted: false,
+        noteDraft: null,
         debugTrace: maybeDebugTrace({
           generation: fallback,
           judge: fallbackJudge,
@@ -208,6 +238,11 @@ export async function POST(request: NextRequest) {
       });
     }
     const judge = createDisabledJudge();
+    const noteDraft = createNoteDraft({
+      userMessage: content,
+      recentMessages,
+      assistantReply: mainGeneration.text,
+    });
     incrementGuestIpUsage(ip);
 
     return ok({
@@ -221,6 +256,7 @@ export async function POST(request: NextRequest) {
       judge: serializeJudge(judge),
       fallbackUsed: false,
       rewriteAttempted: false,
+      noteDraft,
       debugTrace: maybeDebugTrace({
         generation: mainGeneration,
         judge,

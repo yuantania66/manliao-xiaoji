@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
+import { createSafetyGeneration, isCrisisInput } from "../services/ai/chatSafety";
 import { buildAiDebugTrace } from "../services/ai/debugTrace";
+import { createNoteDraft } from "../services/ai/noteDraft";
 import { buildChatPrompt, CHAT_PROMPT_VERSION } from "../services/ai/promptBuilder";
 import { AiConversationMessage } from "../services/ai/types";
 
@@ -66,6 +68,7 @@ assert(!JSON.stringify(prompt.messages).includes("\"3\""));
 assert(!JSON.stringify(prompt.messages).includes("\"a\""));
 assert(prompt.messages[0].content.includes("不要猜测"));
 assert(prompt.messages[0].content.includes("不要追加候选解释"));
+assert(prompt.messages[0].content.includes("第一次对话"));
 
 const baseAssistantPrompt = buildChatPrompt({
   userMessage: "继续",
@@ -83,6 +86,21 @@ assert.deepEqual(
   baseAssistantPrompt.messages.map((message) => message.role),
   ["developer", "assistant", "user"]
 );
+
+const memoryPrompt = buildChatPrompt({
+  userMessage: "今天还是有点累",
+  recentMessages: [],
+  memoryContext: {
+    source: "note",
+    text: "上周提到工作交接很耗神",
+    date: "2026-07-01",
+  },
+});
+
+assert.equal(memoryPrompt.meta.memoryIncluded, true);
+assert.equal(memoryPrompt.meta.memorySource, "note");
+assert(JSON.stringify(memoryPrompt.messages).includes("上周提到工作交接很耗神"));
+assert(!JSON.stringify(memoryPrompt.messages).includes("不存在的历史"));
 
 const implicitLegacyPrompt = buildChatPrompt({
   userMessage: "b",
@@ -121,5 +139,43 @@ const debugText = JSON.stringify(debug);
 assert.equal(debug.prompt.filteredHistoryCount, 4);
 assert(!debugText.includes("理解层"));
 assert(!debugText.includes("慢聊状态"));
+
+assert.equal(isCrisisInput("我不想活了"), true);
+const safety = createSafetyGeneration("我不想活了");
+assert.equal(safety.model, "safety-gate");
+assert.equal(safety.promptVersion, "safety-gate-v1");
+assert(safety.text.includes("紧急电话"));
+
+const safetyDebug = buildAiDebugTrace({
+  userMessage: "我不想活了",
+  recentMessages: [],
+  generation: safety,
+  judge: {
+    passed: true,
+    riskLevel: "crisis",
+    issues: [],
+    rewriteRequired: false,
+    reason: "safety gate matched; base model skipped",
+    judgeModel: "safety-gate",
+  },
+  finalSource: "safety",
+  fallbackUsed: false,
+  rewriteAttempted: false,
+});
+
+assert.equal(safetyDebug.route.finalSource, "safety");
+assert.equal(safetyDebug.route.safetyUsed, true);
+assert.equal(safetyDebug.prompt.modelMessageRoles.length, 0);
+
+const draft = createNoteDraft({
+  userMessage: "今天下班后突然觉得很累，但也松了一口气",
+  recentMessages: [],
+  assistantReply: "这会儿先承认自己的累。",
+});
+
+assert(draft);
+assert.equal(draft.source, "chat_turn");
+assert(draft.content.includes("今天下班后突然觉得很累"));
+assert.equal(createNoteDraft({ userMessage: "1", recentMessages: [], assistantReply: "这个是什么意思？" }), null);
 
 console.log("AI base chat checks passed");

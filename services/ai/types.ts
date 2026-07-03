@@ -7,6 +7,18 @@ export type AiConversationMessage = {
   aiGenerationId?: string | null;
 };
 
+export type AiMemoryContext = {
+  source: "note" | "chat";
+  text: string;
+  date?: string;
+};
+
+export type AiNoteDraft = {
+  content: string;
+  source: "chat_turn";
+  recordDate: string;
+};
+
 export type AiModelRole = "developer" | "user" | "assistant";
 
 export type AiModelMessage = {
@@ -32,6 +44,8 @@ export type AiPromptMeta = {
   receivedHistoryCount: number;
   includedHistoryCount: number;
   filteredHistoryCount: number;
+  memoryIncluded: boolean;
+  memorySource?: AiMemoryContext["source"];
   filteredHistory: {
     role: AiConversationRole;
     reason: string;
@@ -97,11 +111,13 @@ export type AiDebugTrace = {
     evidence: string[];
   }[];
   prompt: {
-    mode: "base_product" | "fallback";
+    mode: "base_product" | "fallback" | "safety";
     promptVersion: string;
     receivedHistoryCount: number;
     includedHistoryCount: number;
     filteredHistoryCount: number;
+    memoryIncluded: boolean;
+    memorySource?: AiMemoryContext["source"];
     filteredHistory: AiPromptMeta["filteredHistory"];
     modelMessageRoles: AiModelRole[];
   };
@@ -122,8 +138,9 @@ export type AiDebugTrace = {
     judgeModel?: string;
   };
   route: {
-    finalSource: "base_model" | "fallback";
+    finalSource: "base_model" | "fallback" | "safety";
     fallbackUsed: boolean;
     rewriteAttempted: boolean;
+    safetyUsed?: boolean;
   };
 };

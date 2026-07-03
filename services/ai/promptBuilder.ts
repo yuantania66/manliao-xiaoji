@@ -1,4 +1,4 @@
-import { AiConversationMessage, AiModelMessage, AiPromptMeta } from "./types";
+import { AiConversationMessage, AiMemoryContext, AiModelMessage, AiPromptMeta } from "./types";
 
 export const CHAT_PROMPT_VERSION = "chat-base-product-v1";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
@@ -20,6 +20,7 @@ const BASE_PRODUCT_PROMPT = [
   "你是慢聊小记的聊天助手。",
   "始终用中文回应。",
   "回复自然、简短、克制，像认真听人说话，不要像客服或咨询师。",
+  "第一次对话或没有历史时，不要泛泛问“想聊什么”；更像轻轻接住用户，允许对方只说一句话、一个词或一个感受，也允许暂时不解释。",
   "用户表达不清楚时，直接问一个很短的澄清问题。",
   "用户只发数字、字母、符号或单字时，如果上下文没有明确含义，不要猜测它是分数、标记、测试、选项或情绪强度；直接问“这个是什么意思？”一类的问题，不要追加候选解释。",
   "不要模仿历史里明显模板化的助理回复。",
@@ -103,9 +104,11 @@ export const sanitizeChatHistory = ({
 export const buildChatPrompt = ({
   userMessage,
   recentMessages,
+  memoryContext,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
+  memoryContext?: AiMemoryContext | null;
 }): { messages: AiModelMessage[]; meta: AiPromptMeta } => {
   const { included, filteredHistory } = sanitizeChatHistory({ userMessage, recentMessages });
   const messages: AiModelMessage[] = [
@@ -113,6 +116,14 @@ export const buildChatPrompt = ({
       role: "developer",
       content: BASE_PRODUCT_PROMPT,
     },
+    ...(memoryContext
+      ? [
+          {
+            role: "developer" as const,
+            content: `可靠历史：${memoryContext.date ? `${memoryContext.date}，` : ""}${memoryContext.text}\n如果自然，可以轻轻提一句“上次你提到……”。如果不自然，不要硬提；不能添加这里没有的细节。`,
+          },
+        ]
+      : []),
     ...included,
     { role: "user", content: userMessage },
   ];
@@ -125,6 +136,8 @@ export const buildChatPrompt = ({
       receivedHistoryCount: recentMessages.length,
       includedHistoryCount: included.length,
       filteredHistoryCount: filteredHistory.length,
+      memoryIncluded: Boolean(memoryContext),
+      memorySource: memoryContext?.source,
       filteredHistory,
       modelMessageRoles: messages.map((message) => message.role),
     },
@@ -134,9 +147,11 @@ export const buildChatPrompt = ({
 export const buildChatMessages = ({
   userMessage,
   recentMessages,
+  memoryContext,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
+  memoryContext?: AiMemoryContext | null;
 }): AiModelMessage[] => {
-  return buildChatPrompt({ userMessage, recentMessages }).messages;
+  return buildChatPrompt({ userMessage, recentMessages, memoryContext }).messages;
 };

@@ -30,6 +30,8 @@ export const buildAiDebugTrace = ({
   const receivedHistoryCount = promptMeta?.receivedHistoryCount ?? recentMessages.length;
   const includedHistoryCount = promptMeta?.includedHistoryCount ?? recentMessages.slice(-8).length;
   const filteredHistoryCount = promptMeta?.filteredHistoryCount ?? 0;
+  const memoryIncluded = promptMeta?.memoryIncluded ?? false;
+  const memorySource = promptMeta?.memorySource;
   const filteredHistory = promptMeta?.filteredHistory ?? [];
   const modelMessageRoles = promptMeta?.modelMessageRoles ?? [];
   const thinkingLayers = [
@@ -38,18 +40,25 @@ export const buildAiDebugTrace = ({
       body:
         finalSource === "base_model"
           ? "产品底座 prompt + 基模直出；没有本地分析、规划、短路或二次改写参与回复。"
-          : "模型调用失败后走 fallback；没有二次改写。",
+          : finalSource === "safety"
+            ? "安全闸门命中，普通聊天模型未调用。"
+            : "模型调用失败后走 fallback；没有二次改写。",
       evidence: [
         `路线：${finalSource}`,
         `rewrite=${rewriteAttempted}`,
         `fallback=${fallbackUsed}`,
+        `safety=${finalSource === "safety"}`,
       ],
     },
     {
       title: "2. Prompt",
-      body: `收到 ${receivedHistoryCount} 条历史，送入 ${includedHistoryCount} 条，过滤 ${filteredHistoryCount} 条旧架构历史。`,
+      body:
+        finalSource === "safety"
+          ? "安全回复不构造普通聊天 prompt。"
+          : `收到 ${receivedHistoryCount} 条历史，送入 ${includedHistoryCount} 条，过滤 ${filteredHistoryCount} 条历史。`,
       evidence: [
         `promptVersion：${promptVersion}`,
+        `memory=${memoryIncluded ? memorySource ?? "yes" : "none"}`,
         `messages：${modelMessageRoles.join(" -> ") || "无"}`,
         ...filteredHistory.map((item) => `过滤 ${item.role}: ${item.reason} / ${item.preview}`),
       ],
@@ -69,11 +78,13 @@ export const buildAiDebugTrace = ({
     visibleSteps: thinkingLayers.map((layer) => `${layer.title}：${layer.body}`),
     thinkingLayers,
     prompt: {
-      mode: promptMeta?.mode ?? (finalSource === "fallback" ? "fallback" : "base_product"),
+      mode: promptMeta?.mode ?? (finalSource === "fallback" ? "fallback" : finalSource === "safety" ? "safety" : "base_product"),
       promptVersion,
       receivedHistoryCount,
       includedHistoryCount,
       filteredHistoryCount,
+      memoryIncluded,
+      memorySource,
       filteredHistory,
       modelMessageRoles,
     },
@@ -97,6 +108,7 @@ export const buildAiDebugTrace = ({
       finalSource,
       fallbackUsed,
       rewriteAttempted,
+      safetyUsed: finalSource === "safety",
     },
   };
 };
