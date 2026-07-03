@@ -7,13 +7,63 @@ import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import { CalendarDays, Search } from "lucide-react";
 
 import { apiRequest, ClientApiError } from "@/lib/client-api";
-import { getStoredAuth } from "@/lib/client-auth";
+import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   text: string;
   createdAt: string;
+  promptVersion?: string | null;
+  debugTrace?: AiDebugTrace;
+};
+
+type AiDebugTrace = {
+  visibleSteps: string[];
+  thinkingLayers?: {
+    title: string;
+    body: string;
+    evidence: string[];
+  }[];
+  prompt?: {
+    mode: string;
+    promptVersion: string;
+    receivedHistoryCount: number;
+    includedHistoryCount: number;
+    filteredHistoryCount: number;
+    filteredHistory: {
+      role: string;
+      reason: string;
+      promptVersion?: string | null;
+      preview: string;
+    }[];
+    modelMessageRoles: string[];
+  };
+  generation: {
+    model: string;
+    promptVersion: string;
+    latencyMs: number;
+    tokenInput?: number;
+    tokenOutput?: number;
+    providerReasoning?: {
+      available: boolean;
+      source: string;
+      characters?: number;
+    };
+  };
+  judge: {
+    passed: boolean;
+    riskLevel: string;
+    issues: string[];
+    rewriteRequired: boolean;
+    reason: string;
+    judgeModel?: string;
+  };
+  route: {
+    finalSource: string;
+    fallbackUsed: boolean;
+    rewriteAttempted: boolean;
+  };
 };
 
 type ChatSession = {
@@ -21,11 +71,22 @@ type ChatSession = {
   title: string;
 };
 
+type AuthUser = {
+  id: string;
+  phone: string | null;
+  wechatOpenid: string | null;
+  nickname: string | null;
+  avatarUrl: string | null;
+  status: string;
+  createdAt: string;
+};
+
 type ChatMessageResponse = {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
   createdAt?: string;
+  promptVersion?: string | null;
 };
 
 type ChatMessagesListResponse = {
@@ -114,6 +175,48 @@ const shouldShowMessageTime = (message: Message, previous?: Message) => {
   );
 };
 
+const getDebugLayers = (trace: AiDebugTrace) =>
+  !trace.prompt
+    ? [
+        {
+          title: "旧 debug 已废弃",
+          body: "这条消息带的是旧调试结构，不代表当前 AI 链路。请发送新消息查看 base-model debug。",
+          evidence: [],
+        },
+      ]
+    : trace.thinkingLayers?.length
+    ? trace.thinkingLayers
+    : trace.visibleSteps.map((step, index) => ({
+        title: `${index + 1}. 调试`,
+        body: step,
+        evidence: [],
+      }));
+
+const formatEngineDetails = (trace: AiDebugTrace) => {
+  const prompt = trace.prompt;
+  return [
+    prompt
+      ? `Prompt: ${prompt.mode} / ${prompt.promptVersion}`
+      : "Prompt: legacy debug trace",
+    prompt
+      ? `历史: received=${prompt.receivedHistoryCount}, included=${prompt.includedHistoryCount}, filtered=${prompt.filteredHistoryCount}`
+      : "历史: unknown",
+    prompt ? `模型消息: ${prompt.modelMessageRoles.join(" -> ") || "无"}` : "模型消息: unknown",
+    prompt
+      ? `过滤: ${
+          prompt.filteredHistory.length > 0
+            ? prompt.filteredHistory
+                .map((item) => `${item.role}:${item.reason}:${item.preview}`)
+                .join(" | ")
+            : "无"
+        }`
+      : "过滤: unknown",
+    `生成: ${trace.generation.model} / ${trace.generation.promptVersion} / ${trace.generation.latencyMs}ms`,
+    `审查: disabled / ${trace.judge.reason}`,
+    `路线: ${trace.route.finalSource}, rewrite=${trace.route.rewriteAttempted}, fallback=${trace.route.fallbackUsed}`,
+  ].join("\n");
+};
+
 const toMessages = (items: ChatMessageResponse[]): Message[] =>
   items
     .filter((item) => item.role === "user" || item.role === "assistant")
@@ -122,6 +225,7 @@ const toMessages = (items: ChatMessageResponse[]): Message[] =>
       role: item.role as "user" | "assistant",
       text: item.content,
       createdAt: item.createdAt ?? new Date().toISOString(),
+      promptVersion: item.promptVersion,
     }));
 
 const getChatCacheKey = () => {
@@ -215,6 +319,8 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   const date = searchParams.get("date");
   const requestedSessionId = searchParams.get("sessionId");
   const targetMessageId = searchParams.get("messageId");
+  const showAiDebugTrace =
+    searchParams.get("debugAi") === "1" || process.env.NEXT_PUBLIC_AI_DEBUG_TRACE === "true";
   const [input, setInput] = useState("");
   const canUseInitialChat =
     !requestedSessionId || requestedSessionId === initialChat?.sessionId;
@@ -229,6 +335,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   const [isGuestMode, setIsGuestMode] = useState(getInitialGuestMode);
   const [typingMessageIds, setTypingMessageIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isDebugLoggingIn, setIsDebugLoggingIn] = useState(false);
   const typingCancelledRef = useRef(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const hydratedFromCacheRef = useRef(false);
@@ -328,7 +435,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     return () => {
       cancelled = true;
     };
-  }, [initialChat, requestedSessionId]);
+  }, [canUseInitialChat, initialChat, requestedSessionId]);
 
   useEffect(() => {
     return () => {
@@ -458,14 +565,17 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         const data = await apiRequest<{
           assistantMessage: ChatMessageResponse;
           fallbackUsed: boolean;
+          debugTrace?: AiDebugTrace;
         }>("/api/chat/guest", {
           method: "POST",
           auth: false,
           body: {
             content: text,
+            debugTrace: showAiDebugTrace,
             recentMessages: messages.slice(-8).map((message) => ({
               role: message.role,
               content: message.text,
+              promptVersion: message.promptVersion,
             })),
           },
         });
@@ -475,6 +585,8 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           role: "assistant",
           text: data.assistantMessage.content,
           createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
+          promptVersion: data.assistantMessage.promptVersion,
+          debugTrace: data.debugTrace,
         });
       } catch (error) {
         setMessages((current) =>
@@ -492,9 +604,10 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       const data = await apiRequest<{
         userMessage: ChatMessageResponse;
         assistantMessage: ChatMessageResponse;
+        debugTrace?: AiDebugTrace;
       }>(`/api/chat/sessions/${sessionId}/messages`, {
         method: "POST",
-        body: { content: text },
+        body: { content: text, debugTrace: showAiDebugTrace },
       });
       setTypingMessageIds((current) =>
         current.filter((id) => id !== pendingAssistantId).concat(data.assistantMessage.id)
@@ -508,12 +621,15 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           role: "user",
           text: data.userMessage.content,
           createdAt: data.userMessage.createdAt ?? now,
+          promptVersion: data.userMessage.promptVersion,
         },
         {
           id: data.assistantMessage.id,
           role: "assistant",
           text: "",
           createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
+          promptVersion: data.assistantMessage.promptVersion,
+          debugTrace: data.debugTrace,
         },
       ]);
       await revealAssistantReply(data.assistantMessage.id, data.assistantMessage.content);
@@ -529,6 +645,29 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       );
       setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
       setErrorMessage(getErrorMessage(error));
+    }
+  };
+
+  const loginForDebug = async () => {
+    setIsDebugLoggingIn(true);
+    setErrorMessage("");
+
+    try {
+      const data = await apiRequest<{ user: AuthUser; token: string; expiresAt: string }>(
+        "/api/auth/wechat",
+        {
+          method: "POST",
+          auth: false,
+          body: { code: `web_mock_debug_${Date.now()}` },
+        }
+      );
+      saveAuth(data);
+      window.sessionStorage.removeItem(GUEST_MODE_KEY);
+      window.location.assign("/chat?debugAi=1");
+    } catch (error) {
+      clearAuth();
+      setErrorMessage(getErrorMessage(error));
+      setIsDebugLoggingIn(false);
     }
   };
 
@@ -553,6 +692,17 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           <p className="absolute left-[22px] top-[122px] h-[18px] w-[260px] text-xs font-semibold leading-[18px] text-[var(--sage)]">
             {formatChatDate(date)} 的聊天
           </p>
+        ) : null}
+
+        {showAiDebugTrace && isGuestMode ? (
+          <button
+            type="button"
+            onClick={loginForDebug}
+            disabled={isDebugLoggingIn}
+            className="absolute left-[22px] top-[124px] z-20 rounded-md border border-[var(--line)] bg-white/70 px-2 py-1 text-[11px] font-semibold leading-4 text-[var(--sage)] disabled:opacity-60"
+          >
+            {isDebugLoggingIn ? "登录中" : "debug 登录"}
+          </button>
         ) : null}
 
         <button
@@ -636,6 +786,29 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
                 >
                   {message.text}
                 </div>
+                {showAiDebugTrace && message.role === "assistant" && message.debugTrace ? (
+                  <details className="mr-auto mt-1 max-w-[306px] rounded-[10px] border border-[var(--line)] bg-white/55 px-3 py-2 text-[11px] leading-[18px] text-[var(--soft-copy)]">
+                    <summary className="cursor-pointer select-none font-semibold text-[var(--sage)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--sage)]">
+                      AI debug
+                    </summary>
+                    <div className="mt-2 space-y-2">
+                      {getDebugLayers(message.debugTrace).map((layer) => (
+                        <section key={layer.title} className="border-l-2 border-[var(--line)] pl-2">
+                          <div className="font-semibold text-[var(--ink)]">{layer.title}</div>
+                          <p className="mt-0.5 text-[var(--body)]">{layer.body}</p>
+                        </section>
+                      ))}
+                      <details className="border-t border-[var(--line)] pt-2">
+                        <summary className="cursor-pointer select-none font-semibold text-[var(--sage)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--sage)]">
+                          工程信息
+                        </summary>
+                        <pre className="mt-1 whitespace-pre-wrap break-words font-mono text-[10px] leading-4 text-[var(--muted)]">
+                          {formatEngineDetails(message.debugTrace)}
+                        </pre>
+                      </details>
+                    </div>
+                  </details>
+                ) : null}
               </div>
             ))}
           </div>

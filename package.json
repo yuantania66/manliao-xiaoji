@@ -7,7 +7,15 @@
     "build": "next build",
     "start": "next start",
     "eval:ai": "node scripts/ai-conversation-eval.mjs",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "audit:prelaunch": "node scripts/prelaunch-audit.mjs",
+    "audit:prod-env": "node scripts/production-env-audit.mjs",
+    "check:ai-base": "tsx scripts/ai-base-chat-check.ts",
+    "check:miniapp-js": "node scripts/check-miniapp-js.mjs",
+    "check:prisma": "prisma validate",
+    "check:launch": "npm run lint && npm run audit:prelaunch && npm run check:ai-base && npm run check:prisma && npm run check:miniapp-js && npm run build",
+    "smoke:local-api": "node scripts/local-api-smoke.mjs",
+    "smoke:prod": "node scripts/production-smoke.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -24,10 +32,14 @@
     "tencentcloud-sdk-nodejs": "^4.1.254"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
     "@tailwindcss/postcss": "^4.1.8",
     "@types/node": "^22.15.29",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^15.5.19",
+    "tsx": "^4.22.4",
     "typescript": "^5.8.3"
   }
 }

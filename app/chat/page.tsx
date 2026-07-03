@@ -65,6 +65,11 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
         role: true,
         content: true,
         createdAt: true,
+        aiGeneration: {
+          select: {
+            promptVersion: true,
+          },
+        },
       },
     });
 
@@ -77,6 +82,7 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
           role: item.role.toLowerCase() as "user" | "assistant",
           text: item.content,
           createdAt: item.createdAt.toISOString(),
+          promptVersion: item.aiGeneration?.promptVersion ?? null,
         })),
     };
   } catch {

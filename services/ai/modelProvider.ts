@@ -1,6 +1,6 @@
 import { AppError } from "@/lib/errors";
 
-import { AiModelMessage, AiProviderResponse } from "./types";
+import { AiModelMessage, AiProviderReasoningMeta, AiProviderResponse } from "./types";
 
 type AiProvider = "openai" | "deepseek" | "zhipu" | "mock";
 
@@ -82,6 +82,28 @@ const extractChatCompletionText = (data: unknown) => {
     .trim();
 };
 
+const extractChatCompletionReasoningMeta = (data: unknown): AiProviderReasoningMeta | undefined => {
+  if (typeof data !== "object" || data === null) return undefined;
+  const choices = (data as Record<string, unknown>).choices;
+  if (!Array.isArray(choices)) return undefined;
+
+  const firstChoice = choices[0];
+  if (typeof firstChoice !== "object" || firstChoice === null) return undefined;
+
+  const message = (firstChoice as Record<string, unknown>).message;
+  if (typeof message !== "object" || message === null) return undefined;
+
+  const record = message as Record<string, unknown>;
+  const reasoning = record.reasoning_content ?? record.reasoning;
+  if (typeof reasoning !== "string" || !reasoning.trim()) return undefined;
+
+  return {
+    available: true,
+    source: "chat_completions.message.reasoning_content",
+    characters: reasoning.trim().length,
+  };
+};
+
 const normalizeChatMessages = (messages: AiModelMessage[]) =>
   messages.map((message) => ({
     role: message.role === "developer" ? "system" : message.role,
@@ -95,10 +117,19 @@ const mockResponse = ({
   messages: AiModelMessage[];
   model: string;
 }): AiProviderResponse => {
-  const lastUser = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
+  const rawUser = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
+  const lastUser =
+    rawUser.match(/用户刚刚说：([\s\S]*)$/)?.[1]?.trim() ??
+    rawUser.match(/用户输入：([^\n]*)/)?.[1]?.trim() ??
+    rawUser;
   const hasCrisis = /自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(lastUser);
+  const isCorrection = /不是这样|不是这个|不对|我已经说过|你回复得很假|套模板|别编|别圆/.test(
+    lastUser
+  );
   const text = hasCrisis
-    ? "你现在说到这些，我会先把安全放在最前面。请先不要一个人扛着，马上联系身边可信的人，或拨打当地紧急求助电话。"
+    ? "这会儿先不用解释。请把自己和可能伤害你的东西隔开，联系身边可信的人；有危险就打当地紧急电话。"
+    : isCorrection
+      ? "刚才没接住。先回到你说的这句，不编场景。"
     : "嗯，先不用整理清楚。可以只从一个很小的地方开始说。";
 
   return {
@@ -150,6 +181,7 @@ const callOpenAiResponses = async ({
     status: response.status,
     data,
     text,
+    providerReasoning: undefined,
     tokenInput: typeof usage?.input_tokens === "number" ? usage.input_tokens : undefined,
     tokenOutput: typeof usage?.output_tokens === "number" ? usage.output_tokens : undefined,
   };
@@ -186,6 +218,7 @@ const callChatCompletions = async ({
 
   const data = (await response.json().catch(() => null)) as unknown;
   const text = response.ok ? extractChatCompletionText(data) : "";
+  const providerReasoning = response.ok ? extractChatCompletionReasoningMeta(data) : undefined;
   const usage =
     typeof data === "object" && data !== null
       ? ((data as Record<string, unknown>).usage as Record<string, unknown> | undefined)
@@ -196,6 +229,7 @@ const callChatCompletions = async ({
     status: response.status,
     data,
     text,
+    providerReasoning,
     tokenInput: typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : undefined,
     tokenOutput: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : undefined,
   };
@@ -270,6 +304,7 @@ export const callModel = async ({
       latencyMs: Date.now() - startedAt,
       tokenInput: result.tokenInput,
       tokenOutput: result.tokenOutput,
+      providerReasoning: result.providerReasoning,
       raw: result.data,
     };
   } catch (error) {

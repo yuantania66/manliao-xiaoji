@@ -3,6 +3,8 @@ export type AiConversationRole = "user" | "assistant" | "system";
 export type AiConversationMessage = {
   role: AiConversationRole;
   content: string;
+  promptVersion?: string | null;
+  aiGenerationId?: string | null;
 };
 
 export type AiModelRole = "developer" | "user" | "assistant";
@@ -19,7 +21,30 @@ export type AiGenerationResult = {
   latencyMs: number;
   tokenInput?: number;
   tokenOutput?: number;
+  promptMeta?: AiPromptMeta;
+  providerReasoning?: AiProviderReasoningMeta;
   raw?: unknown;
+};
+
+export type AiPromptMeta = {
+  mode: "base_product";
+  promptVersion: string;
+  receivedHistoryCount: number;
+  includedHistoryCount: number;
+  filteredHistoryCount: number;
+  filteredHistory: {
+    role: AiConversationRole;
+    reason: string;
+    promptVersion?: string | null;
+    preview: string;
+  }[];
+  modelMessageRoles: AiModelRole[];
+};
+
+export type AiProviderReasoningMeta = {
+  available: boolean;
+  source: string;
+  characters?: number;
 };
 
 export type AiJudgeIssue =
@@ -60,5 +85,45 @@ export type AiProviderResponse = {
   latencyMs: number;
   tokenInput?: number;
   tokenOutput?: number;
+  providerReasoning?: AiProviderReasoningMeta;
   raw?: unknown;
+};
+
+export type AiDebugTrace = {
+  visibleSteps: string[];
+  thinkingLayers: {
+    title: string;
+    body: string;
+    evidence: string[];
+  }[];
+  prompt: {
+    mode: "base_product" | "fallback";
+    promptVersion: string;
+    receivedHistoryCount: number;
+    includedHistoryCount: number;
+    filteredHistoryCount: number;
+    filteredHistory: AiPromptMeta["filteredHistory"];
+    modelMessageRoles: AiModelRole[];
+  };
+  generation: {
+    model: string;
+    promptVersion: string;
+    latencyMs: number;
+    tokenInput?: number;
+    tokenOutput?: number;
+    providerReasoning?: AiProviderReasoningMeta;
+  };
+  judge: {
+    passed: boolean;
+    riskLevel: AiRiskLevel;
+    issues: AiJudgeIssue[];
+    rewriteRequired: boolean;
+    reason: string;
+    judgeModel?: string;
+  };
+  route: {
+    finalSource: "base_model" | "fallback";
+    fallbackUsed: boolean;
+    rewriteAttempted: boolean;
+  };
 };

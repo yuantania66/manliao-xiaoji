@@ -28,6 +28,15 @@ const assertSessionOwner = async (sessionId: string, userId: string) => {
   if (!session) throw new AppError("NOT_FOUND", "聊天会话不存在", 404);
 };
 
+const canReturnDebugTrace = () =>
+  process.env.NODE_ENV !== "production" || process.env.AI_DEBUG_TRACE === "true";
+
+const shouldIncludeDebugTrace = (request: NextRequest, body: Record<string, unknown>) =>
+  canReturnDebugTrace() &&
+  (body.debugTrace === true ||
+    request.headers.get("x-ai-debug-trace") === "1" ||
+    request.nextUrl.searchParams.get("debugAi") === "1");
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ sessionId: string }> }
@@ -55,6 +64,11 @@ export async function GET(
           content: true,
           status: true,
           createdAt: true,
+          aiGeneration: {
+            select: {
+              promptVersion: true,
+            },
+          },
         },
       }),
       prisma.chatMessage.count({
@@ -72,6 +86,7 @@ export async function GET(
         content: item.content,
         status: item.status.toLowerCase(),
         createdAt: item.createdAt.toISOString(),
+        promptVersion: item.aiGeneration?.promptVersion ?? null,
       })),
       page: pagination.page,
       pageSize: pagination.pageSize,
@@ -93,6 +108,7 @@ export async function POST(
 
     const body = await readJson(request);
     const content = requireNonEmptyString(body.content, "content", 2000);
+    const includeDebugTrace = shouldIncludeDebugTrace(request, body);
     const now = new Date();
 
     const recentMessages = await prisma.chatMessage.findMany({
@@ -105,6 +121,12 @@ export async function POST(
       select: {
         role: true,
         content: true,
+        aiGenerationId: true,
+        aiGeneration: {
+          select: {
+            promptVersion: true,
+          },
+        },
       },
     });
 
@@ -144,7 +166,10 @@ export async function POST(
       recentMessages: recentMessages.reverse().map((item) => ({
         role: item.role.toLowerCase() as "user" | "assistant" | "system",
         content: item.content,
+        promptVersion: item.aiGeneration?.promptVersion ?? null,
+        aiGenerationId: item.aiGenerationId,
       })),
+      includeDebugTrace,
     });
 
     return ok(
@@ -166,6 +191,7 @@ export async function POST(
         },
         rewriteAttempted: reviewedReply.rewriteAttempted,
         fallbackUsed: reviewedReply.fallbackUsed,
+        debugTrace: reviewedReply.debugTrace,
       },
       201
     );

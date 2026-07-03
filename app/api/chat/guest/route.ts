@@ -3,15 +3,9 @@ import { NextRequest } from "next/server";
 import { failFromError, ok } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { requireNonEmptyString } from "@/lib/validation";
-import {
-  createFallbackGeneration,
-  createLowInformationGeneration,
-  generateChatReply,
-  isLowInformationInput,
-} from "@/services/ai/aiService";
-import { judgeReply } from "@/services/ai/aiJudgeService";
-import { rewriteChatReply } from "@/services/ai/rewriteService";
-import { AiConversationMessage, AiJudgeResult } from "@/services/ai/types";
+import { createFallbackGeneration, generateChatReply } from "@/services/ai/aiService";
+import { buildAiDebugTrace } from "@/services/ai/debugTrace";
+import { AiConversationMessage, AiDebugTrace, AiGenerationResult, AiJudgeResult } from "@/services/ai/types";
 
 type GuestRateLimitRecord = {
   date: string;
@@ -95,9 +89,18 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
       const record = item as Record<string, unknown>;
       const role = record.role;
       const content = record.content;
+      const promptVersion = record.promptVersion;
+      const aiGenerationId = record.aiGenerationId;
       if (role !== "user" && role !== "assistant" && role !== "system") return [];
       if (typeof content !== "string" || !content.trim()) return [];
-      return [{ role, content: content.trim().slice(0, 2000) }];
+      return [
+        {
+          role,
+          content: content.trim().slice(0, 2000),
+          promptVersion: typeof promptVersion === "string" ? promptVersion : null,
+          aiGenerationId: typeof aiGenerationId === "string" ? aiGenerationId : null,
+        },
+      ];
     });
 };
 
@@ -124,34 +127,50 @@ const createFallbackJudge = (
   judgeModel: "fallback-local",
 });
 
+const createDisabledJudge = (): AiJudgeResult & { judgeModel: string } =>
+  createFallbackJudge("low", "judge/rewrite disabled; base model output returned directly");
+
+const canReturnDebugTrace = () =>
+  process.env.NODE_ENV !== "production" || process.env.AI_DEBUG_TRACE === "true";
+
+const shouldIncludeDebugTrace = (request: NextRequest, body: Record<string, unknown>) =>
+  canReturnDebugTrace() &&
+  (body.debugTrace === true ||
+    request.headers.get("x-ai-debug-trace") === "1" ||
+    request.nextUrl.searchParams.get("debugAi") === "1");
+
 export async function POST(request: NextRequest) {
   try {
     const { ip } = assertGuestIpLimit(request);
     const body = await readJson(request);
     const content = requireNonEmptyString(body.content, "content", 2000);
     const recentMessages = normalizeRecentMessages(body.recentMessages);
+    const includeDebugTrace = shouldIncludeDebugTrace(request, body);
     const createdAt = new Date().toISOString();
-
-    if (isLowInformationInput(content)) {
-      const generation = createLowInformationGeneration({
-        inputText: content,
-        recentMessages,
-      });
-      const judge = createFallbackJudge("low", "低信息输入已使用确定性承接");
-      incrementGuestIpUsage(ip);
-
-      return ok({
-        assistantMessage: {
-          id: `guest-ai-${Date.now()}`,
-          role: "assistant",
-          content: generation.text,
-          createdAt,
-        },
-        judge: serializeJudge(judge),
-        fallbackUsed: false,
-        rewriteAttempted: false,
-      });
-    }
+    const maybeDebugTrace = ({
+      generation,
+      judge,
+      finalSource,
+      fallbackUsed,
+      rewriteAttempted,
+    }: {
+      generation: AiGenerationResult;
+      judge: AiJudgeResult & { judgeModel: string };
+      finalSource: AiDebugTrace["route"]["finalSource"];
+      fallbackUsed: boolean;
+      rewriteAttempted: boolean;
+    }) =>
+      includeDebugTrace
+        ? buildAiDebugTrace({
+            userMessage: content,
+            recentMessages,
+            generation,
+            judge,
+            finalSource,
+            fallbackUsed,
+            rewriteAttempted,
+          })
+        : undefined;
 
     let mainGeneration;
     try {
@@ -174,78 +193,41 @@ export async function POST(request: NextRequest) {
           role: "assistant",
           content: fallback.text,
           createdAt,
+          promptVersion: fallback.promptVersion,
         },
         judge: serializeJudge(fallbackJudge),
         fallbackUsed: true,
         rewriteAttempted: false,
+        debugTrace: maybeDebugTrace({
+          generation: fallback,
+          judge: fallbackJudge,
+          finalSource: "fallback",
+          fallbackUsed: true,
+          rewriteAttempted: false,
+        }),
       });
     }
-    const firstJudge = await judgeReply({
-      userMessage: content,
-      assistantReply: mainGeneration.text,
-      recentMessages,
-    });
-
-    if (firstJudge.passed) {
-      incrementGuestIpUsage(ip);
-      return ok({
-        assistantMessage: {
-          id: `guest-ai-${Date.now()}`,
-          role: "assistant",
-          content: mainGeneration.text,
-          createdAt,
-        },
-        judge: serializeJudge(firstJudge),
-        fallbackUsed: false,
-        rewriteAttempted: false,
-      });
-    }
-
-    if (firstJudge.rewriteRequired) {
-      const rewritten = await rewriteChatReply({
-        userMessage: content,
-        originalReply: mainGeneration.text,
-        judgeResult: firstJudge,
-        recentMessages,
-      });
-      const secondJudge = await judgeReply({
-        userMessage: content,
-        assistantReply: rewritten.text,
-        recentMessages,
-      });
-
-      if (secondJudge.passed) {
-        incrementGuestIpUsage(ip);
-        return ok({
-          assistantMessage: {
-            id: `guest-ai-${Date.now()}`,
-            role: "assistant",
-            content: rewritten.text,
-            createdAt,
-          },
-          judge: serializeJudge(secondJudge),
-          fallbackUsed: false,
-          rewriteAttempted: true,
-        });
-      }
-    }
-
-    const fallback = createFallbackGeneration({
-      inputText: content,
-      riskLevel: firstJudge.riskLevel,
-    });
+    const judge = createDisabledJudge();
     incrementGuestIpUsage(ip);
 
     return ok({
       assistantMessage: {
         id: `guest-ai-${Date.now()}`,
         role: "assistant",
-        content: fallback.text,
+        content: mainGeneration.text,
         createdAt,
+        promptVersion: mainGeneration.promptVersion,
       },
-      judge: serializeJudge(firstJudge),
-      fallbackUsed: true,
-      rewriteAttempted: firstJudge.rewriteRequired,
+      judge: serializeJudge(judge),
+      fallbackUsed: false,
+      rewriteAttempted: false,
+      debugTrace: maybeDebugTrace({
+        generation: mainGeneration,
+        judge,
+        finalSource: "base_model",
+        fallbackUsed: false,
+        rewriteAttempted: false,
+      }),
     });
   } catch (error) {
     return failFromError(error);

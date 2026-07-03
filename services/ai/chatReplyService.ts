@@ -9,16 +9,10 @@ import {
 
 import { prisma } from "@/lib/prisma";
 
-import {
-  createFallbackGeneration,
-  createLowInformationGeneration,
-  generateChatReply,
-  isLowInformationInput,
-} from "./aiService";
-import { judgeReply } from "./aiJudgeService";
+import { createFallbackGeneration, generateChatReply } from "./aiService";
+import { buildAiDebugTrace } from "./debugTrace";
 import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
-import { rewriteChatReply } from "./rewriteService";
-import { AiConversationMessage, AiGenerationResult, AiJudgeResult, AiRiskLevel } from "./types";
+import { AiConversationMessage, AiDebugTrace, AiGenerationResult, AiJudgeResult, AiRiskLevel } from "./types";
 
 const mapRiskLevel = (riskLevel: AiRiskLevel) => {
   const value = riskLevel.toUpperCase();
@@ -44,12 +38,16 @@ const createFallbackJudge = (
   promptVersion: JUDGE_PROMPT_VERSION,
 });
 
+const createDisabledJudge = (reason: string): AiJudgeResult & { judgeModel: string; promptVersion: string } =>
+  createFallbackJudge("low", reason);
+
 const serializeMessage = (message: {
   id: string;
   role: MessageRole;
   content: string;
   status: MessageStatus;
   aiGenerationId: string | null;
+  aiGeneration?: { promptVersion: string } | null;
   createdAt: Date;
 }) => ({
   id: message.id,
@@ -57,6 +55,7 @@ const serializeMessage = (message: {
   content: message.content,
   status: message.status.toLowerCase(),
   aiGenerationId: message.aiGenerationId,
+  promptVersion: message.aiGeneration?.promptVersion ?? null,
   createdAt: message.createdAt.toISOString(),
 });
 
@@ -148,6 +147,11 @@ const saveAssistantMessage = async ({
         content: true,
         status: true,
         aiGenerationId: true,
+        aiGeneration: {
+          select: {
+            promptVersion: true,
+          },
+        },
         createdAt: true,
       },
     });
@@ -168,55 +172,55 @@ export const createReviewedChatReply = async ({
   sessionId,
   userMessage,
   recentMessages,
+  includeDebugTrace = false,
 }: {
   userId: string;
   sessionId: string;
   userMessage: string;
   recentMessages: AiConversationMessage[];
-}) => {
-  if (isLowInformationInput(userMessage)) {
-    const generation = createLowInformationGeneration({
-      inputText: userMessage,
-      recentMessages,
-    });
-    const savedGeneration = await saveGeneration({
-      userId,
-      sessionId,
-      inputText: userMessage,
-      generation,
-      status: AiGenerationStatus.GENERATED,
-    });
-    const judge = createFallbackJudge("low", "低信息输入已使用确定性承接");
-    await saveJudgeResult({
-      userId,
-      generationId: savedGeneration.id,
-      judgeResult: judge,
-    });
-    const assistantMessage = await saveAssistantMessage({
-      userId,
-      sessionId,
-      content: generation.text,
-      status: MessageStatus.SAVED,
-      aiGenerationId: savedGeneration.id,
-    });
+  includeDebugTrace?: boolean;
+}): Promise<{
+  assistantMessage: ReturnType<typeof serializeMessage>;
+  judge: AiJudgeResult & { judgeModel: string; promptVersion: string };
+  rewriteAttempted: boolean;
+  fallbackUsed: boolean;
+  debugTrace?: AiDebugTrace;
+}> => {
+  const maybeDebugTrace = ({
+    generation,
+    judge,
+    finalSource,
+    fallbackUsed,
+    rewriteAttempted,
+  }: {
+    generation: AiGenerationResult;
+    judge: AiJudgeResult & { judgeModel: string; promptVersion: string };
+    finalSource: AiDebugTrace["route"]["finalSource"];
+    fallbackUsed: boolean;
+    rewriteAttempted: boolean;
+  }) =>
+    includeDebugTrace
+      ? buildAiDebugTrace({
+          userMessage,
+          recentMessages,
+          generation,
+          judge,
+          finalSource,
+          fallbackUsed,
+          rewriteAttempted,
+        })
+      : undefined;
 
-    return {
-      assistantMessage: serializeMessage(assistantMessage),
-      judge,
-      rewriteAttempted: false,
-      fallbackUsed: false,
-    };
-  }
-
-  let mainGeneration: AiGenerationResult;
+  let generation: AiGenerationResult;
   try {
-    mainGeneration = await generateChatReply({ userMessage, recentMessages });
+    generation = await generateChatReply({ userMessage, recentMessages });
   } catch {
     const riskLevel = getFallbackRiskLevel(userMessage);
     const fallback = createFallbackGeneration({
       inputText: userMessage,
       riskLevel,
     });
+    const fallbackJudge = createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback");
     const savedFallback = await saveGeneration({
       userId,
       sessionId,
@@ -234,115 +238,51 @@ export const createReviewedChatReply = async ({
 
     return {
       assistantMessage: serializeMessage(assistantMessage),
-      judge: createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback"),
+      judge: fallbackJudge,
       rewriteAttempted: false,
       fallbackUsed: true,
+      debugTrace: maybeDebugTrace({
+        generation: fallback,
+        judge: fallbackJudge,
+        finalSource: "fallback",
+        fallbackUsed: true,
+        rewriteAttempted: false,
+      }),
     };
   }
-  const savedMainGeneration = await saveGeneration({
+
+  const savedGeneration = await saveGeneration({
     userId,
     sessionId,
     inputText: userMessage,
-    generation: mainGeneration,
+    generation,
     status: AiGenerationStatus.GENERATED,
   });
-
-  const firstJudge = await judgeReply({
-    userMessage,
-    assistantReply: mainGeneration.text,
-    recentMessages,
-  });
+  const judge = createDisabledJudge("judge/rewrite disabled; base model output returned directly");
   await saveJudgeResult({
     userId,
-    generationId: savedMainGeneration.id,
-    judgeResult: firstJudge,
-  });
-
-  if (firstJudge.passed) {
-    const assistantMessage = await saveAssistantMessage({
-      userId,
-      sessionId,
-      content: mainGeneration.text,
-      status: MessageStatus.SAVED,
-      aiGenerationId: savedMainGeneration.id,
-    });
-
-    return {
-      assistantMessage: serializeMessage(assistantMessage),
-      judge: firstJudge,
-      rewriteAttempted: false,
-      fallbackUsed: false,
-    };
-  }
-
-  if (firstJudge.rewriteRequired) {
-    const rewritten = await rewriteChatReply({
-      userMessage,
-      originalReply: mainGeneration.text,
-      judgeResult: firstJudge,
-      recentMessages,
-    });
-    const savedRewrite = await saveGeneration({
-      userId,
-      sessionId,
-      inputText: userMessage,
-      generation: rewritten,
-      status: AiGenerationStatus.REWRITTEN,
-      rewriteOfId: savedMainGeneration.id,
-    });
-    const secondJudge = await judgeReply({
-      userMessage,
-      assistantReply: rewritten.text,
-      recentMessages,
-    });
-    await saveJudgeResult({
-      userId,
-      generationId: savedRewrite.id,
-      judgeResult: secondJudge,
-    });
-
-    if (secondJudge.passed) {
-      const assistantMessage = await saveAssistantMessage({
-        userId,
-        sessionId,
-        content: rewritten.text,
-        status: MessageStatus.REWRITTEN,
-        aiGenerationId: savedRewrite.id,
-      });
-
-      return {
-        assistantMessage: serializeMessage(assistantMessage),
-        judge: secondJudge,
-        rewriteAttempted: true,
-        fallbackUsed: false,
-      };
-    }
-  }
-
-  const fallback = createFallbackGeneration({
-    inputText: userMessage,
-    riskLevel: firstJudge.riskLevel,
-  });
-  const savedFallback = await saveGeneration({
-    userId,
-    sessionId,
-    inputText: userMessage,
-    generation: fallback,
-    status: AiGenerationStatus.FALLBACK,
-    rewriteOfId: savedMainGeneration.id,
+    generationId: savedGeneration.id,
+    judgeResult: judge,
   });
   const assistantMessage = await saveAssistantMessage({
     userId,
     sessionId,
-    content: fallback.text,
-    status: MessageStatus.FALLBACK,
-    aiGenerationId: savedFallback.id,
+    content: generation.text,
+    status: MessageStatus.SAVED,
+    aiGenerationId: savedGeneration.id,
   });
 
   return {
     assistantMessage: serializeMessage(assistantMessage),
-    judge: firstJudge,
-    rewriteAttempted: firstJudge.rewriteRequired,
-    fallbackUsed: true,
+    judge,
+    rewriteAttempted: false,
+    fallbackUsed: false,
+    debugTrace: maybeDebugTrace({
+      generation,
+      judge,
+      finalSource: "base_model",
+      fallbackUsed: false,
+      rewriteAttempted: false,
+    }),
   };
 };

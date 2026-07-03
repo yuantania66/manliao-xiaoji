@@ -214,14 +214,51 @@ const getText = (messages, role) =>
     .map((message) => message.content)
     .join("\n");
 
-const includesAny = (text, values) => values.some((value) => text.includes(value));
-
 const qualityStateTerms = ["累", "难受", "烦", "空", "困", "麻木", "委屈", "害怕", "焦虑", "慌", "压力", "孤单", "纠结"];
 const correctionPattern = /不是这个问题|我已经说过了|你还问|别再让我|不是这样|不对|你说话像模板|一直在套模板|别编场景/;
 const repairPattern = /是我|没接住|问偏了|说偏了|你说得对|不该|不圆|不追问|你已经说了|不编了/;
 const lowPressurePattern = /必须|应该立刻|马上|挑一个说|选一个说|回个句号|发个表情|让我知道你在/;
 const lowInformationInputPattern = /^([0-9０-９]+|[一二三四五六七八九十零〇]+|[嗯啊哦好行对是]|[a-zA-Z])$/;
 const numericInputPattern = /^[0-9０-９]+$/;
+const numericScaleContextPattern =
+  /强度|程度|几分|分数|打分|量表|高低|0\s*(到|-|~|～|至)\s*10|1\s*(到|-|~|～|至)\s*10/;
+const unsupportedNumericScaleInferencePattern = /比刚才|轻下|往上|往下|高了|低了|一路/;
+const scaleReadingPattern = /比刚才|低|高|往上|往下|一点|位置|强度|数字/;
+
+const directProbes = [
+  {
+    name: "ambiguous_number_without_scale",
+    content: "2",
+    recentMessages: [
+      { role: "user", content: "我有点烦" },
+      { role: "assistant", content: "烦先在这里。" },
+      { role: "user", content: "3" },
+      {
+        role: "assistant",
+        content: "我先把这个数字当作一个标记收到。它是什么意思，可以先不急着解释。",
+      },
+    ],
+    disallow: unsupportedNumericScaleInferencePattern,
+  },
+  {
+    name: "numbered_choice_response",
+    content: "2",
+    recentMessages: [
+      { role: "assistant", content: "可以只回一个数字：1、身体更累；2、心里更累。" },
+    ],
+    require: /第二个|按.*2|按.*二/,
+  },
+  {
+    name: "explicit_scale_response",
+    content: "2",
+    recentMessages: [
+      { role: "assistant", content: "如果用 1 到 10 表示强度，可以只回一个数字。" },
+      { role: "user", content: "3" },
+      { role: "assistant", content: "嗯，是有一点，但还没满出来。先不用把它解释清楚。" },
+    ],
+    require: scaleReadingPattern,
+  },
+];
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -366,6 +403,14 @@ const evaluateReply = ({ userMessage, assistantReply, history }) => {
   }
 
   if (
+    numericInputPattern.test(userMessage.trim()) &&
+    !history.slice(-4).some((message) => numericScaleContextPattern.test(message.content)) &&
+    unsupportedNumericScaleInferencePattern.test(assistantReply)
+  ) {
+    failures.push("unsupported_numeric_scale_inference");
+  }
+
+  if (
     /累|疲惫|没力气|撑不住|耗尽/.test(userMessage) &&
     closedConversationPatterns.some((pattern) => pattern.test(assistantReply)) &&
     !microEntryPattern.test(assistantReply)
@@ -404,6 +449,45 @@ const callGuestChat = async ({ content, recentMessages, scenarioIndex, turnIndex
   }
 
   return json.data;
+};
+
+const runDirectProbe = async (probe, probeIndex) => {
+  try {
+    const data = await callGuestChat({
+      content: probe.content,
+      recentMessages: probe.recentMessages,
+      scenarioIndex: 80,
+      turnIndex: probeIndex,
+    });
+    const assistantReply = data.assistantMessage.content;
+    const failures = [];
+
+    if (probe.require && !probe.require.test(assistantReply)) {
+      failures.push("missing_required_understanding");
+    }
+    if (probe.disallow && probe.disallow.test(assistantReply)) {
+      failures.push("disallowed_understanding_inference");
+    }
+
+    return {
+      probe: probe.name,
+      userMessage: probe.content,
+      assistantReply,
+      failures,
+      fallbackUsed: data.fallbackUsed,
+      rewriteAttempted: data.rewriteAttempted,
+    };
+  } catch (error) {
+    return {
+      probe: probe.name,
+      userMessage: probe.content,
+      assistantReply: "",
+      failures: ["request_error"],
+      error: error instanceof Error ? error.message : String(error),
+      fallbackUsed: false,
+      rewriteAttempted: false,
+    };
+  }
 };
 
 const run = async () => {
@@ -467,6 +551,8 @@ const run = async () => {
   );
 
   const results = scenarioResults.flat();
+  const directProbeResults = await Promise.all(directProbes.map(runDirectProbe));
+  const failedDirectProbes = directProbeResults.filter((result) => result.failures.length > 0);
 
   const failed = results.filter((result) => result.failures.length > 0);
   const byFailure = failed.reduce((acc, result) => {
@@ -498,6 +584,11 @@ const run = async () => {
         failedReplies: failed.length,
         passRate: `${Math.round(((results.length - failed.length) / results.length) * 1000) / 10}%`,
         byFailure,
+        directProbes: {
+          total: directProbeResults.length,
+          failed: failedDirectProbes.length,
+          results: directProbeResults,
+        },
         qualitySummary,
         failures: failed,
         qualityWarnings: qualityIssueResults.slice(0, 20).map((result) => ({
@@ -513,7 +604,7 @@ const run = async () => {
     )
   );
 
-  if (failed.length > 0) process.exitCode = 1;
+  if (failed.length > 0 || failedDirectProbes.length > 0) process.exitCode = 1;
 };
 
 run().catch((error) => {

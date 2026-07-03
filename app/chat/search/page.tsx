@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, useEffect, useState } from "react";
 
-import { apiRequest, ClientApiError } from "@/lib/client-api";
+import { apiRequest } from "@/lib/client-api";
 
 type SearchResult = {
   id: string;
@@ -62,7 +62,6 @@ export default function ChatSearchPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
 
   const trimmedQuery = query.trim();
   useEffect(() => {
@@ -70,13 +69,11 @@ export default function ChatSearchPage() {
 
     if (!trimmedQuery) {
       setResults([]);
-      setErrorMessage("");
       setIsSearching(false);
       return;
     }
 
     setIsSearching(true);
-    setErrorMessage("");
 
     const timer = window.setTimeout(() => {
       apiRequest<SearchResponse>(`/api/chat/search?q=${encodeURIComponent(trimmedQuery)}`)
@@ -84,17 +81,10 @@ export default function ChatSearchPage() {
           if (cancelled) return;
           setResults(data.items);
         })
-        .catch((error: unknown) => {
+        .catch(() => {
           if (cancelled) return;
           const guestResults = searchGuestMessages(trimmedQuery);
           setResults(guestResults);
-          setErrorMessage(
-            guestResults.length > 0
-              ? ""
-              : error instanceof ClientApiError && error.code === "UNAUTHORIZED"
-                ? ""
-                : ""
-          );
         })
         .finally(() => {
           if (!cancelled) setIsSearching(false);

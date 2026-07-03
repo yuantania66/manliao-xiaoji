@@ -24,9 +24,9 @@
 - [x] Next.js 生产构建通过。
 - [x] PM2 进程 `manliaoxiaoji` 已启动并保存。
 - [x] Nginx HTTP 站点已配置。
-- [x] DNS A 记录已生效：`manliaoxiaoji.com -> 106.54.21.202`，`www.manliaoxiaoji.com -> 106.54.21.202`。
-- [x] HTTPS 证书已签发并启用，HTTP 自动跳转 HTTPS。
-- [x] 健康检查通过：`/api/health` 返回 `database: connected`。
+- [ ] DNS / HTTPS 当前需复核：2026-07-02 从本地检查 `manliaoxiaoji.com` 解析失败，直连服务器 IP 带 Host 返回 DNSPod webblock。
+- [x] HTTPS 证书历史记录：Let's Encrypt 曾签发并启用，解除 DNSPod webblock 后需重新验证证书链和跳转。
+- [ ] 生产健康检查当前需复核：域名恢复后确认 `/api/health` 返回 `database: connected`。
 - [x] `/uploads/` 静态文件映射已验证。
 
 ## 待完成
@@ -34,6 +34,7 @@
 - [ ] HTTPS 生效后，在微信公众平台配置合法域名。
 - [ ] 配置生产数据库备份。
 - [ ] 配置生产 AI Provider，例如 `AI_PROVIDER=deepseek` + `DEEPSEEK_API_KEY`，或 `AI_PROVIDER=zhipu` + `ZHIPU_API_KEY`。
+- [ ] 解除 DNSPod webblock 后运行 `npm run smoke:prod`。
 
 ## 常用命令
 
@@ -47,6 +48,29 @@ pm2 restart manliaoxiaoji
 curl http://127.0.0.1:3100/api/health
 curl -H "Host: manliaoxiaoji.com" http://127.0.0.1/api/health
 ```
+
+## 上线前自动化
+
+本地代码侧发布检查：
+
+```bash
+npm run check:launch
+npm run smoke:local-api
+```
+
+服务器生产环境变量审计：
+
+```bash
+PROD_ENV_FILE=/var/www/manliaoxiaoji/shared/.env npm run audit:prod-env
+```
+
+域名恢复后的生产 smoke：
+
+```bash
+npm run smoke:prod
+```
+
+`smoke:prod` 会检查生产健康检查、匿名鉴权和微信登录参数校验。2026-07-02 当前失败原因为 `ENOTFOUND manliaoxiaoji.com`，属于域名解析 / DNSPod webblock 阻塞。
 
 ## HTTPS 证书命令
 
