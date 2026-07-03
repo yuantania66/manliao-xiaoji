@@ -26,4 +26,6 @@ jobs:
         run: npm ci
 
       - name: Run launch checks
+        env:
+          DATABASE_URL: postgresql://user:password@localhost:5432/manliao_xiaoji_ci
         run: npm run check:launch
