@@ -7,6 +7,7 @@ import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { parsePagination, requireNonEmptyString } from "@/lib/validation";
 import { createReviewedChatReply } from "@/services/ai/chatReplyService";
+import { extractExperienceFromChatMessage } from "@/services/experience/experienceExtractorService";
 
 const readJson = async (request: Request) => {
   try {
@@ -170,6 +171,16 @@ export async function POST(
         aiGenerationId: item.aiGenerationId,
       })),
       includeDebugTrace,
+    });
+
+    await extractExperienceFromChatMessage({
+      userId: user.id,
+      sessionId,
+      messageId: message.id,
+      content,
+      createdAt: message.createdAt,
+    }).catch((error) => {
+      console.error("experience extraction failed", error);
     });
 
     return ok(
