@@ -253,5 +253,23 @@ assert(draft);
 assert.equal(draft.source, "chat_turn");
 assert(draft.content.includes("今天下班后突然觉得很累"));
 assert.equal(createNoteDraft({ userMessage: "1", recentMessages: [], assistantReply: "这个是什么意思？" }), null);
+assert.equal(
+  createNoteDraft({
+    userMessage: "你是什么大模型",
+    recentMessages: [],
+    assistantReply: "我就是一个普通对话系统。",
+  }),
+  null
+);
+
+const draftAfterMetaQuestion = createNoteDraft({
+  userMessage: "今天和领导聊完以后心里有点堵",
+  recentMessages: [{ role: "user", content: "你是什么大模型" }],
+  assistantReply: "这种堵着的感觉不好受。",
+});
+
+assert(draftAfterMetaQuestion);
+assert(!draftAfterMetaQuestion.content.includes("你是什么大模型"));
+assert(draftAfterMetaQuestion.content.includes("今天和领导聊完"));
 
 console.log("AI base chat checks passed");
