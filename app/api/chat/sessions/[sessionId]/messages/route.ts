@@ -7,6 +7,7 @@ import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { parsePagination, requireNonEmptyString } from "@/lib/validation";
 import { createReviewedChatReply } from "@/services/ai/chatReplyService";
+import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
 import { extractExperienceFromChatMessage } from "@/services/experience/experienceExtractorService";
 
 const readJson = async (request: Request) => {
@@ -46,6 +47,7 @@ export async function GET(
     const user = await requireUser(request);
     const { sessionId } = await context.params;
     await assertSessionOwner(sessionId, user.id);
+    await ensureProactiveChatGreeting({ sessionId, userId: user.id });
 
     const { searchParams } = new URL(request.url);
     const pagination = parsePagination(searchParams);

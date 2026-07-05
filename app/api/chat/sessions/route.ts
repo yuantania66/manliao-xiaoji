@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { parsePagination, requireNonEmptyString } from "@/lib/validation";
+import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
 
 const readJson = async (request: Request) => {
   try {
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
         updatedAt: true,
       },
     });
+    await ensureProactiveChatGreeting({ sessionId: session.id, userId: user.id });
 
     return ok(
       {

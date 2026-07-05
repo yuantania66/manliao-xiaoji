@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import ChatClient, { InitialChatData } from "./chat-client";
 import { hashToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
 
 type ChatPageProps = {
   searchParams?: Promise<{
@@ -52,6 +53,11 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
           });
 
     if (!chatSession) return null;
+
+    await ensureProactiveChatGreeting({
+      sessionId: chatSession.id,
+      userId: session.user.id,
+    });
 
     const items = await prisma.chatMessage.findMany({
       where: {

@@ -8,6 +8,11 @@ import { CalendarDays, Search } from "lucide-react";
 
 import { apiRequest, ClientApiError } from "@/lib/client-api";
 import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
+import {
+  createProactiveGreeting,
+  createReturnGreeting,
+  isProactiveGreetingText,
+} from "@/lib/proactive-greeting";
 
 type Message = {
   id: string;
@@ -124,6 +129,7 @@ const TYPEWRITER_STEP_MIN = 2;
 const TYPEWRITER_STEP_MAX = 5;
 const TYPEWRITER_DELAY_MIN_MS = 110;
 const TYPEWRITER_DELAY_MAX_MS = 220;
+const RETURN_GREETING_IDLE_MS = 30 * 60 * 1000;
 
 const sleep = (delay: number) =>
   new Promise((resolve) => window.setTimeout(resolve, delay));
@@ -284,6 +290,42 @@ const writeGuestMessages = (messages: Message[]) => {
   window.sessionStorage.setItem(GUEST_CHAT_CACHE_KEY, JSON.stringify(messages));
 };
 
+const createGuestGreetingMessage = (): Message => ({
+  id: `guest-greeting-${Date.now()}`,
+  role: "assistant",
+  text: createProactiveGreeting(),
+  createdAt: new Date().toISOString(),
+});
+
+const createGuestReturnGreetingMessage = (): Message => ({
+  id: `guest-return-greeting-${Date.now()}`,
+  role: "assistant",
+  text: createReturnGreeting(),
+  createdAt: new Date().toISOString(),
+});
+
+const readOrSeedGuestMessages = (): Message[] => {
+  const messages = readGuestMessages();
+  if (messages.length > 0) {
+    const latestMessage = messages[messages.length - 1];
+    const latestTime = new Date(latestMessage.createdAt).getTime();
+    const isIdle =
+      !Number.isFinite(latestTime) || Date.now() - latestTime >= RETURN_GREETING_IDLE_MS;
+
+    if (isIdle && !isProactiveGreetingText(latestMessage.text)) {
+      const nextMessages = [...messages, createGuestReturnGreetingMessage()];
+      writeGuestMessages(nextMessages);
+      return nextMessages;
+    }
+
+    return messages;
+  }
+
+  const seeded = [createGuestGreetingMessage()];
+  writeGuestMessages(seeded);
+  return seeded;
+};
+
 const getTodayKey = () =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Shanghai",
@@ -371,7 +413,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         }
         setIsGuestMode(true);
         setSessionId(GUEST_SESSION_ID);
-        setMessages(readGuestMessages());
+        setMessages(readOrSeedGuestMessages());
         setIsLoadingMessages(false);
         return;
       }
@@ -389,6 +431,8 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       }
 
       if (initialChat && canUseInitialChat) {
+        setSessionId(initialChat.sessionId);
+        setMessages(initialChat.messages);
         setIsLoadingMessages(false);
         return;
       }
