@@ -6,7 +6,6 @@ import { requireNonEmptyString } from "@/lib/validation";
 import { createFallbackGeneration, generateChatReply } from "@/services/ai/aiService";
 import { createSafetyGeneration, isCrisisInput } from "@/services/ai/chatSafety";
 import { buildAiDebugTrace } from "@/services/ai/debugTrace";
-import { createNoteDraft } from "@/services/ai/noteDraft";
 import { AiConversationMessage, AiDebugTrace, AiGenerationResult, AiJudgeResult } from "@/services/ai/types";
 
 type GuestRateLimitRecord = {
@@ -190,7 +189,6 @@ export async function POST(request: NextRequest) {
         judge: serializeJudge(judge),
         fallbackUsed: false,
         rewriteAttempted: false,
-        noteDraft: null,
         debugTrace: maybeDebugTrace({
           generation,
           judge,
@@ -227,7 +225,6 @@ export async function POST(request: NextRequest) {
         judge: serializeJudge(fallbackJudge),
         fallbackUsed: true,
         rewriteAttempted: false,
-        noteDraft: null,
         debugTrace: maybeDebugTrace({
           generation: fallback,
           judge: fallbackJudge,
@@ -238,11 +235,6 @@ export async function POST(request: NextRequest) {
       });
     }
     const judge = createDisabledJudge();
-    const noteDraft = createNoteDraft({
-      userMessage: content,
-      recentMessages,
-      assistantReply: mainGeneration.text,
-    });
     incrementGuestIpUsage(ip);
 
     return ok({
@@ -256,7 +248,6 @@ export async function POST(request: NextRequest) {
       judge: serializeJudge(judge),
       fallbackUsed: false,
       rewriteAttempted: false,
-      noteDraft,
       debugTrace: maybeDebugTrace({
         generation: mainGeneration,
         judge,

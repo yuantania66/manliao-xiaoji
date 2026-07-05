@@ -202,7 +202,6 @@ export async function POST(
         },
         rewriteAttempted: reviewedReply.rewriteAttempted,
         fallbackUsed: reviewedReply.fallbackUsed,
-        noteDraft: reviewedReply.noteDraft,
         debugTrace: reviewedReply.debugTrace,
       },
       201

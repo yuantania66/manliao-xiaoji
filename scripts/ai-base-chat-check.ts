@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 
 import { createSafetyGeneration, isCrisisInput } from "../services/ai/chatSafety";
 import { buildAiDebugTrace } from "../services/ai/debugTrace";
-import { createNoteDraft } from "../services/ai/noteDraft";
 import { buildChatPrompt, CHAT_PROMPT_VERSION } from "../services/ai/promptBuilder";
 import { AiConversationMessage } from "../services/ai/types";
 
@@ -242,34 +241,5 @@ const safetyDebug = buildAiDebugTrace({
 assert.equal(safetyDebug.route.finalSource, "safety");
 assert.equal(safetyDebug.route.safetyUsed, true);
 assert.equal(safetyDebug.prompt.modelMessageRoles.length, 0);
-
-const draft = createNoteDraft({
-  userMessage: "今天下班后突然觉得很累，但也松了一口气",
-  recentMessages: [],
-  assistantReply: "这会儿先承认自己的累。",
-});
-
-assert(draft);
-assert.equal(draft.source, "chat_turn");
-assert(draft.content.includes("今天下班后突然觉得很累"));
-assert.equal(createNoteDraft({ userMessage: "1", recentMessages: [], assistantReply: "这个是什么意思？" }), null);
-assert.equal(
-  createNoteDraft({
-    userMessage: "你是什么大模型",
-    recentMessages: [],
-    assistantReply: "我就是一个普通对话系统。",
-  }),
-  null
-);
-
-const draftAfterMetaQuestion = createNoteDraft({
-  userMessage: "今天和领导聊完以后心里有点堵",
-  recentMessages: [{ role: "user", content: "你是什么大模型" }],
-  assistantReply: "这种堵着的感觉不好受。",
-});
-
-assert(draftAfterMetaQuestion);
-assert(!draftAfterMetaQuestion.content.includes("你是什么大模型"));
-assert(draftAfterMetaQuestion.content.includes("今天和领导聊完"));
 
 console.log("AI base chat checks passed");

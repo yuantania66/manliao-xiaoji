@@ -15,14 +15,7 @@ type Message = {
   text: string;
   createdAt: string;
   promptVersion?: string | null;
-  noteDraft?: NoteDraft | null;
   debugTrace?: AiDebugTrace;
-};
-
-type NoteDraft = {
-  content: string;
-  source: "chat_turn";
-  recordDate: string;
 };
 
 type AiDebugTrace = {
@@ -353,7 +346,6 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   const [typingMessageIds, setTypingMessageIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [isDebugLoggingIn, setIsDebugLoggingIn] = useState(false);
-  const [savingDraftId, setSavingDraftId] = useState<string | null>(null);
   const typingCancelledRef = useRef(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const hydratedFromCacheRef = useRef(false);
@@ -583,7 +575,6 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         const data = await apiRequest<{
           assistantMessage: ChatMessageResponse;
           fallbackUsed: boolean;
-          noteDraft?: NoteDraft | null;
           debugTrace?: AiDebugTrace;
         }>("/api/chat/guest", {
           method: "POST",
@@ -605,7 +596,6 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           text: data.assistantMessage.content,
           createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
           promptVersion: data.assistantMessage.promptVersion,
-          noteDraft: data.noteDraft,
           debugTrace: data.debugTrace,
         });
       } catch (error) {
@@ -624,7 +614,6 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       const data = await apiRequest<{
         userMessage: ChatMessageResponse;
         assistantMessage: ChatMessageResponse;
-        noteDraft?: NoteDraft | null;
         debugTrace?: AiDebugTrace;
       }>(`/api/chat/sessions/${sessionId}/messages`, {
         method: "POST",
@@ -650,7 +639,6 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           text: "",
           createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
           promptVersion: data.assistantMessage.promptVersion,
-          noteDraft: data.noteDraft,
           debugTrace: data.debugTrace,
         },
       ]);
@@ -690,38 +678,6 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       clearAuth();
       setErrorMessage(getErrorMessage(error));
       setIsDebugLoggingIn(false);
-    }
-  };
-
-  const dismissNoteDraft = (messageId: string) => {
-    setMessages((current) =>
-      current.map((message) =>
-        message.id === messageId ? { ...message, noteDraft: null } : message
-      )
-    );
-  };
-
-  const saveNoteDraft = async (messageId: string, draft: NoteDraft) => {
-    if (isGuestMode) {
-      setErrorMessage("登录后可以把聊天草稿存成小记。");
-      return;
-    }
-
-    setSavingDraftId(messageId);
-    setErrorMessage("");
-    try {
-      await apiRequest("/api/notes", {
-        method: "POST",
-        body: {
-          content: draft.content,
-          recordDate: draft.recordDate,
-        },
-      });
-      dismissNoteDraft(messageId);
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setSavingDraftId(null);
     }
   };
 
@@ -862,33 +818,6 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
                       </details>
                     </div>
                   </details>
-                ) : null}
-                {message.role === "assistant" && message.noteDraft ? (
-                  <div className="mr-auto mt-1 max-w-[306px] rounded-[14px] border border-[var(--line)] bg-white/70 px-3 py-2 text-[12px] leading-[19px] text-[var(--body)]">
-                    <div className="text-[11px] font-semibold leading-4 text-[var(--sage)]">
-                      今天的小记草稿
-                    </div>
-                    <p className="mt-1 whitespace-pre-wrap">{message.noteDraft.content}</p>
-                    <div className="mt-2 flex gap-2">
-                      {!isGuestMode ? (
-                        <button
-                          type="button"
-                          onClick={() => saveNoteDraft(message.id, message.noteDraft!)}
-                          disabled={savingDraftId === message.id}
-                          className="rounded-full bg-[var(--sage)] px-3 py-1 text-[11px] font-semibold text-[var(--card-warm)] disabled:opacity-60"
-                        >
-                          {savingDraftId === message.id ? "保存中" : "存为小记"}
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => dismissNoteDraft(message.id)}
-                        className="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] font-semibold text-[var(--sage)]"
-                      >
-                        忽略
-                      </button>
-                    </div>
-                  </div>
                 ) : null}
               </div>
             ))}

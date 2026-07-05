@@ -15,12 +15,6 @@ export type AiMemoryContext = {
   date?: string;
 };
 
-export type AiNoteDraft = {
-  content: string;
-  source: "chat_turn";
-  recordDate: string;
-};
-
 export type AiModelRole = "developer" | "user" | "assistant";
 
 export type AiModelMessage = {

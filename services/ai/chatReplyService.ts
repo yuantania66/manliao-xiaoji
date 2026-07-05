@@ -13,7 +13,6 @@ import { createFallbackGeneration, generateChatReply } from "./aiService";
 import { createSafetyGeneration, isCrisisInput } from "./chatSafety";
 import { createChatMemoryContext, createNoteMemoryContext } from "./dataLayers";
 import { buildAiDebugTrace } from "./debugTrace";
-import { createNoteDraft } from "./noteDraft";
 import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
 import {
   AiConversationMessage,
@@ -21,7 +20,6 @@ import {
   AiGenerationResult,
   AiJudgeResult,
   AiMemoryContext,
-  AiNoteDraft,
   AiRiskLevel,
 } from "./types";
 
@@ -247,7 +245,6 @@ export const createReviewedChatReply = async ({
   rewriteAttempted: boolean;
   fallbackUsed: boolean;
   debugTrace?: AiDebugTrace;
-  noteDraft?: AiNoteDraft | null;
 }> => {
   const maybeDebugTrace = ({
     generation,
@@ -303,7 +300,6 @@ export const createReviewedChatReply = async ({
       judge: safetyJudge,
       rewriteAttempted: false,
       fallbackUsed: false,
-      noteDraft: null,
       debugTrace: maybeDebugTrace({
         generation,
         judge: safetyJudge,
@@ -345,7 +341,6 @@ export const createReviewedChatReply = async ({
       judge: fallbackJudge,
       rewriteAttempted: false,
       fallbackUsed: true,
-      noteDraft: null,
       debugTrace: maybeDebugTrace({
         generation: fallback,
         judge: fallbackJudge,
@@ -376,18 +371,12 @@ export const createReviewedChatReply = async ({
     status: MessageStatus.SAVED,
     aiGenerationId: savedGeneration.id,
   });
-  const noteDraft = createNoteDraft({
-    userMessage,
-    recentMessages,
-    assistantReply: generation.text,
-  });
 
   return {
     assistantMessage: serializeMessage(assistantMessage),
     judge,
     rewriteAttempted: false,
     fallbackUsed: false,
-    noteDraft,
     debugTrace: maybeDebugTrace({
       generation,
       judge,
