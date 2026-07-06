@@ -67,6 +67,7 @@ assert(!JSON.stringify(prompt.messages).includes("\"3\""));
 assert(!JSON.stringify(prompt.messages).includes("\"a\""));
 assert(prompt.messages[0].content.includes("不要立刻处理成任务"));
 assert(prompt.messages[0].content.includes("不必每次都追问"));
+assert(prompt.messages[0].content.includes("以来访者为中心"));
 assert(prompt.messages[0].content.includes("绝对不要编造你看到、听到或正在经历的环境画面"));
 assert(!prompt.messages[0].content.includes("数字、字母、符号或单字"));
 
@@ -130,10 +131,11 @@ const implicitLegacyPrompt = buildChatPrompt({
   recentMessages: [
     { role: "assistant", content: "还在这里。" },
     { role: "assistant", content: "我这边刚看到窗台上落了一片叶子。" },
+    { role: "assistant", content: "我喜欢这样的天气，让我想到安静的下午。" },
   ],
 });
 
-assert.equal(implicitLegacyPrompt.meta.filteredHistoryCount, 2);
+assert.equal(implicitLegacyPrompt.meta.filteredHistoryCount, 3);
 assert.equal(implicitLegacyPrompt.meta.filteredHistory[0].reason, "legacy_template_text");
 
 const repeatedLowInfoPrompt = buildChatPrompt({

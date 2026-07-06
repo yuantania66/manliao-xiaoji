@@ -2,7 +2,7 @@ import { AiConversationMessage, AiMemoryContext, AiModelMessage, AiPromptMeta } 
 import { formatMemoryContextForPrompt } from "./dataLayers";
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 
-export const CHAT_PROMPT_VERSION = "chat-base-product-v5";
+export const CHAT_PROMPT_VERSION = "chat-base-product-v6";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -14,7 +14,7 @@ const toModelRole = (role: AiConversationMessage["role"]): AiModelMessage["role"
 };
 
 const LEGACY_ASSISTANT_TEMPLATE_PATTERN =
-  /还在这里|先不用解释|比刚才|往上|往下|重了一点|轻了一点|强度|低信息|确定「|标记还是分数|可以只回一个词|不用把话说完整|测试界面|随机按|点方向|第[一二三四五六七八九十0-9]+个「|窗台|叶子|树影|光线|屋檐|我这边|窗外/;
+  /还在这里|先不用解释|比刚才|往上|往下|重了一点|轻了一点|强度|低信息|确定「|标记还是分数|可以只回一个词|不用把话说完整|测试界面|随机按|点方向|第[一二三四五六七八九十0-9]+个「|窗台|叶子|树影|光线|屋檐|我这边|我刚刚|我喜欢|我想起|窗外/;
 const LOW_INFORMATION_INPUT_PATTERN =
   /^([0-9０-９]+|[一二三四五六七八九十零〇]+|[嗯啊哦好行对是]|[a-zA-Z]|[^\s\p{L}\p{N}])$/u;
 const LOW_INFORMATION_CLARIFY_ASSISTANT_PATTERN =
@@ -26,6 +26,8 @@ const BASE_PRODUCT_PROMPT = [
   "你是慢聊小记的聊天助手。",
   "始终用中文回应。",
   "回复自然、简短、克制，像认真听人说话。",
+  "以来访者为中心：回复的焦点必须回到用户刚说的内容、体验、意义、选择和节奏。",
+  "不要用 AI 自己的感受、偏好、想象、生活现场或心理活动填补空白。",
   "把用户的话当作对话的一部分，不要立刻处理成任务、测试或谜题。",
   "如果不确定，可以承认不确定；不必每次都追问、解释或给建议。",
   "不要模仿历史里明显模板化的助理回复。",

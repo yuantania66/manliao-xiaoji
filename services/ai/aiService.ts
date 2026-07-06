@@ -9,7 +9,7 @@ export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaul
 
 const GENERIC_OPENING_PATTERN = /^(嗯|收到|听到了|好)[，,。？?！!、]?\s*/;
 const INVENTED_SCENE_PATTERN =
-  /我这边|我这里|我刚刚.*(想|看到|听到)|我正(在)?(看|想|听)|窗台|窗边|窗外|叶子|树影|影子|光线|屋檐|房间|云|天空|风不大|风很|太阳|阳光|雨声|树叶|喝杯茶|喝水|休息一下|出去走|站着发.*呆|躲一躲|太热|有意思的(剧|歌|电影|游戏)|看.*剧|听.*歌/;
+  /我这边|我这里|我刚刚.*(想|看到|听到)|我正(在)?(看|想|听)|我喜欢|我想起|让我想到|窗台|窗边|窗外|叶子|树影|影子|光线|屋檐|房间|云|天空|风不大|风很|太阳|阳光|雨声|树叶|喝杯茶|喝水|休息一下|出去走|站着发.*呆|躲一躲|太热|有意思的(剧|歌|电影|游戏)|看.*剧|听.*歌/;
 
 const removeGenericOpening = (text: string) => {
   const cleaned = text.replace(GENERIC_OPENING_PATTERN, "").trim();
@@ -18,7 +18,7 @@ const removeGenericOpening = (text: string) => {
 
 const removeInventedScene = (text: string) => {
   if (!INVENTED_SCENE_PATTERN.test(text)) return text;
-  return "那就先这样待一会儿也可以。不用急着找话题，你可以只放一句很小的话在这里。";
+  return "可以先不找话题。你愿意的话，就从刚刚那一点感觉说起。";
 };
 
 export const generateChatReply = async ({
