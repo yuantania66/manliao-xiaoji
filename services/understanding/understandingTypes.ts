@@ -1,3 +1,5 @@
+import { RetrievedProfessionalGuidance } from "@/services/professional-rag/professionalTypes";
+
 export type UnderstandingSourceTypeValue = "chat" | "note";
 
 export type ExtractedFact = {
@@ -55,11 +57,22 @@ export type ActiveHypothesisMemory = {
   counterEvidenceIds: string[];
 };
 
+export type UserFeedbackMemory = {
+  id: string;
+  messageText: string;
+  signal: string;
+  tags: string[];
+  comment?: string | null;
+  createdAt: string;
+};
+
 export type StructuredRagContext = {
   recentMemories: StructuredMemoryItem[];
   similarMemories: StructuredMemoryItem[];
   coreEvents: StructuredMemoryItem[];
   activeHypotheses: ActiveHypothesisMemory[];
   counterEvidence: StructuredMemoryItem[];
+  professionalGuidance: RetrievedProfessionalGuidance[];
+  userFeedback: UserFeedbackMemory[];
   retrievalReason: string;
 };

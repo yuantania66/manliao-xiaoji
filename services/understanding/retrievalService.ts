@@ -1,6 +1,7 @@
 import { HypothesisStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { retrieveProfessionalGuidance } from "@/services/professional-rag/professionalRetrieval";
 
 import {
   ActiveHypothesisMemory,
@@ -35,6 +36,9 @@ const overlaps = (left: string[], right: string[]) => {
 const parseEvidenceIds = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 
+const parseTags = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+
 export const getRetrievalIntent = (extraction: UnderstandingExtraction) => {
   const emotions = extraction.experiences.flatMap((item) => (item.emotion ? [item.emotion] : []));
   return {
@@ -47,17 +51,19 @@ export const getRetrievalIntent = (extraction: UnderstandingExtraction) => {
 export const buildStructuredRagContext = async ({
   userId,
   extraction,
+  currentMessage,
   now = new Date(),
 }: {
   userId: string;
   extraction: UnderstandingExtraction;
+  currentMessage?: string;
   now?: Date;
 }): Promise<StructuredRagContext> => {
   const intent = getRetrievalIntent(extraction);
   const sevenDaysAgo = new Date(now.getTime() - 7 * DAY_MS);
   const threeDaysAgo = new Date(now.getTime() - 3 * DAY_MS);
 
-  const [recentFacts, recentExperiences, recentNotes, factsForSimilarity, experiencesForSimilarity, coreEvents, hypotheses] =
+  const [recentFacts, recentExperiences, recentNotes, factsForSimilarity, experiencesForSimilarity, coreEvents, hypotheses, feedbacks] =
     await Promise.all([
       prisma.fact.findMany({
         where: {
@@ -166,6 +172,23 @@ export const buildStructuredRagContext = async ({
         },
         orderBy: [{ confidence: "desc" }, { updatedAt: "desc" }],
         take: 12,
+      }),
+      prisma.aiMessageFeedback.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          signal: true,
+          tags: true,
+          comment: true,
+          createdAt: true,
+          message: {
+            select: {
+              content: true,
+            },
+          },
+        },
       }),
     ]);
 
@@ -279,10 +302,29 @@ export const buildStructuredRagContext = async ({
       ]),
       10
     ),
+    professionalGuidance: retrieveProfessionalGuidance({
+      extraction,
+      currentMessage:
+        currentMessage ??
+        [
+          ...extraction.facts.map((item) => item.eventText),
+          ...extraction.interpretations.map((item) => item.interpretationText),
+        ].join(" "),
+    }),
+    userFeedback: feedbacks.map((feedback) => ({
+      id: feedback.id,
+      messageText: feedback.message.content.slice(0, 160),
+      signal: feedback.signal.toLowerCase(),
+      tags: parseTags(feedback.tags),
+      comment: feedback.comment,
+      createdAt: feedback.createdAt.toISOString(),
+    })),
     retrievalReason: [
       intent.people.length ? `people=${intent.people.join(",")}` : null,
       intent.topics.length ? `topics=${intent.topics.join(",")}` : null,
       intent.emotions.length ? `emotions=${intent.emotions.join(",")}` : null,
+      currentMessage ? "professional_guidance=enabled" : null,
+      feedbacks.length ? `user_feedback=${feedbacks.length}` : null,
     ]
       .filter(Boolean)
       .join("; "),

@@ -178,11 +178,28 @@ const formatUnderstandingContextForPrompt = (context: StructuredRagContext) =>
           emotion: item.emotion,
           reason: item.reason,
         })),
+        professionalGuidance: context.professionalGuidance.map((item) => ({
+          id: item.id,
+          sourceKind: item.sourceKind,
+          principle: compactMemory(item.principle),
+          applyWhen: compactMemory(item.applyWhen),
+          avoid: item.avoid,
+          responseMove: compactMemory(item.responseMove),
+          reason: item.reason,
+        })),
+        recentUserFeedback: context.userFeedback.map((item) => ({
+          signal: item.signal,
+          tags: item.tags,
+          comment: item.comment ? compactMemory(item.comment) : null,
+          assistantMessage: compactMemory(item.messageText),
+        })),
         retrievalReason: context.retrievalReason,
       },
       null,
       2
     ),
+    "专业参考只能用于约束回应方式，不要在回复里提到资料名、理论名或来源链接。",
+    "用户反馈表示过去哪些回复没有接住；优先避免重复同类错误，不要向用户解释系统如何利用反馈。",
   ].join("\n");
 
 const getUnderstandingMeta = (context?: StructuredRagContext | null): AiPromptMeta["understanding"] | undefined =>
@@ -193,6 +210,8 @@ const getUnderstandingMeta = (context?: StructuredRagContext | null): AiPromptMe
         coreEventCount: context.coreEvents.length,
         activeHypothesisCount: context.activeHypotheses.length,
         counterEvidenceCount: context.counterEvidence.length,
+        professionalGuidanceCount: context.professionalGuidance.length,
+        userFeedbackCount: context.userFeedback.length,
         retrievalReason: context.retrievalReason,
       }
     : undefined;

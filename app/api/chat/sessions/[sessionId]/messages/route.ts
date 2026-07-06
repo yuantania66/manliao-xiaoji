@@ -178,6 +178,7 @@ export async function POST(
     const understandingContext = await buildStructuredRagContext({
       userId: user.id,
       extraction: understandingExtraction,
+      currentMessage: content,
       now: message.createdAt,
     });
 

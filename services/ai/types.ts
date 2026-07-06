@@ -21,6 +21,8 @@ export type AiUnderstandingPromptMeta = {
   coreEventCount: number;
   activeHypothesisCount: number;
   counterEvidenceCount: number;
+  professionalGuidanceCount: number;
+  userFeedbackCount: number;
   retrievalReason?: string;
 };
 

@@ -113,6 +113,15 @@ enum UnderstandingGraphEdgeType {
   BELONGS_TO_TIMELINE
 }
 
+enum AiMessageFeedbackSignal {
+  HELPFUL
+  UNHELPFUL
+  OFF_TARGET
+  TOO_MECHANICAL
+  OVER_ANALYZED
+  UNSAFE
+}
+
 model User {
   id                 String             @id @default(cuid())
   phone              String?            @unique
@@ -139,6 +148,7 @@ model User {
   hypotheses         Hypothesis[]
   graphNodes         UnderstandingGraphNode[]
   graphEdges         UnderstandingGraphEdge[]
+  aiMessageFeedbacks AiMessageFeedback[]
 }
 
 model Session {
@@ -195,6 +205,7 @@ model ChatMessage {
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   aiGeneration   AiGeneration? @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
   emotionSlices  EmotionSlice[]
+  feedbacks      AiMessageFeedback[]
 
   @@index([sessionId, createdAt])
   @@index([userId, createdAt])
@@ -412,6 +423,24 @@ model Feedback {
 
   @@index([userId, createdAt])
   @@index([createdAt])
+}
+
+model AiMessageFeedback {
+  id             String                  @id @default(cuid())
+  userId         String
+  messageId      String
+  aiGenerationId String?
+  signal         AiMessageFeedbackSignal
+  tags           Json?
+  comment        String?
+  createdAt      DateTime                @default(now())
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message        ChatMessage             @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([messageId])
+  @@index([aiGenerationId])
+  @@unique([userId, messageId, signal])
 }
 
 model AiGeneration {
