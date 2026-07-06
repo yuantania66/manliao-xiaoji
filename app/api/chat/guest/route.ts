@@ -142,11 +142,11 @@ const shouldIncludeDebugTrace = (request: NextRequest, body: Record<string, unkn
 
 export async function POST(request: NextRequest) {
   try {
-    const { ip } = assertGuestIpLimit(request);
     const body = await readJson(request);
     const content = requireNonEmptyString(body.content, "content", 2000);
     const recentMessages = normalizeRecentMessages(body.recentMessages);
     const includeDebugTrace = shouldIncludeDebugTrace(request, body);
+    const rateLimit = includeDebugTrace ? null : assertGuestIpLimit(request);
     const createdAt = new Date().toISOString();
     const maybeDebugTrace = ({
       generation,
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
     if (isCrisisInput(content)) {
       const generation = createSafetyGeneration(content);
       const judge = createFallbackJudge("crisis", "safety gate matched; base model skipped");
-      incrementGuestIpUsage(ip);
+      if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
 
       return ok({
         assistantMessage: {
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
         riskLevel,
       });
       const fallbackJudge = createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback");
-      incrementGuestIpUsage(ip);
+      if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
 
       return ok({
         assistantMessage: {
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
       });
     }
     const judge = createDisabledJudge();
-    incrementGuestIpUsage(ip);
+    if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
 
     return ok({
       assistantMessage: {

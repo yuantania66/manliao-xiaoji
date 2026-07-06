@@ -629,7 +629,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         });
       };
 
-      if (getGuestAiRemaining() <= 0) {
+      if (!showAiDebugTrace && getGuestAiRemaining() <= 0) {
         const assistantMessage: Message = {
           id: `guest-limit-${Date.now()}`,
           role: "assistant",
@@ -658,7 +658,9 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
             })),
           },
         });
-        incrementGuestAiUsage();
+        if (!showAiDebugTrace) {
+          incrementGuestAiUsage();
+        }
         await replacePendingAssistant({
           id: data.assistantMessage.id,
           role: "assistant",
