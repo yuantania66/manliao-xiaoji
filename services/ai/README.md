@@ -28,5 +28,6 @@ Supported providers are selected with `AI_PROVIDER`:
 
 - `openai` uses `OPENAI_API_KEY` and the OpenAI Responses API.
 - `deepseek` uses `DEEPSEEK_API_KEY` and an OpenAI-compatible chat completions API.
+- `qwen` uses `QWEN_API_KEY` and DashScope's OpenAI-compatible chat completions API.
 - `zhipu` uses `ZHIPU_API_KEY` and an OpenAI-compatible chat completions API.
 - `mock` or a missing provider key returns a local safe fallback for development.

@@ -2,7 +2,7 @@ import { AppError } from "@/lib/errors";
 
 import { AiModelMessage, AiProviderReasoningMeta, AiProviderResponse } from "./types";
 
-type AiProvider = "openai" | "deepseek" | "zhipu" | "mock";
+type AiProvider = "openai" | "deepseek" | "qwen" | "zhipu" | "mock";
 
 const getTimeoutMs = () => {
   const value = Number(process.env.AI_TIMEOUT_MS ?? "45000");
@@ -13,7 +13,7 @@ const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
 export const getAiProvider = (): AiProvider => {
   const provider = process.env.AI_PROVIDER?.trim().toLowerCase();
-  if (provider === "deepseek" || provider === "zhipu" || provider === "mock") return provider;
+  if (provider === "deepseek" || provider === "qwen" || provider === "zhipu" || provider === "mock") return provider;
   return "openai";
 };
 
@@ -21,6 +21,9 @@ export const isAiProviderConfigured = () => {
   const provider = getAiProvider();
   if (provider === "mock") return false;
   if (provider === "deepseek") return Boolean(process.env.DEEPSEEK_API_KEY?.trim());
+  if (provider === "qwen") {
+    return Boolean(process.env.QWEN_API_KEY?.trim() || process.env.DASHSCOPE_API_KEY?.trim());
+  }
   if (provider === "zhipu") return Boolean(process.env.ZHIPU_API_KEY?.trim());
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 };
@@ -28,6 +31,7 @@ export const isAiProviderConfigured = () => {
 export const getDefaultAiModel = () => {
   const provider = getAiProvider();
   if (provider === "deepseek") return "deepseek-v4-flash";
+  if (provider === "qwen") return "qwen-plus";
   if (provider === "zhipu") return "glm-4.7";
   return "gpt-4.1-mini";
 };
@@ -250,6 +254,8 @@ export const callModel = async ({
   const apiKey =
     provider === "deepseek"
       ? process.env.DEEPSEEK_API_KEY?.trim()
+      : provider === "qwen"
+        ? process.env.QWEN_API_KEY?.trim() || process.env.DASHSCOPE_API_KEY?.trim()
       : provider === "zhipu"
         ? process.env.ZHIPU_API_KEY?.trim()
         : process.env.OPENAI_API_KEY?.trim();
@@ -271,6 +277,18 @@ export const callModel = async ({
             temperature,
             signal: controller.signal,
           })
+        : provider === "qwen"
+          ? await callChatCompletions({
+              apiKey,
+              baseUrl:
+                process.env.QWEN_BASE_URL?.trim() ||
+                process.env.DASHSCOPE_BASE_URL?.trim() ||
+                "https://dashscope.aliyuncs.com/compatible-mode/v1",
+              messages,
+              model,
+              temperature,
+              signal: controller.signal,
+            })
         : provider === "zhipu"
           ? await callChatCompletions({
               apiKey,

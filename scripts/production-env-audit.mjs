@@ -50,11 +50,12 @@ if (value("ALLOW_WEB_MOCK_LOGIN") === "true") {
 }
 
 const provider = value("AI_PROVIDER").toLowerCase();
-if (!["openai", "deepseek", "zhipu"].includes(provider)) {
-  fail("AI_PROVIDER must be openai, deepseek, or zhipu in production");
+if (!["openai", "deepseek", "qwen", "zhipu"].includes(provider)) {
+  fail("AI_PROVIDER must be openai, deepseek, qwen, or zhipu in production");
 }
 if (provider === "openai") requireSet("OPENAI_API_KEY");
 if (provider === "deepseek") requireSet("DEEPSEEK_API_KEY");
+if (provider === "qwen") requireSet("QWEN_API_KEY");
 if (provider === "zhipu") requireSet("ZHIPU_API_KEY");
 
 if (value("AI_JUDGE_MODE") === "local") {
