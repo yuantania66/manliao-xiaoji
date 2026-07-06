@@ -8,11 +8,7 @@ import { CalendarDays, Search } from "lucide-react";
 
 import { apiRequest, ClientApiError } from "@/lib/client-api";
 import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
-import {
-  createProactiveGreeting,
-  createReturnGreeting,
-  isProactiveGreetingText,
-} from "@/lib/proactive-greeting";
+import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
 
 type Message = {
   id: string;
@@ -290,21 +286,43 @@ const writeGuestMessages = (messages: Message[]) => {
   window.sessionStorage.setItem(GUEST_CHAT_CACHE_KEY, JSON.stringify(messages));
 };
 
-const createGuestGreetingMessage = (): Message => ({
-  id: `guest-greeting-${Date.now()}`,
-  role: "assistant",
-  text: createProactiveGreeting(),
-  createdAt: new Date().toISOString(),
-});
+const createGuestGreetingMessage = async ({
+  kind,
+  recentMessages,
+}: {
+  kind: "initial" | "return";
+  recentMessages: Message[];
+}): Promise<Message | null> => {
+  try {
+    const data = await apiRequest<{ assistantMessage: ChatMessageResponse }>(
+      "/api/chat/guest/greeting",
+      {
+        method: "POST",
+        auth: false,
+        body: {
+          kind,
+          recentMessages: recentMessages.slice(-6).map((message) => ({
+            role: message.role,
+            content: message.text,
+            promptVersion: message.promptVersion,
+          })),
+        },
+      }
+    );
 
-const createGuestReturnGreetingMessage = (): Message => ({
-  id: `guest-return-greeting-${Date.now()}`,
-  role: "assistant",
-  text: createReturnGreeting(),
-  createdAt: new Date().toISOString(),
-});
+    return {
+      id: data.assistantMessage.id,
+      role: "assistant",
+      text: data.assistantMessage.content,
+      createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
+      promptVersion: data.assistantMessage.promptVersion,
+    };
+  } catch {
+    return null;
+  }
+};
 
-const readOrSeedGuestMessages = (): Message[] => {
+const readOrSeedGuestMessages = async (): Promise<Message[]> => {
   const messages = readGuestMessages();
   if (messages.length > 0) {
     const latestMessage = messages[messages.length - 1];
@@ -312,8 +330,13 @@ const readOrSeedGuestMessages = (): Message[] => {
     const isIdle =
       !Number.isFinite(latestTime) || Date.now() - latestTime >= RETURN_GREETING_IDLE_MS;
 
-    if (isIdle && !isProactiveGreetingText(latestMessage.text)) {
-      const nextMessages = [...messages, createGuestReturnGreetingMessage()];
+    if (isIdle && !isProactiveGreetingPromptVersion(latestMessage.promptVersion)) {
+      const greeting = await createGuestGreetingMessage({
+        kind: "return",
+        recentMessages: messages,
+      });
+      if (!greeting) return messages;
+      const nextMessages = [...messages, greeting];
       writeGuestMessages(nextMessages);
       return nextMessages;
     }
@@ -321,7 +344,9 @@ const readOrSeedGuestMessages = (): Message[] => {
     return messages;
   }
 
-  const seeded = [createGuestGreetingMessage()];
+  const greeting = await createGuestGreetingMessage({ kind: "initial", recentMessages: [] });
+  if (!greeting) return [];
+  const seeded = [greeting];
   writeGuestMessages(seeded);
   return seeded;
 };
@@ -413,7 +438,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         }
         setIsGuestMode(true);
         setSessionId(GUEST_SESSION_ID);
-        setMessages(readOrSeedGuestMessages());
+        setMessages(await readOrSeedGuestMessages());
         setIsLoadingMessages(false);
         return;
       }
