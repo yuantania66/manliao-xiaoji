@@ -57,6 +57,7 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
     await ensureProactiveChatGreeting({
       sessionId: chatSession.id,
       userId: session.user.id,
+      force: true,
     });
 
     const items = await prisma.chatMessage.findMany({

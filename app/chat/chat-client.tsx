@@ -125,7 +125,8 @@ const TYPEWRITER_STEP_MIN = 2;
 const TYPEWRITER_STEP_MAX = 5;
 const TYPEWRITER_DELAY_MIN_MS = 110;
 const TYPEWRITER_DELAY_MAX_MS = 220;
-const RETURN_GREETING_IDLE_MS = 30 * 60 * 1000;
+const GUEST_OPEN_GREETING_DEDUPE_KEY = "xinqingGuestOpenGreetingAt";
+const OPEN_GREETING_DEDUPE_MS = 2 * 1000;
 
 const sleep = (delay: number) =>
   new Promise((resolve) => window.setTimeout(resolve, delay));
@@ -286,6 +287,17 @@ const writeGuestMessages = (messages: Message[]) => {
   window.sessionStorage.setItem(GUEST_CHAT_CACHE_KEY, JSON.stringify(messages));
 };
 
+const reserveGuestOpenGreeting = () => {
+  if (typeof window === "undefined") return false;
+  const now = Date.now();
+  const lastGreetingAt = Number(window.sessionStorage.getItem(GUEST_OPEN_GREETING_DEDUPE_KEY));
+  if (Number.isFinite(lastGreetingAt) && now - lastGreetingAt < OPEN_GREETING_DEDUPE_MS) {
+    return false;
+  }
+  window.sessionStorage.setItem(GUEST_OPEN_GREETING_DEDUPE_KEY, String(now));
+  return true;
+};
+
 const createGuestGreetingMessage = async ({
   kind,
   recentMessages,
@@ -324,31 +336,21 @@ const createGuestGreetingMessage = async ({
 
 const readOrSeedGuestMessages = async (): Promise<Message[]> => {
   const messages = readGuestMessages();
-  if (messages.length > 0) {
-    const latestMessage = messages[messages.length - 1];
-    const latestTime = new Date(latestMessage.createdAt).getTime();
-    const isIdle =
-      !Number.isFinite(latestTime) || Date.now() - latestTime >= RETURN_GREETING_IDLE_MS;
-
-    if (isIdle && !isProactiveGreetingPromptVersion(latestMessage.promptVersion)) {
-      const greeting = await createGuestGreetingMessage({
-        kind: "return",
-        recentMessages: messages,
-      });
-      if (!greeting) return messages;
-      const nextMessages = [...messages, greeting];
-      writeGuestMessages(nextMessages);
-      return nextMessages;
-    }
-
+  if (!reserveGuestOpenGreeting()) {
     return messages;
   }
 
-  const greeting = await createGuestGreetingMessage({ kind: "initial", recentMessages: [] });
-  if (!greeting) return [];
-  const seeded = [greeting];
-  writeGuestMessages(seeded);
-  return seeded;
+  const nonGreetingMessages = messages.filter(
+    (message) => !isProactiveGreetingPromptVersion(message.promptVersion)
+  );
+  const greeting = await createGuestGreetingMessage({
+    kind: messages.length > 0 ? "return" : "initial",
+    recentMessages: nonGreetingMessages,
+  });
+  if (!greeting) return messages;
+  const nextMessages = [...messages, greeting];
+  writeGuestMessages(nextMessages);
+  return nextMessages;
 };
 
 const getTodayKey = () =>

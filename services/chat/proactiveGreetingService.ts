@@ -6,6 +6,7 @@ import { generateProactiveGreeting } from "@/services/ai/proactiveGreeting";
 import { AiConversationMessage, AiGenerationResult } from "@/services/ai/types";
 
 const RETURN_GREETING_IDLE_MS = 30 * 60 * 1000;
+const OPEN_GREETING_DEDUPE_MS = 2 * 1000;
 
 const createGreetingMessage = async ({
   sessionId,
@@ -74,9 +75,13 @@ const createGreetingMessage = async ({
 export const ensureProactiveChatGreeting = async ({
   sessionId,
   userId,
+  force = false,
+  dedupeWindowMs = OPEN_GREETING_DEDUPE_MS,
 }: {
   sessionId: string;
   userId: string;
+  force?: boolean;
+  dedupeWindowMs?: number;
 }) => {
   const latestMessage = await prisma.chatMessage.findFirst({
     where: {
@@ -95,13 +100,22 @@ export const ensureProactiveChatGreeting = async ({
   });
 
   const now = new Date();
+  if (
+    force &&
+    latestMessage &&
+    isProactiveGreetingPromptVersion(latestMessage.aiGeneration?.promptVersion) &&
+    now.getTime() - latestMessage.createdAt.getTime() < dedupeWindowMs
+  ) {
+    return null;
+  }
+
   const recentMessages = await prisma.chatMessage.findMany({
     where: {
       sessionId,
       userId,
     },
     orderBy: { createdAt: "desc" },
-    take: 6,
+    take: 12,
     select: {
       role: true,
       content: true,
@@ -113,12 +127,16 @@ export const ensureProactiveChatGreeting = async ({
       },
     },
   });
-  const modelMessages: AiConversationMessage[] = recentMessages.reverse().map((message) => ({
-    role: message.role.toLowerCase() as "user" | "assistant" | "system",
-    content: message.content,
-    promptVersion: message.aiGeneration?.promptVersion ?? null,
-    aiGenerationId: message.aiGenerationId,
-  }));
+  const modelMessages: AiConversationMessage[] = recentMessages
+    .filter((message) => !isProactiveGreetingPromptVersion(message.aiGeneration?.promptVersion))
+    .slice(0, 6)
+    .reverse()
+    .map((message) => ({
+      role: message.role.toLowerCase() as "user" | "assistant" | "system",
+      content: message.content,
+      promptVersion: message.aiGeneration?.promptVersion ?? null,
+      aiGenerationId: message.aiGenerationId,
+    }));
 
   if (!latestMessage) {
     try {
@@ -134,10 +152,10 @@ export const ensureProactiveChatGreeting = async ({
     }
   }
 
-  if (isProactiveGreetingPromptVersion(latestMessage.aiGeneration?.promptVersion)) return null;
+  if (!force && isProactiveGreetingPromptVersion(latestMessage.aiGeneration?.promptVersion)) return null;
 
   const idleMs = now.getTime() - latestMessage.createdAt.getTime();
-  if (idleMs < RETURN_GREETING_IDLE_MS) return null;
+  if (!force && idleMs < RETURN_GREETING_IDLE_MS) return null;
 
   try {
     const generation = await generateProactiveGreeting({
