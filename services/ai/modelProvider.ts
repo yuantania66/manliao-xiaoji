@@ -194,6 +194,7 @@ const callOpenAiResponses = async ({
 const callChatCompletions = async ({
   apiKey,
   baseUrl,
+  extraBody,
   messages,
   model,
   temperature,
@@ -201,6 +202,7 @@ const callChatCompletions = async ({
 }: {
   apiKey: string;
   baseUrl: string;
+  extraBody?: Record<string, unknown>;
   messages: AiModelMessage[];
   model: string;
   temperature: number;
@@ -217,6 +219,7 @@ const callChatCompletions = async ({
       model,
       messages: normalizeChatMessages(messages),
       temperature,
+      ...extraBody,
     }),
   });
 
@@ -284,6 +287,7 @@ export const callModel = async ({
                 process.env.QWEN_BASE_URL?.trim() ||
                 process.env.DASHSCOPE_BASE_URL?.trim() ||
                 "https://dashscope.aliyuncs.com/compatible-mode/v1",
+              extraBody: { enable_thinking: false },
               messages,
               model,
               temperature,
