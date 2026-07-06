@@ -22,6 +22,7 @@ import {
   AiMemoryContext,
   AiRiskLevel,
 } from "./types";
+import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 
 const mapRiskLevel = (riskLevel: AiRiskLevel) => {
   const value = riskLevel.toUpperCase();
@@ -232,12 +233,14 @@ export const createReviewedChatReply = async ({
   sessionId,
   userMessage,
   recentMessages,
+  understandingContext,
   includeDebugTrace = false,
 }: {
   userId: string;
   sessionId: string;
   userMessage: string;
   recentMessages: AiConversationMessage[];
+  understandingContext?: StructuredRagContext | null;
   includeDebugTrace?: boolean;
 }): Promise<{
   assistantMessage: ReturnType<typeof serializeMessage>;
@@ -313,7 +316,7 @@ export const createReviewedChatReply = async ({
   const memoryContext = await loadMemoryContext({ userId, sessionId });
 
   try {
-    generation = await generateChatReply({ userMessage, recentMessages, memoryContext });
+    generation = await generateChatReply({ userMessage, recentMessages, memoryContext, understandingContext });
   } catch {
     const riskLevel = getFallbackRiskLevel(userMessage);
     const fallback = createFallbackGeneration({

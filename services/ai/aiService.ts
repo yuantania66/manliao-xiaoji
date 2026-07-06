@@ -3,6 +3,7 @@ import { AppError } from "@/lib/errors";
 import { buildChatPrompt, CHAT_PROMPT_VERSION, FALLBACK_PROMPT_VERSION } from "./promptBuilder";
 import { callModel, getDefaultAiModel } from "./modelProvider";
 import { AiConversationMessage, AiGenerationResult, AiMemoryContext, AiRiskLevel } from "./types";
+import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 
 export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel();
 
@@ -10,12 +11,14 @@ export const generateChatReply = async ({
   userMessage,
   recentMessages,
   memoryContext,
+  understandingContext,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
   memoryContext?: AiMemoryContext | null;
+  understandingContext?: StructuredRagContext | null;
 }): Promise<AiGenerationResult> => {
-  const prompt = buildChatPrompt({ userMessage, recentMessages, memoryContext });
+  const prompt = buildChatPrompt({ userMessage, recentMessages, memoryContext, understandingContext });
   const response = await callModel({
     model: getMainModel(),
     messages: prompt.messages,

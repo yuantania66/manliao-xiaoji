@@ -37,6 +37,8 @@ export const buildAiDebugTrace = ({
   const memoryLabel = memoryIncluded
     ? [memorySource, memoryLayer, memoryTrust].filter(Boolean).join(" / ")
     : "none";
+  const understandingIncluded = promptMeta?.understandingIncluded ?? false;
+  const understanding = promptMeta?.understanding;
   const filteredHistory = promptMeta?.filteredHistory ?? [];
   const modelMessageRoles = promptMeta?.modelMessageRoles ?? [];
   const thinkingLayers = [
@@ -64,6 +66,9 @@ export const buildAiDebugTrace = ({
       evidence: [
         `promptVersion：${promptVersion}`,
         `memory=${memoryLabel}`,
+        understandingIncluded
+          ? `understanding=recent:${understanding?.recentMemoryCount ?? 0}, similar:${understanding?.similarMemoryCount ?? 0}, hypotheses:${understanding?.activeHypothesisCount ?? 0}, counter:${understanding?.counterEvidenceCount ?? 0}`
+          : "understanding=none",
         `messages：${modelMessageRoles.join(" -> ") || "无"}`,
         ...filteredHistory.map((item) => `过滤 ${item.role}: ${item.reason} / ${item.preview}`),
       ],
@@ -92,6 +97,8 @@ export const buildAiDebugTrace = ({
       memorySource,
       memoryLayer,
       memoryTrust,
+      understandingIncluded,
+      understanding,
       filteredHistory,
       modelMessageRoles,
     },

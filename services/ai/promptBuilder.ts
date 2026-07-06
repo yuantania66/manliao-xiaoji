@@ -1,5 +1,6 @@
 import { AiConversationMessage, AiMemoryContext, AiModelMessage, AiPromptMeta } from "./types";
 import { formatMemoryContextForPrompt } from "./dataLayers";
+import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 
 export const CHAT_PROMPT_VERSION = "chat-base-product-v4";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
@@ -24,11 +25,15 @@ const LOW_INFORMATION_FORMULAIC_ASSISTANT_PATTERN =
 const BASE_PRODUCT_PROMPT = [
   "你是慢聊小记的聊天助手。",
   "始终用中文回应。",
-  "回复自然、简短、克制，像认真听人说话，不要像客服或咨询师。",
+  "回复自然、简短、克制，像认真听人说话。",
   "把用户的话当作对话的一部分，不要立刻处理成任务、测试或谜题。",
   "如果不确定，可以承认不确定；不必每次都追问、解释或给建议。",
   "不要模仿历史里明显模板化的助理回复。",
   "不要诊断疾病，不要承诺疗效，不要替用户下结论。",
+  "回复顺序优先：先接住，再澄清，再探索，最后才建议。",
+  "不要把检索到的假设说成事实；假设只能用“可能、像是、我不确定”表达。",
+  "用户情绪强时，少解释，多承接。",
+  "用户信息不足时，优先问一个低压力问题。",
 ].join("\n");
 
 export const isBaseChatPromptVersion = (promptVersion?: string | null) =>
@@ -133,14 +138,74 @@ export const sanitizeChatHistory = ({
   return { included, filteredHistory };
 };
 
+const compactMemory = (value: string) => value.replace(/\s+/g, " ").trim().slice(0, 160);
+
+const formatUnderstandingContextForPrompt = (context: StructuredRagContext) =>
+  [
+    "以下是结构化记忆检索结果。只能作为参考，不要直接复述，不要把假设当事实。",
+    JSON.stringify(
+      {
+        recentMemories: context.recentMemories.map((item) => ({
+          kind: item.kind,
+          text: compactMemory(item.text),
+          people: item.people,
+          topics: item.topics,
+          emotion: item.emotion,
+          reason: item.reason,
+        })),
+        similarMemories: context.similarMemories.map((item) => ({
+          kind: item.kind,
+          text: compactMemory(item.text),
+          people: item.people,
+          topics: item.topics,
+          emotion: item.emotion,
+          reason: item.reason,
+        })),
+        coreEvents: context.coreEvents.map((item) => ({
+          text: compactMemory(item.text),
+          people: item.people,
+          topics: item.topics,
+        })),
+        activeHypotheses: context.activeHypotheses.map((item) => ({
+          hypothesisText: compactMemory(item.hypothesisText),
+          category: item.category,
+          confidence: item.confidence,
+        })),
+        counterEvidence: context.counterEvidence.map((item) => ({
+          kind: item.kind,
+          text: compactMemory(item.text),
+          emotion: item.emotion,
+          reason: item.reason,
+        })),
+        retrievalReason: context.retrievalReason,
+      },
+      null,
+      2
+    ),
+  ].join("\n");
+
+const getUnderstandingMeta = (context?: StructuredRagContext | null): AiPromptMeta["understanding"] | undefined =>
+  context
+    ? {
+        recentMemoryCount: context.recentMemories.length,
+        similarMemoryCount: context.similarMemories.length,
+        coreEventCount: context.coreEvents.length,
+        activeHypothesisCount: context.activeHypotheses.length,
+        counterEvidenceCount: context.counterEvidence.length,
+        retrievalReason: context.retrievalReason,
+      }
+    : undefined;
+
 export const buildChatPrompt = ({
   userMessage,
   recentMessages,
   memoryContext,
+  understandingContext,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
   memoryContext?: AiMemoryContext | null;
+  understandingContext?: StructuredRagContext | null;
 }): { messages: AiModelMessage[]; meta: AiPromptMeta } => {
   const { included, filteredHistory } = sanitizeChatHistory({ userMessage, recentMessages });
   const messages: AiModelMessage[] = [
@@ -153,6 +218,14 @@ export const buildChatPrompt = ({
           {
             role: "developer" as const,
             content: formatMemoryContextForPrompt(memoryContext),
+          },
+        ]
+      : []),
+    ...(understandingContext
+      ? [
+          {
+            role: "developer" as const,
+            content: formatUnderstandingContextForPrompt(understandingContext),
           },
         ]
       : []),
@@ -172,6 +245,8 @@ export const buildChatPrompt = ({
       memorySource: memoryContext?.source,
       memoryLayer: memoryContext?.layer,
       memoryTrust: memoryContext?.trust,
+      understandingIncluded: Boolean(understandingContext),
+      understanding: getUnderstandingMeta(understandingContext),
       filteredHistory,
       modelMessageRoles: messages.map((message) => message.role),
     },
@@ -182,10 +257,12 @@ export const buildChatMessages = ({
   userMessage,
   recentMessages,
   memoryContext,
+  understandingContext,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
   memoryContext?: AiMemoryContext | null;
+  understandingContext?: StructuredRagContext | null;
 }): AiModelMessage[] => {
-  return buildChatPrompt({ userMessage, recentMessages, memoryContext }).messages;
+  return buildChatPrompt({ userMessage, recentMessages, memoryContext, understandingContext }).messages;
 };

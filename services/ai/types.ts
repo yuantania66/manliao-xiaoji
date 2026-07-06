@@ -15,6 +15,15 @@ export type AiMemoryContext = {
   date?: string;
 };
 
+export type AiUnderstandingPromptMeta = {
+  recentMemoryCount: number;
+  similarMemoryCount: number;
+  coreEventCount: number;
+  activeHypothesisCount: number;
+  counterEvidenceCount: number;
+  retrievalReason?: string;
+};
+
 export type AiModelRole = "developer" | "user" | "assistant";
 
 export type AiModelMessage = {
@@ -44,6 +53,8 @@ export type AiPromptMeta = {
   memorySource?: AiMemoryContext["source"];
   memoryLayer?: AiMemoryContext["layer"];
   memoryTrust?: AiMemoryContext["trust"];
+  understandingIncluded: boolean;
+  understanding?: AiUnderstandingPromptMeta;
   filteredHistory: {
     role: AiConversationRole;
     reason: string;
@@ -118,6 +129,8 @@ export type AiDebugTrace = {
     memorySource?: AiMemoryContext["source"];
     memoryLayer?: AiMemoryContext["layer"];
     memoryTrust?: AiMemoryContext["trust"];
+    understandingIncluded: boolean;
+    understanding?: AiUnderstandingPromptMeta;
     filteredHistory: AiPromptMeta["filteredHistory"];
     modelMessageRoles: AiModelRole[];
   };

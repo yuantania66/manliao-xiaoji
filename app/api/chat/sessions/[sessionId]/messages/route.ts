@@ -9,6 +9,12 @@ import { parsePagination, requireNonEmptyString } from "@/lib/validation";
 import { createReviewedChatReply } from "@/services/ai/chatReplyService";
 import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
 import { extractExperienceFromChatMessage } from "@/services/experience/experienceExtractorService";
+import {
+  extractUnderstandingFromMessage,
+  writeUnderstandingExtraction,
+} from "@/services/understanding/extractService";
+import { updateUnderstandingHypotheses } from "@/services/understanding/hypothesisService";
+import { buildStructuredRagContext } from "@/services/understanding/retrievalService";
 
 const readJson = async (request: Request) => {
   try {
@@ -162,6 +168,19 @@ export async function POST(
       return created;
     });
 
+    const understandingExtraction = await extractUnderstandingFromMessage({
+      userId: user.id,
+      sourceType: "chat",
+      sourceId: message.id,
+      content,
+      createdAt: message.createdAt,
+    });
+    const understandingContext = await buildStructuredRagContext({
+      userId: user.id,
+      extraction: understandingExtraction,
+      now: message.createdAt,
+    });
+
     const reviewedReply = await createReviewedChatReply({
       userId: user.id,
       sessionId,
@@ -172,8 +191,30 @@ export async function POST(
         promptVersion: item.aiGeneration?.promptVersion ?? null,
         aiGenerationId: item.aiGenerationId,
       })),
+      understandingContext,
       includeDebugTrace,
     });
+
+    const writtenUnderstanding = await writeUnderstandingExtraction({
+      userId: user.id,
+      sourceType: "chat",
+      sourceId: message.id,
+      createdAt: message.createdAt,
+      extraction: understandingExtraction,
+    }).catch((error) => {
+      console.error("understanding write failed", error);
+      return null;
+    });
+
+    if (writtenUnderstanding) {
+      await updateUnderstandingHypotheses({
+        userId: user.id,
+        extraction: understandingExtraction,
+        writtenFacts: writtenUnderstanding.facts,
+      }).catch((error) => {
+        console.error("understanding hypothesis update failed", error);
+      });
+    }
 
     await extractExperienceFromChatMessage({
       userId: user.id,
