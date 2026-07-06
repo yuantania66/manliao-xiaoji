@@ -7,6 +7,13 @@ import { StructuredRagContext } from "@/services/understanding/understandingType
 
 export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel();
 
+const GENERIC_OPENING_PATTERN = /^(嗯|收到|听到了|好)[，,。？?！!、]?\s*/;
+
+const removeGenericOpening = (text: string) => {
+  const cleaned = text.replace(GENERIC_OPENING_PATTERN, "").trim();
+  return cleaned.length >= 2 ? cleaned : text;
+};
+
 export const generateChatReply = async ({
   userMessage,
   recentMessages,
@@ -27,6 +34,7 @@ export const generateChatReply = async ({
 
   return {
     ...response,
+    text: removeGenericOpening(response.text),
     promptVersion: CHAT_PROMPT_VERSION,
     promptMeta: prompt.meta,
   };
@@ -53,7 +61,7 @@ export const getFallbackReply = ({
     return "是我刚才没接住。先回到你刚刚说的这句。";
   }
 
-  return "嗯，先不用解释完整。这个部分可以先放在这里，慢慢来。";
+  return "先不用解释完整。这个部分可以先放在这里，慢慢来。";
 };
 
 export const createFallbackGeneration = ({

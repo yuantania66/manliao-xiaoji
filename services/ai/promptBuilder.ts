@@ -2,7 +2,7 @@ import { AiConversationMessage, AiMemoryContext, AiModelMessage, AiPromptMeta } 
 import { formatMemoryContextForPrompt } from "./dataLayers";
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 
-export const CHAT_PROMPT_VERSION = "chat-base-product-v4";
+export const CHAT_PROMPT_VERSION = "chat-base-product-v5";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -20,7 +20,7 @@ const LOW_INFORMATION_INPUT_PATTERN =
 const LOW_INFORMATION_CLARIFY_ASSISTANT_PATTERN =
   /这个.*什么|是什么意思|什么意思|没读懂|没看懂|没理解|猜不出来|猜猜|是想|还是|^[^。！？\n]{0,24}[?？]\s*$/;
 const LOW_INFORMATION_FORMULAIC_ASSISTANT_PATTERN =
-  /^(嗯[，,]?\s*([0-9０-９]+|[一二三四五六七八九十零〇]+|[a-zA-Z])?。?|收到。?|好。?)$|数字|字母|字符|随手打|随便按|玩数字/;
+  /^(嗯|收到|听到了|好)[，,。]?\s*.{0,48}$|数字|字母|字符|随手打|随便按|玩数字/;
 
 const BASE_PRODUCT_PROMPT = [
   "你是慢聊小记的聊天助手。",
@@ -29,11 +29,12 @@ const BASE_PRODUCT_PROMPT = [
   "把用户的话当作对话的一部分，不要立刻处理成任务、测试或谜题。",
   "如果不确定，可以承认不确定；不必每次都追问、解释或给建议。",
   "不要模仿历史里明显模板化的助理回复。",
+  "不要把“嗯”“收到”“听到了”当作固定开头；如果前文已经这样开头，下一次必须换一种方式，或直接回应内容。",
   "不要诊断疾病，不要承诺疗效，不要替用户下结论。",
   "回复顺序优先：先接住，再澄清，再探索，最后才建议。",
   "不要把检索到的假设说成事实；假设只能用“可能、像是、我不确定”表达。",
   "用户情绪强时，少解释，多承接。",
-  "用户信息不足时，优先问一个低压力问题。",
+  "用户信息不足时，优先问一个低压力问题；但不要连续追问“是什么意思”，也不要反复用同一个语气词承接。",
 ].join("\n");
 
 export const isBaseChatPromptVersion = (promptVersion?: string | null) =>
