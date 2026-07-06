@@ -1,6 +1,7 @@
 import { Prisma, UnderstandingSourceType } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { AiConversationMessage } from "@/services/ai/types";
 import { callModel, getDefaultAiModel } from "@/services/ai/modelProvider";
 
 import { buildUnderstandingExtractPrompt } from "./extractPrompt";
@@ -22,6 +23,61 @@ const clamp = (value: unknown, min: number, max: number, fallback: number) => {
 };
 
 const normalizeText = (value: string) => value.replace(/\s+/g, "").trim().toLowerCase();
+
+const formatRecentContext = (messages: AiConversationMessage[] = []) =>
+  messages
+    .slice(-6)
+    .map((message) => `${message.role === "assistant" ? "AI" : "用户"}：${message.content}`)
+    .join("\n")
+    .slice(0, 1200);
+
+const replaceContextualPerson = (value: string | null | undefined, from: string, to: string) =>
+  typeof value === "string" ? value.replaceAll(from, to) : value;
+
+const resolveContextualReferences = ({
+  extraction,
+  recentMessages,
+}: {
+  extraction: UnderstandingExtraction;
+  recentMessages?: AiConversationMessage[];
+}): UnderstandingExtraction => {
+  const recentText = (recentMessages ?? []).map((message) => message.content).join("\n");
+  if (!/妈妈|母亲/.test(recentText)) return extraction;
+
+  const hasPronounPerson = extraction.people.includes("她");
+  const factsMentionPronoun = extraction.facts.some(
+    (fact) => fact.people?.includes("她") || /她/.test(fact.eventText)
+  );
+  const experiencesMentionPronoun = extraction.experiences.some(
+    (experience) => /她/.test(experience.eventText ?? "")
+  );
+  if (!hasPronounPerson && !factsMentionPronoun && !experiencesMentionPronoun) return extraction;
+
+  const replacePeople = (people: string[] | undefined) =>
+    people ? [...new Set(people.map((person) => (person === "她" ? "妈妈" : person)))] : people;
+
+  return {
+    ...extraction,
+    people: [...new Set(extraction.people.map((person) => (person === "她" ? "妈妈" : person)))],
+    facts: extraction.facts.map((fact) => ({
+      ...fact,
+      eventText: replaceContextualPerson(fact.eventText, "她", "妈妈") ?? fact.eventText,
+      people: replacePeople(fact.people),
+    })),
+    experiences: extraction.experiences.map((experience) => ({
+      ...experience,
+      eventText: replaceContextualPerson(experience.eventText, "她", "妈妈"),
+    })),
+    interpretations: extraction.interpretations.map((interpretation) => ({
+      ...interpretation,
+      eventText: replaceContextualPerson(interpretation.eventText, "她", "妈妈"),
+      interpretationText:
+        replaceContextualPerson(interpretation.interpretationText, "她", "妈妈") ??
+        interpretation.interpretationText,
+      evidenceText: replaceContextualPerson(interpretation.evidenceText, "她", "妈妈"),
+    })),
+  };
+};
 
 const extractJsonObject = (value: string) => {
   const trimmed = value.trim();
@@ -119,18 +175,22 @@ export const parseUnderstandingExtraction = (value: string): UnderstandingExtrac
 export const inferLocalUnderstandingExtraction = ({
   content,
   messageCreatedAt,
+  recentMessages = [],
 }: {
   content: string;
   messageCreatedAt: Date;
+  recentMessages?: AiConversationMessage[];
 }): UnderstandingExtraction => {
   const text = content.trim();
   if (!text || LOW_INFORMATION_PATTERN.test(text)) {
     return { facts: [], experiences: [], interpretations: [], people: [], topics: [], occurredAt: null };
   }
 
+  const recentText = recentMessages.map((message) => message.content).join("\n");
+  const sheLikelyMother = /妈妈|母亲/.test(recentText) && /她/.test(text);
   const people = [
     /领导/.test(text) ? "领导" : null,
-    /妈妈|母亲/.test(text) ? "妈妈" : null,
+    /妈妈|母亲/.test(text) || sheLikelyMother ? "妈妈" : null,
     /爸爸|父亲/.test(text) ? "爸爸" : null,
     /朋友/.test(text) ? "朋友" : null,
   ].filter((item): item is string => Boolean(item));
@@ -216,14 +276,17 @@ export const inferLocalUnderstandingExtraction = ({
     });
   }
 
-  return {
+  return resolveContextualReferences({
+    extraction: {
     facts,
     experiences,
     interpretations,
     people: [...new Set(people)],
     topics: [...new Set(topics)],
     occurredAt: facts[0]?.occurredAt ?? messageCreatedAt.toISOString(),
-  };
+    },
+    recentMessages,
+  });
 };
 
 const parseDate = (value: string | null | undefined, fallback: Date) => {
@@ -252,19 +315,25 @@ const toSourceType = (value: UnderstandingSourceTypeValue) =>
 export const extractUnderstandingFromMessage = async ({
   content,
   createdAt,
+  recentMessages,
 }: {
   userId: string;
   sourceType: UnderstandingSourceTypeValue;
   sourceId: string;
   content: string;
   createdAt: Date;
+  recentMessages?: AiConversationMessage[];
 }): Promise<UnderstandingExtraction> => {
   let extraction: UnderstandingExtraction | null = null;
 
   try {
     const response = await callModel({
       model: process.env.AI_EXTRACTOR_MODEL?.trim() || process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
-      messages: buildUnderstandingExtractPrompt({ content, messageCreatedAt: createdAt }),
+      messages: buildUnderstandingExtractPrompt({
+        content,
+        messageCreatedAt: createdAt,
+        recentContext: formatRecentContext(recentMessages),
+      }),
       temperature: 0.1,
     });
     extraction = parseUnderstandingExtraction(response.text);
@@ -272,7 +341,16 @@ export const extractUnderstandingFromMessage = async ({
     console.error("understanding extraction model failed", error);
   }
 
-  return extraction ?? inferLocalUnderstandingExtraction({ content, messageCreatedAt: createdAt });
+  return resolveContextualReferences({
+    extraction:
+      extraction ??
+      inferLocalUnderstandingExtraction({
+        content,
+        messageCreatedAt: createdAt,
+        recentMessages,
+      }),
+    recentMessages,
+  });
 };
 
 export const writeUnderstandingExtraction = async ({

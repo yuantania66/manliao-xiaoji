@@ -138,6 +138,15 @@ export async function POST(
         },
       },
     });
+    const serializedRecentMessages = recentMessages
+      .slice()
+      .reverse()
+      .map((item) => ({
+        role: item.role.toLowerCase() as "user" | "assistant" | "system",
+        content: item.content,
+        promptVersion: item.aiGeneration?.promptVersion ?? null,
+        aiGenerationId: item.aiGenerationId,
+      }));
 
     const message = await prisma.$transaction(async (tx) => {
       const created = await tx.chatMessage.create({
@@ -174,6 +183,7 @@ export async function POST(
       sourceId: message.id,
       content,
       createdAt: message.createdAt,
+      recentMessages: serializedRecentMessages,
     });
     const understandingContext = await buildStructuredRagContext({
       userId: user.id,
@@ -186,12 +196,7 @@ export async function POST(
       userId: user.id,
       sessionId,
       userMessage: content,
-      recentMessages: recentMessages.reverse().map((item) => ({
-        role: item.role.toLowerCase() as "user" | "assistant" | "system",
-        content: item.content,
-        promptVersion: item.aiGeneration?.promptVersion ?? null,
-        aiGenerationId: item.aiGenerationId,
-      })),
+      recentMessages: serializedRecentMessages,
       understandingContext,
       includeDebugTrace,
     });
