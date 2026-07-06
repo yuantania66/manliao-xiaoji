@@ -5,6 +5,7 @@ import { callModel, getDefaultAiModel, isAiProviderConfigured } from "./modelPro
 import { AiConversationMessage, AiGenerationResult, AiModelMessage } from "./types";
 
 type ProactiveGreetingKind = "initial" | "return";
+const SAFE_DETERMINISTIC_GREETING = "你可以先放一句话在这里，不用想清楚。";
 
 const getShanghaiTimeLabel = (date: Date) =>
   new Intl.DateTimeFormat("zh-CN", {
@@ -45,6 +46,7 @@ const buildProactiveGreetingMessages = ({
       "不要使用呀、呢、啦、哦、～这类卖萌或客服式语气词。",
       "不要问很大的问题；可以给用户一个低压力入口。",
       "不要编造环境、天气、窗外声音、用户状态、用户情绪或刚发生的事。",
+      "不要写你这边看到、听到、想到的画面；你没有视觉、天气、窗台、叶子、树影、光线或房间信息。",
       "不要猜用户在家、出门、上班、学习或正在做什么。",
       "不要暗示用户很少来、难得来、好久没来、终于来了，除非最近对话里有明确证据。",
       "不要用“是……还是……”这类强迫二选一的问题。",
@@ -90,7 +92,7 @@ const validateGreeting = (value: string) => {
   if (UNSUPPORTED_RELATION_JUDGMENT_PATTERN.test(value)) {
     return "包含无证据的来访频率或关系判断。";
   }
-  if (/在家|出门|上班|学习|窗外|天气|蝉|雨|太阳|风/.test(value)) {
+  if (/在家|出门|上班|学习|窗外|天气|蝉|雨|太阳|风|窗台|窗边|叶子|树影|影子|光线|屋檐|房间|云|天空/.test(value)) {
     return "包含无证据的场景、活动或环境判断。";
   }
   if (/躺|休息|喝水|睡觉|出去走|出门|打发时间|消磨时间/.test(value)) {
@@ -137,6 +139,16 @@ export const generateProactiveGreeting = async ({
     process.env.AI_MAIN_MODEL?.trim() ||
     getDefaultAiModel();
 
+  const useDeterministicGreeting = process.env.PROACTIVE_GREETING_MODE?.trim() === "deterministic";
+  if (useDeterministicGreeting) {
+    return {
+      text: SAFE_DETERMINISTIC_GREETING,
+      model: "deterministic",
+      promptVersion: PROACTIVE_GREETING_PROMPT_VERSION,
+      latencyMs: 0,
+    };
+  }
+
   const generateOnce = async (repairInstruction?: string) =>
     callModel({
       model,
@@ -154,16 +166,21 @@ export const generateProactiveGreeting = async ({
   const rejectionReason = validateGreeting(text);
   if (rejectionReason) {
     response = await generateOnce(
-      `上一句不合格，原因：${rejectionReason} 请重写一句。不要说“难得上来”、不要推断用户多久没来、不要编场景、不要用“周一上午/这个时间”这类时间开场。`
+      `上一句不合格，原因：${rejectionReason} 请重写一句。不要说“难得上来”、不要推断用户多久没来、不要编任何环境画面、不要写窗台/叶子/影子/光线/天气/风、不要用“周一上午/这个时间”这类时间开场。`
     );
     text = cleanGreeting(response.text);
   }
 
   const finalRejectionReason = validateGreeting(text);
   if (finalRejectionReason) {
-    throw new AppError("AI_GENERATION_FAILED", "AI 主动问候未通过输出约束", 502, {
-      reason: finalRejectionReason,
-    });
+    return {
+      text: SAFE_DETERMINISTIC_GREETING,
+      model: `${response.model}:guarded`,
+      promptVersion: PROACTIVE_GREETING_PROMPT_VERSION,
+      latencyMs: response.latencyMs,
+      tokenInput: response.tokenInput,
+      tokenOutput: response.tokenOutput,
+    };
   }
 
   return {

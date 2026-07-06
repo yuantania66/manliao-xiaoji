@@ -8,10 +8,17 @@ import { StructuredRagContext } from "@/services/understanding/understandingType
 export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel();
 
 const GENERIC_OPENING_PATTERN = /^(嗯|收到|听到了|好)[，,。？?！!、]?\s*/;
+const INVENTED_SCENE_PATTERN =
+  /我这边|我这里|我刚刚看到|我正看|窗台|窗边|窗外|叶子|树影|影子|光线|屋檐|房间|云|天空|风不大|风很|太阳|阳光|雨声|树叶/;
 
 const removeGenericOpening = (text: string) => {
   const cleaned = text.replace(GENERIC_OPENING_PATTERN, "").trim();
   return cleaned.length >= 2 ? cleaned : text;
+};
+
+const removeInventedScene = (text: string) => {
+  if (!INVENTED_SCENE_PATTERN.test(text)) return text;
+  return "那就先这样待一会儿也可以。不用急着找话题，你可以只放一句很小的话在这里。";
 };
 
 export const generateChatReply = async ({
@@ -34,7 +41,7 @@ export const generateChatReply = async ({
 
   return {
     ...response,
-    text: removeGenericOpening(response.text),
+    text: removeInventedScene(removeGenericOpening(response.text)),
     promptVersion: CHAT_PROMPT_VERSION,
     promptMeta: prompt.meta,
   };
