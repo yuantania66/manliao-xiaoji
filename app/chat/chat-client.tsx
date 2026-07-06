@@ -113,7 +113,7 @@ export type InitialChatData = CachedChat | null;
 
 const CHAT_CACHE_PREFIX = "xinqingChatCache";
 const GUEST_MODE_KEY = "xinqingGuestMode";
-const GUEST_CHAT_CACHE_KEY = "xinqingGuestChatCache";
+const GUEST_CHAT_CACHE_KEY = "xinqingGuestChatCache:v2";
 const GUEST_AI_USAGE_KEY = "xinqingGuestAiUsage";
 const GUEST_AI_DAILY_LIMIT = 3;
 const GUEST_SESSION_ID = "guest-session";
@@ -409,7 +409,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(!canUseInitialChat || !initialChat);
-  const [isGuestMode, setIsGuestMode] = useState(getInitialGuestMode);
+  const [isGuestMode, setIsGuestMode] = useState(false);
   const [typingMessageIds, setTypingMessageIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [isDebugLoggingIn, setIsDebugLoggingIn] = useState(false);
