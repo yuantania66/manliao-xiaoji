@@ -96,7 +96,11 @@ const validateGreeting = (value: string) => {
   if (/躺|休息|喝水|睡觉|出去走|出门|打发时间|消磨时间/.test(value)) {
     return "包含行动建议或轻浮的时间评价。";
   }
-  if (/^(周[一二三四五六日天]|星期[一二三四五六日天]|上午|中午|下午|晚上|这个时间)/.test(value)) {
+  if (
+    /^(周[一二三四五六日天]|星期[一二三四五六日天])/.test(value) ||
+    /^(上午|中午|下午|晚上|这个时间)/.test(value) ||
+    /(周[一二三四五六日天]|星期[一二三四五六日天]).{0,4}(上午|中午|下午|晚上)/.test(value)
+  ) {
     return "把日期或时间硬写成了开场。";
   }
   if (/呀|呢|啦|哦|～/.test(value)) {
@@ -149,7 +153,7 @@ export const generateProactiveGreeting = async ({
   const rejectionReason = validateGreeting(text);
   if (rejectionReason) {
     response = await generateOnce(
-      `上一句不合格，原因：${rejectionReason} 请重写一句。不要说“难得上来”、不要推断用户多久没来、不要编场景。`
+      `上一句不合格，原因：${rejectionReason} 请重写一句。不要说“难得上来”、不要推断用户多久没来、不要编场景、不要用“周一上午/这个时间”这类时间开场。`
     );
     text = cleanGreeting(response.text);
   }
