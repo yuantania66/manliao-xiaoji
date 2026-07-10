@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import ChatClient, { InitialChatData } from "./chat-client";
 import { hashToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
 
 type ChatPageProps = {
   searchParams?: Promise<{
@@ -53,6 +54,12 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
 
     if (!chatSession) return null;
 
+    await ensureProactiveChatGreeting({
+      sessionId: chatSession.id,
+      userId: session.user.id,
+      force: true,
+    });
+
     const items = await prisma.chatMessage.findMany({
       where: {
         sessionId: chatSession.id,
@@ -65,6 +72,11 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
         role: true,
         content: true,
         createdAt: true,
+        aiGeneration: {
+          select: {
+            promptVersion: true,
+          },
+        },
       },
     });
 
@@ -77,6 +89,7 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
           role: item.role.toLowerCase() as "user" | "assistant",
           text: item.content,
           createdAt: item.createdAt.toISOString(),
+          promptVersion: item.aiGeneration?.promptVersion ?? null,
         })),
     };
   } catch {

@@ -1,4 +1,4 @@
-const { getAuth, saveAuth } = require("../../utils/auth");
+const { getAuth, saveAuth, enterGuest } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
 const { loginWithWechat } = require("../../api/auth");
 
@@ -40,6 +40,15 @@ Page({
   },
 
   login() {
+    const enterGuestAfterLoginFailure = (message = "登录失败，可以先用游客模式体验。") => {
+      enterGuest();
+      this.setData({
+        isLoggedIn: false,
+        membershipText: "游客模式，仅保存在本机"
+      });
+      wx.showToast({ title: message, icon: "none" });
+    };
+
     wx.login({
       success: ({ code }) => {
         loginWithWechat(code || `mini_me_${Date.now()}`)
@@ -50,26 +59,12 @@ Page({
               membershipText: getMembershipText(auth)
             });
           })
-          .catch(() => {
-            saveAuth({
-              token: `local_demo_${Date.now()}`,
-              user: {
-                id: "local-demo-user",
-                nickname: "本地演示用户"
-              }
-            });
-            this.setData({ isLoggedIn: true, membershipText: "已登录" });
+          .catch((error) => {
+            enterGuestAfterLoginFailure(error.message || "登录失败，可以先用游客模式体验。");
           });
       },
       fail: () => {
-        saveAuth({
-          token: `local_demo_${Date.now()}`,
-          user: {
-            id: "local-demo-user",
-            nickname: "本地演示用户"
-          }
-        });
-        this.setData({ isLoggedIn: true, membershipText: "已登录" });
+        enterGuestAfterLoginFailure("微信登录失败，可以先用游客模式体验。");
       }
     });
   },

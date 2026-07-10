@@ -51,23 +51,294 @@ enum AiRiskLevel {
   CRISIS
 }
 
+enum EventSourceType {
+  CHAT
+  NOTE
+  MANUAL
+}
+
+enum EventStatus {
+  ACTIVE
+  ENDED
+  UNCLEAR
+}
+
+enum EventRelationType {
+  TRIGGER
+  RECOVERY
+  AMPLIFY
+  CONFLICT
+  UNRELATED
+}
+
+enum UnderstandingSourceType {
+  CHAT
+  NOTE
+}
+
+enum HypothesisCategory {
+  ATTACHMENT
+  WORK
+  FAMILY
+  SELF
+  RELATIONSHIP
+  RECOVERY
+  OTHER
+}
+
+enum HypothesisStatus {
+  ACTIVE
+  WEAKENED
+  REJECTED
+  MERGED
+}
+
+enum UnderstandingGraphNodeType {
+  PERSON
+  EVENT
+  EMOTION
+  TOPIC
+  HYPOTHESIS
+  VALUE
+  COPING_METHOD
+}
+
+enum UnderstandingGraphEdgeType {
+  TRIGGERED
+  RELIEVED_BY
+  RELATED_TO
+  CONTRADICTS
+  SUPPORTS
+  REPEATED_IN
+  BELONGS_TO_TIMELINE
+}
+
+enum AiMessageFeedbackSignal {
+  HELPFUL
+  UNHELPFUL
+  OFF_TARGET
+  TOO_MECHANICAL
+  OVER_ANALYZED
+  UNSAFE
+}
+
+enum RawMemoryKind {
+  CONVERSATION_MESSAGE
+  NOTE
+  METADATA
+}
+
+enum RawMemorySourceType {
+  CHAT_MESSAGE
+  NOTE
+  SESSION
+  SYSTEM
+}
+
+enum RawMemoryEventType {
+  CREATED
+  TOMBSTONE
+  REDACTION_REQUESTED
+  REDACTION
+  EXPORT_REQUESTED
+  RESTORED
+}
+
+enum MemoryActor {
+  SYSTEM
+  USER
+}
+
+enum EvidenceSourceKind {
+  RAW_MEMORY
+  TIMELINE_EVENT
+  RELATIONSHIP
+  SEMANTIC_MEMORY
+  UNDERSTANDING
+}
+
+enum EvidenceStatus {
+  ACTIVE
+  INVALIDATED
+  SUPERSEDED
+  REVOKED
+}
+
+enum EvidenceType {
+  RAW_SEGMENTATION
+}
+
+enum EvidenceTargetType {
+  RAW_MEMORY
+  RAW_SEGMENTATION
+  SEMANTIC_MEMORY
+  SEMANTIC_MEMORY_VERSION
+  UNDERSTANDING
+  UNDERSTANDING_VERSION
+  TIMELINE_EVENT
+  TIMELINE_EVENT_VERSION
+  RELATIONSHIP
+  RELATIONSHIP_VERSION
+  VERSION_HISTORY
+  REPORT
+  ASSESSMENT
+}
+
+enum EvidenceRole {
+  SUPPORTING
+  COUNTER
+  SOURCE
+  CORRECTION
+}
+
+enum SemanticMemoryKind {
+  RAW_SEGMENT
+  TOPIC
+  INTEREST
+  PREFERENCE
+  VALUE
+  LONG_TERM_GOAL
+  BEHAVIOR_PATTERN
+  COPING_METHOD
+  IMPORTANT_RELATIONSHIP
+  IMPORTANT_EVENT
+  ASSESSMENT
+}
+
+enum SemanticMemoryStatus {
+  ACTIVE
+  WEAKENED
+  REJECTED
+  MERGED
+  USER_CORRECTED
+  ARCHIVED
+}
+
+enum UnderstandingStatus {
+  OPEN
+  PAUSED
+  DEEPENING
+  USER_CORRECTED
+  CLOSED
+  REJECTED
+  MERGED
+}
+
+enum TimelineEventEndStatus {
+  ONGOING
+  ENDED
+  UNKNOWN
+}
+
+enum TimelineEventStatus {
+  ACTIVE
+  USER_CORRECTED
+  ARCHIVED
+  MERGED
+}
+
+enum RelationshipType {
+  FAMILY
+  FRIEND
+  ROMANTIC
+  COLLEAGUE
+  PET
+  OTHER
+}
+
+enum RelationshipStatus {
+  ACTIVE
+  WEAKENED
+  USER_CORRECTED
+  ARCHIVED
+  MERGED
+}
+
+enum VersionTargetType {
+  SEMANTIC_MEMORY
+  UNDERSTANDING
+  TIMELINE_EVENT
+  RELATIONSHIP
+  EVIDENCE
+  ASSESSMENT
+  REPORT
+}
+
+enum VersionChangeType {
+  CREATED
+  UPDATED
+  CORRECTED
+  WEAKENED
+  REJECTED
+  MERGED
+  SPLIT
+  ARCHIVED
+  ROLLBACK
+}
+
+enum RefinementStep {
+  RAW_CAPTURED
+  RAW_TO_SEGMENTATION
+  SEGMENTATION
+  EXTRACTION
+  EVIDENCE
+  SEMANTIC_MEMORY
+  TIMELINE
+  RELATIONSHIP
+  UNDERSTANDING
+  INDEX
+}
+
+enum RefinementStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+  RETRYING
+}
+
 model User {
-  id                 String             @id @default(cuid())
-  phone              String?            @unique
-  wechatOpenid       String?            @unique
-  nickname           String?
-  avatarUrl          String?
-  status             UserStatus         @default(ACTIVE)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  sessions           Session[]
-  verificationCodes  VerificationCode[]
-  chatSessions       ChatSession[]
-  chatMessages       ChatMessage[]
-  notes              Note[]
-  feedbacks          Feedback[]
-  aiGenerations      AiGeneration[]
-  aiJudgeResults     AiJudgeResult[]
+  id                     String                   @id @default(cuid())
+  phone                  String?                  @unique
+  wechatOpenid           String?                  @unique
+  nickname               String?
+  avatarUrl              String?
+  status                 UserStatus               @default(ACTIVE)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  sessions               Session[]
+  verificationCodes      VerificationCode[]
+  chatSessions           ChatSession[]
+  chatMessages           ChatMessage[]
+  notes                  Note[]
+  feedbacks              Feedback[]
+  aiGenerations          AiGeneration[]
+  aiJudgeResults         AiJudgeResult[]
+  events                 Event[]
+  emotionSlices          EmotionSlice[]
+  eventRelations         EventRelation[]
+  facts                  Fact[]
+  experienceSlicesV2     ExperienceSlice[]
+  interpretations        Interpretation[]
+  hypotheses             Hypothesis[]
+  graphNodes             UnderstandingGraphNode[]
+  graphEdges             UnderstandingGraphEdge[]
+  aiMessageFeedbacks     AiMessageFeedback[]
+  rawMemories            RawMemory[]
+  rawMemoryEvents        RawMemoryEvent[]
+  evidenceRecords        Evidence[]
+  memoryEvidenceLinks    MemoryEvidenceLink[]
+  semanticMemories       SemanticMemory[]
+  semanticMemoryVersions SemanticMemoryVersion[]
+  understandings         Understanding[]
+  understandingVersions  UnderstandingVersion[]
+  timelineEventsV2       TimelineEvent[]
+  timelineEventVersions  TimelineEventVersion[]
+  relationships          Relationship[]
+  relationshipVersions   RelationshipVersion[]
+  versionHistories       VersionHistory[]
+  refinementJobs         RefinementJob[]
 }
 
 model Session {
@@ -112,36 +383,222 @@ model ChatSession {
 }
 
 model ChatMessage {
-  id             String        @id @default(cuid())
+  id             String              @id @default(cuid())
   sessionId      String
   userId         String
   role           MessageRole
   content        String
-  status         MessageStatus @default(SAVED)
+  status         MessageStatus       @default(SAVED)
   aiGenerationId String?
-  createdAt      DateTime      @default(now())
-  session        ChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  aiGeneration   AiGeneration? @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
+  createdAt      DateTime            @default(now())
+  session        ChatSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiGeneration   AiGeneration?       @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
+  emotionSlices  EmotionSlice[]
+  feedbacks      AiMessageFeedback[]
 
   @@index([sessionId, createdAt])
   @@index([userId, createdAt])
 }
 
 model Note {
-  id         String   @id @default(cuid())
-  userId     String
-  content    String
-  moodName   String?
-  moodIcon   String?
-  mediaUrls  Json?
-  recordDate DateTime @db.Date
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String   @id @default(cuid())
+  userId               String
+  content              String
+  moodName             String?
+  moodIcon             String?
+  mediaUrls            Json?
+  recordDate           DateTime @db.Date
+  coreEventIds         Json?
+  emotionSliceIds      Json?
+  generatedFromChatIds Json?
+  isDraft              Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, recordDate])
   @@index([userId, createdAt])
+}
+
+model Fact {
+  id              String                  @id @default(cuid())
+  userId          String
+  sourceType      UnderstandingSourceType
+  sourceId        String
+  occurredAt      DateTime?
+  eventText       String
+  people          Json?
+  location        String?
+  topics          Json?
+  confidence      Float                   @default(0.5)
+  createdAt       DateTime                @default(now())
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experiences     ExperienceSlice[]
+  interpretations Interpretation[]
+
+  @@index([userId, occurredAt])
+  @@index([userId, sourceType, sourceId])
+  @@index([userId, createdAt])
+}
+
+model ExperienceSlice {
+  id               String                  @id @default(cuid())
+  userId           String
+  sourceType       UnderstandingSourceType
+  sourceId         String
+  eventId          String?
+  emotion          String?
+  emotionIntensity Int?
+  bodySignal       String?
+  behavior         String?
+  duration         String?
+  createdAt        DateTime                @default(now())
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event            Fact?                   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([userId, emotion])
+  @@index([eventId])
+  @@index([userId, sourceType, sourceId])
+}
+
+model Interpretation {
+  id                 String   @id @default(cuid())
+  userId             String
+  eventId            String
+  interpretationText String
+  evidenceText       String?
+  confidence         Float    @default(0.5)
+  createdAt          DateTime @default(now())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event              Fact     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([eventId])
+}
+
+model Hypothesis {
+  id                    String             @id @default(cuid())
+  userId                String
+  hypothesisText        String
+  category              HypothesisCategory @default(OTHER)
+  confidence            Float              @default(0.3)
+  supportingEvidenceIds Json?
+  counterEvidenceIds    Json?
+  status                HypothesisStatus   @default(ACTIVE)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, category])
+  @@index([userId, updatedAt])
+}
+
+model UnderstandingGraphNode {
+  id         String                     @id @default(cuid())
+  userId     String
+  type       UnderstandingGraphNodeType
+  label      String
+  refId      String?
+  properties Json?
+  createdAt  DateTime                   @default(now())
+  updatedAt  DateTime                   @updatedAt
+  user       User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromEdges  UnderstandingGraphEdge[]   @relation("UnderstandingGraphFrom")
+  toEdges    UnderstandingGraphEdge[]   @relation("UnderstandingGraphTo")
+
+  @@index([userId, type])
+  @@index([userId, refId])
+}
+
+model UnderstandingGraphEdge {
+  id         String                     @id @default(cuid())
+  userId     String
+  fromNodeId String
+  toNodeId   String
+  type       UnderstandingGraphEdgeType
+  weight     Float                      @default(0.5)
+  evidenceId String?
+  createdAt  DateTime                   @default(now())
+  user       User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromNode   UnderstandingGraphNode     @relation("UnderstandingGraphFrom", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNode     UnderstandingGraphNode     @relation("UnderstandingGraphTo", fields: [toNodeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([fromNodeId])
+  @@index([toNodeId])
+}
+
+model Event {
+  id               String          @id @default(cuid())
+  userId           String
+  title            String
+  description      String?
+  eventDate        DateTime        @db.Date
+  startTime        DateTime?
+  endTime          DateTime?
+  sourceType       EventSourceType @default(CHAT)
+  sourceMessageIds Json?
+  participants     Json?
+  location         String?
+  category         String?
+  importanceScore  Float           @default(0)
+  isCoreEvent      Boolean         @default(false)
+  status           EventStatus     @default(UNCLEAR)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emotionSlices    EmotionSlice[]
+  fromRelations    EventRelation[] @relation("EventRelationFrom")
+  toRelations      EventRelation[] @relation("EventRelationTo")
+
+  @@index([userId, eventDate])
+  @@index([userId, isCoreEvent])
+  @@index([userId, createdAt])
+}
+
+model EmotionSlice {
+  id              String       @id @default(cuid())
+  userId          String
+  eventId         String?
+  date            DateTime     @db.Date
+  time            DateTime?
+  emotionType     String
+  intensity       Int?
+  valence         Float?
+  arousal         Float?
+  delta           Int?
+  evidenceText    String?
+  sourceMessageId String?
+  createdAt       DateTime     @default(now())
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event           Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  sourceMessage   ChatMessage? @relation(fields: [sourceMessageId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@index([eventId])
+  @@index([sourceMessageId])
+}
+
+model EventRelation {
+  id           String            @id @default(cuid())
+  userId       String
+  fromEventId  String
+  toEventId    String
+  relationType EventRelationType
+  emotionType  String?
+  strength     Float?
+  evidenceText String?
+  createdAt    DateTime          @default(now())
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromEvent    Event             @relation("EventRelationFrom", fields: [fromEventId], references: [id], onDelete: Cascade)
+  toEvent      Event             @relation("EventRelationTo", fields: [toEventId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([fromEventId])
+  @@index([toEventId])
 }
 
 model Feedback {
@@ -158,25 +615,43 @@ model Feedback {
   @@index([createdAt])
 }
 
-model AiGeneration {
-  id             String             @id @default(cuid())
+model AiMessageFeedback {
+  id             String                  @id @default(cuid())
   userId         String
-  sessionId      String?
-  sourceType     AiSourceType
-  sourceId       String?
-  model          String
-  promptVersion  String
-  inputText      String
-  outputText     String
-  rewriteOfId    String?
-  latencyMs      Int?
-  tokenInput     Int?
-  tokenOutput    Int?
-  status         AiGenerationStatus
-  createdAt      DateTime           @default(now())
-  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages       ChatMessage[]
-  judgeResults   AiJudgeResult[]
+  messageId      String
+  aiGenerationId String?
+  signal         AiMessageFeedbackSignal
+  tags           Json?
+  comment        String?
+  createdAt      DateTime                @default(now())
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message        ChatMessage             @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId, signal])
+  @@index([userId, createdAt])
+  @@index([messageId])
+  @@index([aiGenerationId])
+}
+
+model AiGeneration {
+  id            String             @id @default(cuid())
+  userId        String
+  sessionId     String?
+  sourceType    AiSourceType
+  sourceId      String?
+  model         String
+  promptVersion String
+  inputText     String
+  outputText    String
+  rewriteOfId   String?
+  latencyMs     Int?
+  tokenInput    Int?
+  tokenOutput   Int?
+  status        AiGenerationStatus
+  createdAt     DateTime           @default(now())
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      ChatMessage[]
+  judgeResults  AiJudgeResult[]
 
   @@index([userId, createdAt])
   @@index([sessionId, createdAt])
@@ -201,4 +676,416 @@ model AiJudgeResult {
 
   @@index([generationId])
   @@index([userId, createdAt])
+}
+
+/// Append-only raw input record.
+/// Application services must not update/delete this row during normal use.
+/// User/account deletion may cascade physically; ordinary delete/redaction must be represented by RawMemoryEvent.
+model RawMemory {
+  id                    String              @id @default(cuid())
+  userId                String
+  kind                  RawMemoryKind
+  sourceType            RawMemorySourceType
+  sourceId              String
+  sourceRevision        Int                 @default(1)
+  revisionOfRawMemoryId String?
+  sessionId             String?
+  conversationId        String?
+  messageSequence       Int?
+  role                  MessageRole?
+  content               String
+  payload               Json
+  metadata              Json?
+  occurredAt            DateTime
+  appendOnlyHash        String?
+  createdAt             DateTime            @default(now())
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revisionOf            RawMemory?          @relation("RawMemoryRevisions", fields: [revisionOfRawMemoryId], references: [id], onDelete: SetNull)
+  revisions             RawMemory[]         @relation("RawMemoryRevisions")
+  events                RawMemoryEvent[]
+  evidence              Evidence[]
+  jobs                  RefinementJob[]
+
+  @@unique([userId, sourceType, sourceId, sourceRevision])
+  @@index([userId, occurredAt])
+  @@index([userId, kind])
+  @@index([sessionId, messageSequence])
+  @@index([revisionOfRawMemoryId])
+}
+
+/// Append-only lifecycle event for RawMemory visibility, tombstone, redaction, export, and restore.
+model RawMemoryEvent {
+  id          String             @id @default(cuid())
+  userId      String
+  rawMemoryId String
+  eventType   RawMemoryEventType
+  reason      String?
+  metadata    Json?
+  createdBy   MemoryActor        @default(SYSTEM)
+  createdAt   DateTime           @default(now())
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawMemory   RawMemory          @relation(fields: [rawMemoryId], references: [id], onDelete: Cascade)
+
+  @@index([userId, rawMemoryId, createdAt])
+  @@index([userId, eventType])
+  @@index([rawMemoryId, createdAt])
+  @@index([rawMemoryId, eventType, createdAt])
+}
+
+model Evidence {
+  id           String               @id @default(cuid())
+  userId       String
+  sourceKind   EvidenceSourceKind
+  sourceId     String
+  rawMemoryId  String?
+  evidenceType EvidenceType         @default(RAW_SEGMENTATION)
+  evidenceText String?
+  occurredAt   DateTime?
+  confidence   Float                @default(0.5)
+  weight       Float                @default(0.5)
+  status       EvidenceStatus       @default(ACTIVE)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawMemory    RawMemory?           @relation(fields: [rawMemoryId], references: [id], onDelete: Cascade)
+  links        MemoryEvidenceLink[]
+
+  @@unique([userId, rawMemoryId, evidenceType])
+  @@index([userId, sourceKind, sourceId])
+  @@index([userId, evidenceType])
+  @@index([userId, rawMemoryId])
+  @@index([userId, status])
+  @@index([userId, occurredAt])
+  @@index([userId, status, occurredAt])
+}
+
+/// Polymorphic evidence link. targetType/targetId integrity is service-validated by typed helpers.
+model MemoryEvidenceLink {
+  id         String             @id @default(cuid())
+  userId     String
+  evidenceId String
+  targetType EvidenceTargetType
+  targetId   String
+  role       EvidenceRole       @default(SUPPORTING)
+  createdAt  DateTime           @default(now())
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evidence   Evidence           @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+
+  @@unique([evidenceId, targetType, targetId, role])
+  @@index([userId, targetType, targetId])
+  @@index([userId, evidenceId])
+  @@index([targetType, targetId])
+  @@index([targetType, targetId, role])
+}
+
+model SemanticMemory {
+  id                   String                  @id @default(cuid())
+  userId               String
+  projectionEvidenceId String?                 @unique
+  kind                 SemanticMemoryKind
+  title                String
+  content              String
+  confidence           Float                   @default(0.5)
+  source               String
+  /// Current version pointer is set after creating the first SemanticMemoryVersion in the same transaction.
+  currentVersion       Int                     @default(1)
+  currentVersionId     String?                 @unique
+  status               SemanticMemoryStatus    @default(ACTIVE)
+  lastUpdatedAt        DateTime                @default(now())
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  user                 User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions             SemanticMemoryVersion[] @relation("SemanticMemoryVersions")
+  currentVersionRecord SemanticMemoryVersion?  @relation("SemanticMemoryCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, kind])
+  @@index([userId, projectionEvidenceId])
+  @@index([userId, status])
+  @@index([userId, lastUpdatedAt])
+  @@index([userId, status, lastUpdatedAt])
+}
+
+/// Append-only semantic memory version.
+/// Services must create new rows for changes and must not update/delete existing version rows.
+model SemanticMemoryVersion {
+  id               String               @id @default(cuid())
+  userId           String
+  semanticMemoryId String
+  version          Int
+  kind             SemanticMemoryKind
+  title            String
+  content          String
+  confidence       Float                @default(0.5)
+  source           String
+  status           SemanticMemoryStatus
+  snapshot         Json
+  changeType       VersionChangeType
+  reason           String?
+  operationId      String               @unique
+  createdBy        MemoryActor          @default(SYSTEM)
+  createdAt        DateTime             @default(now())
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semanticMemory   SemanticMemory       @relation("SemanticMemoryVersions", fields: [semanticMemoryId], references: [id], onDelete: Cascade)
+  currentFor       SemanticMemory?      @relation("SemanticMemoryCurrentVersion")
+
+  @@unique([semanticMemoryId, version])
+  @@index([userId, createdAt])
+  @@index([userId, semanticMemoryId])
+}
+
+model Understanding {
+  id                       String                 @id @default(cuid())
+  userId                   String
+  title                    String
+  understanding            String
+  category                 String?
+  confidence               Float                  @default(0.5)
+  alternativeHypotheses    Json?
+  unknowns                 Json?
+  relatedTimelineEventIds  Json?
+  relatedRelationshipIds   Json?
+  relatedSemanticMemoryIds Json?
+  /// Current version pointer is set after creating the first UnderstandingVersion in the same transaction.
+  currentVersion           Int                    @default(1)
+  currentVersionId         String?                @unique
+  status                   UnderstandingStatus    @default(OPEN)
+  lastTouchedAt            DateTime               @default(now())
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions                 UnderstandingVersion[] @relation("UnderstandingVersions")
+  currentVersionRecord     UnderstandingVersion?  @relation("UnderstandingCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([userId, category])
+  @@index([userId, lastTouchedAt])
+  @@index([userId, status, lastTouchedAt])
+}
+
+/// Append-only understanding version.
+/// Services must create new rows for changes and must not update/delete existing version rows.
+model UnderstandingVersion {
+  id                       String              @id @default(cuid())
+  userId                   String
+  understandingId          String
+  version                  Int
+  title                    String
+  understanding            String
+  category                 String?
+  confidence               Float               @default(0.5)
+  alternativeHypotheses    Json?
+  unknowns                 Json?
+  relatedTimelineEventIds  Json?
+  relatedRelationshipIds   Json?
+  relatedSemanticMemoryIds Json?
+  status                   UnderstandingStatus
+  snapshot                 Json
+  changeType               VersionChangeType
+  reason                   String?
+  operationId              String              @unique
+  createdBy                MemoryActor         @default(SYSTEM)
+  createdAt                DateTime            @default(now())
+  user                     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentUnderstanding      Understanding       @relation("UnderstandingVersions", fields: [understandingId], references: [id], onDelete: Cascade)
+  currentFor               Understanding?      @relation("UnderstandingCurrentVersion")
+
+  @@unique([understandingId, version])
+  @@index([userId, createdAt])
+  @@index([userId, understandingId])
+}
+
+model TimelineEvent {
+  id                   String                 @id @default(cuid())
+  userId               String
+  title                String
+  description          String?
+  startDate            DateTime?
+  endDate              DateTime?
+  durationText         String?
+  endStatus            TimelineEventEndStatus @default(UNKNOWN)
+  people               Json?
+  emotions             Json?
+  topics               Json?
+  conversationIds      Json?
+  parentEventId        String?
+  mergedIntoEventId    String?
+  splitFromEventId     String?
+  confidence           Float                  @default(0.5)
+  importanceScore      Float                  @default(0)
+  /// Current version pointer is set after creating the first TimelineEventVersion in the same transaction.
+  currentVersion       Int                    @default(1)
+  currentVersionId     String?                @unique
+  status               TimelineEventStatus    @default(ACTIVE)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  user                 User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentEvent          TimelineEvent?         @relation("TimelineParent", fields: [parentEventId], references: [id], onDelete: SetNull)
+  childEvents          TimelineEvent[]        @relation("TimelineParent")
+  mergedIntoEvent      TimelineEvent?         @relation("TimelineMerged", fields: [mergedIntoEventId], references: [id], onDelete: SetNull)
+  mergedEvents         TimelineEvent[]        @relation("TimelineMerged")
+  splitFromEvent       TimelineEvent?         @relation("TimelineSplit", fields: [splitFromEventId], references: [id], onDelete: SetNull)
+  splitEvents          TimelineEvent[]        @relation("TimelineSplit")
+  versions             TimelineEventVersion[] @relation("TimelineEventVersions")
+  currentVersionRecord TimelineEventVersion?  @relation("TimelineEventCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, startDate])
+  @@index([userId, status])
+  @@index([userId, importanceScore])
+  @@index([userId, status, importanceScore])
+  @@index([userId, status, startDate])
+  @@index([parentEventId])
+  @@index([mergedIntoEventId])
+  @@index([splitFromEventId])
+}
+
+/// Append-only timeline event version.
+/// Services must create new rows for changes and must not update/delete existing version rows.
+model TimelineEventVersion {
+  id                String                 @id @default(cuid())
+  userId            String
+  timelineEventId   String
+  version           Int
+  title             String
+  description       String?
+  startDate         DateTime?
+  endDate           DateTime?
+  durationText      String?
+  endStatus         TimelineEventEndStatus
+  people            Json?
+  emotions          Json?
+  topics            Json?
+  conversationIds   Json?
+  parentEventId     String?
+  mergedIntoEventId String?
+  splitFromEventId  String?
+  confidence        Float                  @default(0.5)
+  importanceScore   Float                  @default(0)
+  status            TimelineEventStatus
+  snapshot          Json
+  changeType        VersionChangeType
+  reason            String?
+  operationId       String                 @unique
+  createdBy         MemoryActor            @default(SYSTEM)
+  createdAt         DateTime               @default(now())
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timelineEvent     TimelineEvent          @relation("TimelineEventVersions", fields: [timelineEventId], references: [id], onDelete: Cascade)
+  currentFor        TimelineEvent?         @relation("TimelineEventCurrentVersion")
+
+  @@unique([timelineEventId, version])
+  @@index([userId, createdAt])
+  @@index([userId, timelineEventId])
+}
+
+model Relationship {
+  id                       String                @id @default(cuid())
+  userId                   String
+  displayName              String
+  relationshipType         RelationshipType      @default(OTHER)
+  identityLabel            String?
+  interactionFrequency     String?
+  supportSignals           Json?
+  conflictSignals          Json?
+  influenceSummary         String?
+  relatedTimelineEventIds  Json?
+  relatedSemanticMemoryIds Json?
+  confidence               Float                 @default(0.5)
+  /// Current version pointer is set after creating the first RelationshipVersion in the same transaction.
+  currentVersion           Int                   @default(1)
+  currentVersionId         String?               @unique
+  status                   RelationshipStatus    @default(ACTIVE)
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+  user                     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions                 RelationshipVersion[] @relation("RelationshipVersions")
+  currentVersionRecord     RelationshipVersion?  @relation("RelationshipCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, displayName])
+  @@index([userId, relationshipType])
+  @@index([userId, status])
+  @@index([userId, displayName, status])
+}
+
+/// Append-only relationship version.
+/// Services must create new rows for changes and must not update/delete existing version rows.
+model RelationshipVersion {
+  id                       String             @id @default(cuid())
+  userId                   String
+  relationshipId           String
+  version                  Int
+  displayName              String
+  relationshipType         RelationshipType
+  identityLabel            String?
+  interactionFrequency     String?
+  supportSignals           Json?
+  conflictSignals          Json?
+  influenceSummary         String?
+  relatedTimelineEventIds  Json?
+  relatedSemanticMemoryIds Json?
+  confidence               Float              @default(0.5)
+  status                   RelationshipStatus
+  snapshot                 Json
+  changeType               VersionChangeType
+  reason                   String?
+  operationId              String             @unique
+  createdBy                MemoryActor        @default(SYSTEM)
+  createdAt                DateTime           @default(now())
+  user                     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relationship             Relationship       @relation("RelationshipVersions", fields: [relationshipId], references: [id], onDelete: Cascade)
+  currentFor               Relationship?      @relation("RelationshipCurrentVersion")
+
+  @@unique([relationshipId, version])
+  @@index([userId, createdAt])
+  @@index([userId, relationshipId])
+}
+
+/// Append-only generic version/audit index.
+/// Services must create new rows for changes and must not update/delete existing history rows.
+model VersionHistory {
+  id          String            @id @default(cuid())
+  userId      String
+  targetType  VersionTargetType
+  targetId    String
+  version     Int
+  changeType  VersionChangeType
+  reason      String?
+  snapshot    Json
+  operationId String            @unique
+  createdBy   MemoryActor       @default(SYSTEM)
+  createdAt   DateTime          @default(now())
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([targetType, targetId, version])
+  @@index([userId, targetType, targetId])
+  @@index([userId, createdAt])
+}
+
+model RefinementJob {
+  id              String           @id @default(cuid())
+  userId          String
+  rawMemoryId     String?
+  parentJobId     String?
+  segmentKey      String
+  pipelineVersion String
+  step            RefinementStep
+  status          RefinementStatus @default(PENDING)
+  attempt         Int              @default(0)
+  operationId     String           @unique
+  inputSnapshot   Json?
+  outputSnapshot  Json?
+  error           String?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawMemory       RawMemory?       @relation(fields: [rawMemoryId], references: [id], onDelete: SetNull)
+  parentJob       RefinementJob?   @relation("RefinementJobChain", fields: [parentJobId], references: [id], onDelete: SetNull)
+  childJobs       RefinementJob[]  @relation("RefinementJobChain")
+
+  @@index([userId, status])
+  @@index([rawMemoryId, step])
+  @@index([parentJobId])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([step, status, createdAt])
 }

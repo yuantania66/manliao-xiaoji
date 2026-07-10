@@ -7,6 +7,16 @@ import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { parsePagination, requireNonEmptyString } from "@/lib/validation";
 import { createReviewedChatReply } from "@/services/ai/chatReplyService";
+import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
+import { extractExperienceFromChatMessage } from "@/services/experience/experienceExtractorService";
+import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
+import { maybeMergeMemoryV2ResponseContext } from "@/services/memory/responseContextService";
+import {
+  extractUnderstandingFromMessage,
+  writeUnderstandingExtraction,
+} from "@/services/understanding/extractService";
+import { updateUnderstandingHypotheses } from "@/services/understanding/hypothesisService";
+import { buildStructuredRagContext } from "@/services/understanding/retrievalService";
 
 const readJson = async (request: Request) => {
   try {
@@ -28,6 +38,15 @@ const assertSessionOwner = async (sessionId: string, userId: string) => {
   if (!session) throw new AppError("NOT_FOUND", "聊天会话不存在", 404);
 };
 
+const canReturnDebugTrace = () =>
+  process.env.NODE_ENV !== "production" || process.env.AI_DEBUG_TRACE === "true";
+
+const shouldIncludeDebugTrace = (request: NextRequest, body: Record<string, unknown>) =>
+  canReturnDebugTrace() &&
+  (body.debugTrace === true ||
+    request.headers.get("x-ai-debug-trace") === "1" ||
+    request.nextUrl.searchParams.get("debugAi") === "1");
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ sessionId: string }> }
@@ -36,6 +55,7 @@ export async function GET(
     const user = await requireUser(request);
     const { sessionId } = await context.params;
     await assertSessionOwner(sessionId, user.id);
+    await ensureProactiveChatGreeting({ sessionId, userId: user.id });
 
     const { searchParams } = new URL(request.url);
     const pagination = parsePagination(searchParams);
@@ -55,6 +75,11 @@ export async function GET(
           content: true,
           status: true,
           createdAt: true,
+          aiGeneration: {
+            select: {
+              promptVersion: true,
+            },
+          },
         },
       }),
       prisma.chatMessage.count({
@@ -72,6 +97,7 @@ export async function GET(
         content: item.content,
         status: item.status.toLowerCase(),
         createdAt: item.createdAt.toISOString(),
+        promptVersion: item.aiGeneration?.promptVersion ?? null,
       })),
       page: pagination.page,
       pageSize: pagination.pageSize,
@@ -93,6 +119,7 @@ export async function POST(
 
     const body = await readJson(request);
     const content = requireNonEmptyString(body.content, "content", 2000);
+    const includeDebugTrace = shouldIncludeDebugTrace(request, body);
     const now = new Date();
 
     const recentMessages = await prisma.chatMessage.findMany({
@@ -105,8 +132,23 @@ export async function POST(
       select: {
         role: true,
         content: true,
+        aiGenerationId: true,
+        aiGeneration: {
+          select: {
+            promptVersion: true,
+          },
+        },
       },
     });
+    const serializedRecentMessages = recentMessages
+      .slice()
+      .reverse()
+      .map((item) => ({
+        role: item.role.toLowerCase() as "user" | "assistant" | "system",
+        content: item.content,
+        promptVersion: item.aiGeneration?.promptVersion ?? null,
+        aiGenerationId: item.aiGenerationId,
+      }));
 
     const message = await prisma.$transaction(async (tx) => {
       const created = await tx.chatMessage.create({
@@ -137,14 +179,70 @@ export async function POST(
       return created;
     });
 
+    await createRawMemoryFromChatMessage({
+      chatMessageId: message.id,
+      metadata: { source: "chat_api_user_message" },
+    }).catch((error) => {
+      console.error("raw memory chat message write failed", error);
+    });
+
+    const understandingExtraction = await extractUnderstandingFromMessage({
+      userId: user.id,
+      sourceType: "chat",
+      sourceId: message.id,
+      content,
+      createdAt: message.createdAt,
+      recentMessages: serializedRecentMessages,
+    });
+    const baseUnderstandingContext = await buildStructuredRagContext({
+      userId: user.id,
+      extraction: understandingExtraction,
+      currentMessage: content,
+      now: message.createdAt,
+    });
+    const understandingContext = await maybeMergeMemoryV2ResponseContext({
+      userId: user.id,
+      v1Context: baseUnderstandingContext,
+    });
+
     const reviewedReply = await createReviewedChatReply({
       userId: user.id,
       sessionId,
       userMessage: content,
-      recentMessages: recentMessages.reverse().map((item) => ({
-        role: item.role.toLowerCase() as "user" | "assistant" | "system",
-        content: item.content,
-      })),
+      recentMessages: serializedRecentMessages,
+      understandingContext,
+      includeDebugTrace,
+    });
+
+    const writtenUnderstanding = await writeUnderstandingExtraction({
+      userId: user.id,
+      sourceType: "chat",
+      sourceId: message.id,
+      createdAt: message.createdAt,
+      extraction: understandingExtraction,
+    }).catch((error) => {
+      console.error("understanding write failed", error);
+      return null;
+    });
+
+    if (writtenUnderstanding) {
+      await updateUnderstandingHypotheses({
+        userId: user.id,
+        extraction: understandingExtraction,
+        writtenFacts: writtenUnderstanding.facts,
+      }).catch((error) => {
+        console.error("understanding hypothesis update failed", error);
+      });
+    }
+
+    await extractExperienceFromChatMessage({
+      userId: user.id,
+      sessionId,
+      messageId: message.id,
+      content,
+      createdAt: message.createdAt,
+    }).catch((error) => {
+      console.error("experience extraction failed", error);
     });
 
     return ok(
@@ -166,6 +264,7 @@ export async function POST(
         },
         rewriteAttempted: reviewedReply.rewriteAttempted,
         fallbackUsed: reviewedReply.fallbackUsed,
+        debugTrace: reviewedReply.debugTrace,
       },
       201
     );

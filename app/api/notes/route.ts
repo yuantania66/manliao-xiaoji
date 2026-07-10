@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { isValidDateOnly, parsePagination, requireNonEmptyString } from "@/lib/validation";
+import { createRawMemoryFromNote } from "@/services/memory/rawMemoryService";
 
 const readJson = async (request: Request) => {
   try {
@@ -69,6 +70,16 @@ const parseMediaUrls = (value: unknown) => {
   return items;
 };
 
+const parseStringArrayJson = (value: unknown, field: string) => {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value)) {
+    throw new AppError("VALIDATION_ERROR", `${field} 必须是数组`, 400, { field });
+  }
+  return value
+    .filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+    .map((item) => item.trim());
+};
+
 const serializeNote = (note: {
   id: string;
   content: string;
@@ -76,6 +87,10 @@ const serializeNote = (note: {
   moodIcon: string | null;
   mediaUrls: unknown;
   recordDate: Date;
+  coreEventIds?: unknown;
+  emotionSliceIds?: unknown;
+  generatedFromChatIds?: unknown;
+  isDraft?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }) => ({
@@ -85,6 +100,10 @@ const serializeNote = (note: {
   moodIcon: note.moodIcon,
   mediaUrls: Array.isArray(note.mediaUrls) ? note.mediaUrls : [],
   recordDate: note.recordDate.toISOString().slice(0, 10),
+  coreEventIds: Array.isArray(note.coreEventIds) ? note.coreEventIds : [],
+  emotionSliceIds: Array.isArray(note.emotionSliceIds) ? note.emotionSliceIds : [],
+  generatedFromChatIds: Array.isArray(note.generatedFromChatIds) ? note.generatedFromChatIds : [],
+  isDraft: Boolean(note.isDraft),
   createdAt: note.createdAt.toISOString(),
   updatedAt: note.updatedAt.toISOString(),
 });
@@ -118,6 +137,10 @@ export async function GET(request: NextRequest) {
           moodIcon: true,
           mediaUrls: true,
           recordDate: true,
+          coreEventIds: true,
+          emotionSliceIds: true,
+          generatedFromChatIds: true,
+          isDraft: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -145,6 +168,19 @@ export async function POST(request: NextRequest) {
     const moodName = parseOptionalString(body.moodName, "moodName", 20);
     const moodIcon = parseOptionalString(body.moodIcon, "moodIcon", 20);
     const mediaUrls = parseMediaUrls(body.mediaUrls);
+    const coreEventIds = parseStringArrayJson(body.coreEventIds, "coreEventIds");
+    const emotionSliceIds = parseStringArrayJson(body.emotionSliceIds, "emotionSliceIds");
+    const generatedFromChatIds = parseStringArrayJson(body.generatedFromChatIds, "generatedFromChatIds");
+    const isDraft =
+      body.isDraft === undefined
+        ? false
+        : typeof body.isDraft === "boolean"
+          ? body.isDraft
+          : (() => {
+              throw new AppError("VALIDATION_ERROR", "isDraft 必须是布尔值", 400, {
+                field: "isDraft",
+              });
+            })();
 
     const note = await prisma.note.create({
       data: {
@@ -154,6 +190,10 @@ export async function POST(request: NextRequest) {
         moodName,
         moodIcon,
         mediaUrls,
+        coreEventIds,
+        emotionSliceIds,
+        generatedFromChatIds,
+        isDraft,
       },
       select: {
         id: true,
@@ -162,10 +202,23 @@ export async function POST(request: NextRequest) {
         moodIcon: true,
         mediaUrls: true,
         recordDate: true,
+        coreEventIds: true,
+        emotionSliceIds: true,
+        generatedFromChatIds: true,
+        isDraft: true,
         createdAt: true,
         updatedAt: true,
       },
     });
+
+    if (!note.isDraft) {
+      await createRawMemoryFromNote({
+        noteId: note.id,
+        metadata: { source: "notes_api_post" },
+      }).catch((error) => {
+        console.error("raw memory note write failed", error);
+      });
+    }
 
     return ok(serializeNote(note), 201);
   } catch (error) {

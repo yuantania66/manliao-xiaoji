@@ -9,16 +9,18 @@ import {
 
 import { prisma } from "@/lib/prisma";
 
+import { createChatReply } from "./chatOrchestrationService";
+import { createChatMemoryContext, createNoteMemoryContext } from "./dataLayers";
 import {
-  createFallbackGeneration,
-  createLowInformationGeneration,
-  generateChatReply,
-  isLowInformationInput,
-} from "./aiService";
-import { judgeReply } from "./aiJudgeService";
-import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
-import { rewriteChatReply } from "./rewriteService";
-import { AiConversationMessage, AiGenerationResult, AiJudgeResult, AiRiskLevel } from "./types";
+  AiConversationMessage,
+  AiDebugTrace,
+  AiGenerationResult,
+  AiJudgeResult,
+  AiMemoryContext,
+  AiRiskLevel,
+} from "./types";
+import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
+import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 
 const mapRiskLevel = (riskLevel: AiRiskLevel) => {
   const value = riskLevel.toUpperCase();
@@ -28,21 +30,56 @@ const mapRiskLevel = (riskLevel: AiRiskLevel) => {
   return PrismaAiRiskLevel.LOW;
 };
 
-const getFallbackRiskLevel = (content: string): AiRiskLevel =>
-  /自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(content) ? "crisis" : "low";
+const isStableMemoryText = (value: string) =>
+  value.trim().length >= 6 && !/^([0-9０-９]+|[a-zA-Z]|[嗯啊哦好行对是])$/.test(value.trim());
 
-const createFallbackJudge = (
-  riskLevel: AiRiskLevel,
-  reason: string
-): AiJudgeResult & { judgeModel: string; promptVersion: string } => ({
-  passed: true,
-  riskLevel,
-  issues: [],
-  rewriteRequired: false,
-  reason,
-  judgeModel: "fallback-local",
-  promptVersion: JUDGE_PROMPT_VERSION,
-});
+const previewMemory = (value: string) => value.replace(/\s+/g, " ").trim().slice(0, 48);
+
+const loadMemoryContext = async ({
+  userId,
+  sessionId,
+}: {
+  userId: string;
+  sessionId: string;
+}): Promise<AiMemoryContext | null> => {
+  const note = await prisma.note.findFirst({
+    where: { userId },
+    orderBy: [{ recordDate: "desc" }, { createdAt: "desc" }],
+    select: {
+      content: true,
+      recordDate: true,
+    },
+  });
+
+  if (note && isStableMemoryText(note.content)) {
+    return createNoteMemoryContext({
+      text: previewMemory(note.content),
+      date: note.recordDate.toISOString().slice(0, 10),
+    });
+  }
+
+  const chatMessage = await prisma.chatMessage.findFirst({
+    where: {
+      userId,
+      sessionId: { not: sessionId },
+      role: MessageRole.USER,
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      content: true,
+      createdAt: true,
+    },
+  });
+
+  if (chatMessage && isStableMemoryText(chatMessage.content)) {
+    return createChatMemoryContext({
+      text: previewMemory(chatMessage.content),
+      date: chatMessage.createdAt.toISOString().slice(0, 10),
+    });
+  }
+
+  return null;
+};
 
 const serializeMessage = (message: {
   id: string;
@@ -50,6 +87,7 @@ const serializeMessage = (message: {
   content: string;
   status: MessageStatus;
   aiGenerationId: string | null;
+  aiGeneration?: { promptVersion: string } | null;
   createdAt: Date;
 }) => ({
   id: message.id,
@@ -57,6 +95,7 @@ const serializeMessage = (message: {
   content: message.content,
   status: message.status.toLowerCase(),
   aiGenerationId: message.aiGenerationId,
+  promptVersion: message.aiGeneration?.promptVersion ?? null,
   createdAt: message.createdAt.toISOString(),
 });
 
@@ -131,8 +170,8 @@ const saveAssistantMessage = async ({
   content: string;
   status: MessageStatus;
   aiGenerationId: string;
-}) =>
-  prisma.$transaction(async (tx) => {
+}) => {
+  const savedMessage = await prisma.$transaction(async (tx) => {
     const message = await tx.chatMessage.create({
       data: {
         sessionId,
@@ -148,6 +187,11 @@ const saveAssistantMessage = async ({
         content: true,
         status: true,
         aiGenerationId: true,
+        aiGeneration: {
+          select: {
+            promptVersion: true,
+          },
+        },
         createdAt: true,
       },
     });
@@ -163,186 +207,75 @@ const saveAssistantMessage = async ({
     return message;
   });
 
+  await createRawMemoryFromChatMessage({
+    chatMessageId: savedMessage.id,
+    metadata: { source: "chat_reply_service_assistant_message" },
+  }).catch((error) => {
+    console.error("raw memory assistant message write failed", error);
+  });
+
+  return savedMessage;
+};
+
 export const createReviewedChatReply = async ({
   userId,
   sessionId,
   userMessage,
   recentMessages,
+  understandingContext,
+  includeDebugTrace = false,
 }: {
   userId: string;
   sessionId: string;
   userMessage: string;
   recentMessages: AiConversationMessage[];
-}) => {
-  if (isLowInformationInput(userMessage)) {
-    const generation = createLowInformationGeneration({
-      inputText: userMessage,
-      recentMessages,
-    });
-    const savedGeneration = await saveGeneration({
-      userId,
-      sessionId,
-      inputText: userMessage,
-      generation,
-      status: AiGenerationStatus.GENERATED,
-    });
-    const judge = createFallbackJudge("low", "低信息输入已使用确定性承接");
-    await saveJudgeResult({
-      userId,
-      generationId: savedGeneration.id,
-      judgeResult: judge,
-    });
-    const assistantMessage = await saveAssistantMessage({
-      userId,
-      sessionId,
-      content: generation.text,
-      status: MessageStatus.SAVED,
-      aiGenerationId: savedGeneration.id,
-    });
+  understandingContext?: StructuredRagContext | null;
+  includeDebugTrace?: boolean;
+}): Promise<{
+  assistantMessage: ReturnType<typeof serializeMessage>;
+  judge: AiJudgeResult & { judgeModel: string; promptVersion: string };
+  rewriteAttempted: boolean;
+  fallbackUsed: boolean;
+  debugTrace?: AiDebugTrace;
+}> => {
+  const reply = await createChatReply({
+    conversationId: sessionId,
+    userId,
+    userMessage,
+    recentMessages,
+    loadMemoryContext: () => loadMemoryContext({ userId, sessionId }),
+    understandingContext,
+    includeDebugTrace,
+  });
+  const generationStatus =
+    reply.finalSource === "fallback" ? AiGenerationStatus.FALLBACK : AiGenerationStatus.GENERATED;
+  const messageStatus = reply.finalSource === "fallback" ? MessageStatus.FALLBACK : MessageStatus.SAVED;
 
-    return {
-      assistantMessage: serializeMessage(assistantMessage),
-      judge,
-      rewriteAttempted: false,
-      fallbackUsed: false,
-    };
-  }
-
-  let mainGeneration: AiGenerationResult;
-  try {
-    mainGeneration = await generateChatReply({ userMessage, recentMessages });
-  } catch {
-    const riskLevel = getFallbackRiskLevel(userMessage);
-    const fallback = createFallbackGeneration({
-      inputText: userMessage,
-      riskLevel,
-    });
-    const savedFallback = await saveGeneration({
-      userId,
-      sessionId,
-      inputText: userMessage,
-      generation: fallback,
-      status: AiGenerationStatus.FALLBACK,
-    });
-    const assistantMessage = await saveAssistantMessage({
-      userId,
-      sessionId,
-      content: fallback.text,
-      status: MessageStatus.FALLBACK,
-      aiGenerationId: savedFallback.id,
-    });
-
-    return {
-      assistantMessage: serializeMessage(assistantMessage),
-      judge: createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback"),
-      rewriteAttempted: false,
-      fallbackUsed: true,
-    };
-  }
-  const savedMainGeneration = await saveGeneration({
+  const savedGeneration = await saveGeneration({
     userId,
     sessionId,
     inputText: userMessage,
-    generation: mainGeneration,
-    status: AiGenerationStatus.GENERATED,
-  });
-
-  const firstJudge = await judgeReply({
-    userMessage,
-    assistantReply: mainGeneration.text,
-    recentMessages,
+    generation: reply.generation,
+    status: generationStatus,
   });
   await saveJudgeResult({
     userId,
-    generationId: savedMainGeneration.id,
-    judgeResult: firstJudge,
-  });
-
-  if (firstJudge.passed) {
-    const assistantMessage = await saveAssistantMessage({
-      userId,
-      sessionId,
-      content: mainGeneration.text,
-      status: MessageStatus.SAVED,
-      aiGenerationId: savedMainGeneration.id,
-    });
-
-    return {
-      assistantMessage: serializeMessage(assistantMessage),
-      judge: firstJudge,
-      rewriteAttempted: false,
-      fallbackUsed: false,
-    };
-  }
-
-  if (firstJudge.rewriteRequired) {
-    const rewritten = await rewriteChatReply({
-      userMessage,
-      originalReply: mainGeneration.text,
-      judgeResult: firstJudge,
-      recentMessages,
-    });
-    const savedRewrite = await saveGeneration({
-      userId,
-      sessionId,
-      inputText: userMessage,
-      generation: rewritten,
-      status: AiGenerationStatus.REWRITTEN,
-      rewriteOfId: savedMainGeneration.id,
-    });
-    const secondJudge = await judgeReply({
-      userMessage,
-      assistantReply: rewritten.text,
-      recentMessages,
-    });
-    await saveJudgeResult({
-      userId,
-      generationId: savedRewrite.id,
-      judgeResult: secondJudge,
-    });
-
-    if (secondJudge.passed) {
-      const assistantMessage = await saveAssistantMessage({
-        userId,
-        sessionId,
-        content: rewritten.text,
-        status: MessageStatus.REWRITTEN,
-        aiGenerationId: savedRewrite.id,
-      });
-
-      return {
-        assistantMessage: serializeMessage(assistantMessage),
-        judge: secondJudge,
-        rewriteAttempted: true,
-        fallbackUsed: false,
-      };
-    }
-  }
-
-  const fallback = createFallbackGeneration({
-    inputText: userMessage,
-    riskLevel: firstJudge.riskLevel,
-  });
-  const savedFallback = await saveGeneration({
-    userId,
-    sessionId,
-    inputText: userMessage,
-    generation: fallback,
-    status: AiGenerationStatus.FALLBACK,
-    rewriteOfId: savedMainGeneration.id,
+    generationId: savedGeneration.id,
+    judgeResult: reply.judge,
   });
   const assistantMessage = await saveAssistantMessage({
     userId,
     sessionId,
-    content: fallback.text,
-    status: MessageStatus.FALLBACK,
-    aiGenerationId: savedFallback.id,
+    content: reply.generation.text,
+    status: messageStatus,
+    aiGenerationId: savedGeneration.id,
   });
 
   return {
     assistantMessage: serializeMessage(assistantMessage),
-    judge: firstJudge,
-    rewriteAttempted: firstJudge.rewriteRequired,
-    fallbackUsed: true,
+    judge: reply.judge,
+    rewriteAttempted: reply.rewriteAttempted,
+    fallbackUsed: reply.fallbackUsed,
+    debugTrace: reply.debugTrace,
   };
 };

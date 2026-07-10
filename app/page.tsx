@@ -5,11 +5,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { apiRequest } from "@/lib/client-api";
-import { getStoredAuth, saveAuth } from "@/lib/client-auth";
+import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
 
 const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 const GUEST_MODE_KEY = "xinqingGuestMode";
-const LOCAL_DEMO_TOKEN_PREFIX = "local_demo_";
 
 const formatLocalDate = (date: Date) =>
   `${date.getMonth() + 1} 月 ${date.getDate()} 日 · 星期${
@@ -116,20 +115,10 @@ export default function Home() {
       saveAuth(data);
       window.sessionStorage.removeItem(GUEST_MODE_KEY);
       setNeedsEntryChoice(false);
-    } catch {
-      saveAuth({
-        token: `${LOCAL_DEMO_TOKEN_PREFIX}${Date.now()}`,
-        user: {
-          id: "local-demo-user",
-          phone: null,
-          wechatOpenid: "local_demo",
-          nickname: "本地演示用户",
-          avatarUrl: null,
-          status: "ACTIVE",
-          createdAt: new Date().toISOString(),
-        },
-      });
+    } catch (error) {
+      clearAuth();
       window.sessionStorage.setItem(GUEST_MODE_KEY, "true");
+      setLoginError(error instanceof Error ? error.message : "登录失败，已进入游客模式");
       setNeedsEntryChoice(false);
     } finally {
       setIsLoggingIn(false);

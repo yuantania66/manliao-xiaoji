@@ -7,7 +7,33 @@
     "build": "next build",
     "start": "next start",
     "eval:ai": "node scripts/ai-conversation-eval.mjs",
-    "lint": "next lint"
+    "eval:understanding-score": "tsx scripts/understanding-score-eval.ts",
+    "clinical:model-eval": "tsx scripts/clinical-model-eval.ts",
+    "lint": "eslint .",
+    "audit:prelaunch": "node scripts/prelaunch-audit.mjs",
+    "audit:prod-env": "node scripts/production-env-audit.mjs",
+    "check:ai-base": "tsx scripts/ai-base-chat-check.ts",
+    "check:ai-orchestration": "tsx scripts/ai-orchestration-check.ts",
+    "check:architecture-v1": "tsx scripts/architecture-v1-boundary-check.ts",
+    "check:clinical-context": "tsx scripts/clinical-context-check.ts",
+    "check:clinical-logic": "npm run check:clinical-context && npm run check:clinical-logic-skeleton && npm run check:clinical-prompt-eval",
+    "check:clinical-logic-skeleton": "tsx scripts/clinical-logic-skeleton-check.ts",
+    "check:clinical-prompt-eval": "tsx scripts/clinical-prompt-eval-check.ts",
+    "check:conversation-state": "tsx scripts/conversation-state-check.ts",
+    "check:conversation-os-architecture": "tsx scripts/conversation-os-architecture-check.ts",
+    "check:ai-system": "tsx scripts/ai-system-eval.ts",
+    "check:understanding": "tsx scripts/understanding-check.ts",
+    "check:memory-v2-raw": "tsx scripts/memory-v2-raw-check.ts",
+    "check:memory-v2-refinement-job": "tsx scripts/memory-v2-refinement-job-check.ts",
+    "check:memory-v2-raw-worker": "tsx scripts/memory-v2-raw-worker-check.ts",
+    "check:memory-v2-retrieval": "tsx scripts/memory-v2-retrieval-check.ts",
+    "check:memory-v2-response-context": "tsx scripts/memory-v2-response-context-check.ts",
+    "check:memory-v2": "npm run check:memory-v2-raw && npm run check:memory-v2-refinement-job && npm run check:memory-v2-raw-worker && npm run check:memory-v2-retrieval && npm run check:memory-v2-response-context",
+    "check:miniapp-js": "node scripts/check-miniapp-js.mjs",
+    "check:prisma": "prisma validate && prisma generate && prisma migrate status",
+    "check:launch": "npm run lint && npm run audit:prelaunch && npm run check:ai-base && npm run check:ai-orchestration && npm run check:architecture-v1 && npm run check:clinical-logic && npm run check:conversation-state && npm run check:conversation-os-architecture && npm run check:memory-v2 && npm run check:understanding && npm run check:ai-system && npm run check:prisma && npm run check:miniapp-js && npm run build",
+    "smoke:local-api": "node scripts/local-api-smoke.mjs",
+    "smoke:prod": "node scripts/production-smoke.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -24,10 +50,14 @@
     "tencentcloud-sdk-nodejs": "^4.1.254"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
     "@tailwindcss/postcss": "^4.1.8",
     "@types/node": "^22.15.29",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^15.5.19",
+    "tsx": "^4.22.4",
     "typescript": "^5.8.3"
   }
 }

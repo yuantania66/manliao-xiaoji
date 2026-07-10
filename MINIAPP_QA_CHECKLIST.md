@@ -52,6 +52,23 @@
 - [ ] 体验版和正式版使用微信后台已配置的 HTTPS 合法域名。
 - [ ] 外网访问 `https://manliaoxiaoji.com/api/health` 已解除 DNSPod webblock 拦截。
 
+## 2026-07-02 上线前自动化复核记录
+
+- [x] `npm run lint` 通过；已从 `next lint` 迁移为非交互式 `eslint .`。
+- [x] `npm run audit:prelaunch` 通过；已检查默认 API、伪登录 token、Web mock 登录默认关闭、开发测试入口 guard。
+- [x] `npm run check:ai-base` 通过；base-model prompt、旧历史过滤、debug 路由和旧架构防回归通过。
+- [x] `npm run check:launch` 通过；lint、audit、AI base、Prisma、小程序 JS、Next build 一次跑通。
+- [x] `npm run build` 通过，Next 生产构建成功。
+- [x] `npx prisma validate` 通过，Prisma schema 有效。
+- [x] 小程序所有 `.js` 文件通过 `node --check` 语法检查。
+- [x] `miniprogram-project/config/api.js` 默认环境已为 `prod`，体验版/正式版 API 地址均指向 `https://manliaoxiaoji.com`。
+- [x] 小程序“我的”页微信登录失败不再写入 `local_demo_` 假 token，失败后保持未登录并进入游客模式提示。
+- [x] `npm run smoke:local-api` 通过；匿名鉴权、验证码登录、小记 CRUD、图片上传、聊天、搜索、日历、退出登录主链路通过。
+- [x] 本地生产构建服务 `http://127.0.0.1:3300` 通过 `SMOKE_BASE_URL=http://127.0.0.1:3300 npm run smoke:prod`。
+- [ ] 服务器执行 `PROD_ENV_FILE=/var/www/manliaoxiaoji/shared/.env npm run audit:prod-env` 通过。
+- [x] 慢慢说 AI 会话理解评测通过：场景评测 `120/120`，直接探针 `3/3`，`qualityWarnings: 0`。
+- [ ] `npm run smoke:prod` 未通过：`manliaoxiaoji.com` DNS 解析失败；直连服务器 IP 带 Host 返回 DNSPod webblock 跳转。
+
 ## 2026-06-23 本地自动化测试记录
 
 - [x] `npm run build` 通过，Next 页面和 API 路由可完成生产构建。
