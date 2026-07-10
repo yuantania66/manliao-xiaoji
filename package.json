@@ -9,6 +9,7 @@
     "eval:ai": "node scripts/ai-conversation-eval.mjs",
     "eval:understanding-score": "tsx scripts/understanding-score-eval.ts",
     "clinical:model-eval": "tsx scripts/clinical-model-eval.ts",
+    "experience:review": "tsx scripts/experience-review-runner.ts",
     "lint": "eslint .",
     "audit:prelaunch": "node scripts/prelaunch-audit.mjs",
     "audit:prod-env": "node scripts/production-env-audit.mjs",
