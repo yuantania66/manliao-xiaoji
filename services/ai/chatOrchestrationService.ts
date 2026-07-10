@@ -41,8 +41,7 @@ export type ChatReplyResult = {
   clinicalTrace: ClinicalTrace;
 };
 
-const getFallbackRiskLevel = (content: string): AiRiskLevel =>
-  /自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(content) ? "crisis" : "low";
+const getFallbackRiskLevel = (content: string): AiRiskLevel => (isCrisisInput(content) ? "crisis" : "low");
 
 const createFallbackJudge = (
   riskLevel: AiRiskLevel,
