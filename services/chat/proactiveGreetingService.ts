@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
 import { generateProactiveGreeting } from "@/services/ai/proactiveGreeting";
 import { AiConversationMessage, AiGenerationResult } from "@/services/ai/types";
+import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
 
 const RETURN_GREETING_IDLE_MS = 30 * 60 * 1000;
 const OPEN_GREETING_DEDUPE_MS = 2 * 1000;
@@ -18,8 +19,8 @@ const createGreetingMessage = async ({
   userId: string;
   generation: AiGenerationResult;
   createdAt: Date;
-}) =>
-  prisma.$transaction(async (tx) => {
+}) => {
+  const savedMessage = await prisma.$transaction(async (tx) => {
     const savedGeneration = await tx.aiGeneration.create({
       data: {
         userId,
@@ -71,6 +72,16 @@ const createGreetingMessage = async ({
 
     return message;
   });
+
+  await createRawMemoryFromChatMessage({
+    chatMessageId: savedMessage.id,
+    metadata: { source: "proactive_greeting_service" },
+  }).catch((error) => {
+    console.error("raw memory proactive greeting write failed", error);
+  });
+
+  return savedMessage;
+};
 
 export const ensureProactiveChatGreeting = async ({
   sessionId,

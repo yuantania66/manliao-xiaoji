@@ -3,10 +3,8 @@ import { NextRequest } from "next/server";
 import { failFromError, ok } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { requireNonEmptyString } from "@/lib/validation";
-import { createFallbackGeneration, generateChatReply } from "@/services/ai/aiService";
-import { createSafetyGeneration, isCrisisInput } from "@/services/ai/chatSafety";
-import { buildAiDebugTrace } from "@/services/ai/debugTrace";
-import { AiConversationMessage, AiDebugTrace, AiGenerationResult, AiJudgeResult } from "@/services/ai/types";
+import { createChatReply } from "@/services/ai/chatOrchestrationService";
+import { AiConversationMessage, AiJudgeResult } from "@/services/ai/types";
 
 type GuestRateLimitRecord = {
   date: string;
@@ -113,24 +111,6 @@ const serializeJudge = (judge: AiJudgeResult & { judgeModel: string }) => ({
   reason: judge.reason,
 });
 
-const getFallbackRiskLevel = (content: string): AiJudgeResult["riskLevel"] =>
-  /自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(content) ? "crisis" : "low";
-
-const createFallbackJudge = (
-  riskLevel: AiJudgeResult["riskLevel"],
-  reason: string
-): AiJudgeResult & { judgeModel: string } => ({
-  passed: true,
-  riskLevel,
-  issues: [],
-  rewriteRequired: false,
-  reason,
-  judgeModel: "fallback-local",
-});
-
-const createDisabledJudge = (): AiJudgeResult & { judgeModel: string } =>
-  createFallbackJudge("low", "judge/rewrite disabled; base model output returned directly");
-
 const canReturnDebugTrace = () =>
   process.env.NODE_ENV !== "production" || process.env.AI_DEBUG_TRACE === "true";
 
@@ -148,113 +128,26 @@ export async function POST(request: NextRequest) {
     const includeDebugTrace = shouldIncludeDebugTrace(request, body);
     const rateLimit = includeDebugTrace ? null : assertGuestIpLimit(request);
     const createdAt = new Date().toISOString();
-    const maybeDebugTrace = ({
-      generation,
-      judge,
-      finalSource,
-      fallbackUsed,
-      rewriteAttempted,
-    }: {
-      generation: AiGenerationResult;
-      judge: AiJudgeResult & { judgeModel: string };
-      finalSource: AiDebugTrace["route"]["finalSource"];
-      fallbackUsed: boolean;
-      rewriteAttempted: boolean;
-    }) =>
-      includeDebugTrace
-        ? buildAiDebugTrace({
-            userMessage: content,
-            recentMessages,
-            generation,
-            judge,
-            finalSource,
-            fallbackUsed,
-            rewriteAttempted,
-          })
-        : undefined;
-
-    if (isCrisisInput(content)) {
-      const generation = createSafetyGeneration(content);
-      const judge = createFallbackJudge("crisis", "safety gate matched; base model skipped");
-      if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
-
-      return ok({
-        assistantMessage: {
-          id: `guest-ai-${Date.now()}`,
-          role: "assistant",
-          content: generation.text,
-          createdAt,
-          promptVersion: generation.promptVersion,
-        },
-        judge: serializeJudge(judge),
-        fallbackUsed: false,
-        rewriteAttempted: false,
-        debugTrace: maybeDebugTrace({
-          generation,
-          judge,
-          finalSource: "safety",
-          fallbackUsed: false,
-          rewriteAttempted: false,
-        }),
-      });
-    }
-
-    let mainGeneration;
-    try {
-      mainGeneration = await generateChatReply({
-        userMessage: content,
-        recentMessages,
-      });
-    } catch {
-      const riskLevel = getFallbackRiskLevel(content);
-      const fallback = createFallbackGeneration({
-        inputText: content,
-        riskLevel,
-      });
-      const fallbackJudge = createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback");
-      if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
-
-      return ok({
-        assistantMessage: {
-          id: `guest-ai-${Date.now()}`,
-          role: "assistant",
-          content: fallback.text,
-          createdAt,
-          promptVersion: fallback.promptVersion,
-        },
-        judge: serializeJudge(fallbackJudge),
-        fallbackUsed: true,
-        rewriteAttempted: false,
-        debugTrace: maybeDebugTrace({
-          generation: fallback,
-          judge: fallbackJudge,
-          finalSource: "fallback",
-          fallbackUsed: true,
-          rewriteAttempted: false,
-        }),
-      });
-    }
-    const judge = createDisabledJudge();
+    const reply = await createChatReply({
+      conversationId: "guest-session",
+      userMessage: content,
+      recentMessages,
+      includeDebugTrace,
+    });
     if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
 
     return ok({
       assistantMessage: {
         id: `guest-ai-${Date.now()}`,
         role: "assistant",
-        content: mainGeneration.text,
+        content: reply.generation.text,
         createdAt,
-        promptVersion: mainGeneration.promptVersion,
+        promptVersion: reply.generation.promptVersion,
       },
-      judge: serializeJudge(judge),
-      fallbackUsed: false,
-      rewriteAttempted: false,
-      debugTrace: maybeDebugTrace({
-        generation: mainGeneration,
-        judge,
-        finalSource: "base_model",
-        fallbackUsed: false,
-        rewriteAttempted: false,
-      }),
+      judge: serializeJudge(reply.judge),
+      fallbackUsed: reply.fallbackUsed,
+      rewriteAttempted: reply.rewriteAttempted,
+      debugTrace: reply.debugTrace,
     });
   } catch (error) {
     return failFromError(error);

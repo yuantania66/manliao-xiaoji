@@ -13,6 +13,8 @@ export const createSafetyGeneration = (inputText: string): AiGenerationResult =>
   model: "safety-gate",
   promptVersion: SAFETY_PROMPT_VERSION,
   latencyMs: 0,
+  postProcessSteps: [],
+  finalReplySource: "safety",
   raw: {
     matched: isCrisisInput(inputText),
   },

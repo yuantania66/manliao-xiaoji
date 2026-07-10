@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { isValidDateOnly, parsePagination, requireNonEmptyString } from "@/lib/validation";
+import { createRawMemoryFromNote } from "@/services/memory/rawMemoryService";
 
 const readJson = async (request: Request) => {
   try {
@@ -209,6 +210,15 @@ export async function POST(request: NextRequest) {
         updatedAt: true,
       },
     });
+
+    if (!note.isDraft) {
+      await createRawMemoryFromNote({
+        noteId: note.id,
+        metadata: { source: "notes_api_post" },
+      }).catch((error) => {
+        console.error("raw memory note write failed", error);
+      });
+    }
 
     return ok(serializeNote(note), 201);
   } catch (error) {

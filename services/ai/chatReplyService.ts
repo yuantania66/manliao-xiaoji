@@ -9,11 +9,8 @@ import {
 
 import { prisma } from "@/lib/prisma";
 
-import { createFallbackGeneration, generateChatReply } from "./aiService";
-import { createSafetyGeneration, isCrisisInput } from "./chatSafety";
+import { createChatReply } from "./chatOrchestrationService";
 import { createChatMemoryContext, createNoteMemoryContext } from "./dataLayers";
-import { buildAiDebugTrace } from "./debugTrace";
-import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
 import {
   AiConversationMessage,
   AiDebugTrace,
@@ -22,6 +19,7 @@ import {
   AiMemoryContext,
   AiRiskLevel,
 } from "./types";
+import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 
 const mapRiskLevel = (riskLevel: AiRiskLevel) => {
@@ -31,9 +29,6 @@ const mapRiskLevel = (riskLevel: AiRiskLevel) => {
   }
   return PrismaAiRiskLevel.LOW;
 };
-
-const getFallbackRiskLevel = (content: string): AiRiskLevel =>
-  /自杀|轻生|不想活|伤害自己|结束生命|割腕|寻死/.test(content) ? "crisis" : "low";
 
 const isStableMemoryText = (value: string) =>
   value.trim().length >= 6 && !/^([0-9０-９]+|[a-zA-Z]|[嗯啊哦好行对是])$/.test(value.trim());
@@ -85,22 +80,6 @@ const loadMemoryContext = async ({
 
   return null;
 };
-
-const createFallbackJudge = (
-  riskLevel: AiRiskLevel,
-  reason: string
-): AiJudgeResult & { judgeModel: string; promptVersion: string } => ({
-  passed: true,
-  riskLevel,
-  issues: [],
-  rewriteRequired: false,
-  reason,
-  judgeModel: "fallback-local",
-  promptVersion: JUDGE_PROMPT_VERSION,
-});
-
-const createDisabledJudge = (reason: string): AiJudgeResult & { judgeModel: string; promptVersion: string } =>
-  createFallbackJudge("low", reason);
 
 const serializeMessage = (message: {
   id: string;
@@ -191,8 +170,8 @@ const saveAssistantMessage = async ({
   content: string;
   status: MessageStatus;
   aiGenerationId: string;
-}) =>
-  prisma.$transaction(async (tx) => {
+}) => {
+  const savedMessage = await prisma.$transaction(async (tx) => {
     const message = await tx.chatMessage.create({
       data: {
         sessionId,
@@ -228,6 +207,16 @@ const saveAssistantMessage = async ({
     return message;
   });
 
+  await createRawMemoryFromChatMessage({
+    chatMessageId: savedMessage.id,
+    metadata: { source: "chat_reply_service_assistant_message" },
+  }).catch((error) => {
+    console.error("raw memory assistant message write failed", error);
+  });
+
+  return savedMessage;
+};
+
 export const createReviewedChatReply = async ({
   userId,
   sessionId,
@@ -249,143 +238,44 @@ export const createReviewedChatReply = async ({
   fallbackUsed: boolean;
   debugTrace?: AiDebugTrace;
 }> => {
-  const maybeDebugTrace = ({
-    generation,
-    judge,
-    finalSource,
-    fallbackUsed,
-    rewriteAttempted,
-  }: {
-    generation: AiGenerationResult;
-    judge: AiJudgeResult & { judgeModel: string; promptVersion: string };
-    finalSource: AiDebugTrace["route"]["finalSource"];
-    fallbackUsed: boolean;
-    rewriteAttempted: boolean;
-  }) =>
-    includeDebugTrace
-      ? buildAiDebugTrace({
-          userMessage,
-          recentMessages,
-          generation,
-          judge,
-          finalSource,
-          fallbackUsed,
-          rewriteAttempted,
-        })
-      : undefined;
-
-  let generation: AiGenerationResult;
-  if (isCrisisInput(userMessage)) {
-    generation = createSafetyGeneration(userMessage);
-    const savedSafety = await saveGeneration({
-      userId,
-      sessionId,
-      inputText: userMessage,
-      generation,
-      status: AiGenerationStatus.GENERATED,
-    });
-    const safetyJudge = createFallbackJudge("crisis", "safety gate matched; base model skipped");
-    await saveJudgeResult({
-      userId,
-      generationId: savedSafety.id,
-      judgeResult: safetyJudge,
-    });
-    const assistantMessage = await saveAssistantMessage({
-      userId,
-      sessionId,
-      content: generation.text,
-      status: MessageStatus.SAVED,
-      aiGenerationId: savedSafety.id,
-    });
-
-    return {
-      assistantMessage: serializeMessage(assistantMessage),
-      judge: safetyJudge,
-      rewriteAttempted: false,
-      fallbackUsed: false,
-      debugTrace: maybeDebugTrace({
-        generation,
-        judge: safetyJudge,
-        finalSource: "safety",
-        fallbackUsed: false,
-        rewriteAttempted: false,
-      }),
-    };
-  }
-
-  const memoryContext = await loadMemoryContext({ userId, sessionId });
-
-  try {
-    generation = await generateChatReply({ userMessage, recentMessages, memoryContext, understandingContext });
-  } catch {
-    const riskLevel = getFallbackRiskLevel(userMessage);
-    const fallback = createFallbackGeneration({
-      inputText: userMessage,
-      riskLevel,
-    });
-    const fallbackJudge = createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback");
-    const savedFallback = await saveGeneration({
-      userId,
-      sessionId,
-      inputText: userMessage,
-      generation: fallback,
-      status: AiGenerationStatus.FALLBACK,
-    });
-    const assistantMessage = await saveAssistantMessage({
-      userId,
-      sessionId,
-      content: fallback.text,
-      status: MessageStatus.FALLBACK,
-      aiGenerationId: savedFallback.id,
-    });
-
-    return {
-      assistantMessage: serializeMessage(assistantMessage),
-      judge: fallbackJudge,
-      rewriteAttempted: false,
-      fallbackUsed: true,
-      debugTrace: maybeDebugTrace({
-        generation: fallback,
-        judge: fallbackJudge,
-        finalSource: "fallback",
-        fallbackUsed: true,
-        rewriteAttempted: false,
-      }),
-    };
-  }
+  const reply = await createChatReply({
+    conversationId: sessionId,
+    userId,
+    userMessage,
+    recentMessages,
+    loadMemoryContext: () => loadMemoryContext({ userId, sessionId }),
+    understandingContext,
+    includeDebugTrace,
+  });
+  const generationStatus =
+    reply.finalSource === "fallback" ? AiGenerationStatus.FALLBACK : AiGenerationStatus.GENERATED;
+  const messageStatus = reply.finalSource === "fallback" ? MessageStatus.FALLBACK : MessageStatus.SAVED;
 
   const savedGeneration = await saveGeneration({
     userId,
     sessionId,
     inputText: userMessage,
-    generation,
-    status: AiGenerationStatus.GENERATED,
+    generation: reply.generation,
+    status: generationStatus,
   });
-  const judge = createDisabledJudge("judge/rewrite disabled; base model output returned directly");
   await saveJudgeResult({
     userId,
     generationId: savedGeneration.id,
-    judgeResult: judge,
+    judgeResult: reply.judge,
   });
   const assistantMessage = await saveAssistantMessage({
     userId,
     sessionId,
-    content: generation.text,
-    status: MessageStatus.SAVED,
+    content: reply.generation.text,
+    status: messageStatus,
     aiGenerationId: savedGeneration.id,
   });
 
   return {
     assistantMessage: serializeMessage(assistantMessage),
-    judge,
-    rewriteAttempted: false,
-    fallbackUsed: false,
-    debugTrace: maybeDebugTrace({
-      generation,
-      judge,
-      finalSource: "base_model",
-      fallbackUsed: false,
-      rewriteAttempted: false,
-    }),
+    judge: reply.judge,
+    rewriteAttempted: reply.rewriteAttempted,
+    fallbackUsed: reply.fallbackUsed,
+    debugTrace: reply.debugTrace,
   };
 };

@@ -9,6 +9,8 @@ import { parsePagination, requireNonEmptyString } from "@/lib/validation";
 import { createReviewedChatReply } from "@/services/ai/chatReplyService";
 import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
 import { extractExperienceFromChatMessage } from "@/services/experience/experienceExtractorService";
+import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
+import { maybeMergeMemoryV2ResponseContext } from "@/services/memory/responseContextService";
 import {
   extractUnderstandingFromMessage,
   writeUnderstandingExtraction,
@@ -177,6 +179,13 @@ export async function POST(
       return created;
     });
 
+    await createRawMemoryFromChatMessage({
+      chatMessageId: message.id,
+      metadata: { source: "chat_api_user_message" },
+    }).catch((error) => {
+      console.error("raw memory chat message write failed", error);
+    });
+
     const understandingExtraction = await extractUnderstandingFromMessage({
       userId: user.id,
       sourceType: "chat",
@@ -185,11 +194,15 @@ export async function POST(
       createdAt: message.createdAt,
       recentMessages: serializedRecentMessages,
     });
-    const understandingContext = await buildStructuredRagContext({
+    const baseUnderstandingContext = await buildStructuredRagContext({
       userId: user.id,
       extraction: understandingExtraction,
       currentMessage: content,
       now: message.createdAt,
+    });
+    const understandingContext = await maybeMergeMemoryV2ResponseContext({
+      userId: user.id,
+      v1Context: baseUnderstandingContext,
     });
 
     const reviewedReply = await createReviewedChatReply({

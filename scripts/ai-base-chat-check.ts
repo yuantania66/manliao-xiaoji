@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 import { createSafetyGeneration, isCrisisInput } from "../services/ai/chatSafety";
 import { buildAiDebugTrace } from "../services/ai/debugTrace";
+import { createFallbackGeneration } from "../services/ai/aiService";
 import { buildChatPrompt, CHAT_PROMPT_VERSION } from "../services/ai/promptBuilder";
 import { AiConversationMessage } from "../services/ai/types";
 
@@ -66,8 +67,8 @@ assert(!JSON.stringify(prompt.messages).includes("往上了一点"));
 assert(!JSON.stringify(prompt.messages).includes("\"3\""));
 assert(!JSON.stringify(prompt.messages).includes("\"a\""));
 assert(prompt.messages[0].content.includes("不是解题、测试、客服"));
-assert(prompt.messages[0].content.includes("不要询问它是什么意思"));
-assert(prompt.messages[0].content.includes("低信息输入只需要接住"));
+assert(prompt.messages[0].content.includes("好的问题不会让用户觉得自己正在回答 AI"));
+assert(prompt.messages[0].content.includes("不要替用户确认事实或感受"));
 assert(prompt.messages[0].content.includes("以来访者为中心"));
 assert(prompt.messages[0].content.includes("绝对不要编造你看到、听到或正在经历的环境画面"));
 assert(!prompt.messages[0].content.includes("数字、字母、符号或单字"));
@@ -224,6 +225,7 @@ assert.equal(isCrisisInput("我不想活了"), true);
 const safety = createSafetyGeneration("我不想活了");
 assert.equal(safety.model, "safety-gate");
 assert.equal(safety.promptVersion, "safety-gate-v1");
+assert.equal(safety.finalReplySource, "safety");
 assert(safety.text.includes("紧急电话"));
 
 const safetyDebug = buildAiDebugTrace({
@@ -245,6 +247,11 @@ const safetyDebug = buildAiDebugTrace({
 
 assert.equal(safetyDebug.route.finalSource, "safety");
 assert.equal(safetyDebug.route.safetyUsed, true);
+assert.equal(safetyDebug.generation.finalReplySource, "safety");
 assert.equal(safetyDebug.prompt.modelMessageRoles.length, 0);
+
+const fallback = createFallbackGeneration({ inputText: "普通 fallback 测试", riskLevel: "low" });
+assert.equal(fallback.model, "fallback");
+assert.equal(fallback.finalReplySource, "fallback");
 
 console.log("AI base chat checks passed");

@@ -26,6 +26,57 @@ type AiDebugTrace = {
     body: string;
     evidence: string[];
   }[];
+  clinicalLogic?: {
+    skippedBySafety: boolean;
+    conversationState: string;
+    safetyDecision?: {
+      level: string;
+      routedToSafety: boolean;
+      notes: string[];
+    };
+    inputSignals: {
+      userCorrectedAi: boolean;
+      userWantsPause: boolean;
+      userRequestsHelp: boolean;
+      userRequestsSummary: boolean;
+      userExpressesUncertainty: boolean;
+      userExpressesEmotion: boolean;
+      ambiguityLevel: string;
+    };
+    signals?: {
+      messageLength: string;
+      expressionDifficulty: boolean;
+      explicitAdviceRequest: boolean;
+      emotionalIntensity: string;
+      hasPreviousAssistantReply: boolean;
+      conversationStage: string;
+      memoryAvailability: {
+        hasUnderstanding: boolean;
+        hasRelationship: boolean;
+        hasTimeline: boolean;
+        hasSemanticMemory: boolean;
+      };
+    };
+    memoryUsed: {
+      understandings: string[];
+      relationships: string[];
+      timelineEvents: string[];
+    };
+    memoryExcluded: {
+      rawMemory: "not_allowed";
+      deterministicMemoryCaveat: string[];
+    };
+    selectedPlan?: {
+      responseIntent: string;
+      primaryStrategy: string;
+      secondaryStrategies: string[];
+      questionFunction: string;
+      toneConstraint: string[];
+      interventionBoundary: string[];
+      safetyNotes: string[];
+      rationale: string[];
+    };
+  };
   prompt?: {
     mode: string;
     promptVersion: string;
@@ -36,6 +87,42 @@ type AiDebugTrace = {
     memorySource?: string;
     memoryLayer?: string;
     memoryTrust?: string;
+    conversationContext?: {
+      conversationId: string;
+      latestNotice: {
+        observations: { text: string }[];
+      };
+      understanding: {
+        unknowns: { text: string }[];
+      };
+      responseGoal: {
+        experienceGoal?: string[];
+        engageMode?: string;
+        policyReason?: string;
+        questionStyle?: {
+          purpose: string;
+          avoid: string[];
+          northStar: string;
+        };
+        userExperience: string[];
+        languageConstraint: string[];
+      };
+    };
+    conversationOrientation?: {
+      currentUnderstanding: string[];
+      unknowns: string[];
+      possibleDirections: string[];
+    };
+    conversationUpdate?: {
+      notes: string[];
+    };
+    voiceConstraints?: {
+      source: string;
+      styleDirectives: string[];
+      rhythm: string[];
+      prohibitedExpressions: string[];
+      questionDirectives: string[];
+    };
     filteredHistory: {
       role: string;
       reason: string;
@@ -48,6 +135,14 @@ type AiDebugTrace = {
     model: string;
     promptVersion: string;
     latencyMs: number;
+    rawLLMOutput?: string;
+    postProcessSteps?: {
+      layer: string;
+      before: string;
+      after: string;
+      reason?: string;
+    }[];
+    finalReplySource?: "llm" | "guard_rewrite" | "fallback" | "mock" | "safety";
     tokenInput?: number;
     tokenOutput?: number;
     providerReasoning?: {
@@ -214,6 +309,18 @@ const formatEngineDetails = (trace: AiDebugTrace) => {
       ? `历史: received=${prompt.receivedHistoryCount}, included=${prompt.includedHistoryCount}, filtered=${prompt.filteredHistoryCount}`
       : "历史: unknown",
     prompt ? `记忆: ${memoryLabel}` : "记忆: unknown",
+    prompt?.conversationContext
+      ? `Conversation OS: notice=${prompt.conversationContext.latestNotice.observations.length}, unknowns=${prompt.conversationContext.understanding.unknowns.length}, experienceGoal=${prompt.conversationContext.responseGoal.experienceGoal?.join(",") ?? "unknown"}, engageMode=${prompt.conversationContext.responseGoal.engageMode ?? "unknown"}`
+      : "Conversation OS: unknown",
+    prompt?.conversationOrientation
+      ? `Orientation: current=${prompt.conversationOrientation.currentUnderstanding.length}, unknowns=${prompt.conversationOrientation.unknowns.length}, directions=${prompt.conversationOrientation.possibleDirections.length}`
+      : "Orientation: unknown",
+    prompt?.conversationUpdate
+      ? `Update: ${prompt.conversationUpdate.notes.join(" | ") || "none"}`
+      : "Update: unknown",
+    prompt?.voiceConstraints
+      ? `Voice: ${prompt.voiceConstraints.styleDirectives.join(" | ")}`
+      : "Voice: unknown",
     prompt ? `模型消息: ${prompt.modelMessageRoles.join(" -> ") || "无"}` : "模型消息: unknown",
     prompt
       ? `过滤: ${
@@ -225,6 +332,18 @@ const formatEngineDetails = (trace: AiDebugTrace) => {
         }`
       : "过滤: unknown",
     `生成: ${trace.generation.model} / ${trace.generation.promptVersion} / ${trace.generation.latencyMs}ms`,
+    `生成来源: ${trace.generation.finalReplySource ?? "unknown"}`,
+    `Raw LLM: ${trace.generation.rawLLMOutput ?? "none"}`,
+    `PostProcess: ${
+      trace.generation.postProcessSteps?.length
+        ? trace.generation.postProcessSteps
+            .map((step) => `${step.layer}: ${step.before} -> ${step.after}${step.reason ? ` / ${step.reason}` : ""}`)
+            .join(" | ")
+        : "none"
+    }`,
+    trace.clinicalLogic
+      ? `Clinical: state=${trace.clinicalLogic.conversationState}, skippedBySafety=${trace.clinicalLogic.skippedBySafety}, intent=${trace.clinicalLogic.selectedPlan?.responseIntent ?? "none"}, strategy=${trace.clinicalLogic.selectedPlan?.primaryStrategy ?? "none"}, memory=understanding:${trace.clinicalLogic.memoryUsed.understandings.length}/relationship:${trace.clinicalLogic.memoryUsed.relationships.length}/timeline:${trace.clinicalLogic.memoryUsed.timelineEvents.length}`
+      : "Clinical: unknown",
     `审查: disabled / ${trace.judge.reason}`,
     `路线: ${trace.route.finalSource}, rewrite=${trace.route.rewriteAttempted}, fallback=${trace.route.fallbackUsed}`,
   ].join("\n");

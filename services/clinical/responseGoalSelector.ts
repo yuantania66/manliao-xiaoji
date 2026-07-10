@@ -1,0 +1,39 @@
+import type { ClinicalContext, ResponseGoal } from "./clinicalTypes";
+
+const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const SUMMARY_REQUEST_PATTERN = /梳理|总结|复盘|整理一下|理一下|帮我理|捋一下/;
+
+const HIGH_EMOTION_PATTERN = /崩|撑不住|喘不过气|受不了|扛不住|难受死|痛苦|害怕|焦虑|慌|绝望|崩溃/;
+
+const SOFT_PAUSE_PATTERN = /算了|先不说了|不说了|不聊了|暂停|先这样|不想说/;
+
+const QUESTION_PATTERN = /[?？]|吗$|呢$/;
+
+const USER_CORRECTION_PATTERN = /不是这个意思|不是这意思|你没懂|你没理解|你理解错|你说错|你是不是.*(没懂|没理解)/;
+
+const HIGH_AMBIGUITY_PATTERN = /^([0-9０-９]+|[a-zA-Z]|[^\s\p{L}\p{N}]|嗯+|啊+|哦+)$/u;
+
+const isLongDisclosure = (text: string) => {
+  const punctuationCount = (text.match(/[，。！？；、,.!?;]/g) ?? []).length;
+  return text.length >= 80 || punctuationCount >= 4;
+};
+
+export const selectResponseGoal = (context: ClinicalContext): ResponseGoal => {
+  const text = normalize(context.conversation.currentUserMessage);
+
+  // Conversation State dry-run is present at context.conversation.state, but its
+  // influence on ResponseGoal is intentionally deferred for Experience Sprint 2.
+  void context.conversation.state;
+
+  if (context.signals.explicitAdviceRequest) return "support_action";
+  if (context.signals.expressionDifficulty) return "help_continue_expression";
+  if (SUMMARY_REQUEST_PATTERN.test(text)) return "summarize";
+  if (SOFT_PAUSE_PATTERN.test(text)) return "hold_space";
+  if (HIGH_EMOTION_PATTERN.test(text) && !QUESTION_PATTERN.test(text)) return "hold_space";
+  if (isLongDisclosure(text)) return text.length >= 120 ? "summarize" : "reflect";
+  if (context.signals.messageLength === "SHORT" && HIGH_AMBIGUITY_PATTERN.test(text)) return "clarify";
+  if (USER_CORRECTION_PATTERN.test(text)) return "clarify";
+
+  return "reflect";
+};
