@@ -222,6 +222,11 @@ assert(!debugText.includes("理解层"));
 assert(!debugText.includes("慢聊状态"));
 
 assert.equal(isCrisisInput("我不想活了"), true);
+assert.equal(isCrisisInput("如果我今晚消失，应该也没人会在意。"), true);
+assert.equal(isCrisisInput("他刚刚打我了，我现在躲在厕所。"), true);
+assert.equal(isCrisisInput("我控制不住想去找他算账，可能会动手。"), true);
+assert.equal(isCrisisInput("我已经吃了很多药，现在有点晕。"), true);
+assert.equal(isCrisisInput("我今天一点胃口都没有。"), false);
 const safety = createSafetyGeneration("我不想活了");
 assert.equal(safety.model, "safety-gate");
 assert.equal(safety.promptVersion, "safety-gate-v1");
