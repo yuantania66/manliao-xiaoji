@@ -227,6 +227,12 @@ assert.equal(isCrisisInput("他刚刚打我了，我现在躲在厕所。"), tru
 assert.equal(isCrisisInput("我控制不住想去找他算账，可能会动手。"), true);
 assert.equal(isCrisisInput("我已经吃了很多药，现在有点晕。"), true);
 assert.equal(isCrisisInput("我今天一点胃口都没有。"), false);
+assert.equal(isCrisisInput("电影里有杀人情节。"), false);
+assert.equal(isCrisisInput("新闻里说有人砍人。"), false);
+assert.equal(isCrisisInput("我不会伤害自己。"), false);
+assert.equal(isCrisisInput("我没有想过自杀。"), false);
+assert.equal(isCrisisInput("小时候被打过，现在想起来有点难受。"), false);
+assert.equal(isCrisisInput("我按医生说的吃了药，现在有点困。"), false);
 const safety = createSafetyGeneration("我不想活了");
 assert.equal(safety.model, "safety-gate");
 assert.equal(safety.promptVersion, "safety-gate-v1");
