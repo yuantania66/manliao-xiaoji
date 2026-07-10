@@ -22,10 +22,6 @@ const isLongDisclosure = (text: string) => {
 export const selectResponseGoal = (context: ClinicalContext): ResponseGoal => {
   const text = normalize(context.conversation.currentUserMessage);
 
-  // Conversation State dry-run is present at context.conversation.state, but its
-  // influence on ResponseGoal is intentionally deferred for Experience Sprint 2.
-  void context.conversation.state;
-
   if (context.signals.explicitAdviceRequest) return "support_action";
   if (context.signals.expressionDifficulty) return "help_continue_expression";
   if (SUMMARY_REQUEST_PATTERN.test(text)) return "summarize";
