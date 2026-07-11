@@ -61,6 +61,26 @@ Treatment improves `help_continue_expression` cases, especially "我不知道想
 - Impact: The product risks becoming "always empathic, rarely useful"; users who explicitly ask for help may feel ignored.
 - Recommended Change: Define the minimum action-support behavior for `support_action` without taking away user agency.
 
+### EXP-BL-011
+
+- Category: Clinical Plan Prompt Integration
+- Corresponding Cases: GD-ADV-002, GD-ADV-003, GD-ADV-004, GD-ADV-005, GD-ADV-006
+- Dependency: EXP-BL-003 / PR5 must merge first.
+- User Problem: `support_action` ClinicalPlan can become more specific, but users will still not see improvement if Prompt Builder does not consume the plan content.
+- Root Cause: Prompt
+- Priority: P0
+- Owner: Prompt Integration
+- Impact: Without this follow-up, EXP-BL-003 can complete the Strategy contract while leaving treatment replies unchanged or nearly unchanged.
+- Recommended Change: Extend the ClinicalPlan rendering allowlist in `services/ai/promptBuilder.ts` so `support_action` can consume action-support metadata already defined in ClinicalPlan.
+- Acceptance Criteria:
+  1. GD-ADV-002 / GD-ADV-003 / GD-ADV-004 / GD-ADV-005 / GD-ADV-006 include at least 3 cases where treatment reply has a clearer executable element than baseline.
+  2. Executable elements include at least one of: concrete next step, option set, wording frame, sorting scaffold, or decision frame.
+  3. User agency is not weakened.
+  4. ResponseGoal is not changed.
+  5. No new Strategy is added.
+  6. Prompt must not invent Strategy behavior; it may only render ClinicalPlan content.
+- Final Decision: implement after EXP-BL-003.
+
 ### EXP-BL-004
 
 - Category: Repair / Relationship Feedback

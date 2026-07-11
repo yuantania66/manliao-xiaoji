@@ -8,6 +8,7 @@ import { determineConversationState } from "../conversation-os/state";
 import { buildClinicalContext } from "../services/clinical/clinicalContextBuilder";
 import { createClinicalPlan, createNoOpClinicalPlan } from "../services/clinical/clinicalPlanService";
 import { buildClinicalTrace, buildSafetySkippedClinicalTrace } from "../services/clinical/clinicalTrace";
+import type { ClinicalPlan } from "../services/clinical/clinicalTypes";
 import { createClinicalMemoryContext } from "../services/ai/clinicalMemoryAdapter";
 import { StructuredRagContext } from "../services/understanding/understandingTypes";
 
@@ -218,6 +219,64 @@ assert.equal(
 );
 assert.equal(advicePlan.responseIntent, "support_action", "support_action responseGoal must preserve action support intent.");
 
+const getPlanContractText = (plan: ClinicalPlan) =>
+  [...plan.toneConstraint, ...plan.interventionBoundary, ...plan.rationale].join("\n");
+
+const supportActionContractCases = [
+  {
+    id: "GD-ADV-002",
+    input: "我该不该辞职？",
+    elementType: "decision frame",
+  },
+  {
+    id: "GD-ADV-003",
+    input: "我明天要跟领导谈，怎么开口比较好？",
+    elementType: "wording frame",
+  },
+  {
+    id: "GD-ADV-004",
+    input: "我想道歉，但又怕显得我太卑微，怎么办？",
+    elementType: "option set",
+  },
+  {
+    id: "GD-ADV-005",
+    input: "能不能帮我理一下，我现在到底该先做什么？",
+    elementType: "sorting scaffold",
+  },
+  {
+    id: "GD-ADV-006",
+    input: "你先别安慰我，帮我看看现在能做什么。",
+    elementType: "concrete step",
+  },
+];
+
+const supportActionContractPlans = supportActionContractCases.map(({ id, input, elementType }) => {
+  const context = buildClinicalContext({
+    conversationId: "check-conversation",
+    userId: "check-user",
+    userTurn: input,
+    recentTurns: [],
+    memoryContext: clinicalMemoryContext,
+    conversationState: getConversationState(input),
+  });
+  const plan = createClinicalPlan(context);
+  const contractText = getPlanContractText(plan);
+
+  assert.equal(plan.responseGoal, "support_action", `${id} must select support_action.`);
+  assert.equal(plan.responseIntent, "support_action", `${id} must keep support_action responseIntent.`);
+  assert.equal(plan.questionFunction, "support_user_agency", `${id} must preserve user agency.`);
+  assert(
+    contractText.includes("actionSupportElement:"),
+    `${id} ClinicalPlan must include a renderable action-support element.`
+  );
+  assert(
+    contractText.includes(elementType),
+    `${id} ClinicalPlan must include ${elementType} action-support element.`
+  );
+
+  return { id, responseGoal: plan.responseGoal, elementType };
+});
+
 const numericContext = buildClinicalContext({
   conversationId: "check-conversation",
   userId: "check-user",
@@ -353,6 +412,7 @@ console.log(
         responseGoal: plan.responseGoal,
       })),
       adviceResponseGoal: advicePlan.responseGoal,
+      supportActionContractCases: supportActionContractPlans,
       numericResponseGoal: numericPlan.responseGoal,
       noOpFallback: noOpFallbackPlan.primaryStrategy,
       promptInjection: {
