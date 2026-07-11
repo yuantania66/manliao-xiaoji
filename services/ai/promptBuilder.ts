@@ -285,8 +285,40 @@ export const isClinicalPlanPromptEnabled = () =>
 
 const formatList = (items: string[]) => (items.length > 0 ? items.join(" / ") : "none");
 
+const getActionSupportElements = (clinicalPlan: ClinicalPlan) =>
+  [...clinicalPlan.toneConstraint, ...clinicalPlan.interventionBoundary, ...clinicalPlan.rationale].filter((item) =>
+    /actionSupportElement:\s*(concrete step|option set|wording frame|sorting scaffold|decision frame)/.test(item)
+  );
+
 export const formatClinicalPlanForPrompt = (clinicalPlan: ClinicalPlan) => {
   if (clinicalPlan.primaryStrategy !== "rogers") return null;
+
+  if (clinicalPlan.responseGoal === "support_action") {
+    const actionSupportElements = getActionSupportElements(clinicalPlan);
+    if (actionSupportElements.length === 0) return null;
+
+    return [
+      "【Clinical Plan】",
+      "This is a minimal response-goal instruction. It is not a reply template.",
+      "Render only the action-support contract already present in ClinicalPlan.",
+      "Do not invent new Strategy behavior here.",
+      `responseGoal: ${clinicalPlan.responseGoal}`,
+      `responseIntent: ${clinicalPlan.responseIntent}`,
+      `primaryStrategy: ${clinicalPlan.primaryStrategy}`,
+      `questionFunction: ${clinicalPlan.questionFunction}`,
+      `toneConstraint: ${formatList(clinicalPlan.toneConstraint)}`,
+      `interventionBoundary: ${formatList(clinicalPlan.interventionBoundary)}`,
+      `safetyNotes: ${formatList(clinicalPlan.safetyNotes)}`,
+      `actionSupportElements: ${actionSupportElements.join(" / ")}`,
+      "Goal: provide one small, optional, user-adjustable action-support element.",
+      "The action-support element may be a concrete next step, option set, wording frame, sorting scaffold, or decision frame.",
+      "Do not decide for the user.",
+      "Do not create a large plan.",
+      "Do not retreat into pure reflection when the plan already contains a safe action-support element.",
+      "Do not diagnose, assess pathology, or propose a treatment plan.",
+    ].join("\n");
+  }
+
   if (clinicalPlan.responseGoal !== "help_continue_expression") return null;
 
   return [

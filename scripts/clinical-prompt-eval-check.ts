@@ -78,9 +78,9 @@ const cases: EvalCase[] = [
   {
     label: "明确求建议",
     input: "你能给我点建议吗？",
-    expectedClinicalBehavior: "Rogers dry-run；当前只评测 prompt contract，不升级为行动建议策略。",
+    expectedClinicalBehavior: "Rogers dry-run；消费 support_action ClinicalPlan 中已有的 action-support contract，不自行发明策略。",
     forbiddenBehavior: ["治疗计划", "强行 MI planning", "CBT/ACT/MI 策略注入"],
-    promptAssertion: "prompt remains Rogers minimal instruction only.",
+    promptAssertion: "flag=true injects support_action actionSupportElement when ClinicalPlan provides one.",
   },
   {
     label: "Safety 风险输入",
@@ -119,6 +119,11 @@ const assertNoForbiddenStrategyInstruction = (promptText: string) => {
   assert(!promptText.includes("mi_affirmation"), "MI affirmation must not be injected.");
   assert(!promptText.includes("mi_summary"), "MI summary must not be injected.");
 };
+
+const getActionSupportElements = (clinicalPlan: ReturnType<typeof createClinicalPlan>) =>
+  [...clinicalPlan.toneConstraint, ...clinicalPlan.interventionBoundary, ...clinicalPlan.rationale].filter((item) =>
+    item.includes("actionSupportElement:")
+  );
 
 const evaluateOrdinaryPrompt = (item: EvalCase) => {
   const clinicalPlan = buildPlanForInput(item.input);
@@ -180,10 +185,36 @@ const evaluateOrdinaryPrompt = (item: EvalCase) => {
     assert(promptText.includes("Do not force advice."), `${item.label}: force-advice boundary missing.`);
     assert(!promptText.includes("ResponseGoalSelector dry-run"), `${item.label}: rationale must not enter prompt.`);
     assertNoForbiddenStrategyInstruction(promptText);
+  } else if (clinicalPlan.responseGoal === "support_action") {
+    const actionSupportElements = getActionSupportElements(clinicalPlan);
+    assert(actionSupportElements.length > 0, `${item.label}: support_action ClinicalPlan must provide actionSupportElement.`);
+    assert(promptText.includes("【Clinical Plan】"), `${item.label}: support_action ClinicalPlan must be injected.`);
+    assert(promptText.includes("responseGoal: support_action"), `${item.label}: support_action responseGoal missing.`);
+    assert(promptText.includes("Render only the action-support contract already present in ClinicalPlan."), `${item.label}: render-only boundary missing.`);
+    assert(promptText.includes("Do not invent new Strategy behavior here."), `${item.label}: strategy invention boundary missing.`);
+    assert(promptText.includes("actionSupportElements:"), `${item.label}: actionSupportElements missing.`);
+    actionSupportElements.forEach((element) => {
+      assert(promptText.includes(element), `${item.label}: prompt must render existing ClinicalPlan element: ${element}`);
+    });
+    assert(
+      promptText.includes("Goal: provide one small, optional, user-adjustable action-support element."),
+      `${item.label}: support_action goal instruction missing.`
+    );
+    assert(promptText.includes("Do not decide for the user."), `${item.label}: user agency boundary missing.`);
+    assert(promptText.includes("Do not create a large plan."), `${item.label}: large-plan boundary missing.`);
+    assert(
+      promptText.includes("Do not retreat into pure reflection"),
+      `${item.label}: pure-reflection fallback boundary missing.`
+    );
+    assert(
+      promptText.includes("Do not diagnose, assess pathology, or propose a treatment plan."),
+      `${item.label}: diagnosis/treatment boundary missing.`
+    );
+    assertNoForbiddenStrategyInstruction(promptText);
   } else {
     assert(
       !promptText.includes("【Clinical Plan】"),
-      `${item.label}: non-help_continue_expression responseGoal must not inject ClinicalPlan prompt.`
+      `${item.label}: responseGoal without approved ClinicalPlan rendering must not inject ClinicalPlan prompt.`
     );
   }
 

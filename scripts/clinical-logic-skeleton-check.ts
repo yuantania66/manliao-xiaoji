@@ -313,7 +313,7 @@ const promptWithReflectPlan = buildChatPrompt({
 const reflectPromptText = JSON.stringify(promptWithReflectPlan.messages);
 assert(
   !reflectPromptText.includes("【Clinical Plan】"),
-  "flag=true must not inject ClinicalPlan prompt for non-help_continue_expression responseGoal."
+  "flag=true must not inject ClinicalPlan prompt for responseGoals without approved ClinicalPlan rendering."
 );
 
 const promptWithHelpContinuePlan = buildChatPrompt({
@@ -362,6 +362,49 @@ expressionStuckPlans.forEach(({ userTurn, plan }) => {
     promptText.includes("Goal: help the user continue expressing themselves."),
     `${userTurn} must include help_continue_expression goal instruction.`
   );
+});
+
+const supportActionPromptCases = supportActionContractCases.map(({ id, input, elementType }) => {
+  const context = buildClinicalContext({
+    conversationId: "check-conversation",
+    userId: "check-user",
+    userTurn: input,
+    recentTurns: [],
+    memoryContext: clinicalMemoryContext,
+    conversationState: getConversationState(input),
+  });
+  const plan = createClinicalPlan(context);
+  const contractText = getPlanContractText(plan);
+  const prompt = buildChatPrompt({
+    userMessage: input,
+    recentMessages: [],
+    clinicalPlan: plan,
+  });
+  const promptText = JSON.stringify(prompt.messages);
+
+  assert(promptText.includes("【Clinical Plan】"), `${id} must inject support_action ClinicalPlan.`);
+  assert(promptText.includes("responseGoal: support_action"), `${id} must include support_action responseGoal.`);
+  assert(
+    promptText.includes("Render only the action-support contract already present in ClinicalPlan."),
+    `${id} must include render-only ClinicalPlan boundary.`
+  );
+  assert(promptText.includes("Do not invent new Strategy behavior here."), `${id} must forbid Prompt strategy invention.`);
+  assert(promptText.includes("actionSupportElements:"), `${id} must render actionSupportElements.`);
+  assert(promptText.includes(elementType), `${id} must render ${elementType} action-support element.`);
+  assert(
+    promptText.includes("Goal: provide one small, optional, user-adjustable action-support element."),
+    `${id} must include support_action goal instruction.`
+  );
+  assert(promptText.includes("Do not decide for the user."), `${id} must preserve user agency.`);
+  assert(promptText.includes("Do not create a large plan."), `${id} must avoid large plans.`);
+  assert(promptText.includes("Do not retreat into pure reflection"), `${id} must avoid pure reflection fallback.`);
+  assert(!promptText.includes("CBT"), `${id} must not inject CBT.`);
+  assert(!promptText.includes("ACT"), `${id} must not inject ACT.`);
+  assert(!promptText.includes("MI"), `${id} must not inject MI.`);
+  assert(!promptText.includes("ResponseGoalSelector dry-run"), `${id} must not expose internal rationale.`);
+  assert(contractText.includes("actionSupportElement:"), `${id} must have a ClinicalPlan actionSupportElement.`);
+
+  return { id, elementType };
 });
 
 const promptWithNoOpPlan = buildChatPrompt({
@@ -417,7 +460,8 @@ console.log(
       noOpFallback: noOpFallbackPlan.primaryStrategy,
       promptInjection: {
         flagFalseUnchanged: true,
-        flagTrueHelpContinueExpressionOnly: true,
+        flagTrueApprovedGoalRendering: ["help_continue_expression", "support_action"],
+        flagTrueSupportAction: supportActionPromptCases,
         safetySkipped: true,
         noOpSkipped: true,
       },
