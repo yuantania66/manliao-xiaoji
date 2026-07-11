@@ -174,6 +174,70 @@ assert.equal(adviceContext.signals.explicitAdviceRequest, true);
 assert.equal(selectResponseGoal(adviceContext), "support_action");
 assert.equal(createClinicalPlan(adviceContext).responseGoal, "support_action");
 
+const concreteActionAdviceCases = [
+  "我明天要跟领导谈，怎么开口比较好？",
+  "能不能帮我理一下，我现在到底该先做什么？",
+  "你先别安慰我，帮我看看现在能做什么。",
+];
+
+for (const input of concreteActionAdviceCases) {
+  const actionContext = buildClinicalContext({
+    conversationId: "clinical-context-check",
+    userId: "check-user",
+    userTurn: input,
+    recentTurns: [],
+    memoryContext,
+    conversationState: buildConversationState(input, []),
+  });
+  assert.equal(actionContext.signals.explicitAdviceRequest, true, `${input} must set explicitAdviceRequest.`);
+  assert.equal(selectResponseGoal(actionContext), "support_action", `${input} must select support_action.`);
+  assert.equal(createClinicalPlan(actionContext).responseGoal, "support_action", `${input} must create support_action plan.`);
+}
+
+const expressionOpenContext = buildClinicalContext({
+  conversationId: "clinical-context-check",
+  userId: "check-user",
+  userTurn: "我开不了口",
+  recentTurns: [],
+  memoryContext,
+  conversationState: buildConversationState("我开不了口", []),
+});
+assert.equal(expressionOpenContext.signals.expressionDifficulty, true);
+assert.equal(expressionOpenContext.signals.explicitAdviceRequest, false);
+assert.equal(selectResponseGoal(expressionOpenContext), "help_continue_expression");
+
+const nonAdviceCases = [
+  {
+    input: "我不知道怎么说",
+    expectedGoal: "help_continue_expression",
+  },
+  {
+    input: "脑子很乱",
+    expectedGoal: "help_continue_expression",
+  },
+  {
+    input: "项目的下一步还没定下来，我有点烦。",
+    expectedGoal: "reflect",
+  },
+  {
+    input: "昨天他说他也不知道该怎么办，我当时愣住了。",
+    expectedGoal: "reflect",
+  },
+];
+
+for (const { input, expectedGoal } of nonAdviceCases) {
+  const nonAdviceContext = buildClinicalContext({
+    conversationId: "clinical-context-check",
+    userId: "check-user",
+    userTurn: input,
+    recentTurns: [],
+    memoryContext,
+    conversationState: buildConversationState(input, []),
+  });
+  assert.equal(nonAdviceContext.signals.explicitAdviceRequest, false, `${input} must not set explicitAdviceRequest.`);
+  assert.equal(selectResponseGoal(nonAdviceContext), expectedGoal, `${input} must select ${expectedGoal}.`);
+}
+
 const numericContext = buildClinicalContext({
   conversationId: "clinical-context-check",
   userId: "check-user",
