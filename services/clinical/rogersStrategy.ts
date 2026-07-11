@@ -1,6 +1,5 @@
 import type { ClinicalContext, ClinicalPlan } from "./clinicalTypes";
-
-const USER_CORRECTION_PATTERN = /不是这个意思|不是这意思|你没懂|你没理解|你理解错|你说错|你是不是.*(没懂|没理解)/;
+import { isUserCorrection } from "./userCorrectionSignal";
 
 const getSupportActionElement = (text: string) => {
   if (/辞职|该不该|要不要/.test(text)) {
@@ -59,7 +58,7 @@ const getPlanShapeForGoal = (
   }
 
   if (responseGoal === "clarify") {
-    const userCorrectedAi = USER_CORRECTION_PATTERN.test(context.conversation.currentUserMessage);
+    const userCorrectedAi = isUserCorrection(context.conversation.currentUserMessage);
 
     return {
       responseIntent: userCorrectedAi ? "repair" : "clarify",
