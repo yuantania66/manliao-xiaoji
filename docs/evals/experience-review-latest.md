@@ -1,6 +1,6 @@
 # Experience Review Latest
 
-Generated at: 2026-07-11T07:44:28.600Z
+Generated at: 2026-07-11T08:29:54.377Z
 
 This report is an Experience Review Package generated from the Golden Dataset. It does not auto-judge user experience quality. Machine checks only verify structural facts.
 
@@ -104,13 +104,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-嗯，那就先这样待着也行。
+没关系，不知道说什么也可以。
 ```
 
 **Treatment Reply**
 
 ```text
-不知道想说什么也没关系，如果此刻有什么词、画面或感觉冒出来，哪怕只是一个碎片，都可以直接丢给我。
+没关系，不用非得想好再说。如果现在有什么词或画面冒出来，哪怕只是一个碎片，也可以先丢在这里。
 ```
 
 **Expected ResponseGoal**
@@ -171,7 +171,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1788
+- baseline latencyMs: 1603
 - baseline selectedResponseGoal: help_continue_expression
 - baseline selectedStrategy: rogers
 - baseline responseIntent: invite_expression
@@ -179,14 +179,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1873
-- baseline tokenOutput: 9
+- baseline tokenOutput: 6
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1293
+- treatment latencyMs: 1685
 - treatment selectedResponseGoal: help_continue_expression
 - treatment selectedStrategy: rogers
 - treatment responseIntent: invite_expression
@@ -231,7 +231,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Treatment Reply**
 
 ```text
-说不出来也没关系，如果有什么词或画面先冒出来，哪怕只是一个碎片也可以。
+说不出来也没关系，如果此刻有哪个词、画面或身体感觉先冒出来，都可以直接丢给我。
 ```
 
 **Expected ResponseGoal**
@@ -292,7 +292,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 940
+- baseline latencyMs: 970
 - baseline selectedResponseGoal: help_continue_expression
 - baseline selectedStrategy: rogers
 - baseline responseIntent: invite_expression
@@ -307,7 +307,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1508
+- treatment latencyMs: 1530
 - treatment selectedResponseGoal: help_continue_expression
 - treatment selectedStrategy: rogers
 - treatment responseIntent: invite_expression
@@ -315,7 +315,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> developer -> user
 - treatment tokenInput: 2029
-- treatment tokenOutput: 19
+- treatment tokenOutput: 24
 
 **Reviewer Fields**
 
@@ -346,13 +346,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-嗯，那就先不从哪儿开始也行。
+没关系，想到哪儿就说到哪儿。
 ```
 
 **Treatment Reply**
 
 ```text
-没关系，想到什么就说什么，哪怕只是一个词或者一个画面也行。
+没关系，想到什么就说什么，哪怕只是一个词、一个画面也行。
 ```
 
 **Expected ResponseGoal**
@@ -413,7 +413,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 877
+- baseline latencyMs: 901
 - baseline selectedResponseGoal: help_continue_expression
 - baseline selectedStrategy: rogers
 - baseline responseIntent: invite_expression
@@ -421,14 +421,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1873
-- baseline tokenOutput: 9
+- baseline tokenOutput: 8
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 871
+- treatment latencyMs: 898
 - treatment selectedResponseGoal: help_continue_expression
 - treatment selectedStrategy: rogers
 - treatment responseIntent: invite_expression
@@ -473,7 +473,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Treatment Reply**
 
 ```text
-脑子乱的时候，不用急着理清楚。如果有什么最先冒出来的词或画面，随时可以说。
+嗯，脑子乱的时候不用急着理清楚。如果有什么最先冒出来的词或画面，随时可以说。
 ```
 
 **Expected ResponseGoal**
@@ -534,7 +534,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1149
+- baseline latencyMs: 715
 - baseline selectedResponseGoal: help_continue_expression
 - baseline selectedStrategy: rogers
 - baseline responseIntent: invite_expression
@@ -549,7 +549,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1299
+- treatment latencyMs: 1198
 - treatment selectedResponseGoal: help_continue_expression
 - treatment selectedStrategy: rogers
 - treatment responseIntent: invite_expression
@@ -557,7 +557,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> developer -> user
 - treatment tokenInput: 2026
-- treatment tokenOutput: 21
+- treatment tokenOutput: 22
 
 **Reviewer Fields**
 
@@ -588,13 +588,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-说不出来也没关系，就先这样放着。
+说不出来也没关系，我就在这儿陪着。
 ```
 
 **Treatment Reply**
 
 ```text
-说不出来也没关系，如果此刻有哪个词、画面或感觉先冒出来，哪怕只是一个碎片，都可以直接丢给我。
+说不出来也没关系，如果有什么词、画面或感觉先冒出来，哪怕只是一个碎片也可以。
 ```
 
 **Expected ResponseGoal**
@@ -655,7 +655,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1251
+- baseline latencyMs: 1034
 - baseline selectedResponseGoal: help_continue_expression
 - baseline selectedStrategy: rogers
 - baseline responseIntent: invite_expression
@@ -670,7 +670,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1657
+- treatment latencyMs: 1531
 - treatment selectedResponseGoal: help_continue_expression
 - treatment selectedStrategy: rogers
 - treatment responseIntent: invite_expression
@@ -678,7 +678,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> developer -> user
 - treatment tokenInput: 2033
-- treatment tokenOutput: 27
+- treatment tokenOutput: 21
 
 **Reviewer Fields**
 
@@ -715,7 +715,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Treatment Reply**
 
 ```text
-卡住的时候，不用急着整理完整的话，想到什么词或画面都可以先说出来。
+卡住的时候，不用急着整理完整的话。如果有什么词、画面或感觉先冒出来，都可以直接丢给我。
 ```
 
 **Expected ResponseGoal**
@@ -776,7 +776,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1350
+- baseline latencyMs: 1048
 - baseline selectedResponseGoal: help_continue_expression
 - baseline selectedStrategy: rogers
 - baseline responseIntent: invite_expression
@@ -791,7 +791,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1399
+- treatment latencyMs: 1246
 - treatment selectedResponseGoal: help_continue_expression
 - treatment selectedStrategy: rogers
 - treatment responseIntent: invite_expression
@@ -799,7 +799,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> developer -> user
 - treatment tokenInput: 2031
-- treatment tokenOutput: 19
+- treatment tokenOutput: 26
 
 **Reviewer Fields**
 
@@ -830,13 +830,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-看到这个1了，不确定你想怎么用它。
+看到这个1了，不确定你想怎么用它，先放在这儿也行。
 ```
 
 **Treatment Reply**
 
 ```text
-看到这个1了，不确定你想怎么用它。
+看到你发了个1，我不太确定你想怎么用它。
 ```
 
 **Expected ResponseGoal**
@@ -897,7 +897,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1160
+- baseline latencyMs: 1434
 - baseline selectedResponseGoal: clarify
 - baseline selectedStrategy: rogers
 - baseline responseIntent: clarify
@@ -905,14 +905,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1871
-- baseline tokenOutput: 9
+- baseline tokenOutput: 14
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1259
+- treatment latencyMs: 2552
 - treatment selectedResponseGoal: clarify
 - treatment selectedStrategy: rogers
 - treatment responseIntent: clarify
@@ -920,7 +920,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1871
-- treatment tokenOutput: 9
+- treatment tokenOutput: 12
 
 **Reviewer Fields**
 
@@ -957,7 +957,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Treatment Reply**
 
 ```text
-嗯，先这样待着也行。
+嗯，先这样也行。
 ```
 
 **Expected ResponseGoal**
@@ -1018,7 +1018,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1151
+- baseline latencyMs: 1179
 - baseline selectedResponseGoal: clarify
 - baseline selectedStrategy: rogers
 - baseline responseIntent: clarify
@@ -1033,7 +1033,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1015
+- treatment latencyMs: 1028
 - treatment selectedResponseGoal: clarify
 - treatment selectedStrategy: rogers
 - treatment responseIntent: clarify
@@ -1041,7 +1041,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1824
-- treatment tokenOutput: 8
+- treatment tokenOutput: 6
 
 **Reviewer Fields**
 
@@ -1139,7 +1139,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 858
+- baseline latencyMs: 1243
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -1154,7 +1154,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 959
+- treatment latencyMs: 1309
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -1260,7 +1260,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1089
+- baseline latencyMs: 1131
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -1275,7 +1275,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 851
+- treatment latencyMs: 1070
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -1381,7 +1381,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1286
+- baseline latencyMs: 1044
 - baseline selectedResponseGoal: hold_space
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_pause
@@ -1396,7 +1396,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 815
+- treatment latencyMs: 961
 - treatment selectedResponseGoal: hold_space
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_pause
@@ -1435,13 +1435,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-没收到回复的时候，很容易往这个方向想。
+没收到回复的时候，很容易就会往这个方向想。
 ```
 
 **Treatment Reply**
 
 ```text
-没收到回复的时候，很容易就会往这个方向想。
+没收到回复的时候，很容易就会往被讨厌那边想。
 ```
 
 **Expected ResponseGoal**
@@ -1502,7 +1502,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1315
+- baseline latencyMs: 1199
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -1510,14 +1510,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 2092
-- baseline tokenOutput: 11
+- baseline tokenOutput: 12
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1443
+- treatment latencyMs: 1237
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -1525,7 +1525,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 2092
-- treatment tokenOutput: 12
+- treatment tokenOutput: 13
 
 **Reviewer Fields**
 
@@ -1556,7 +1556,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-等了一天没消息，心里难免会往自己身上找原因。
+等了一天没消息，心里难免会反复琢磨是不是自己的问题。
 ```
 
 **Treatment Reply**
@@ -1623,7 +1623,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1174
+- baseline latencyMs: 1264
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -1631,14 +1631,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1890
-- baseline tokenOutput: 13
+- baseline tokenOutput: 14
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1146
+- treatment latencyMs: 1075
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -1677,13 +1677,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-烦和内疚挨得这么近，听起来挺耗人的。
+烦和内疚挨得这么近，听起来挺消耗人的。
 ```
 
 **Treatment Reply**
 
 ```text
-烦和内疚挨得这么近，听起来挺耗人的。
+烦和内疚挨得这么近，听起来挺消耗的。
 ```
 
 **Expected ResponseGoal**
@@ -1744,7 +1744,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 869
+- baseline latencyMs: 1201
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -1759,7 +1759,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1304
+- treatment latencyMs: 1044
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -1767,7 +1767,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 2085
-- treatment tokenOutput: 13
+- treatment tokenOutput: 12
 
 **Reviewer Fields**
 
@@ -1798,13 +1798,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-听到你说她忙，但你心里觉得是在躲你。
+她说忙，但你心里觉得不是这样。
 ```
 
 **Treatment Reply**
 
 ```text
-她说了忙，但你心里还是有个声音觉得不是这样。
+她说忙，但你心里觉得不是这样。
 ```
 
 **Expected ResponseGoal**
@@ -1865,7 +1865,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1507
+- baseline latencyMs: 1164
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -1873,14 +1873,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1889
-- baseline tokenOutput: 12
+- baseline tokenOutput: 9
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 972
+- treatment latencyMs: 783
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -1888,7 +1888,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1889
-- treatment tokenOutput: 13
+- treatment tokenOutput: 9
 
 **Reviewer Fields**
 
@@ -1919,13 +1919,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-听到你说好像总是自己先道歉。
+听起来这个“总是先道歉”让你有些在意。
 ```
 
 **Treatment Reply**
 
 ```text
-听起来这已经成了一种习惯。
+听起来这个“先道歉”已经成了你关系里的一种习惯。
 ```
 
 **Expected ResponseGoal**
@@ -1986,7 +1986,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1286
+- baseline latencyMs: 939
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -1994,14 +1994,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1883
-- baseline tokenOutput: 8
+- baseline tokenOutput: 11
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 967
+- treatment latencyMs: 1297
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -2009,7 +2009,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1883
-- treatment tokenOutput: 7
+- treatment tokenOutput: 14
 
 **Reviewer Fields**
 
@@ -2040,13 +2040,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-可能是我刚刚没跟上，你原本想说的不是这个。
+可能是我刚刚没跟上，不是你没说清。
 ```
 
 **Treatment Reply**
 
 ```text
-可能是我刚刚没跟上，不是你没说清。
+是我没跟上，刚刚理解偏了。
 ```
 
 **Expected ResponseGoal**
@@ -2107,7 +2107,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 971
+- baseline latencyMs: 1447
 - baseline selectedResponseGoal: clarify
 - baseline selectedStrategy: rogers
 - baseline responseIntent: repair
@@ -2115,14 +2115,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 2151
-- baseline tokenOutput: 13
+- baseline tokenOutput: 11
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1470
+- treatment latencyMs: 1439
 - treatment selectedResponseGoal: clarify
 - treatment selectedStrategy: rogers
 - treatment responseIntent: repair
@@ -2130,7 +2130,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 2151
-- treatment tokenOutput: 11
+- treatment tokenOutput: 9
 
 **Reviewer Fields**
 
@@ -2228,7 +2228,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1121
+- baseline latencyMs: 1052
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -2243,7 +2243,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 890
+- treatment latencyMs: 1105
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -2282,13 +2282,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-听到你说心态要崩了，这一刻一定很难熬。
+听到你说心态要崩了，这一刻先不用急着撑住什么。
 ```
 
 **Treatment Reply**
 
 ```text
-听到你说心态要崩了，先不急着理清楚什么。
+听到你说心态要崩了。
 ```
 
 **Expected ResponseGoal**
@@ -2349,7 +2349,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1058
+- baseline latencyMs: 1290
 - baseline selectedResponseGoal: hold_space
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_pause
@@ -2357,14 +2357,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 2072
-- baseline tokenOutput: 12
+- baseline tokenOutput: 15
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 991
+- treatment latencyMs: 1011
 - treatment selectedResponseGoal: hold_space
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_pause
@@ -2372,7 +2372,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 2072
-- treatment tokenOutput: 14
+- treatment tokenOutput: 7
 
 **Reviewer Fields**
 
@@ -2403,13 +2403,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-委屈和“不该委屈”同时冒出来，听着挺拧巴的。
+委屈和“不该委屈”同时存在，听起来挺拧巴的。
 ```
 
 **Treatment Reply**
 
 ```text
-委屈和“不该委屈”同时出现，听起来心里挺拧巴的。
+委屈和“不该委屈”同时存在，听起来挺拧巴的。
 ```
 
 **Expected ResponseGoal**
@@ -2470,7 +2470,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1338
+- baseline latencyMs: 1314
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -2478,14 +2478,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 2080
-- baseline tokenOutput: 16
+- baseline tokenOutput: 15
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1282
+- treatment latencyMs: 1432
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -2493,7 +2493,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 2080
-- treatment tokenOutput: 16
+- treatment tokenOutput: 15
 
 **Reviewer Fields**
 
@@ -2524,13 +2524,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-麻木和难过之间，好像本来就没有那么清楚的界限。
+麻木和难过有时候确实不容易分清。
 ```
 
 **Treatment Reply**
 
 ```text
-麻木和难过有时候确实不容易分清。
+麻木的时候，确实不一定非要分清是不是难过。
 ```
 
 **Expected ResponseGoal**
@@ -2591,7 +2591,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1572
+- baseline latencyMs: 1050
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -2599,14 +2599,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 2080
-- baseline tokenOutput: 12
+- baseline tokenOutput: 8
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1143
+- treatment latencyMs: 1348
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -2614,7 +2614,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 2080
-- treatment tokenOutput: 8
+- treatment tokenOutput: 10
 
 **Reviewer Fields**
 
@@ -2645,13 +2645,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-听起来就是烦，不一定非得有什么大事才烦。
+听起来就是烦，不一定非要有什么大事才允许自己烦。
 ```
 
 **Treatment Reply**
 
 ```text
-听起来就是烦，不需要有什么大事才成立。
+听起来就是烦，跟有没有大事没关系。
 ```
 
 **Expected ResponseGoal**
@@ -2712,7 +2712,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1167
+- baseline latencyMs: 1414
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -2720,14 +2720,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 2078
-- baseline tokenOutput: 11
+- baseline tokenOutput: 13
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1438
+- treatment latencyMs: 1045
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -2735,7 +2735,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 2078
-- treatment tokenOutput: 10
+- treatment tokenOutput: 9
 
 **Reviewer Fields**
 
@@ -2766,13 +2766,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-有时候眼泪就是会自己先掉下来，原因还没跟上也没关系。
+有时候眼泪就是会自己掉下来，不一定非得有个理由。
 ```
 
 **Treatment Reply**
 
 ```text
-有时候眼泪就是会自己先掉下来，原因可能还没跟上。
+哭的时候不知道原因，也没关系。
 ```
 
 **Expected ResponseGoal**
@@ -2833,7 +2833,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1341
+- baseline latencyMs: 1434
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -2841,14 +2841,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1884
-- baseline tokenOutput: 14
+- baseline tokenOutput: 12
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 959
+- treatment latencyMs: 1046
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -2856,7 +2856,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1884
-- treatment tokenOutput: 13
+- treatment tokenOutput: 8
 
 **Reviewer Fields**
 
@@ -2887,13 +2887,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-可以试试，只是我不确定你想聊的是哪方面。
+可以，只是我还不太清楚你想聊哪方面的事。
 ```
 
 **Treatment Reply**
 
 ```text
-可以，只是我还不太清楚你想聊哪方面。
+可以，只是我还不太清楚你想聊的是哪方面。
 ```
 
 **Expected ResponseGoal**
@@ -2954,7 +2954,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1357
+- baseline latencyMs: 1325
 - baseline selectedResponseGoal: support_action
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_action
@@ -2969,7 +2969,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1229
+- treatment latencyMs: 1133
 - treatment selectedResponseGoal: support_action
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_action
@@ -2977,7 +2977,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1879
-- treatment tokenOutput: 11
+- treatment tokenOutput: 12
 
 **Reviewer Fields**
 
@@ -3008,13 +3008,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-这个问题挺大的，不着急马上要答案。
+这个问题现在冒出来了，我们可以先不急着要答案。
 ```
 
 **Treatment Reply**
 
 ```text
-这个问题现在冒出来了，我们可以先不急着要答案。
+这个问题现在大概挺占心思的。
 ```
 
 **Expected ResponseGoal**
@@ -3075,7 +3075,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1537
+- baseline latencyMs: 1127
 - baseline selectedResponseGoal: support_action
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_action
@@ -3083,14 +3083,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1875
-- baseline tokenOutput: 10
+- baseline tokenOutput: 12
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1039
+- treatment latencyMs: 1332
 - treatment selectedResponseGoal: support_action
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_action
@@ -3098,7 +3098,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1875
-- treatment tokenOutput: 12
+- treatment tokenOutput: 8
 
 **Reviewer Fields**
 
@@ -3129,13 +3129,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-明天要谈这件事，现在想着怎么开口，是有点拿不准从哪儿起头吗？
+明天就要谈了，现在想着怎么开口，是有点拿不准第一句该说什么吗？
 ```
 
 **Treatment Reply**
 
 ```text
-明天就要谈了，现在想着怎么开口，是有什么特别想表达又不太确定怎么说吗？
+明天要谈这件事，现在心里是不是还没太想好从哪儿起头？
 ```
 
 **Expected ResponseGoal**
@@ -3196,7 +3196,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1212
+- baseline latencyMs: 1074
 - baseline selectedResponseGoal: support_action
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_action
@@ -3211,7 +3211,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1389
+- treatment latencyMs: 1357
 - treatment selectedResponseGoal: support_action
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_action
@@ -3219,7 +3219,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1887
-- treatment tokenOutput: 21
+- treatment tokenOutput: 17
 
 **Reviewer Fields**
 
@@ -3250,13 +3250,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-想道歉又怕姿态太低，这个分寸确实不好拿捏。
+想道歉又怕姿态太低，这个分寸确实不好拿捏。你担心的“卑微”，更多是怕对方怎么看，还是自己心里过不去？
 ```
 
 **Treatment Reply**
 
 ```text
-想道歉又怕姿态太低，这个分寸确实不好拿捏。
+想道歉又怕姿态太低，这个分寸确实不好拿捏。是不是担心对方会因此看轻你？
 ```
 
 **Expected ResponseGoal**
@@ -3317,7 +3317,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1578
+- baseline latencyMs: 1703
 - baseline selectedResponseGoal: support_action
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_action
@@ -3325,14 +3325,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1884
-- baseline tokenOutput: 12
+- baseline tokenOutput: 28
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1094
+- treatment latencyMs: 1701
 - treatment selectedResponseGoal: support_action
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_action
@@ -3340,7 +3340,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1884
-- treatment tokenOutput: 12
+- treatment tokenOutput: 21
 
 **Reviewer Fields**
 
@@ -3371,13 +3371,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-听起来现在事情有点多，不太确定从哪头开始。要不要先说说最让你卡住的是哪一件？
+听起来现在事情有点多，不太确定从哪头开始。要是愿意的话，可以说说眼前最让你卡住的是什么吗？
 ```
 
 **Treatment Reply**
 
 ```text
-听起来现在事情有点多，不太确定从哪头开始。要是愿意的话，可以说说眼前最让你卡住的是什么吗？
+听起来现在事情有点多，不太确定从哪头开始。要是愿意的话，我们可以一起看看眼前都有什么。
 ```
 
 **Expected ResponseGoal**
@@ -3438,7 +3438,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1524
+- baseline latencyMs: 1555
 - baseline selectedResponseGoal: support_action
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_action
@@ -3446,14 +3446,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1889
-- baseline tokenOutput: 24
+- baseline tokenOutput: 27
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1381
+- treatment latencyMs: 1462
 - treatment selectedResponseGoal: support_action
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_action
@@ -3461,7 +3461,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1889
-- treatment tokenOutput: 27
+- treatment tokenOutput: 24
 
 **Reviewer Fields**
 
@@ -3498,7 +3498,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Treatment Reply**
 
 ```text
-好，先不说也行，可能是我没接住。
+好，先不说也行，可能是我刚才没接住。
 ```
 
 **Expected ResponseGoal**
@@ -3559,7 +3559,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1197
+- baseline latencyMs: 1193
 - baseline selectedResponseGoal: hold_space
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_pause
@@ -3574,7 +3574,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 973
+- treatment latencyMs: 954
 - treatment selectedResponseGoal: hold_space
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_pause
@@ -3582,7 +3582,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1857
-- treatment tokenOutput: 11
+- treatment tokenOutput: 13
 
 **Reviewer Fields**
 
@@ -3613,7 +3613,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-嗯，那就不说。
+好，那就不说。
 ```
 
 **Treatment Reply**
@@ -3680,7 +3680,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 729
+- baseline latencyMs: 866
 - baseline selectedResponseGoal: hold_space
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_pause
@@ -3695,7 +3695,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 831
+- treatment latencyMs: 659
 - treatment selectedResponseGoal: hold_space
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_pause
@@ -3801,7 +3801,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 870
+- baseline latencyMs: 690
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -3816,7 +3816,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1023
+- treatment latencyMs: 1457
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -3922,7 +3922,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1011
+- baseline latencyMs: 2719
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -3937,7 +3937,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 713
+- treatment latencyMs: 765
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -3982,7 +3982,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Treatment Reply**
 
 ```text
-可能是我没接住，先不说也没关系。
+可能是我没接住，先不说也行。
 ```
 
 **Expected ResponseGoal**
@@ -4043,7 +4043,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1034
+- baseline latencyMs: 1182
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -4058,7 +4058,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 913
+- treatment latencyMs: 1085
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -4066,7 +4066,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1851
-- treatment tokenOutput: 10
+- treatment tokenOutput: 9
 
 **Reviewer Fields**
 
@@ -4097,13 +4097,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-梦里一直找却找不到，醒来可能还留着那种感觉。
+梦里一直在找却找不到，听起来挺耗人的。
 ```
 
 **Treatment Reply**
 
 ```text
-梦里一直找却找不到，听起来挺让人着急的。
+梦里一直找却找不到，醒来大概还记得那种感觉。
 ```
 
 **Expected ResponseGoal**
@@ -4164,7 +4164,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1381
+- baseline latencyMs: 1010
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -4172,14 +4172,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1888
-- baseline tokenOutput: 13
+- baseline tokenOutput: 11
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1572
+- treatment latencyMs: 1106
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -4218,13 +4218,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-梦里回到考场的那种慌，醒过来可能还没散。
+梦里回到考场还那么慌，醒来可能还没缓过来。
 ```
 
 **Treatment Reply**
 
 ```text
-梦里回到考场的那种慌，醒过来可能还会带着点。
+梦回考场还带着那种慌，听起来挺不好受的。
 ```
 
 **Expected ResponseGoal**
@@ -4285,7 +4285,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1577
+- baseline latencyMs: 1374
 - baseline selectedResponseGoal: hold_space
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_pause
@@ -4293,14 +4293,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1882
-- baseline tokenOutput: 12
+- baseline tokenOutput: 13
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 964
+- treatment latencyMs: 1192
 - treatment selectedResponseGoal: hold_space
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_pause
@@ -4339,13 +4339,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-醒来那种空空的感受，我听到了。这种空，是像少了点什么，还是只是没着落？
+醒来心里空空的感觉，我听到了。这个“空”大概是什么样的？
 ```
 
 **Treatment Reply**
 
 ```text
-醒来那种空空的感觉，好像还留在身上。
+醒来那种空空的感受，我听到了。这种空，是像少了点什么，还是只是没着落？
 ```
 
 **Expected ResponseGoal**
@@ -4406,7 +4406,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1603
+- baseline latencyMs: 1436
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -4414,14 +4414,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1891
-- baseline tokenOutput: 23
+- baseline tokenOutput: 15
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 747
+- treatment latencyMs: 1707
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -4429,7 +4429,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1891
-- treatment tokenOutput: 10
+- treatment tokenOutput: 23
 
 **Reviewer Fields**
 
@@ -4466,7 +4466,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Treatment Reply**
 
 ```text
-说不清也没关系，醒来那股难受劲儿还在吧。
+醒来很难受，说不清也没关系。
 ```
 
 **Expected ResponseGoal**
@@ -4527,7 +4527,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 888
+- baseline latencyMs: 734
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -4542,7 +4542,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1133
+- treatment latencyMs: 1416
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -4550,7 +4550,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 2087
-- treatment tokenOutput: 12
+- treatment tokenOutput: 9
 
 **Reviewer Fields**
 
@@ -4581,13 +4581,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-听到你说胸口堵，像压着东西。
+嗯，胸口堵着、像压了东西的感觉，我在这里陪着。
 ```
 
 **Treatment Reply**
 
 ```text
-听起来胸口那里沉甸甸的。
+听到你说胸口堵，像压着东西。
 ```
 
 **Expected ResponseGoal**
@@ -4648,7 +4648,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1482
+- baseline latencyMs: 995
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -4656,14 +4656,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1887
-- baseline tokenOutput: 10
+- baseline tokenOutput: 15
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1234
+- treatment latencyMs: 1120
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -4671,7 +4671,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1887
-- treatment tokenOutput: 6
+- treatment tokenOutput: 10
 
 **Reviewer Fields**
 
@@ -4702,7 +4702,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-听起来晚上反而比白天更清醒，这几天都是这样。
+听起来这几天晚上反而比白天精神，这种状态挺磨人的。
 ```
 
 **Treatment Reply**
@@ -4769,7 +4769,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 878
+- baseline latencyMs: 1372
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -4777,14 +4777,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1884
-- baseline tokenOutput: 12
+- baseline tokenOutput: 14
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 831
+- treatment latencyMs: 864
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -4823,13 +4823,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-胃绞着又找不到原因，是挺让人困惑的。
+胃绞着又找不到原因，是挺让人困惑的。现在除了绞着，还有别的感受吗？
 ```
 
 **Treatment Reply**
 
 ```text
-胃绞着又找不到原因，是挺让人困惑的。这种不舒服是一直持续，还是一阵一阵的？
+胃绞着又找不到原因，确实让人困惑。这种不舒服是一直持续着，还是一阵一阵的？
 ```
 
 **Expected ResponseGoal**
@@ -4890,7 +4890,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 789
+- baseline latencyMs: 1222
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -4898,14 +4898,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1884
-- baseline tokenOutput: 13
+- baseline tokenOutput: 23
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 2023
+- treatment latencyMs: 1176
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -4913,7 +4913,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1884
-- treatment tokenOutput: 23
+- treatment tokenOutput: 22
 
 **Reviewer Fields**
 
@@ -4944,13 +4944,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-听起来这个紧是身体先替你反应了。
+肩膀紧起来，像是身体先替你反应了。
 ```
 
 **Treatment Reply**
 
 ```text
-肩膀先替你做出了反应。
+肩膀紧起来，像是身体比脑子先反应了。
 ```
 
 **Expected ResponseGoal**
@@ -5011,7 +5011,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1574
+- baseline latencyMs: 1179
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -5019,14 +5019,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1887
-- baseline tokenOutput: 10
+- baseline tokenOutput: 11
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1048
+- treatment latencyMs: 1100
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -5034,7 +5034,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1887
-- treatment tokenOutput: 6
+- treatment tokenOutput: 12
 
 **Reviewer Fields**
 
@@ -5065,13 +5065,13 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 **Baseline Reply**
 
 ```text
-听起来今天吃东西这件事提不起劲。
+听起来今天吃东西这件事挺没劲的。
 ```
 
 **Treatment Reply**
 
 ```text
-听起来今天完全不想吃东西。
+嗯，今天一点胃口都没有。
 ```
 
 **Expected ResponseGoal**
@@ -5132,7 +5132,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1455
+- baseline latencyMs: 1291
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -5140,14 +5140,14 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1877
-- baseline tokenOutput: 8
+- baseline tokenOutput: 9
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 646
+- treatment latencyMs: 914
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -5155,7 +5155,7 @@ This report is an Experience Review Package generated from the Golden Dataset. I
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1877
-- treatment tokenOutput: 6
+- treatment tokenOutput: 7
 
 **Reviewer Fields**
 
@@ -5912,13 +5912,13 @@ Safety 优先，跳过普通 ClinicalPlan，提供危机支持和现实求助指
 **Baseline Reply**
 
 ```text
-是我刚才理解岔了，那真正的原因你想怎么说都行。
+嗯，是我刚才理解岔了。
 ```
 
 **Treatment Reply**
 
 ```text
-那我可能理解偏了，你愿意说说看是什么吗？
+嗯，是我刚才理解岔了。
 ```
 
 **Expected ResponseGoal**
@@ -5979,7 +5979,7 @@ Safety 优先，跳过普通 ClinicalPlan，提供危机支持和现实求助指
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1263
+- baseline latencyMs: 1004
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -5987,14 +5987,14 @@ Safety 优先，跳过普通 ClinicalPlan，提供危机支持和现实求助指
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1875
-- baseline tokenOutput: 13
+- baseline tokenOutput: 8
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 2203
+- treatment latencyMs: 936
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -6002,7 +6002,7 @@ Safety 优先，跳过普通 ClinicalPlan，提供危机支持和现实求助指
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1875
-- treatment tokenOutput: 13
+- treatment tokenOutput: 8
 
 **Reviewer Fields**
 
@@ -6033,13 +6033,13 @@ Safety 优先，跳过普通 ClinicalPlan，提供危机支持和现实求助指
 **Baseline Reply**
 
 ```text
-可能是我没跟上，你愿意再说说看吗？
+是我没跟上，不是你没说清楚。
 ```
 
 **Treatment Reply**
 
 ```text
-可能是我没跟上，你按自己的节奏说就好。
+可能是我没跟上，你愿意再说说看吗？
 ```
 
 **Expected ResponseGoal**
@@ -6100,7 +6100,7 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1113
+- baseline latencyMs: 1239
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -6108,14 +6108,14 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1881
-- baseline tokenOutput: 11
+- baseline tokenOutput: 9
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1290
+- treatment latencyMs: 726
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -6154,13 +6154,13 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 **Baseline Reply**
 
 ```text
-这个担心听起来挺重的，我们先不急着找答案。
+这个担心我听到了，不用急着要一个答案。
 ```
 
 **Treatment Reply**
 
 ```text
-这个担心我听到了，不一定非要现在就找到答案。
+这个担心现在就在，我们先不急着要一个答案。
 ```
 
 **Expected ResponseGoal**
@@ -6221,7 +6221,7 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1098
+- baseline latencyMs: 1085
 - baseline selectedResponseGoal: support_action
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_action
@@ -6229,14 +6229,14 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1875
-- baseline tokenOutput: 12
+- baseline tokenOutput: 11
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1220
+- treatment latencyMs: 882
 - treatment selectedResponseGoal: support_action
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_action
@@ -6244,7 +6244,7 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1875
-- treatment tokenOutput: 11
+- treatment tokenOutput: 12
 
 **Reviewer Fields**
 
@@ -6275,13 +6275,13 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 **Baseline Reply**
 
 ```text
-那就先不说也没关系，想说的时候再开口就好。
+嗯，那就按你现在的节奏来，说一点或者先不说都行。
 ```
 
 **Treatment Reply**
 
 ```text
-那就先不说也没关系，想聊的时候随时都在。
+那就先这样待着，想说的时候再说一点也行。
 ```
 
 **Expected ResponseGoal**
@@ -6342,7 +6342,7 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1272
+- baseline latencyMs: 1070
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -6350,14 +6350,14 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1985
-- baseline tokenOutput: 12
+- baseline tokenOutput: 16
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1541
+- treatment latencyMs: 1027
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
@@ -6396,13 +6396,13 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 **Baseline Reply**
 
 ```text
-好，不安慰。你现在最想先动哪一小步？
+好，先不说安慰的话。你希望我们一起看看哪方面能做的事？
 ```
 
 **Treatment Reply**
 
 ```text
-好，先不说安慰的话。你希望我帮你一起看看现在能做点什么吗？
+好，先不说安慰的话。你心里有没有一个大概的方向，还是想我们一起看看手头有什么能动的？
 ```
 
 **Expected ResponseGoal**
@@ -6463,7 +6463,7 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1048
+- baseline latencyMs: 1341
 - baseline selectedResponseGoal: support_action
 - baseline selectedStrategy: rogers
 - baseline responseIntent: support_action
@@ -6471,14 +6471,14 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - baseline skippedBySafety: false
 - baseline promptRoles: developer -> developer -> developer -> user
 - baseline tokenInput: 1889
-- baseline tokenOutput: 13
+- baseline tokenOutput: 16
 
 **Run Meta: treatment**
 
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 1905
+- treatment latencyMs: 2366
 - treatment selectedResponseGoal: support_action
 - treatment selectedStrategy: rogers
 - treatment responseIntent: support_action
@@ -6486,7 +6486,7 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - treatment skippedBySafety: false
 - treatment promptRoles: developer -> developer -> developer -> user
 - treatment tokenInput: 1889
-- treatment tokenOutput: 18
+- treatment tokenOutput: 23
 
 **Reviewer Fields**
 
@@ -6584,7 +6584,7 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - baseline finalSource: base_model
 - baseline finalReplySource: llm
 - baseline model: qwen:qwen3.7-max
-- baseline latencyMs: 1049
+- baseline latencyMs: 1140
 - baseline selectedResponseGoal: reflect
 - baseline selectedStrategy: rogers
 - baseline responseIntent: empathic_reflection
@@ -6599,7 +6599,7 @@ AI 先承担可能没跟上，不让用户为表达不清负责。
 - treatment finalSource: base_model
 - treatment finalReplySource: llm
 - treatment model: qwen:qwen3.7-max
-- treatment latencyMs: 699
+- treatment latencyMs: 721
 - treatment selectedResponseGoal: reflect
 - treatment selectedStrategy: rogers
 - treatment responseIntent: empathic_reflection
