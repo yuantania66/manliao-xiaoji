@@ -157,7 +157,44 @@ Mock output is useful for verifying runner structure, but it is not valid eviden
 
 6. Use the review to propose the next Experience Iteration.
 
-## 9. Boundary
+## 9. Backlog Issue Diagnosis Gate
+
+Starting with the next Backlog issue, implementation must not begin until a diagnosis document has been completed with:
+
+```text
+docs/BACKLOG_ISSUE_TEMPLATE.md
+```
+
+The diagnosis must identify exactly one Root Cause:
+
+- Conversation
+- ClinicalContext
+- ResponseGoal
+- Strategy
+- Prompt
+- Memory
+- Safety
+
+Rules:
+
+- Root Cause must be confirmed before code starts.
+- The review must explain why the issue is not caused by other plausible layers.
+- The review must end in one final decision:
+  - `implement`
+  - `reclassify`
+  - `downgrade`
+  - `close`
+  - `needs more eval`
+- A review cannot stop at "reviewed".
+- If the decision is not `implement`, no product code should be changed for that issue.
+
+This gate exists to prevent fixing the wrong layer, especially confusing:
+
+- ClinicalContext detection bugs with Strategy behavior gaps.
+- Strategy gaps with Prompt language problems.
+- Safety routing gaps with ordinary response-quality issues.
+
+## 10. Boundary
 
 This workflow must not be added to `check:launch`.
 
@@ -167,7 +204,7 @@ Reason:
 - It can be slow and costly.
 - It is a human-review artifact, not deterministic CI.
 
-## 10. Risks
+## 11. Risks
 
 - Running all cases with a real provider makes 108 model calls.
 - Mock output can be mistaken for real model behavior if reviewers ignore `finalReplySource`.
