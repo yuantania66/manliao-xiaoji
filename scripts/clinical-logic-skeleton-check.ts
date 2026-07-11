@@ -9,11 +9,15 @@ import { buildClinicalContext } from "../services/clinical/clinicalContextBuilde
 import { createClinicalPlan, createNoOpClinicalPlan } from "../services/clinical/clinicalPlanService";
 import { buildClinicalTrace, buildSafetySkippedClinicalTrace } from "../services/clinical/clinicalTrace";
 import type { ClinicalPlan } from "../services/clinical/clinicalTypes";
+import { isUserCorrection } from "../services/clinical/userCorrectionSignal";
 import { createClinicalMemoryContext } from "../services/ai/clinicalMemoryAdapter";
 import { StructuredRagContext } from "../services/understanding/understandingTypes";
 
 const orchestration = readFileSync("services/ai/chatOrchestrationService.ts", "utf8");
 const promptBuilder = readFileSync("services/ai/promptBuilder.ts", "utf8");
+const responseGoalSelectorSource = readFileSync("services/clinical/responseGoalSelector.ts", "utf8");
+const rogersStrategySource = readFileSync("services/clinical/rogersStrategy.ts", "utf8");
+const legacyAiServiceSource = readFileSync("services/ai/aiService.ts", "utf8");
 
 const safetyBranchIndex = orchestration.indexOf("if (isCrisisInput(userMessage))");
 const clinicalContextIndex = orchestration.indexOf("const clinicalContext = buildClinicalContext");
@@ -25,6 +29,29 @@ assert(clinicalContextIndex > safetyBranchIndex, "Ordinary ClinicalContext must 
 assert(clinicalPlanIndex > clinicalContextIndex, "ClinicalPlan must be created from ClinicalContext.");
 assert(generateIndex > clinicalPlanIndex, "ClinicalPlan must be created before Prompt Builder / LLM generation.");
 assert(promptBuilder.includes("CLINICAL_PLAN_PROMPT_ENABLED"), "ClinicalPlan prompt injection must be feature-flagged.");
+assert(
+  responseGoalSelectorSource.includes('import { isUserCorrection } from "./userCorrectionSignal";'),
+  "ResponseGoalSelector must use shared clinical user correction signal."
+);
+assert(
+  rogersStrategySource.includes('import { isUserCorrection } from "./userCorrectionSignal";'),
+  "RogersStrategy must use shared clinical user correction signal."
+);
+assert(
+  !responseGoalSelectorSource.includes("const USER_CORRECTION_PATTERN"),
+  "ResponseGoalSelector must not define a local USER_CORRECTION_PATTERN."
+);
+assert(
+  !rogersStrategySource.includes("const USER_CORRECTION_PATTERN"),
+  "RogersStrategy must not define a local USER_CORRECTION_PATTERN."
+);
+assert(
+  legacyAiServiceSource.includes("const USER_CORRECTION_PATTERN"),
+  "Legacy aiService fallback correction predicate must remain isolated and untouched."
+);
+assert.equal(isUserCorrection("不是这个意思"), true, "Shared clinical signal must detect direct correction.");
+assert.equal(isUserCorrection("你是不是根本没懂我？"), true, "Shared clinical signal must detect AI-understanding challenge.");
+assert.equal(isUserCorrection("我不会伤害自己"), false, "Shared clinical signal must not capture unrelated negation.");
 
 const safetyTrace = buildSafetySkippedClinicalTrace({
   level: "crisis",

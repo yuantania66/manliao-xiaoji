@@ -1,4 +1,5 @@
 import type { ClinicalContext, ResponseGoal } from "./clinicalTypes";
+import { isUserCorrection } from "./userCorrectionSignal";
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
 
@@ -9,8 +10,6 @@ const HIGH_EMOTION_PATTERN = /崩|撑不住|喘不过气|受不了|扛不住|难
 const SOFT_PAUSE_PATTERN = /算了|先不说了|不说了|不聊了|暂停|先这样|不想说/;
 
 const QUESTION_PATTERN = /[?？]|吗$|呢$/;
-
-const USER_CORRECTION_PATTERN = /不是这个意思|不是这意思|你没懂|你没理解|你理解错|你说错|你是不是.*(没懂|没理解)/;
 
 const HIGH_AMBIGUITY_PATTERN = /^([0-9０-９]+|[a-zA-Z]|[^\s\p{L}\p{N}]|嗯+|啊+|哦+)$/u;
 
@@ -29,7 +28,7 @@ export const selectResponseGoal = (context: ClinicalContext): ResponseGoal => {
   if (HIGH_EMOTION_PATTERN.test(text) && !QUESTION_PATTERN.test(text)) return "hold_space";
   if (isLongDisclosure(text)) return text.length >= 120 ? "summarize" : "reflect";
   if (context.signals.messageLength === "SHORT" && HIGH_AMBIGUITY_PATTERN.test(text)) return "clarify";
-  if (USER_CORRECTION_PATTERN.test(text)) return "clarify";
+  if (isUserCorrection(text)) return "clarify";
 
   return "reflect";
 };
