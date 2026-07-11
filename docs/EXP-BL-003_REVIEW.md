@@ -261,7 +261,45 @@ Reason:
 
 The current issue is the mapping from an already-correct `ResponseGoal` into a plan shape. The existing ClinicalPlan fields can carry the minimal responsibility through intent, question function, tone constraints, intervention boundaries, and rationale.
 
-## 7. Why Not a Prompt Quick Patch
+## 7. ClinicalPlan Contract Assertion
+
+For GD-ADV-002 / GD-ADV-003 / GD-ADV-004 / GD-ADV-005 / GD-ADV-006, every generated ClinicalPlan must contain at least one action-support text element that downstream Prompt integration can directly render.
+
+Allowed element types:
+
+- concrete step
+- option set
+- wording frame
+- sorting scaffold
+- decision frame
+
+The element may be carried in existing ClinicalPlan fields:
+
+- `toneConstraint`
+- `interventionBoundary`
+- `rationale`
+- `responseIntent`
+- `questionFunction`
+
+Constraints:
+
+- Do not only rename `responseIntent` to a more specific abstract enum.
+- Do not only add an internal tag that cannot be rendered.
+- Do not change ClinicalPlan schema for EXP-BL-003.
+- Do not require Prompt Builder to infer action-support behavior from scratch.
+
+PR5 acceptance must distinguish:
+
+- Contract improvement: ClinicalPlan becomes more concrete, readable, and renderable.
+- User-visible improvement: completed later by EXP-BL-011 / PR6 when Prompt integration consumes the contract.
+
+Trace assertion:
+
+```text
+For each survivor advice case, debug/trace must show a support_action ClinicalPlan containing at least one renderable action-support element.
+```
+
+## 8. Why Not a Prompt Quick Patch
 
 Do not add a direct `support_action` branch in `promptBuilder.ts` as PR5.
 
@@ -274,7 +312,7 @@ Reason:
 
 If future work injects `support_action` into Prompt, it should only render a reviewed ClinicalPlan. It should not hard-code independent support-action behavior in Prompt Builder.
 
-## 8. Minimal Fix
+## 9. Minimal Fix
 
 One sentence:
 
@@ -282,7 +320,7 @@ One sentence:
 Refine `services/clinical/rogersStrategy.ts` so `support_action` maps to a minimally actionable Rogers plan that preserves user agency while requiring one small next step, option, wording frame, or sorting scaffold when safe.
 ```
 
-## 9. Impact Scope
+## 10. Impact Scope
 
 Expected product impact:
 
@@ -301,7 +339,7 @@ Expected technical scope:
 - No Golden Dataset change.
 - No direct `promptBuilder.ts` support_action special case.
 
-## 10. Regression Risk
+## 11. Regression Risk
 
 Main risk:
 
@@ -325,23 +363,26 @@ Mitigation:
 - Do not add multi-step planning.
 - Keep GD-ADV-001 as a boundary case where asking for the advice domain remains acceptable.
 
-## 11. Acceptance Criteria
+## 12. Acceptance Criteria
 
 For PR5, acceptance criteria should be:
 
 - GD-ADV-002 through GD-ADV-006 still select `support_action`.
 - Their ClinicalPlan shows a more specific support-action obligation than `support_user_agency` alone.
+- Each of GD-ADV-002 through GD-ADV-006 includes at least one renderable action-support text element in ClinicalPlan.
+- The renderable element is one of: concrete step, option set, wording frame, sorting scaffold, or decision frame.
 - GD-ADV-001 does not receive premature concrete advice without a topic boundary.
 - No new Strategy is added.
 - No new ResponseGoal is added.
 - ClinicalPlan schema remains unchanged.
 - No direct `support_action` prompt special case is added to `promptBuilder.ts`.
+- PR5 is judged as a contract improvement only; user-visible improvement belongs to EXP-BL-011 / PR6.
 - Safety cases remain routed to Safety.
 - `npm run experience:review` is regenerated and reviewed for advice cases.
 - `npm run check:launch` passes.
 - `npm run build` passes.
 
-## 12. Re-eval Command
+## 13. Re-eval Command
 
 ```bash
 npm run experience:review
@@ -355,7 +396,7 @@ Additional focused review:
 Review GD-ADV-001 through GD-ADV-006 in docs/evals/experience-review-latest.md.
 ```
 
-## 13. Final Decision
+## 14. Final Decision
 
 Decision:
 

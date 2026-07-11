@@ -24,6 +24,7 @@ Final Architecture v1 decision:
 - Safety & Governance is a cross-cutting guardrail, not a normal linear pipeline step.
 - Conversation Layer may output facts and approved deterministic signals.
 - Clinical Logic owns `ResponseGoal`, `Strategy`, and `ClinicalPlan`.
+- ClinicalPlan contract must precede Prompt integration.
 - Memory owns long-term understanding and projection internals.
 - Legacy Conversation OS strategy fields are frozen and must not be expanded.
 - Only approved Conversation-derived signals may influence `ResponseGoal`.
@@ -84,6 +85,30 @@ Boundary definitions:
 - Projection Framework is an internal Memory & Mental Model Layer engineering mechanism.
 
 The runtime data flow may change internally as implementation evolves, but it must continue to respect the five-layer product architecture.
+
+### 3.1 ClinicalPlan Contract Must Precede Prompt Integration
+
+Architecture rule:
+
+```text
+ClinicalPlan Contract must precede Prompt Integration.
+```
+
+Meaning:
+
+1. Strategy defines behavior.
+2. ClinicalPlan carries behavior.
+3. Prompt only renders ClinicalPlan.
+4. Prompt must not invent Strategy behavior.
+5. A Strategy PR may merge before Prompt integration only when there is a clear downstream Prompt backlog item with owner, dependency, and acceptance criteria.
+6. Architecture v1 does not allow an orphan state where a ClinicalPlan contract is considered complete but no corresponding Prompt integration task exists.
+
+Implications:
+
+- If a user-visible response needs new Strategy behavior, define it in Strategy / ClinicalPlan first.
+- If Prompt integration is required for that behavior to be visible, create a separate Prompt backlog item.
+- Prompt Builder must not add product behavior that cannot be traced back to ClinicalPlan.
+- Prompt changes may render ClinicalPlan fields, but they must not create a parallel Strategy system.
 
 ## 4. Safety as Cross-Cutting Governance
 
@@ -488,4 +513,3 @@ Architecture v1 does accept a reviewed whitelist of deterministic Conversation-d
 All other state/signal inputs are prohibited from influencing `ResponseGoal` until they pass independent boundary review, Golden Dataset regression, real-model experience evaluation, and Architecture rule update.
 
 This document is the final Architecture v1 constraint source unless superseded by a later approved architecture review.
-
