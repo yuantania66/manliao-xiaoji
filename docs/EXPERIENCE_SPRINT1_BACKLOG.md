@@ -94,13 +94,16 @@ Treatment improves `help_continue_expression` cases, especially "我不知道想
 
 ### EXP-BL-005
 
+- Status: completed / merged (PR #11, merge commit `820eadac77abe0909432c30f5c741c470e02e0aa`)
 - Category: Expression
 - Corresponding Cases: GD-DREAM-004, GD-EXPR-007, GD-EXPR-006
 - User Problem: Some "说不清 / 想说又说不出来 / 卡住" cases still end with acceptance only, or use phrases like "我注意到了" without opening a low-pressure expression path.
-- Root Cause: ResponseGoal
+- Root Cause: ClinicalContext
 - Priority: P1
 - Impact: The core product promise is to help users continue expression gently; missing these cases makes the product feel passive exactly when users need help starting.
 - Recommended Change: Expand `help_continue_expression` coverage to "说不清", "奇怪但难受", and mixed wanting/not-wanting-to-say states.
+- Resolution: GD-DREAM-004 and GD-EXPR-007 now set `expressionDifficulty=true`; GD-EXPR-006 remains the positive control. Explicit pause, generic dream ambiguity, ordinary decision uncertainty, and event-complexity narration remain outside this signal.
+- Known Limitation: More implicit expression difficulty without an approved deterministic phrase boundary may still be missed.
 
 ### EXP-BL-006
 
