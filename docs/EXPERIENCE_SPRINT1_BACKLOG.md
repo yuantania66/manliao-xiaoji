@@ -191,3 +191,17 @@ The Top 10 is ordered by user value:
 9. Remove remaining system-like language.
 
 This backlog is ready for Experience Sprint 1 planning. It is not an implementation plan.
+
+## Post-Sprint Real-product Follow-up Diagnoses
+
+This section preserves follow-up discoveries without rewriting the historical Top 10 produced by the original Experience Sprint 1 review. These entries have different evidence provenance and require their own diagnosis, evaluation, and authorization path.
+
+### EXP-BL-012
+
+- Status: diagnosis / `needs more eval`
+- Type: multi-turn umbrella diagnosis
+- Evidence Source: product self-test screenshots plus separately identified user-reported probes; exact capture environment requires Decision Owner confirmation before child implementation
+- Child Boundaries: EXP-BL-012A multi-turn groundedness, EXP-BL-012B emotional-response template-rut hypothesis, EXP-BL-012C meta-repair
+- Authoritative Diagnosis: `docs/EXP-BL-012_MULTI_TURN_EXPERIENCE_DIAGNOSIS.md`
+- Eval Contract: `docs/CONVERSATION_TRAJECTORY_EVAL_SPEC.md`
+- Implementation Authorized: no; trajectory eval infrastructure must be reviewed and implemented independently before any child product fix

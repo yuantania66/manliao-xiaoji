@@ -16,9 +16,9 @@ The current system can pass deterministic routing checks while producing replies
 
 ## 2. Evidence Provenance
 
-### Screenshot-confirmed local trajectories
+### Screenshot-confirmed trajectories
 
-The following text is transcribed from local product screenshots captured on 2026-07-12 at `http://localhost:3001/chat`.
+The following text is transcribed from product screenshots submitted on 2026-07-12. At submission time, the ambient browser context showed `http://localhost:3001/chat`, so local development is the presumed capture environment, but the screenshots themselves do not prove their runtime origin. The Decision Owner must confirm whether any evidence came from production before 012A, 012B, or 012C implementation begins. If production impact is confirmed, hotfix priority must be assessed separately; this diagnosis does not authorize a hotfix.
 
 #### Trajectory A — unsupported meaning carried across numeric turns
 
@@ -106,10 +106,12 @@ The repository already contains some multi-turn direct probes. EXP-BL-012 must f
 
 ### EXP-BL-012B — Emotional-response template rut
 
-- Failure: different emotional inputs receive the same recorder-like sentence skeleton.
+- Hypothesis: different emotional inputs may receive the same recorder-like sentence skeleton.
 - Experience impact: the product appears to log the user rather than understand them.
 - Candidate layers: Prompt examples, Prompt meta-language leakage, model compliance, recent assistant-history handling.
 - Relation to EXP-BL-010: overlap must be reviewed before reprioritizing or merging scope; this document does not change EXP-BL-010 priority.
+- Evidence strength: one screenshot-confirmed recorder-like reply plus several user-reported probes; this is not yet sufficient to establish a repeated rut.
+- Reproduction gate: before the B0/B1/B2/B3 experiment set starts, the official reply entrypoint must reproduce a materially similar sentence skeleton for at least three semantically distinct emotional inputs in the same trajectory, across repeated real-model runs. A deterministic skeleton heuristic may locate candidates, but a human reviewer must confirm that the pattern is a substantive template rut rather than ordinary lexical overlap.
 
 ### EXP-BL-012C — Meta-repair when the user audits understanding
 
@@ -173,6 +175,7 @@ Each experiment must run the same trajectories multiple times with provider, mod
 
 - Screenshot-confirmed evidence remains distinct from reported probes.
 - At least one official-entrypoint reproduction exists for each child problem.
+- 012B does not enter controlled experiments until its three-input, same-trajectory, repeated-run reproduction gate is satisfied and human-confirmed.
 - Existing multi-turn probes are inventoried before new runner behavior is designed.
 - Machine checks and reviewer fields are explicitly separated.
 - Each child issue selects exactly one root cause before implementation.

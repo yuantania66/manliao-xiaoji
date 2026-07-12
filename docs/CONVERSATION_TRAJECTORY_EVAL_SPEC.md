@@ -176,7 +176,7 @@ The runner must support named variants without changing canonical product defaul
 Variant sets are child-specific:
 
 - 012A variants test low-information groundedness and history contamination;
-- 012B variants test removal of concrete recorder-style examples and addition of a semantic-value contract;
+- 012B variants test removal of concrete recorder-style examples and addition of a semantic-value contract, but only after at least three semantically distinct emotional inputs reproduce a materially similar skeleton in one trajectory across repeated real-model runs and a human reviewer confirms the rut hypothesis;
 - 012C variants test repair rendering and, only after separate approval, a possible ClinicalPlan contract change.
 
 The runner must not mix product changes for multiple child issues into a single treatment branch.
@@ -245,6 +245,7 @@ No existing dataset or runner is modified by this specification task.
 - Supports child-specific named experiment variants.
 - Does not enter `check:launch` with real-model calls.
 - Includes deterministic unit checks for schema validation, report generation, check evidence, and stale metadata.
+- Allows expected structure and product-decision fields to remain explicitly `pending`; unresolved product expectations do not block evidence capture or runner infrastructure.
 
 ## 13. Implementation Boundary
 
