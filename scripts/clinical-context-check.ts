@@ -238,6 +238,48 @@ for (const { input, expectedGoal } of nonAdviceCases) {
   assert.equal(selectResponseGoal(nonAdviceContext), expectedGoal, `${input} must select ${expectedGoal}.`);
 }
 
+const expressionDifficultyPositiveCases = [
+  "那个梦很奇怪，我也说不清，就是醒来很难受。",
+  "我想继续说，但是又不太想说。",
+];
+
+for (const input of expressionDifficultyPositiveCases) {
+  const expressionDifficultyContext = buildClinicalContext({
+    conversationId: "clinical-context-check",
+    userId: "check-user",
+    userTurn: input,
+    recentTurns: [],
+    memoryContext,
+    conversationState: buildConversationState(input, []),
+  });
+  const plan = createClinicalPlan(expressionDifficultyContext);
+  assert.equal(expressionDifficultyContext.signals.expressionDifficulty, true, `${input} must set expressionDifficulty.`);
+  assert.equal(selectResponseGoal(expressionDifficultyContext), "help_continue_expression", `${input} must select help_continue_expression.`);
+  assert.equal(plan.responseIntent, "invite_expression", `${input} must preserve invite_expression.`);
+  assert.equal(plan.questionFunction, "open_gentle_invitation", `${input} must preserve open_gentle_invitation.`);
+}
+
+const expressionDifficultyNegativeCases = [
+  "脑子很乱，因为项目流程太复杂了",
+  "我不知道答案",
+  "梦很奇怪，但是我能说清楚",
+  "事情太复杂了",
+  "我不同意他的观点",
+];
+
+for (const input of expressionDifficultyNegativeCases) {
+  const expressionDifficultyContext = buildClinicalContext({
+    conversationId: "clinical-context-check",
+    userId: "check-user",
+    userTurn: input,
+    recentTurns: [],
+    memoryContext,
+    conversationState: buildConversationState(input, []),
+  });
+  assert.equal(expressionDifficultyContext.signals.expressionDifficulty, false, `${input} must not set expressionDifficulty.`);
+  assert.notEqual(selectResponseGoal(expressionDifficultyContext), "help_continue_expression", `${input} must not select help_continue_expression.`);
+}
+
 const numericContext = buildClinicalContext({
   conversationId: "clinical-context-check",
   userId: "check-user",
