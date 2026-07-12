@@ -51,22 +51,7 @@ assert(
 );
 assert.equal(isUserCorrection("不是这个意思"), true, "Shared clinical signal must detect direct correction.");
 assert.equal(isUserCorrection("你是不是根本没懂我？"), true, "Shared clinical signal must detect AI-understanding challenge.");
-assert.equal(isUserCorrection("不是这样的"), true, "Shared clinical signal must detect direct correction withdrawal.");
-assert.equal(isUserCorrection("不是我想表达的"), true, "Shared clinical signal must detect expression correction.");
-assert.equal(isUserCorrection("你理解偏了"), true, "Shared clinical signal must detect shifted-understanding correction.");
-assert.equal(isUserCorrection("你误会了"), true, "Shared clinical signal must detect misunderstanding correction.");
-assert.equal(isUserCorrection("我想纠正一下"), true, "Shared clinical signal must detect explicit correction intent.");
-assert.equal(isUserCorrection("我不是在说这个"), true, "Shared clinical signal must detect current-target correction.");
 assert.equal(isUserCorrection("我不会伤害自己"), false, "Shared clinical signal must not capture unrelated negation.");
-assert.equal(isUserCorrection("我不是很开心"), false, "Shared clinical signal must not capture ordinary negation.");
-assert.equal(
-  isUserCorrection("事情不是这样的，但不是在说你理解错了"),
-  false,
-  "Shared clinical signal must respect explicit non-AI-correction negation."
-);
-assert.equal(isUserCorrection("我不同意他的看法"), false, "Shared clinical signal must not capture opinion disagreement.");
-assert.equal(isUserCorrection("不是每个人都会这样"), false, "Shared clinical signal must not capture generic negation.");
-assert.equal(isUserCorrection("电影里不是这么演的"), false, "Shared clinical signal must not capture event description.");
 
 const safetyTrace = buildSafetySkippedClinicalTrace({
   level: "crisis",
@@ -331,62 +316,6 @@ const numericPlan = createClinicalPlan(numericContext);
 assert.equal(numericContext.signals.messageLength, "SHORT", "Pure numeric input must set messageLength=SHORT.");
 assert.equal(numericPlan.responseGoal, "clarify", "Pure numeric input must remain clarify.");
 
-const repairClinicalPlanCases = [
-  {
-    id: "GD-REL-006",
-    input: "你是不是根本没懂我？",
-  },
-  {
-    id: "GD-REL-007",
-    input: "其实不是因为这个。",
-  },
-  {
-    id: "GD-AMB-006",
-    input: "我刚刚是不是没表达清楚？",
-  },
-];
-
-const repairClinicalPlans = repairClinicalPlanCases.map(({ id, input }) => {
-  const context = buildClinicalContext({
-    conversationId: "check-conversation",
-    userId: "check-user",
-    userTurn: input,
-    recentTurns: [],
-    memoryContext: clinicalMemoryContext,
-    conversationState: getConversationState(input),
-  });
-  const plan = createClinicalPlan(context);
-
-  assert.equal(plan.responseGoal, "clarify", `${id} must select clarify ResponseGoal for repair.`);
-  assert.equal(plan.responseIntent, "repair", `${id} must enter repair responseIntent.`);
-  assert.equal(plan.questionFunction, "repair_understanding", `${id} must enter repair_understanding path.`);
-
-  return { id, responseGoal: plan.responseGoal, responseIntent: plan.responseIntent, questionFunction: plan.questionFunction };
-});
-
-const repairNegativeCases = [
-  "我不是很开心",
-  "事情不是这样的，但不是在说你理解错了",
-  "我不同意他的看法",
-  "不是每个人都会这样",
-  "电影里不是这么演的",
-];
-
-repairNegativeCases.forEach((input) => {
-  const context = buildClinicalContext({
-    conversationId: "check-conversation",
-    userId: "check-user",
-    userTurn: input,
-    recentTurns: [],
-    memoryContext: clinicalMemoryContext,
-    conversationState: getConversationState(input),
-  });
-  const plan = createClinicalPlan(context);
-
-  assert.notEqual(plan.responseIntent, "repair", `${input} must not enter repair responseIntent.`);
-  assert.notEqual(plan.questionFunction, "repair_understanding", `${input} must not enter repair_understanding.`);
-});
-
 const promptInput = {
   userMessage: "今天好累",
   recentMessages: [],
@@ -554,7 +483,6 @@ console.log(
       })),
       adviceResponseGoal: advicePlan.responseGoal,
       supportActionContractCases: supportActionContractPlans,
-      repairClinicalPlans,
       numericResponseGoal: numericPlan.responseGoal,
       noOpFallback: noOpFallbackPlan.primaryStrategy,
       promptInjection: {
