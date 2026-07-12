@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "conversation-trajectories-v1",
+  "trajectories": [
+    {
+      "id": "TRJ-GROUND-001",
+      "category": "groundedness",
+      "source": {
+        "kind": "product_self_test",
+        "capturedAt": "2026-07-12",
+        "evidence": ["screenshot"],
+        "captureEnvironment": "pending_confirmation"
+      },
+      "purpose": "Prevent unsupported meaning from being assigned and carried across consecutive numeric turns.",
+      "initialMessages": [],
+      "turns": [
+        {
+          "turnId": "t1",
+          "fixtureStatus": "captured",
+          "user": "1",
+          "observedAssistant": "1。像是还在刚才那个松口气的瞬间里。",
+          "expectedStructure": {
+            "responseGoal": "clarify",
+            "responseIntent": "clarify",
+            "questionFunction": "clarify_meaning"
+          },
+          "allowedFacts": ["The user sent the token 1."],
+          "forbiddenPatterns": ["松口气", "分数", "比刚才"],
+          "machineChecks": ["structure_matches", "forbidden_patterns_absent"],
+          "reviewerFields": ["unsupportedMeaning", "groundedUnderstanding", "reviewerNotes"]
+        },
+        {
+          "turnId": "t2",
+          "fixtureStatus": "captured",
+          "user": "2",
+          "observedAssistant": "好，那就先在这个松口气的感觉里待一会儿。",
+          "expectedStructure": {
+            "responseGoal": "clarify",
+            "responseIntent": "clarify",
+            "questionFunction": "clarify_meaning"
+          },
+          "allowedFacts": ["The user sent the token 2 after sending 1."],
+          "forbiddenPatterns": ["松口气", "分数", "比刚才"],
+          "machineChecks": ["structure_matches", "forbidden_patterns_absent"],
+          "reviewerFields": ["unsupportedMeaning", "groundedUnderstanding", "reviewerNotes"]
+        },
+        {
+          "turnId": "t3",
+          "fixtureStatus": "captured",
+          "user": "3",
+          "observedAssistant": "3在这里，我不急着定义它。想顺着这个数字说点什么可以，先不说也没关系。",
+          "expectedStructure": {
+            "responseGoal": "clarify",
+            "responseIntent": "clarify",
+            "questionFunction": "clarify_meaning"
+          },
+          "allowedFacts": ["The user sent the token 3 after sending 1 and 2."],
+          "forbiddenPatterns": ["松口气", "分数", "比刚才"],
+          "machineChecks": ["structure_matches", "forbidden_patterns_absent"],
+          "reviewerFields": ["unsupportedMeaning", "groundedUnderstanding", "reviewerNotes"]
+        }
+      ],
+      "trajectoryMachineChecks": ["no_forbidden_pattern_carryover"],
+      "trajectoryReviewerFields": ["crossTurnContamination", "overallTrustImpact", "reviewerNotes"]
+    },
+    {
+      "id": "TRJ-RUT-OBS-001",
+      "category": "template_rut",
+      "source": {
+        "kind": "product_self_test",
+        "capturedAt": "2026-07-12",
+        "evidence": ["screenshot"],
+        "captureEnvironment": "pending_confirmation"
+      },
+      "purpose": "Preserve the screenshot-confirmed recorder-like emotional reply without overstating a cross-turn rut.",
+      "initialMessages": [],
+      "turns": [
+        {
+          "turnId": "t1",
+          "fixtureStatus": "captured",
+          "user": "我今天有点不太高兴",
+          "observedAssistant": "听到你说今天有点不太高兴，就先让这句话在这里。",
+          "expectedStructure": {
+            "responseGoal": "reflect",
+            "responseIntent": "empathic_reflection",
+            "questionFunction": "clarify_or_reflect"
+          },
+          "allowedFacts": ["The user feels somewhat unhappy today."],
+          "forbiddenPatterns": ["就先让这句话在这里", "我接住了"],
+          "machineChecks": ["structure_matches", "forbidden_patterns_absent"],
+          "reviewerFields": ["groundedUnderstanding", "conversationMovement", "reviewerNotes"]
+        }
+      ],
+      "trajectoryMachineChecks": [],
+      "trajectoryReviewerFields": ["templateRut", "reviewerNotes"]
+    },
+    {
+      "id": "TRJ-REPAIR-OBS-001",
+      "category": "meta_repair",
+      "source": {
+        "kind": "product_self_test",
+        "capturedAt": "2026-07-12",
+        "evidence": ["screenshot"],
+        "captureEnvironment": "pending_confirmation"
+      },
+      "purpose": "Preserve the responsibility-taking but experientially shallow reply without inferring an unobserved structural route from screenshot text alone.",
+      "initialMessages": [],
+      "turns": [
+        {
+          "turnId": "t1",
+          "fixtureStatus": "captured",
+          "user": "你一点都不懂我",
+          "observedAssistant": "是我没跟上，让你觉得没被懂。",
+          "expectedStructure": {
+            "responseGoal": "pending",
+            "responseIntent": "pending",
+            "questionFunction": "pending"
+          },
+          "allowedFacts": ["The user says the assistant does not understand them."],
+          "forbiddenPatterns": [],
+          "machineChecks": ["structure_matches"],
+          "reviewerFields": ["metaRepairQuality", "groundedUnderstanding", "reviewerNotes"]
+        }
+      ],
+      "trajectoryMachineChecks": [],
+      "trajectoryReviewerFields": ["overallTrustImpact", "reviewerNotes"]
+    },
+    {
+      "id": "TRJ-RUT-REPRO-001",
+      "category": "template_rut",
+      "source": {
+        "kind": "user_reported_probe",
+        "capturedAt": "2026-07-12",
+        "evidence": ["reported"],
+        "captureEnvironment": "pending_confirmation"
+      },
+      "purpose": "Reproduce the template-rut hypothesis with three or more distinct emotional inputs in one official-entrypoint trajectory.",
+      "initialMessages": [],
+      "turns": [
+        {
+          "turnId": "t1",
+          "fixtureStatus": "pending_reproduction",
+          "user": "我今天有点不太高兴",
+          "expectedStructure": {
+            "responseGoal": "pending",
+            "responseIntent": "pending",
+            "questionFunction": "pending"
+          },
+          "allowedFacts": ["The user feels somewhat unhappy today."],
+          "forbiddenPatterns": [],
+          "machineChecks": [],
+          "reviewerFields": ["templateRut", "groundedUnderstanding", "reviewerNotes"]
+        },
+        {
+          "turnId": "t2",
+          "fixtureStatus": "pending_reproduction",
+          "user": "我累了",
+          "expectedStructure": {
+            "responseGoal": "pending",
+            "responseIntent": "pending",
+            "questionFunction": "pending"
+          },
+          "allowedFacts": ["The user says they are tired."],
+          "forbiddenPatterns": [],
+          "machineChecks": [],
+          "reviewerFields": ["templateRut", "groundedUnderstanding", "reviewerNotes"]
+        },
+        {
+          "turnId": "t3",
+          "fixtureStatus": "pending_reproduction",
+          "user": "我一个人在家里，现在好害怕",
+          "expectedStructure": {
+            "responseGoal": "pending",
+            "responseIntent": "pending",
+            "questionFunction": "pending"
+          },
+          "allowedFacts": ["The user is home alone and feels afraid."],
+          "forbiddenPatterns": [],
+          "machineChecks": [],
+          "reviewerFields": ["templateRut", "groundedUnderstanding", "reviewerNotes"]
+        },
+        {
+          "turnId": "t4",
+          "fixtureStatus": "pending_reproduction",
+          "user": "我明天面试，我好紧张",
+          "expectedStructure": {
+            "responseGoal": "pending",
+            "responseIntent": "pending",
+            "questionFunction": "pending"
+          },
+          "allowedFacts": ["The user has an interview tomorrow and feels nervous."],
+          "forbiddenPatterns": [],
+          "machineChecks": [],
+          "reviewerFields": ["templateRut", "groundedUnderstanding", "reviewerNotes"]
+        }
+      ],
+      "trajectoryMachineChecks": ["repeated_opening_skeleton_locator"],
+      "trajectoryReviewerFields": ["templateRut", "conversationMovement", "reviewerNotes"]
+    },
+    {
+      "id": "TRJ-META-REPRO-001",
+      "category": "meta_repair",
+      "source": {
+        "kind": "user_reported_probe",
+        "capturedAt": "2026-07-12",
+        "evidence": ["reported"],
+        "captureEnvironment": "pending_confirmation"
+      },
+      "purpose": "Reproduce a direct audit of what the assistant claims to have understood.",
+      "initialMessages": [],
+      "turns": [
+        {
+          "turnId": "t1",
+          "fixtureStatus": "pending_reproduction",
+          "user": "我一个人在家里，现在好害怕",
+          "expectedStructure": {
+            "responseGoal": "pending",
+            "responseIntent": "pending",
+            "questionFunction": "pending"
+          },
+          "allowedFacts": ["The user is home alone and feels afraid."],
+          "forbiddenPatterns": [],
+          "machineChecks": [],
+          "reviewerFields": ["groundedUnderstanding", "reviewerNotes"]
+        },
+        {
+          "turnId": "t2",
+          "fixtureStatus": "pending_reproduction",
+          "user": "你接住了什么",
+          "expectedStructure": {
+            "responseGoal": "pending",
+            "responseIntent": "pending",
+            "questionFunction": "pending"
+          },
+          "allowedFacts": ["The user asks the assistant to make its understanding explicit."],
+          "forbiddenPatterns": ["是你刚刚说", "我接住的是"],
+          "machineChecks": ["forbidden_patterns_absent"],
+          "reviewerFields": ["metaRepairQuality", "groundedUnderstanding", "reviewerNotes"]
+        }
+      ],
+      "trajectoryMachineChecks": [],
+      "trajectoryReviewerFields": ["metaRepairQuality", "overallTrustImpact", "reviewerNotes"]
+    }
+  ]
+}
