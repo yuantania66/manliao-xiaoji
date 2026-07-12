@@ -83,6 +83,7 @@ Treatment improves `help_continue_expression` cases, especially "我不知道想
 
 ### EXP-BL-004
 
+- Status: completed / merged (PR #10, merge commit `2bcbad45683847da1a7d6c6c957288ea25abeb4a`)
 - Category: Repair / Relationship Feedback
 - Corresponding Cases: GD-REL-006, GD-REL-007, GD-AMB-006
 - User Problem: When users say the AI did not understand or check whether they expressed clearly, replies still ask the user to correct, explain, or provide the "actual reason".
