@@ -81,6 +81,8 @@ export type TrajectoryReportMetadata = {
   runMode: TrajectoryRunMode;
   repeatCount: number;
   variant: string;
+  promptAdapter: string;
+  historyAdapter: string;
   provider: string;
   model: string;
   promptVersion: string;
@@ -150,6 +152,7 @@ const RELEVANT_SOURCE_PATHS = [
   TRAJECTORY_DATASET_PATH,
   "scripts/conversation-trajectory-eval-lib.ts",
   "scripts/conversation-trajectory-eval-runner.ts",
+  "scripts/conversation-trajectory-experiment-adapters.ts",
 ];
 
 export const computeRelevantSourceFingerprint = () => {
@@ -176,12 +179,35 @@ const getPlanFields = (result: ChatReplyResult | undefined) => {
   };
 };
 
-const normalizedOpeningSkeleton = (text: string) =>
-  text
+const normalizedOpeningSkeleton = (text: string) => {
+  const opening = text
     .trim()
     .slice(0, 28)
+    .split(/[。！？!?，,]/u)[0]
     .replace(/[0-9０-９]+/g, "#")
-    .replace(/今天有点不太高兴|累了|一个人在家里，现在好害怕|明天面试，我好紧张/g, "<slot>");
+    .replace(/[「『“‘][^」』”’]{1,16}[」』”’]/g, "<slot>")
+    .replace(/今天有点不太高兴|累了|一个人在家里，现在好害怕|明天面试，我好紧张/g, "<slot>")
+    .replace(/\s+/g, "");
+
+  return opening
+    .replace(/^(?:我)?(?:看到了|收到了|注意到|留意到|看见|看到|收到)(?:你发了|你发的|这个|了)?/u, "<observe>")
+    .replace(/^<observe>#了?/u, "<observe><token>")
+    .replace(/^(?:嗯|好|好的|行)[，,。]?/u, "<ack>")
+    .replace(/^(?:先|暂时).{0,12}(?:留|放|停|待)(?:在|到)?(?:这里|这儿)?[。.]?/u, "<park>");
+};
+
+export const locateRepeatedOpeningSkeletons = (turns: TurnRunResult[], threshold = 3) => {
+  const completed = turns.filter((turn) => turn.status === "completed" && turn.assistant);
+  const counts = completed.reduce<Record<string, number>>((acc, turn) => {
+    const opening = normalizedOpeningSkeleton(turn.assistant ?? "");
+    acc[opening] = (acc[opening] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(counts)
+    .filter(([, count]) => count >= threshold)
+    .map(([opening, count]) => ({ rule: "repeated_opening_skeleton_locator", matchedText: `${opening} (${count})` }));
+};
 
 export const buildTurnResult = ({
   turn,
@@ -256,14 +282,7 @@ export const buildTrajectoryChecks = (turns: TurnRunResult[]) => {
   const trajectoryMachineCheckErrors: string[] = [];
   const trajectoryHeuristicFlags: Array<{ rule: string; matchedText: string }> = [];
 
-  const openings = completed.map((turn) => normalizedOpeningSkeleton(turn.assistant ?? ""));
-  const openingCounts = openings.reduce<Record<string, number>>((acc, opening) => {
-    acc[opening] = (acc[opening] ?? 0) + 1;
-    return acc;
-  }, {});
-  for (const [opening, count] of Object.entries(openingCounts)) {
-    if (count >= 3) trajectoryHeuristicFlags.push({ rule: "repeated_opening_skeleton_locator", matchedText: `${opening} (${count})` });
-  }
+  trajectoryHeuristicFlags.push(...locateRepeatedOpeningSkeletons(turns));
 
   for (const literal of ["听到你说", "我接住"]) {
     const count = completed.filter((turn) => turn.assistant?.includes(literal)).length;
@@ -292,6 +311,8 @@ export const renderTrajectoryReport = (metadata: TrajectoryReportMetadata, resul
     `- runMode: ${metadata.runMode}`,
     `- repeatCount: ${metadata.repeatCount}`,
     `- variant: ${metadata.variant}`,
+    `- promptAdapter: ${metadata.promptAdapter}`,
+    `- historyAdapter: ${metadata.historyAdapter}`,
     `- provider: ${metadata.provider}`,
     `- model: ${metadata.model}`,
     `- promptVersion: ${metadata.promptVersion}`,

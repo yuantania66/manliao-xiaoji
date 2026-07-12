@@ -3,6 +3,7 @@ import { createSafetyGeneration, isCrisisInput } from "./chatSafety";
 import { createClinicalMemoryContext } from "./clinicalMemoryAdapter";
 import { buildAiDebugTrace } from "./debugTrace";
 import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
+import type { ChatPromptEvaluationAdapter } from "./promptBuilder";
 import {
   AiConversationMessage,
   AiDebugTrace,
@@ -27,6 +28,7 @@ type CreateChatReplyInput = {
   loadMemoryContext?: () => Promise<AiMemoryContext | null>;
   understandingContext?: StructuredRagContext | null;
   includeDebugTrace?: boolean;
+  evaluationAdapter?: ChatPromptEvaluationAdapter | null;
 };
 
 type ChatReplyFinalSource = AiDebugTrace["route"]["finalSource"];
@@ -102,7 +104,11 @@ export const createChatReply = async ({
   loadMemoryContext,
   understandingContext,
   includeDebugTrace = false,
+  evaluationAdapter,
 }: CreateChatReplyInput): Promise<ChatReplyResult> => {
+  if (evaluationAdapter && !conversationId.startsWith("trajectory-eval-")) {
+    throw new Error("Evaluation adapters are restricted to trajectory-eval conversations.");
+  }
   const rewriteAttempted = false;
   const clinicalMemoryContext = createClinicalMemoryContext(understandingContext);
   const conversationState = determineConversationState({
@@ -173,6 +179,7 @@ export const createChatReply = async ({
       memoryContext: resolvedMemoryContext,
       understandingContext,
       clinicalPlan,
+      evaluationAdapter,
     });
     const judge = createDisabledJudge("judge/rewrite disabled; base model output returned directly");
     const finalSource: ChatReplyFinalSource = "base_model";

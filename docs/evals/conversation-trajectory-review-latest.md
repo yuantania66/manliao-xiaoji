@@ -14,8 +14,8 @@ Generated at: 2026-07-12T12:25:35.327Z
 - provider: captured-replay
 - model: captured-replay
 - promptVersion: captured-replay
-- freshness: current
-- staleReason: none
+- freshness: stale
+- staleReason: Issue #19 changes eval-only adapters and opening-skeleton normalization; regenerate canonical replay after the experiment branch is resolved.
 
 Replay mode validates fixtures, report structure, and deterministic checks only. It is not evidence of current model quality.
 

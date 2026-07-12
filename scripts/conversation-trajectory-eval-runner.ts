@@ -13,11 +13,19 @@ import {
   buildTurnResult,
   computeRelevantSourceFingerprint,
   getCurrentCommit,
+  locateRepeatedOpeningSkeletons,
   loadTrajectoryDataset,
   renderTrajectoryReport,
   type TrajectoryRunMode,
   type TrajectoryRunResult,
 } from "./conversation-trajectory-eval-lib";
+import {
+  GROUNDEDNESS_VARIANTS,
+  applyGroundednessHistoryAdapter,
+  getGroundednessExperimentDataset,
+  getGroundednessPromptAdapter,
+  type GroundednessExperimentVariant,
+} from "./conversation-trajectory-experiment-adapters";
 
 loadEnvConfig(process.cwd());
 
@@ -31,12 +39,30 @@ if (!Number.isInteger(repeatCount) || repeatCount < 1 || repeatCount > 10) {
 }
 const variantArg = process.argv.find((arg) => arg.startsWith("--variant="));
 const variant = variantArg?.split("=")[1]?.trim() || "canonical";
-if (variant !== "canonical") {
-  throw new Error(`Variant ${variant} is not registered. Child experiments must add an explicit runner adapter.`);
+const experimentArg = process.argv.find((arg) => arg.startsWith("--experiment="));
+const experiment = experimentArg?.split("=")[1]?.trim() || "canonical";
+const isGroundednessExperiment = experiment === "exp-bl-012a";
+if (experiment !== "canonical" && !isGroundednessExperiment) {
+  throw new Error(`Experiment ${experiment} is not registered.`);
+}
+if (!isGroundednessExperiment && variant !== "canonical") {
+  throw new Error(`Variant ${variant} is not registered for the canonical dataset.`);
+}
+if (isGroundednessExperiment && !GROUNDEDNESS_VARIANTS.includes(variant as GroundednessExperimentVariant)) {
+  throw new Error(`Variant ${variant} is not registered for ${experiment}.`);
+}
+if (isGroundednessExperiment && mode !== "real") {
+  throw new Error(`${experiment} is a real-model comparison and does not support replay mode.`);
 }
 
+const groundednessVariant = (isGroundednessExperiment ? variant : "a0") as GroundednessExperimentVariant;
+const promptAdapter = isGroundednessExperiment ? getGroundednessPromptAdapter(groundednessVariant) : null;
+const outputPath = isGroundednessExperiment
+  ? `docs/evals/conversation-trajectory-${experiment}-${variant}.local.md`
+  : TRAJECTORY_REPORT_PATH;
+
 const run = async () => {
-  const dataset = loadTrajectoryDataset();
+  const dataset = isGroundednessExperiment ? getGroundednessExperimentDataset() : loadTrajectoryDataset();
   const results: TrajectoryRunResult[] = [];
 
   for (let runIndex = 1; runIndex <= repeatCount; runIndex += 1) {
@@ -55,12 +81,16 @@ const run = async () => {
         }
 
         try {
+          const adaptedRecentMessages = isGroundednessExperiment
+            ? applyGroundednessHistoryAdapter(groundednessVariant, recentMessages.slice(0, -1))
+            : recentMessages.slice(0, -1);
           const result = await createChatReply({
             conversationId: `trajectory-eval-${trajectory.id}-run-${runIndex}`,
             userId: "trajectory-eval-user",
             userMessage: turn.user,
-            recentMessages: recentMessages.slice(0, -1),
+            recentMessages: adaptedRecentMessages,
             includeDebugTrace: true,
+            evaluationAdapter: promptAdapter,
           });
           const assistant = result.generation.text;
           turns.push(buildTurnResult({ turn, assistant, result, mode }));
@@ -72,6 +102,18 @@ const run = async () => {
       }
 
       results.push({ trajectory, runIndex, turns, ...buildTrajectoryChecks(turns) });
+    }
+  }
+
+  if (isGroundednessExperiment && repeatCount >= 3) {
+    for (const trajectory of dataset.trajectories) {
+      const trajectoryResults = results.filter((item) => item.trajectory.id === trajectory.id);
+      const crossRunFlags = locateRepeatedOpeningSkeletons(trajectoryResults.flatMap((item) => item.turns));
+      if (crossRunFlags.length && trajectoryResults[0]) {
+        trajectoryResults[0].trajectoryHeuristicFlags.push(
+          ...crossRunFlags.map((flag) => ({ ...flag, rule: "cross_run_opening_skeleton_locator" }))
+        );
+      }
     }
   }
 
@@ -89,6 +131,8 @@ const run = async () => {
       runMode: mode,
       repeatCount,
       variant,
+      promptAdapter: promptAdapter?.id ?? "none",
+      historyAdapter: groundednessVariant === "a3" ? "drop-unconfirmed-assistant-semantic-history" : "canonical",
       provider,
       model,
       promptVersion,
@@ -98,8 +142,8 @@ const run = async () => {
     results
   );
 
-  mkdirSync(dirname(TRAJECTORY_REPORT_PATH), { recursive: true });
-  writeFileSync(TRAJECTORY_REPORT_PATH, report, "utf8");
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, report, "utf8");
 
   console.log(
     JSON.stringify(
@@ -107,7 +151,10 @@ const run = async () => {
         mode,
         repeatCount,
         variant,
-        output: TRAJECTORY_REPORT_PATH,
+        experiment,
+        promptAdapter: promptAdapter?.id ?? "none",
+        historyAdapter: groundednessVariant === "a3" ? "drop-unconfirmed-assistant-semantic-history" : "canonical",
+        output: outputPath,
         trajectories: results.length,
         completedTurns: completed.length,
         pendingTurns: results.flatMap((item) => item.turns).filter((turn) => turn.status === "pending_reproduction").length,
