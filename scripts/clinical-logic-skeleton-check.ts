@@ -228,14 +228,17 @@ const expressionStuckPlans = expressionStuckCases.map((userTurn) => {
 });
 
 const expressionDifficultyNegativeCases = [
-  "脑子很乱，因为项目流程太复杂了",
-  "我不知道答案",
-  "梦很奇怪，但是我能说清楚",
-  "事情太复杂了",
-  "我不同意他的观点",
+  { userTurn: "脑子很乱，因为项目流程太复杂了", expectedGoal: "reflect" },
+  { userTurn: "我不知道答案", expectedGoal: "reflect" },
+  { userTurn: "梦很奇怪，但是我能说清楚", expectedGoal: "reflect" },
+  { userTurn: "事情太复杂了", expectedGoal: "reflect" },
+  { userTurn: "我不同意他的观点", expectedGoal: "reflect" },
+  { userTurn: "我现在不想说了", expectedGoal: "hold_space" },
+  { userTurn: "这个梦我说不清", expectedGoal: "reflect" },
+  { userTurn: "我不确定明天要不要去", expectedGoal: "reflect" },
 ];
 
-expressionDifficultyNegativeCases.forEach((userTurn) => {
+expressionDifficultyNegativeCases.forEach(({ userTurn, expectedGoal }) => {
   const context = buildClinicalContext({
     conversationId: "check-conversation",
     userId: "check-user",
@@ -247,7 +250,7 @@ expressionDifficultyNegativeCases.forEach((userTurn) => {
   const plan = createClinicalPlan(context);
 
   assert.equal(context.signals.expressionDifficulty, false, `${userTurn} must not set expressionDifficulty.`);
-  assert.notEqual(plan.responseGoal, "help_continue_expression", `${userTurn} must not select help_continue_expression.`);
+  assert.equal(plan.responseGoal, expectedGoal, `${userTurn} must select ${expectedGoal}.`);
 });
 
 const adviceContext = buildClinicalContext({
