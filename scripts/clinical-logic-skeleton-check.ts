@@ -343,6 +343,30 @@ const numericContext = buildClinicalContext({
 const numericPlan = createClinicalPlan(numericContext);
 assert.equal(numericContext.signals.messageLength, "SHORT", "Pure numeric input must set messageLength=SHORT.");
 assert.equal(numericPlan.responseGoal, "clarify", "Pure numeric input must remain clarify.");
+assert(
+  numericPlan.toneConstraint.includes("clarify unestablished meaning without assigning one."),
+  "Pure numeric clarification must carry the groundedness contract in ClinicalPlan."
+);
+assert(
+  numericPlan.toneConstraint.includes(
+    "keep a low-pressure continuation entry; do not require immediate explanation."
+  ),
+  "Pure numeric clarification must carry the conversation-movement contract in ClinicalPlan."
+);
+assert(
+  numericPlan.toneConstraint.includes("ask one direct, small clarification question when meaning is absent."),
+  "Pure numeric clarification must ask one direct, small question when meaning is absent."
+);
+assert(
+  numericPlan.interventionBoundary.includes(
+    "do not convert ambiguity into an emotion, score, activity, or conversational purpose."
+  ),
+  "Pure numeric clarification must forbid unsupported meaning in ClinicalPlan."
+);
+assert(
+  numericPlan.interventionBoundary.includes("do not close the conversation unless the user asks to pause."),
+  "Pure numeric clarification must not close the conversation without a pause request."
+);
 
 const promptInput = {
   userMessage: "今天好累",

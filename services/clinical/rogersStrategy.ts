@@ -79,6 +79,7 @@ export const createRogersClinicalPlan = (
   const planShape = getPlanShapeForGoal(context, responseGoal);
   const supportActionElement =
     responseGoal === "support_action" ? getSupportActionElement(context.conversation.currentUserMessage) : null;
+  const clarificationContract = planShape.responseIntent === "clarify";
 
   return {
     responseGoal,
@@ -90,6 +91,13 @@ export const createRogersClinicalPlan = (
       "warm",
       "non-directive",
       "non-diagnostic",
+      ...(clarificationContract
+        ? [
+            "clarify unestablished meaning without assigning one.",
+            "ask one direct, small clarification question when meaning is absent.",
+            "keep a low-pressure continuation entry; do not require immediate explanation.",
+          ]
+        : []),
       ...(supportActionElement
         ? ["support_action must include one small, optional, user-adjustable action-support element."]
         : []),
@@ -97,6 +105,12 @@ export const createRogersClinicalPlan = (
     interventionBoundary: [
       "no diagnosis",
       "no treatment plan",
+      ...(clarificationContract
+        ? [
+            "do not convert ambiguity into an emotion, score, activity, or conversational purpose.",
+            "do not close the conversation unless the user asks to pause.",
+          ]
+        : []),
       ...(supportActionElement
         ? [
             "do not decide for the user",

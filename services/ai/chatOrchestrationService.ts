@@ -18,6 +18,7 @@ import { createClinicalPlan } from "@/services/clinical/clinicalPlanService";
 import { buildClinicalTrace, buildSafetySkippedClinicalTrace } from "@/services/clinical/clinicalTrace";
 import type { ClinicalTrace } from "@/services/clinical/clinicalTypes";
 import { determineConversationState } from "@/conversation-os/state";
+import { applyFreeNumericReplyContract } from "./lowInformationReplyGuard";
 
 type CreateChatReplyInput = {
   conversationId: string;
@@ -172,7 +173,7 @@ export const createChatReply = async ({
     memoryContext !== undefined ? memoryContext : loadMemoryContext ? await loadMemoryContext() : null;
 
   try {
-    const generation = await generateChatReply({
+    const modelGeneration = await generateChatReply({
       conversationId,
       userMessage,
       recentMessages,
@@ -180,6 +181,12 @@ export const createChatReply = async ({
       understandingContext,
       clinicalPlan,
       evaluationAdapter,
+    });
+    const generation = applyFreeNumericReplyContract({
+      userMessage,
+      recentMessages,
+      clinicalPlan,
+      generation: modelGeneration,
     });
     const judge = createDisabledJudge("judge/rewrite disabled; base model output returned directly");
     const finalSource: ChatReplyFinalSource = "base_model";
@@ -206,9 +213,15 @@ export const createChatReply = async ({
     };
   } catch {
     const riskLevel = getFallbackRiskLevel(userMessage);
-    const generation = createFallbackGeneration({
+    const fallbackGeneration = createFallbackGeneration({
       inputText: userMessage,
       riskLevel,
+    });
+    const generation = applyFreeNumericReplyContract({
+      userMessage,
+      recentMessages,
+      clinicalPlan,
+      generation: fallbackGeneration,
     });
     const judge = createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback");
     const finalSource: ChatReplyFinalSource = "fallback";

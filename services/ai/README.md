@@ -17,7 +17,8 @@ The chat route is intentionally in base-model mode:
 - no slow-chat state machine
 - no response-policy planner
 - no RAG guidance injection
-- no low-information deterministic shortcut
+- one narrow final-response contract for pure numeric input whose meaning has not been established;
+  explicit scales, numbered choices, and counting frames continue through normal model rendering
 - no judge/rewrite loop
 
 The old understanding/planning/review modules were removed from this directory.

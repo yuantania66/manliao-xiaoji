@@ -132,6 +132,7 @@ export async function POST(
       select: {
         role: true,
         content: true,
+        createdAt: true,
         aiGenerationId: true,
         aiGeneration: {
           select: {
@@ -146,6 +147,7 @@ export async function POST(
       .map((item) => ({
         role: item.role.toLowerCase() as "user" | "assistant" | "system",
         content: item.content,
+        createdAt: item.createdAt.toISOString(),
         promptVersion: item.aiGeneration?.promptVersion ?? null,
         aiGenerationId: item.aiGenerationId,
       }));
