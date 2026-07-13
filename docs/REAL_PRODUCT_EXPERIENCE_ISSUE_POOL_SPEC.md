@@ -30,6 +30,7 @@ Evidence classes must not be silently upgraded. A reported probe becomes confirm
 Each case records:
 
 - `caseId`
+- `episodeId`, shared by turns from the same captured conversation
 - `status`: `diagnosed`, `primary_root_cause_pending`, or `needs_reproduction`
 - `provenance`
 - capture date and environment when known
@@ -103,17 +104,3 @@ It must not:
 - add checks to CI;
 - create a product Backlog Issue;
 - infer exact text from a verbal summary.
-
-## 8. Cluster Gate
-
-After at least 20 confirmed or officially reproduced cases exist, a separate review may group them by failure mechanism.
-
-A cluster may justify a diagnosis Issue only when:
-
-- at least three independent cases show the same failure mechanism;
-- provenance is explicit;
-- one primary layer is supported or the missing evidence is named;
-- the cluster describes user harm rather than a preferred implementation;
-- no solution is preselected.
-
-The number 20 is a collection target, not an evidence threshold that automatically authorizes work.

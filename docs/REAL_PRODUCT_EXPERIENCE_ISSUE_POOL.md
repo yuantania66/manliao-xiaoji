@@ -4,6 +4,7 @@
 
 - Status: collecting and diagnosing
 - Confirmed cases: 6
+- Independent captured episodes: 4
 - Product changes authorized: none
 - Golden Dataset changes authorized: none
 - Next collection target: additional Decision Owner screenshots or official-entrypoint reproductions
@@ -11,6 +12,7 @@
 ## REP-001 — Unsupported emotion invented for a free number
 
 - status: `diagnosed`
+- episodeId: `EP-20260712-NUMERIC-001`
 - provenance: `screenshot_confirmed`
 - capturedAt: `2026-07-12`
 - captureEnvironment: `local_development`
@@ -29,11 +31,13 @@
   - Safety: not involved.
 - primaryRootCause: `Prompt`
 - confidence: `high`
-- reviewerNotes: This classification diagnoses model-facing rendering/compliance, not a specific Prompt sentence and not a fix.
+- evidenceRefs: `clinical-evals/conversation-trajectories-v1.json`; `docs/EXP-BL-012A_GROUNDEDNESS_REVIEW.md`
+- reviewerNotes: The screenshot is preserved in the canonical trajectory, and the groundedness diagnosis records a compatible deterministic route. This classification diagnoses model-facing rendering/compliance, not a specific Prompt sentence and not a fix.
 
 ## REP-002 — Assistant invention promoted into shared history
 
 - status: `diagnosed`
+- episodeId: `EP-20260712-NUMERIC-001`
 - provenance: `screenshot_confirmed`
 - capturedAt: `2026-07-12`
 - captureEnvironment: `local_development`
@@ -55,11 +59,13 @@
   - Safety: not involved.
 - primaryRootCause: `Conversation`
 - confidence: `high`
-- reviewerNotes: The first invention is REP-001; this case isolates the later carry-over mechanism.
+- evidenceRefs: `clinical-evals/conversation-trajectories-v1.json`; `docs/EXP-BL-012A_GROUNDEDNESS_REVIEW.md`
+- reviewerNotes: The first invention is REP-001; this case isolates the later carry-over mechanism within the same captured episode.
 
 ## REP-003 — Partial withdrawal still assigns conversational purpose
 
 - status: `diagnosed`
+- episodeId: `EP-20260712-NUMERIC-001`
 - provenance: `screenshot_confirmed`
 - capturedAt: `2026-07-12`
 - captureEnvironment: `local_development`
@@ -78,11 +84,13 @@
   - Safety: not involved.
 - primaryRootCause: `Prompt`
 - confidence: `medium`
-- reviewerNotes: The case is distinct from REP-002 because the old emotion is not carried verbatim; the failure is the new purpose frame.
+- evidenceRefs: `clinical-evals/conversation-trajectories-v1.json`; `docs/EXP-BL-012A_GROUNDEDNESS_REVIEW.md`
+- reviewerNotes: The case is a separate turn, not a separate captured episode. It is distinct from REP-002 because the old emotion is not carried verbatim; the failure is the new purpose frame.
 
 ## REP-004 — Recorder-style reflection with no added understanding
 
-- status: `diagnosed`
+- status: `primary_root_cause_pending`
+- episodeId: `EP-20260712-REFLECT-001`
 - provenance: `screenshot_confirmed`
 - capturedAt: `2026-07-12`
 - captureEnvironment: `local_development`
@@ -93,19 +101,20 @@
 - observedHarm: mechanical repetition; conversational closure; recorder tone
 - layerReview:
   - Conversation: sufficient current-turn content is present.
-  - ClinicalContext: the emotional statement is available to the response pipeline.
-  - ResponseGoal: `reflect` is structurally compatible with the input.
-  - Strategy: `rogers` is compatible with meaningful reflection.
-  - Prompt: the surface collapses reflection into a recorder-like template.
+  - ClinicalContext: the screenshot confirms the text but does not expose the runtime context trace.
+  - ResponseGoal: `reflect` is a plausible expected route, but it is not proven for this exact captured turn.
+  - Strategy: the exact selected strategy is not present in the screenshot evidence.
+  - Prompt: the surface resembles a recorder-like template, but Prompt cannot be isolated from the unobserved route using this screenshot alone.
   - Memory: not required for this turn.
   - Safety: not involved.
-- primaryRootCause: `Prompt`
-- confidence: `high`
-- reviewerNotes: This case diagnoses the single reply. A cross-turn template-rut claim requires additional independently confirmed replies.
+- primaryRootCause: `pending`
+- confidence: `insufficient_evidence`
+- reviewerNotes: Official-entrypoint reproduction with runtime trace is required before choosing between ResponseGoal, Strategy, and Prompt. A cross-turn template-rut claim also requires additional independently confirmed replies.
 
 ## REP-005 — Responsibility-taking without explicit repair
 
 - status: `primary_root_cause_pending`
+- episodeId: `EP-20260712-REPAIR-001`
 - provenance: `screenshot_confirmed`
 - capturedAt: `2026-07-12`
 - captureEnvironment: `local_development`
@@ -129,6 +138,7 @@
 ## REP-006 — Grounded acknowledgement that closes the conversation
 
 - status: `diagnosed`
+- episodeId: `EP-20260712-NUMERIC-002`
 - provenance: `screenshot_confirmed`
 - capturedAt: `2026-07-12`
 - captureEnvironment: `local_development`
@@ -147,17 +157,18 @@
   - Safety: not involved.
 - primaryRootCause: `Prompt`
 - confidence: `high`
-- reviewerNotes: This is the clearest evidence that `unsupportedMeaning=false` alone is not product success.
+- evidenceRefs: `docs/EXP-BL-012A_GROUNDEDNESS_REVIEW.md`; `docs/PR18_REVIEW.md`
+- reviewerNotes: The groundedness diagnosis records both this follow-up screenshot and the compatible deterministic numeric route. This is the clearest evidence that `unsupportedMeaning=false` alone is not product success.
 
 ## Current Distribution
 
 | Primary root cause | Confirmed diagnosis count | Pending count |
 | --- | ---: | ---: |
-| Prompt | 4 | 0 |
+| Prompt | 3 | 0 |
 | Conversation | 1 | 0 |
-| Pending | 0 | 1 |
+| Pending | 0 | 2 |
 
-This distribution is descriptive only. Six cases are too few to authorize a product change or declare Prompt the global product root cause.
+This distribution counts turn-level cases, not independent episodes. REP-001 through REP-003 belong to one captured conversation. Six cases across four episodes are too few to authorize a product change or declare Prompt the global product root cause.
 
 ## Next Collection Action
 
