@@ -94,6 +94,7 @@ export const createRogersClinicalPlan = (
       ...(clarificationContract
         ? [
             "clarify unestablished meaning without assigning one.",
+            "ask one direct, small clarification question when meaning is absent.",
             "keep a low-pressure continuation entry; do not require immediate explanation.",
           ]
         : []),

@@ -39,19 +39,19 @@ const apply = (userMessage: string, recentMessages: AiConversationMessage[] = []
   applyFreeNumericReplyContract({ userMessage, recentMessages, clinicalPlan, generation: modelGeneration });
 
 const freeSingle = apply("1");
-assert.equal(freeSingle.text, "我先不猜。你想继续发就继续，想说点别的也行。");
+assert.equal(freeSingle.text, "这个“1”有什么含义吗？");
 assert.equal(freeSingle.finalReplySource, "guard_rewrite");
 assert.equal(freeSingle.rawLLMOutput, modelGeneration.text);
 assert.equal(freeSingle.postProcessSteps?.[0]?.layer, "free_numeric_reply_contract");
 
 const freeSequenceHistory: AiConversationMessage[] = [
   { role: "user", content: "1" },
-  { role: "assistant", content: "我先不猜。你想继续发就继续，想说点别的也行。" },
+  { role: "assistant", content: "这个“1”有什么含义吗？" },
   { role: "user", content: "2" },
-  { role: "assistant", content: "我还是先不猜。你可以接着发，也可以随时换成想说的话。" },
+  { role: "assistant", content: "你是在测试我怎么回应这些数字吗？" },
 ];
 const freeSequence = apply("3", freeSequenceHistory);
-assert.equal(freeSequence.text, "继续发也可以；什么时候想说点别的，直接说就行。");
+assert.equal(freeSequence.text, "我还不确定是不是在测试；你可以继续发。");
 assert(!freeSequence.text.includes("3"));
 assert(!freeSequence.text.includes("松口气"));
 assert(!freeSequence.text.includes("停在这里"));
@@ -81,8 +81,25 @@ const guessedHistory: AiConversationMessage[] = [
   { role: "assistant", content: "1。像是还在刚才那个松口气的瞬间里。" },
 ];
 const afterAssistantGuess = apply("2", guessedHistory);
-assert.equal(afterAssistantGuess.text, "我还是先不猜。你可以接着发，也可以随时换成想说的话。");
+assert.equal(afterAssistantGuess.text, "你是在测试我怎么回应这些数字吗？");
 assert(!afterAssistantGuess.text.includes("松口气"));
+
+const staleNumericHistory: AiConversationMessage[] = [
+  { role: "user", content: "1", createdAt: "2000-01-01T00:00:00.000Z" },
+  { role: "assistant", content: "你是在测试我怎么回应这些数字吗？", createdAt: "2000-01-01T00:00:01.000Z" },
+];
+const newConversationAfterGap = apply("1", staleNumericHistory);
+assert.equal(newConversationAfterGap.text, "这个“1”有什么含义吗？");
+
+const staleScaleHistory: AiConversationMessage[] = [
+  {
+    role: "assistant",
+    content: "可以用 1–10 给现在的紧张打个分。",
+    createdAt: "2000-01-01T00:00:00.000Z",
+  },
+];
+assert.equal(shouldApplyFreeNumericReplyContract({ userMessage: "1", recentMessages: staleScaleHistory, clinicalPlan }), true);
+assert.equal(apply("1", staleScaleHistory).text, "这个“1”有什么含义吗？");
 
 console.log(
   JSON.stringify(
@@ -93,6 +110,8 @@ console.log(
       establishedChoice: "pass",
       explicitCount: "pass",
       assistantGuessHistory: "pass",
+      newConversationAfterGap: "pass",
+      staleEstablishedFrameReset: "pass",
       doubleContract: "unsupportedMeaning=false && conversationMovement=true",
     },
     null,

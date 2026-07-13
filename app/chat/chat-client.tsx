@@ -776,6 +776,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
               role: message.role,
               content: message.text,
               promptVersion: message.promptVersion,
+              createdAt: message.createdAt,
             })),
           },
         });

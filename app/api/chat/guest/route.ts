@@ -90,6 +90,7 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
       const content = record.content;
       const promptVersion = record.promptVersion;
       const aiGenerationId = record.aiGenerationId;
+      const createdAt = record.createdAt;
       if (role !== "user" && role !== "assistant" && role !== "system") return [];
       if (typeof content !== "string" || !content.trim()) return [];
       return [
@@ -98,6 +99,7 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
           content: content.trim().slice(0, 2000),
           promptVersion: typeof promptVersion === "string" ? promptVersion : null,
           aiGenerationId: typeof aiGenerationId === "string" ? aiGenerationId : null,
+          createdAt: typeof createdAt === "string" ? createdAt : undefined,
         },
       ];
     });

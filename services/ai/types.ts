@@ -8,6 +8,7 @@ export type AiConversationMessage = {
   content: string;
   promptVersion?: string | null;
   aiGenerationId?: string | null;
+  createdAt?: string;
 };
 
 export type AiMemoryContext = {

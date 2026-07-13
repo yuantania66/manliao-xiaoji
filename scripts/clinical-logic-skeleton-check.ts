@@ -354,6 +354,10 @@ assert(
   "Pure numeric clarification must carry the conversation-movement contract in ClinicalPlan."
 );
 assert(
+  numericPlan.toneConstraint.includes("ask one direct, small clarification question when meaning is absent."),
+  "Pure numeric clarification must ask one direct, small question when meaning is absent."
+);
+assert(
   numericPlan.interventionBoundary.includes(
     "do not convert ambiguity into an emotion, score, activity, or conversational purpose."
   ),
