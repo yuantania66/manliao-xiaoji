@@ -15,8 +15,23 @@ const getActiveRecentMessages = (recentMessages: AiConversationMessage[]) => {
   const latestMessageAt = recentMessages[recentMessages.length - 1]?.createdAt;
   if (!latestMessageAt) return recentMessages;
 
-  const elapsed = Date.now() - Date.parse(latestMessageAt);
-  return Number.isFinite(elapsed) && elapsed > CONVERSATION_RESET_GAP_MS ? [] : recentMessages;
+  const latestTimestamp = Date.parse(latestMessageAt);
+  const elapsed = Date.now() - latestTimestamp;
+  if (Number.isFinite(elapsed) && elapsed > CONVERSATION_RESET_GAP_MS) return [];
+
+  for (let index = recentMessages.length - 1; index > 0; index -= 1) {
+    const currentTimestamp = Date.parse(recentMessages[index].createdAt ?? "");
+    const previousTimestamp = Date.parse(recentMessages[index - 1].createdAt ?? "");
+    if (
+      Number.isFinite(currentTimestamp) &&
+      Number.isFinite(previousTimestamp) &&
+      currentTimestamp - previousTimestamp > CONVERSATION_RESET_GAP_MS
+    ) {
+      return recentMessages.slice(index);
+    }
+  }
+
+  return recentMessages;
 };
 
 const hasEstablishedNumericFrame = (recentMessages: AiConversationMessage[]) => {
@@ -32,23 +47,41 @@ const hasEstablishedNumericFrame = (recentMessages: AiConversationMessage[]) => 
   );
 };
 
-const countPriorConsecutiveNumericTurns = (recentMessages: AiConversationMessage[]) => {
+const getPriorConsecutiveNumericTokens = (recentMessages: AiConversationMessage[]) => {
   const userMessages = getActiveRecentMessages(recentMessages).filter((message) => message.role === "user");
-  let count = 0;
+  const tokens: string[] = [];
 
   for (let index = userMessages.length - 1; index >= 0; index -= 1) {
-    if (!NUMERIC_TOKEN_PATTERN.test(userMessages[index].content.trim())) break;
-    count += 1;
+    const token = userMessages[index].content.trim();
+    if (!NUMERIC_TOKEN_PATTERN.test(token)) break;
+    tokens.unshift(token);
   }
 
-  return count;
+  return tokens;
 };
 
-const FREE_NUMERIC_REPLIES = [
-  (token: string) => `这个“${token}”有什么含义吗？`,
-  () => "你是在测试我怎么回应这些数字吗？",
-  () => "我还不确定是不是在测试；你可以继续发。",
-] as const;
+const buildFreeNumericReply = (token: string, priorTokens: string[]) => {
+  if (priorTokens.length === 0) return `这个“${token}”有什么含义吗？`;
+  if (priorTokens.length === 1) return "你是在测试我怎么回应这些数字吗？";
+  if (priorTokens.length === 2) {
+    return "看起来像是在测试我对连续数字的回应。我先这样理解；不是的话，你随时纠正我。";
+  }
+
+  const previousToken = priorTokens[priorTokens.length - 1];
+  if (previousToken !== token) {
+    const changedReplies = [
+      `这次换成了“${token}”。我继续跟着；不是在测试的话，你随时纠正我。`,
+      `现在是“${token}”。继续吧，我会按数字本身回应。`,
+    ] as const;
+    return changedReplies[priorTokens.length % changedReplies.length];
+  }
+
+  const repeatedReplies = [
+    `还是“${token}”。继续吧。`,
+    `又是“${token}”。我跟着呢。`,
+  ] as const;
+  return repeatedReplies[priorTokens.length % repeatedReplies.length];
+};
 
 export const shouldApplyFreeNumericReplyContract = ({
   userMessage,
@@ -79,10 +112,8 @@ export const applyFreeNumericReplyContract = ({
     return generation;
   }
 
-  const priorNumericTurns = countPriorConsecutiveNumericTurns(recentMessages);
-  const reply = FREE_NUMERIC_REPLIES[Math.min(priorNumericTurns, FREE_NUMERIC_REPLIES.length - 1)](
-    userMessage.trim()
-  );
+  const priorNumericTokens = getPriorConsecutiveNumericTokens(recentMessages);
+  const reply = buildFreeNumericReply(userMessage.trim(), priorNumericTokens);
 
   return {
     ...generation,

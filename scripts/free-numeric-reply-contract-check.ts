@@ -51,10 +51,32 @@ const freeSequenceHistory: AiConversationMessage[] = [
   { role: "assistant", content: "你是在测试我怎么回应这些数字吗？" },
 ];
 const freeSequence = apply("3", freeSequenceHistory);
-assert.equal(freeSequence.text, "我还不确定是不是在测试；你可以继续发。");
+assert.equal(freeSequence.text, "看起来像是在测试我对连续数字的回应。我先这样理解；不是的话，你随时纠正我。");
 assert(!freeSequence.text.includes("3"));
 assert(!freeSequence.text.includes("松口气"));
 assert(!freeSequence.text.includes("停在这里"));
+
+const changedAfterSequenceHistory: AiConversationMessage[] = [
+  ...freeSequenceHistory,
+  { role: "user", content: "3" },
+  { role: "assistant", content: freeSequence.text },
+];
+const changedAfterSequence = apply("1", changedAfterSequenceHistory);
+assert.equal(changedAfterSequence.text, "现在是“1”。继续吧，我会按数字本身回应。");
+
+const repeatedAfterSequenceHistory: AiConversationMessage[] = [
+  ...changedAfterSequenceHistory,
+  { role: "user", content: "1" },
+  { role: "assistant", content: changedAfterSequence.text },
+];
+const repeatedAfterSequence = apply("1", repeatedAfterSequenceHistory);
+assert.equal(repeatedAfterSequence.text, "还是“1”。继续吧。");
+assert.equal(new Set([freeSequence.text, changedAfterSequence.text, repeatedAfterSequence.text]).size, 3);
+for (const reply of [freeSequence.text, changedAfterSequence.text, repeatedAfterSequence.text]) {
+  assert(!reply.includes("松口气"));
+  assert(!reply.includes("停在这里"));
+  assert(!reply.includes("我还不确定是不是在测试；你可以继续发"));
+}
 
 const scaleHistory: AiConversationMessage[] = [
   { role: "assistant", content: "可以用 1–10 给现在的紧张打个分，1 是很轻，10 是很强。" },
@@ -91,6 +113,16 @@ const staleNumericHistory: AiConversationMessage[] = [
 const newConversationAfterGap = apply("1", staleNumericHistory);
 assert.equal(newConversationAfterGap.text, "这个“1”有什么含义吗？");
 
+const now = Date.now();
+const oldAndFreshNumericHistory: AiConversationMessage[] = [
+  { role: "user", content: "8", createdAt: "2000-01-01T00:00:00.000Z" },
+  { role: "assistant", content: "还是“8”。继续吧。", createdAt: "2000-01-01T00:00:01.000Z" },
+  { role: "user", content: "1", createdAt: new Date(now - 30_000).toISOString() },
+  { role: "assistant", content: "这个“1”有什么含义吗？", createdAt: new Date(now - 20_000).toISOString() },
+];
+const secondTurnAfterInternalGap = apply("2", oldAndFreshNumericHistory);
+assert.equal(secondTurnAfterInternalGap.text, "你是在测试我怎么回应这些数字吗？");
+
 const staleScaleHistory: AiConversationMessage[] = [
   {
     role: "assistant",
@@ -106,11 +138,13 @@ console.log(
     {
       freeSingle: "pass",
       freeSequence: "pass",
+      changedAndRepeatedNumericFollowUps: "pass",
       establishedScale: "pass",
       establishedChoice: "pass",
       explicitCount: "pass",
       assistantGuessHistory: "pass",
       newConversationAfterGap: "pass",
+      internalConversationGapReset: "pass",
       staleEstablishedFrameReset: "pass",
       doubleContract: "unsupportedMeaning=false && conversationMovement=true",
     },
