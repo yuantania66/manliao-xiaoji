@@ -59,6 +59,8 @@ const metadata = {
   runMode: "replay" as const,
   repeatCount: 1,
   variant: "canonical",
+  promptAdapter: "none",
+  historyAdapter: "canonical",
   provider: "captured-replay",
   model: "captured-replay",
   promptVersion: "captured-replay",
@@ -71,6 +73,8 @@ assert(report.includes("relevantSourceFingerprint: sha256:"));
 assert(report.includes("pending reproduction"));
 assert(report.includes("repeatCount: 1"));
 assert(report.includes("variant: canonical"));
+assert(report.includes("promptAdapter: none"));
+assert(report.includes("historyAdapter: canonical"));
 assert(report.includes("unsupportedMeaning: unreviewed"));
 assert(report.includes("heuristicFlags:"));
 

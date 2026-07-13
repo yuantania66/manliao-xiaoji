@@ -1,6 +1,11 @@
 import { AppError } from "@/lib/errors";
 
-import { buildChatPrompt, CHAT_PROMPT_VERSION, FALLBACK_PROMPT_VERSION } from "./promptBuilder";
+import {
+  buildChatPrompt,
+  CHAT_PROMPT_VERSION,
+  FALLBACK_PROMPT_VERSION,
+  type ChatPromptEvaluationAdapter,
+} from "./promptBuilder";
 import { callModel, getDefaultAiModel } from "./modelProvider";
 import {
   AiConversationMessage,
@@ -27,6 +32,7 @@ export const generateChatReply = async ({
   memoryContext,
   understandingContext,
   clinicalPlan,
+  evaluationAdapter,
 }: {
   conversationId?: string;
   userMessage: string;
@@ -34,6 +40,7 @@ export const generateChatReply = async ({
   memoryContext?: AiMemoryContext | null;
   understandingContext?: StructuredRagContext | null;
   clinicalPlan?: ClinicalPlan | null;
+  evaluationAdapter?: ChatPromptEvaluationAdapter | null;
 }): Promise<AiGenerationResult> => {
   const pipelineRecentMessages = recentMessages.flatMap((message) =>
     message.role === "user" || message.role === "assistant"
@@ -59,6 +66,7 @@ export const generateChatReply = async ({
       conversationContext: context,
       voiceConstraints,
       clinicalPlan,
+      evaluationAdapter,
     });
     responseBox.promptMeta = prompt.meta;
     responseBox.value = await callModel({

@@ -13,3 +13,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Real-model trajectory experiment reports are local review evidence, not deterministic fixtures.
+docs/evals/*.local.md

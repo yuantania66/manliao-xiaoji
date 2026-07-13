@@ -10,6 +10,11 @@ export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
 export const BASE_CHAT_PROMPT_VERSION_PREFIX = "chat-base-";
 
+export type ChatPromptEvaluationAdapter = {
+  id: "exp-bl-012a-a1" | "exp-bl-012a-a2";
+  developerInstructions: string[];
+};
+
 const toModelRole = (role: AiConversationMessage["role"]): AiModelMessage["role"] | null => {
   if (role === "user" || role === "assistant") return role;
   return null;
@@ -348,6 +353,7 @@ export const buildChatPrompt = ({
   conversationContext,
   voiceConstraints,
   clinicalPlan,
+  evaluationAdapter,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
@@ -356,6 +362,7 @@ export const buildChatPrompt = ({
   conversationContext?: ConversationContext | null;
   voiceConstraints?: AiVoiceConstraints | null;
   clinicalPlan?: ClinicalPlan | null;
+  evaluationAdapter?: ChatPromptEvaluationAdapter | null;
 }): { messages: AiModelMessage[]; meta: AiPromptMeta } => {
   const { included, filteredHistory } = sanitizeChatHistory({ userMessage, recentMessages });
   const clinicalPlanPrompt =
@@ -365,6 +372,18 @@ export const buildChatPrompt = ({
       role: "developer",
       content: BASE_PRODUCT_PROMPT,
     },
+    ...(evaluationAdapter
+      ? [
+          {
+            role: "developer" as const,
+            content: [
+              `Eval-only registered adapter: ${evaluationAdapter.id}.`,
+              "These instructions apply only to this controlled trajectory evaluation.",
+              ...evaluationAdapter.developerInstructions,
+            ].join("\n"),
+          },
+        ]
+      : []),
     ...(memoryContext
       ? [
           {
@@ -439,6 +458,7 @@ export const buildChatMessages = ({
   conversationContext,
   voiceConstraints,
   clinicalPlan,
+  evaluationAdapter,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
@@ -447,6 +467,7 @@ export const buildChatMessages = ({
   conversationContext?: ConversationContext | null;
   voiceConstraints?: AiVoiceConstraints | null;
   clinicalPlan?: ClinicalPlan | null;
+  evaluationAdapter?: ChatPromptEvaluationAdapter | null;
 }): AiModelMessage[] => {
   return buildChatPrompt({
     userMessage,
@@ -456,5 +477,6 @@ export const buildChatMessages = ({
     conversationContext,
     voiceConstraints,
     clinicalPlan,
+    evaluationAdapter,
   }).messages;
 };
