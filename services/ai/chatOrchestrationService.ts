@@ -18,7 +18,7 @@ import { createClinicalPlan } from "@/services/clinical/clinicalPlanService";
 import { buildClinicalTrace, buildSafetySkippedClinicalTrace } from "@/services/clinical/clinicalTrace";
 import type { ClinicalTrace } from "@/services/clinical/clinicalTypes";
 import { determineConversationState } from "@/conversation-os/state";
-import { applyFreeNumericReplyContract } from "./lowInformationReplyGuard";
+import { applySemanticEvidenceReplyContract } from "./semanticEvidenceReplyGuard";
 
 type CreateChatReplyInput = {
   conversationId: string;
@@ -110,7 +110,6 @@ export const createChatReply = async ({
   if (evaluationAdapter && !conversationId.startsWith("trajectory-eval-")) {
     throw new Error("Evaluation adapters are restricted to trajectory-eval conversations.");
   }
-  const rewriteAttempted = false;
   const clinicalMemoryContext = createClinicalMemoryContext(understandingContext);
   const conversationState = determineConversationState({
     currentUserMessage: userMessage,
@@ -119,6 +118,7 @@ export const createChatReply = async ({
 
   if (isCrisisInput(userMessage)) {
     const generation = createSafetyGeneration(userMessage);
+    const rewriteAttempted = false;
     const judge = createFallbackJudge("crisis", "safety gate matched; base model skipped");
     const finalSource: ChatReplyFinalSource = "safety";
     const fallbackUsed = false;
@@ -182,14 +182,14 @@ export const createChatReply = async ({
       clinicalPlan,
       evaluationAdapter,
     });
-    const generation = applyFreeNumericReplyContract({
+    const generation = applySemanticEvidenceReplyContract({
       userMessage,
-      recentMessages,
       clinicalPlan,
       generation: modelGeneration,
     });
     const judge = createDisabledJudge("judge/rewrite disabled; base model output returned directly");
-    const finalSource: ChatReplyFinalSource = "base_model";
+    const rewriteAttempted = generation.finalReplySource === "guard_rewrite";
+    const finalSource: ChatReplyFinalSource = rewriteAttempted ? "guard_rewrite" : "llm";
     const fallbackUsed = false;
 
     return {
@@ -217,14 +217,14 @@ export const createChatReply = async ({
       inputText: userMessage,
       riskLevel,
     });
-    const generation = applyFreeNumericReplyContract({
+    const generation = applySemanticEvidenceReplyContract({
       userMessage,
-      recentMessages,
       clinicalPlan,
       generation: fallbackGeneration,
     });
     const judge = createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback");
-    const finalSource: ChatReplyFinalSource = "fallback";
+    const rewriteAttempted = generation.finalReplySource === "guard_rewrite";
+    const finalSource: ChatReplyFinalSource = rewriteAttempted ? "guard_rewrite" : "fallback";
     const fallbackUsed = true;
 
     return {

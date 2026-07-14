@@ -51,11 +51,13 @@ export const buildAiDebugTrace = ({
     {
       title: "1. 路由",
       body:
-        finalSource === "base_model"
+        finalSource === "llm"
           ? "产品底座 prompt + 基模直出；没有本地分析、规划、短路或二次改写参与回复。"
           : finalSource === "safety"
             ? "安全闸门命中，普通聊天模型未调用。"
-            : "模型调用失败后走 fallback；没有二次改写。",
+            : finalSource === "guard_rewrite"
+              ? "语义证据 guard 检出模型回复包含无依据含义，最终回复经过 guard rewrite。"
+              : "模型调用失败后走 fallback；没有二次改写。",
       evidence: [
         `路线：${finalSource}`,
         `rewrite=${rewriteAttempted}`,
@@ -141,7 +143,7 @@ export const buildAiDebugTrace = ({
     thinkingLayers,
     clinicalLogic: clinicalTrace,
     prompt: {
-      mode: promptMeta?.mode ?? (finalSource === "fallback" ? "fallback" : finalSource === "safety" ? "safety" : "base_product"),
+      mode: promptMeta?.mode ?? (fallbackUsed ? "fallback" : finalSource === "safety" ? "safety" : "base_product"),
       promptVersion,
       receivedHistoryCount,
       includedHistoryCount,

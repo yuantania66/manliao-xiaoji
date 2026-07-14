@@ -211,7 +211,7 @@ const debug = buildAiDebugTrace({
     reason: "judge/rewrite disabled; base model output returned directly",
     judgeModel: "disabled",
   },
-  finalSource: "base_model",
+  finalSource: "llm",
   fallbackUsed: false,
   rewriteAttempted: false,
 });

@@ -14,6 +14,7 @@ const promptBuilder = read("services/ai/promptBuilder.ts");
 const loginService = read("services/ai/chatReplyService.ts");
 const guestRoute = read("app/api/chat/guest/route.ts");
 const loginRoute = read("app/api/chat/sessions/[sessionId]/messages/route.ts");
+const semanticEvidenceGuard = read("services/ai/semanticEvidenceReplyGuard.ts");
 const packageJson = read("package.json");
 const envExample = read(".env.example");
 
@@ -55,6 +56,45 @@ assert(
 assert(
   orchestration.includes("createFallbackGeneration"),
   "createChatReply() must own fallback orchestration."
+);
+const guardApplications = Array.from(orchestration.matchAll(/applySemanticEvidenceReplyContract\(\{/g));
+assert.equal(
+  guardApplications.length,
+  2,
+  "Both model and fallback generation paths must enforce the semantic-evidence reply contract."
+);
+assert(
+  orchestration.indexOf("applySemanticEvidenceReplyContract({", orchestration.indexOf("generateChatReply({")) >
+    orchestration.indexOf("generateChatReply({"),
+  "Normal model output must pass through the semantic-evidence reply contract."
+);
+assert(
+  orchestration.lastIndexOf("applySemanticEvidenceReplyContract({") >
+    orchestration.indexOf("createFallbackGeneration({"),
+  "Fallback output must pass through the semantic-evidence reply contract."
+);
+assert(
+  semanticEvidenceGuard.includes('clinicalPlan.responseIntent === "receive"') &&
+    semanticEvidenceGuard.includes('clinicalPlan.questionFunction === "none"') &&
+    semanticEvidenceGuard.includes("containsUnsupportedMeaning(generation.text)") &&
+    semanticEvidenceGuard.includes('finalReplySource: "guard_rewrite"'),
+  "The semantic-evidence guard must rewrite only unsupported meaning and mark a real rewrite."
+);
+assert(
+  !semanticEvidenceGuard.includes("我看到你发的是") &&
+    !semanticEvidenceGuard.includes("现在的线索还不够") &&
+    !semanticEvidenceGuard.includes("你可以继续"),
+  "The removed deterministic observation template must not remain in the semantic-evidence guard."
+);
+assert(
+  orchestration.includes('const rewriteAttempted = generation.finalReplySource === "guard_rewrite"') &&
+    orchestration.includes('rewriteAttempted ? "guard_rewrite" : "llm"'),
+  "rewriteAttempted and finalSource must reflect whether the guard actually rewrote model output."
+);
+assert(
+  orchestration.indexOf("isCrisisInput(userMessage)") <
+    orchestration.indexOf("applySemanticEvidenceReplyContract({"),
+  "Safety must retain priority and return before the semantic-evidence guard can run."
 );
 assert(
   chatSafety.includes('finalReplySource: "safety"'),
