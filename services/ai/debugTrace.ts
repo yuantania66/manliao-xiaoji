@@ -13,6 +13,7 @@ export const buildAiDebugTrace = ({
   finalSource,
   fallbackUsed,
   rewriteAttempted,
+  semanticEvidenceBlocked = false,
   clinicalTrace,
 }: {
   userMessage: string;
@@ -22,6 +23,7 @@ export const buildAiDebugTrace = ({
   finalSource: AiDebugTrace["route"]["finalSource"];
   fallbackUsed: boolean;
   rewriteAttempted: boolean;
+  semanticEvidenceBlocked?: boolean;
   clinicalTrace?: AiDebugTrace["clinicalLogic"];
 }): AiDebugTrace => {
   const promptMeta = generation.promptMeta;
@@ -51,15 +53,18 @@ export const buildAiDebugTrace = ({
     {
       title: "1. 路由",
       body:
-        finalSource === "base_model"
+        finalSource === "llm"
           ? "产品底座 prompt + 基模直出；没有本地分析、规划、短路或二次改写参与回复。"
           : finalSource === "safety"
             ? "安全闸门命中，普通聊天模型未调用。"
-            : "模型调用失败后走 fallback；没有二次改写。",
+            : semanticEvidenceBlocked
+              ? "语义证据 guard 阻止了包含无依据含义的模型回复；最终走系统 fallback，guard 未生成或改写用户回复。"
+              : "模型调用失败后走 fallback；没有二次改写。",
       evidence: [
         `路线：${finalSource}`,
         `rewrite=${rewriteAttempted}`,
         `fallback=${fallbackUsed}`,
+        `semanticEvidenceBlocked=${semanticEvidenceBlocked}`,
         `safety=${finalSource === "safety"}`,
       ],
     },
@@ -141,7 +146,7 @@ export const buildAiDebugTrace = ({
     thinkingLayers,
     clinicalLogic: clinicalTrace,
     prompt: {
-      mode: promptMeta?.mode ?? (finalSource === "fallback" ? "fallback" : finalSource === "safety" ? "safety" : "base_product"),
+      mode: promptMeta?.mode ?? (fallbackUsed ? "fallback" : finalSource === "safety" ? "safety" : "base_product"),
       promptVersion,
       receivedHistoryCount,
       includedHistoryCount,
@@ -182,6 +187,7 @@ export const buildAiDebugTrace = ({
       finalSource,
       fallbackUsed,
       rewriteAttempted,
+      semanticEvidenceBlocked,
       safetyUsed: finalSource === "safety",
     },
   };

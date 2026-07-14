@@ -14,6 +14,7 @@ const promptBuilder = read("services/ai/promptBuilder.ts");
 const loginService = read("services/ai/chatReplyService.ts");
 const guestRoute = read("app/api/chat/guest/route.ts");
 const loginRoute = read("app/api/chat/sessions/[sessionId]/messages/route.ts");
+const semanticEvidenceGuard = read("services/ai/semanticEvidenceReplyGuard.ts");
 const packageJson = read("package.json");
 const envExample = read(".env.example");
 
@@ -55,6 +56,45 @@ assert(
 assert(
   orchestration.includes("createFallbackGeneration"),
   "createChatReply() must own fallback orchestration."
+);
+const guardApplications = Array.from(orchestration.matchAll(/applySemanticEvidenceReplyContract\(\{/g));
+assert.equal(
+  guardApplications.length,
+  1,
+  "Only model output must pass through the semantic-evidence guard; trusted system fallback must not re-enter it."
+);
+assert(
+  orchestration.indexOf("applySemanticEvidenceReplyContract({", orchestration.indexOf("generateChatReply({")) >
+    orchestration.indexOf("generateChatReply({"),
+  "Normal model output must pass through the semantic-evidence reply contract."
+);
+assert(
+  semanticEvidenceGuard.includes('clinicalPlan.responseIntent === "receive"') &&
+    semanticEvidenceGuard.includes('clinicalPlan.questionFunction === "none"') &&
+    semanticEvidenceGuard.includes("containsUnsupportedMeaning(generation.text)") &&
+    semanticEvidenceGuard.includes("throw new UnsupportedSemanticMeaningError(generation)"),
+  "The semantic-evidence guard must block unsupported meaning as an internal decision."
+);
+assert(
+  !semanticEvidenceGuard.includes("我看到你发的是") &&
+    !semanticEvidenceGuard.includes("你发的") &&
+    !semanticEvidenceGuard.includes("现在的线索还不够") &&
+    !semanticEvidenceGuard.includes("你可以继续") &&
+    !semanticEvidenceGuard.includes('text:') &&
+    !semanticEvidenceGuard.includes('finalReplySource: "guard_rewrite"'),
+  "The semantic-evidence guard must not contain or author a user-visible reply template."
+);
+assert(
+  orchestration.includes("isUnsupportedSemanticMeaningError(error)") &&
+    orchestration.includes("semanticEvidenceBlocked") &&
+    orchestration.includes('const rewriteAttempted = false;') &&
+    orchestration.includes('const finalSource: ChatReplyFinalSource = "fallback";'),
+  "Blocked unsupported meaning must be marked internally and route to system fallback without guard rewrite."
+);
+assert(
+  orchestration.indexOf("isCrisisInput(userMessage)") <
+    orchestration.indexOf("applySemanticEvidenceReplyContract({"),
+  "Safety must retain priority and return before the semantic-evidence guard can run."
 );
 assert(
   chatSafety.includes('finalReplySource: "safety"'),

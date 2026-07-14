@@ -211,7 +211,7 @@ const debug = buildAiDebugTrace({
     reason: "judge/rewrite disabled; base model output returned directly",
     judgeModel: "disabled",
   },
-  finalSource: "base_model",
+  finalSource: "llm",
   fallbackUsed: false,
   rewriteAttempted: false,
 });
@@ -264,5 +264,29 @@ assert.equal(safetyDebug.prompt.modelMessageRoles.length, 0);
 const fallback = createFallbackGeneration({ inputText: "普通 fallback 测试", riskLevel: "low" });
 assert.equal(fallback.model, "fallback");
 assert.equal(fallback.finalReplySource, "fallback");
+
+const semanticBlockedDebug = buildAiDebugTrace({
+  userMessage: "1",
+  recentMessages: [],
+  generation: fallback,
+  judge: {
+    passed: true,
+    riskLevel: "low",
+    issues: [],
+    rewriteRequired: false,
+    reason: "semantic evidence guard blocked unsupported model meaning; fallback used",
+    judgeModel: "fallback-local",
+  },
+  finalSource: "fallback",
+  fallbackUsed: true,
+  rewriteAttempted: false,
+  semanticEvidenceBlocked: true,
+});
+assert.equal(semanticBlockedDebug.route.finalSource, "fallback");
+assert.equal(semanticBlockedDebug.route.rewriteAttempted, false);
+assert.equal(semanticBlockedDebug.route.semanticEvidenceBlocked, true);
+assert(
+  semanticBlockedDebug.visibleSteps.some((step) => step.includes("guard 未生成或改写用户回复"))
+);
 
 console.log("AI base chat checks passed");

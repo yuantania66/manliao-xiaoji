@@ -18,7 +18,10 @@ import { createClinicalPlan } from "@/services/clinical/clinicalPlanService";
 import { buildClinicalTrace, buildSafetySkippedClinicalTrace } from "@/services/clinical/clinicalTrace";
 import type { ClinicalTrace } from "@/services/clinical/clinicalTypes";
 import { determineConversationState } from "@/conversation-os/state";
-import { applyFreeNumericReplyContract } from "./lowInformationReplyGuard";
+import {
+  applySemanticEvidenceReplyContract,
+  isUnsupportedSemanticMeaningError,
+} from "./semanticEvidenceReplyGuard";
 
 type CreateChatReplyInput = {
   conversationId: string;
@@ -39,6 +42,7 @@ export type ChatReplyResult = {
   judge: AiJudgeResult & { judgeModel: string; promptVersion: string };
   finalSource: ChatReplyFinalSource;
   rewriteAttempted: boolean;
+  semanticEvidenceBlocked: boolean;
   fallbackUsed: boolean;
   debugTrace?: AiDebugTrace;
   clinicalTrace: ClinicalTrace;
@@ -71,6 +75,7 @@ const buildMaybeDebugTrace = ({
   finalSource,
   fallbackUsed,
   rewriteAttempted,
+  semanticEvidenceBlocked,
   clinicalTrace,
 }: {
   includeDebugTrace: boolean;
@@ -81,6 +86,7 @@ const buildMaybeDebugTrace = ({
   finalSource: ChatReplyFinalSource;
   fallbackUsed: boolean;
   rewriteAttempted: boolean;
+  semanticEvidenceBlocked: boolean;
   clinicalTrace: ClinicalTrace;
 }) =>
   includeDebugTrace
@@ -92,6 +98,7 @@ const buildMaybeDebugTrace = ({
         finalSource,
         fallbackUsed,
         rewriteAttempted,
+        semanticEvidenceBlocked,
         clinicalTrace,
       })
     : undefined;
@@ -110,7 +117,6 @@ export const createChatReply = async ({
   if (evaluationAdapter && !conversationId.startsWith("trajectory-eval-")) {
     throw new Error("Evaluation adapters are restricted to trajectory-eval conversations.");
   }
-  const rewriteAttempted = false;
   const clinicalMemoryContext = createClinicalMemoryContext(understandingContext);
   const conversationState = determineConversationState({
     currentUserMessage: userMessage,
@@ -119,6 +125,8 @@ export const createChatReply = async ({
 
   if (isCrisisInput(userMessage)) {
     const generation = createSafetyGeneration(userMessage);
+    const rewriteAttempted = false;
+    const semanticEvidenceBlocked = false;
     const judge = createFallbackJudge("crisis", "safety gate matched; base model skipped");
     const finalSource: ChatReplyFinalSource = "safety";
     const fallbackUsed = false;
@@ -133,6 +141,7 @@ export const createChatReply = async ({
       judge,
       finalSource,
       rewriteAttempted,
+      semanticEvidenceBlocked,
       fallbackUsed,
       clinicalTrace,
       debugTrace: buildMaybeDebugTrace({
@@ -144,6 +153,7 @@ export const createChatReply = async ({
         finalSource,
         fallbackUsed,
         rewriteAttempted,
+        semanticEvidenceBlocked,
         clinicalTrace,
       }),
     };
@@ -182,14 +192,14 @@ export const createChatReply = async ({
       clinicalPlan,
       evaluationAdapter,
     });
-    const generation = applyFreeNumericReplyContract({
-      userMessage,
-      recentMessages,
+    const generation = applySemanticEvidenceReplyContract({
       clinicalPlan,
       generation: modelGeneration,
     });
     const judge = createDisabledJudge("judge/rewrite disabled; base model output returned directly");
-    const finalSource: ChatReplyFinalSource = "base_model";
+    const rewriteAttempted = false;
+    const semanticEvidenceBlocked = false;
+    const finalSource: ChatReplyFinalSource = "llm";
     const fallbackUsed = false;
 
     return {
@@ -197,6 +207,7 @@ export const createChatReply = async ({
       judge,
       finalSource,
       rewriteAttempted,
+      semanticEvidenceBlocked,
       fallbackUsed,
       clinicalTrace,
       debugTrace: buildMaybeDebugTrace({
@@ -208,22 +219,24 @@ export const createChatReply = async ({
         finalSource,
         fallbackUsed,
         rewriteAttempted,
+        semanticEvidenceBlocked,
         clinicalTrace,
       }),
     };
-  } catch {
+  } catch (error) {
+    const semanticEvidenceBlocked = isUnsupportedSemanticMeaningError(error);
     const riskLevel = getFallbackRiskLevel(userMessage);
-    const fallbackGeneration = createFallbackGeneration({
+    const generation = createFallbackGeneration({
       inputText: userMessage,
       riskLevel,
     });
-    const generation = applyFreeNumericReplyContract({
-      userMessage,
-      recentMessages,
-      clinicalPlan,
-      generation: fallbackGeneration,
-    });
-    const judge = createFallbackJudge(riskLevel, "AI 主回复为空或不可用，已使用 fallback");
+    const judge = createFallbackJudge(
+      riskLevel,
+      semanticEvidenceBlocked
+        ? "semantic evidence guard blocked unsupported model meaning; fallback used"
+        : "AI 主回复为空或不可用，已使用 fallback"
+    );
+    const rewriteAttempted = false;
     const finalSource: ChatReplyFinalSource = "fallback";
     const fallbackUsed = true;
 
@@ -232,6 +245,7 @@ export const createChatReply = async ({
       judge,
       finalSource,
       rewriteAttempted,
+      semanticEvidenceBlocked,
       fallbackUsed,
       clinicalTrace,
       debugTrace: buildMaybeDebugTrace({
@@ -243,6 +257,7 @@ export const createChatReply = async ({
         finalSource,
         fallbackUsed,
         rewriteAttempted,
+        semanticEvidenceBlocked,
         clinicalTrace,
       }),
     };

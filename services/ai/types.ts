@@ -189,9 +189,10 @@ export type AiDebugTrace = {
     judgeModel?: string;
   };
   route: {
-    finalSource: "base_model" | "fallback" | "safety";
+    finalSource: "llm" | "guard_rewrite" | "fallback" | "safety";
     fallbackUsed: boolean;
     rewriteAttempted: boolean;
+    semanticEvidenceBlocked: boolean;
     safetyUsed?: boolean;
   };
 };
