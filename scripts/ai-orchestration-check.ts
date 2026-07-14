@@ -60,8 +60,8 @@ assert(
 const guardApplications = Array.from(orchestration.matchAll(/applySemanticEvidenceReplyContract\(\{/g));
 assert.equal(
   guardApplications.length,
-  2,
-  "Both model and fallback generation paths must enforce the semantic-evidence reply contract."
+  1,
+  "Only model output must pass through the semantic-evidence guard; trusted system fallback must not re-enter it."
 );
 assert(
   orchestration.indexOf("applySemanticEvidenceReplyContract({", orchestration.indexOf("generateChatReply({")) >
@@ -69,27 +69,27 @@ assert(
   "Normal model output must pass through the semantic-evidence reply contract."
 );
 assert(
-  orchestration.lastIndexOf("applySemanticEvidenceReplyContract({") >
-    orchestration.indexOf("createFallbackGeneration({"),
-  "Fallback output must pass through the semantic-evidence reply contract."
-);
-assert(
   semanticEvidenceGuard.includes('clinicalPlan.responseIntent === "receive"') &&
     semanticEvidenceGuard.includes('clinicalPlan.questionFunction === "none"') &&
     semanticEvidenceGuard.includes("containsUnsupportedMeaning(generation.text)") &&
-    semanticEvidenceGuard.includes('finalReplySource: "guard_rewrite"'),
-  "The semantic-evidence guard must rewrite only unsupported meaning and mark a real rewrite."
+    semanticEvidenceGuard.includes("throw new UnsupportedSemanticMeaningError(generation)"),
+  "The semantic-evidence guard must block unsupported meaning as an internal decision."
 );
 assert(
   !semanticEvidenceGuard.includes("我看到你发的是") &&
+    !semanticEvidenceGuard.includes("你发的") &&
     !semanticEvidenceGuard.includes("现在的线索还不够") &&
-    !semanticEvidenceGuard.includes("你可以继续"),
-  "The removed deterministic observation template must not remain in the semantic-evidence guard."
+    !semanticEvidenceGuard.includes("你可以继续") &&
+    !semanticEvidenceGuard.includes('text:') &&
+    !semanticEvidenceGuard.includes('finalReplySource: "guard_rewrite"'),
+  "The semantic-evidence guard must not contain or author a user-visible reply template."
 );
 assert(
-  orchestration.includes('const rewriteAttempted = generation.finalReplySource === "guard_rewrite"') &&
-    orchestration.includes('rewriteAttempted ? "guard_rewrite" : "llm"'),
-  "rewriteAttempted and finalSource must reflect whether the guard actually rewrote model output."
+  orchestration.includes("isUnsupportedSemanticMeaningError(error)") &&
+    orchestration.includes("semanticEvidenceBlocked") &&
+    orchestration.includes('const rewriteAttempted = false;') &&
+    orchestration.includes('const finalSource: ChatReplyFinalSource = "fallback";'),
+  "Blocked unsupported meaning must be marked internally and route to system fallback without guard rewrite."
 );
 assert(
   orchestration.indexOf("isCrisisInput(userMessage)") <

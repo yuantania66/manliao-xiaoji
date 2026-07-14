@@ -192,6 +192,7 @@ export type AiDebugTrace = {
     finalSource: "llm" | "guard_rewrite" | "fallback" | "safety";
     fallbackUsed: boolean;
     rewriteAttempted: boolean;
+    semanticEvidenceBlocked: boolean;
     safetyUsed?: boolean;
   };
 };

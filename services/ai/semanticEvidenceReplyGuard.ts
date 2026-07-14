@@ -18,10 +18,20 @@ const UNSUPPORTED_MEANING_PATTERNS = [
 const containsUnsupportedMeaning = (reply: string) =>
   UNSUPPORTED_MEANING_PATTERNS.some((pattern) => pattern.test(normalize(reply)));
 
-const buildGroundedClarificationReply = (userMessage: string) => {
-  const observedText = normalize(userMessage).slice(0, 80);
-  return observedText ? `你发的“${observedText}”是指什么？` : "这条消息没有可见内容，可以重新发一次吗？";
-};
+export class UnsupportedSemanticMeaningError extends Error {
+  readonly code = "UNSUPPORTED_SEMANTIC_MEANING";
+  readonly generation: AiGenerationResult;
+
+  constructor(generation: AiGenerationResult) {
+    super("Semantic evidence guard blocked unsupported meaning in the model reply.");
+    this.name = "UnsupportedSemanticMeaningError";
+    this.generation = generation;
+  }
+}
+
+export const isUnsupportedSemanticMeaningError = (
+  error: unknown
+): error is UnsupportedSemanticMeaningError => error instanceof UnsupportedSemanticMeaningError;
 
 export const shouldApplySemanticEvidenceReplyContract = ({
   clinicalPlan,
@@ -33,33 +43,14 @@ export const shouldApplySemanticEvidenceReplyContract = ({
     (clinicalPlan.responseIntent === "clarify" && clinicalPlan.questionFunction === "clarify_meaning"));
 
 export const applySemanticEvidenceReplyContract = ({
-  userMessage,
   clinicalPlan,
   generation,
 }: {
-  userMessage: string;
   clinicalPlan: ClinicalPlan;
   generation: AiGenerationResult;
 }): AiGenerationResult => {
   if (!shouldApplySemanticEvidenceReplyContract({ clinicalPlan })) return generation;
   if (!containsUnsupportedMeaning(generation.text)) return generation;
 
-  const reply = buildGroundedClarificationReply(userMessage);
-
-  return {
-    ...generation,
-    text: reply,
-    rawLLMOutput: generation.rawLLMOutput ?? generation.text,
-    postProcessSteps: [
-      ...(generation.postProcessSteps ?? []),
-      {
-        layer: "semantic_evidence_reply_contract",
-        before: generation.text,
-        after: reply,
-        reason:
-          "Semantic evidence is insufficient and the model reply assigns unsupported meaning; replace only that unsafe inference with a grounded clarification.",
-      },
-    ],
-    finalReplySource: "guard_rewrite",
-  };
+  throw new UnsupportedSemanticMeaningError(generation);
 };

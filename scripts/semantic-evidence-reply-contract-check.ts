@@ -4,6 +4,7 @@ import { determineConversationState } from "../conversation-os/state";
 import { createClinicalMemoryContext } from "../services/ai/clinicalMemoryAdapter";
 import {
   applySemanticEvidenceReplyContract,
+  isUnsupportedSemanticMeaningError,
   shouldApplySemanticEvidenceReplyContract,
 } from "../services/ai/semanticEvidenceReplyGuard";
 import type { AiConversationMessage, AiGenerationResult } from "../services/ai/types";
@@ -51,7 +52,6 @@ const apply = ({
     clinicalPlan,
     inputGeneration: generation,
     outputGeneration: applySemanticEvidenceReplyContract({
-      userMessage,
       clinicalPlan,
       generation,
     }),
@@ -70,19 +70,15 @@ assert.equal(naturalResult.outputGeneration.text, naturalReplyA);
 assert.equal(naturalResult.outputGeneration.finalReplySource, "llm");
 
 const unsupportedReplyB = "看起来你是在测试我怎么回应这些数字。";
-const unsupportedResult = apply({ text: unsupportedReplyB });
-assert.notStrictEqual(
-  unsupportedResult.outputGeneration,
-  unsupportedResult.inputGeneration,
-  "The guard may rewrite model reply B only when it contains unsupported meaning."
+assert.throws(
+  () => apply({ text: unsupportedReplyB }),
+  (error: unknown) =>
+    isUnsupportedSemanticMeaningError(error) &&
+    error.code === "UNSUPPORTED_SEMANTIC_MEANING" &&
+    error.generation.text === unsupportedReplyB &&
+    error.generation.finalReplySource === "llm",
+  "The guard must block unsupported reply B as an internal decision without authoring a replacement."
 );
-assert.equal(unsupportedResult.outputGeneration.text, "你发的“1”是指什么？");
-assert.equal(unsupportedResult.outputGeneration.finalReplySource, "guard_rewrite");
-assert.equal(
-  unsupportedResult.outputGeneration.postProcessSteps?.at(-1)?.layer,
-  "semantic_evidence_reply_contract"
-);
-assert.equal(unsupportedResult.outputGeneration.rawLLMOutput, unsupportedReplyB);
 
 const unsupportedCounterexamples = [
   "你是在测试我的回复吗？",
@@ -108,8 +104,11 @@ const unsupportedCounterexamples = [
 ] as const;
 
 for (const text of unsupportedCounterexamples) {
-  const result = apply({ text }).outputGeneration;
-  assert.equal(result.finalReplySource, "guard_rewrite", `unsupported meaning must be blocked: ${text}`);
+  assert.throws(
+    () => apply({ text }),
+    isUnsupportedSemanticMeaningError,
+    `unsupported meaning must be blocked without a guard rewrite: ${text}`
+  );
 }
 
 const naturalCounterexamples = [
@@ -160,10 +159,12 @@ console.log(
       explicitSameInputComparison: {
         userMessage: "1",
         replyA: "preserved_llm",
-        replyB: "guard_rewrite",
+        replyB: "blocked_internal_decision",
       },
       naturalRepliesPreserved: naturalCounterexamples.length + 1,
       unsupportedMeaningRepliesBlocked: unsupportedCounterexamples.length + 1,
+      guardAuthoredReplies: 0,
+      guardRewriteCount: 0,
       safetyPriority: "verified_by_check:ai-orchestration",
     },
     null,
