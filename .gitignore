@@ -16,3 +16,6 @@ pnpm-debug.log*
 
 # Real-model trajectory experiment reports are local review evidence, not deterministic fixtures.
 docs/evals/*.local.md
+
+# Local-only H1 blind-review state and provenance.
+.h1-eval/
