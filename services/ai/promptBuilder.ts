@@ -2,7 +2,14 @@ import { AiConversationMessage, AiMemoryContext, AiModelMessage, AiPromptMeta, A
 import { formatMemoryContextForPrompt } from "./dataLayers";
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 import { ConversationContext } from "@/conversation-os";
-import type { ClinicalPlan } from "@/services/clinical/clinicalTypes";
+import type {
+  ClinicalPlan,
+  PersonCenteredGateDecision,
+} from "@/services/clinical/clinicalTypes";
+import {
+  assertPromptEligibleContextForDecision,
+  type GatedStructuredRagContext,
+} from "@/services/professional-rag/professionalGuidanceGateProjection";
 
 export const CHAT_PROMPT_VERSION = "chat-base-product-v11";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
@@ -175,7 +182,21 @@ export const sanitizeChatHistory = ({
 
 const compactMemory = (value: string) => value.replace(/\s+/g, " ").trim().slice(0, 160);
 
-const formatUnderstandingContextForPrompt = (context: StructuredRagContext) =>
+type PromptUnderstandingContext = StructuredRagContext | GatedStructuredRagContext;
+
+const formatProfessionalGuidanceForPrompt = (
+  item: PromptUnderstandingContext["professionalGuidance"][number]
+) => ({
+  id: item.id,
+  sourceKind: item.sourceKind,
+  ...("principle" in item ? { principle: compactMemory(item.principle) } : {}),
+  ...("applyWhen" in item ? { applyWhen: compactMemory(item.applyWhen) } : {}),
+  avoid: item.avoid,
+  ...("responseMove" in item ? { responseMove: compactMemory(item.responseMove) } : {}),
+  reason: item.reason,
+});
+
+const formatUnderstandingContextForPrompt = (context: PromptUnderstandingContext) =>
   [
     "以下是结构化记忆检索结果。只能作为参考，不要直接复述，不要把假设当事实。",
     JSON.stringify(
@@ -212,15 +233,7 @@ const formatUnderstandingContextForPrompt = (context: StructuredRagContext) =>
           emotion: item.emotion,
           reason: item.reason,
         })),
-        professionalGuidance: context.professionalGuidance.map((item) => ({
-          id: item.id,
-          sourceKind: item.sourceKind,
-          principle: compactMemory(item.principle),
-          applyWhen: compactMemory(item.applyWhen),
-          avoid: item.avoid,
-          responseMove: compactMemory(item.responseMove),
-          reason: item.reason,
-        })),
+        professionalGuidance: context.professionalGuidance.map(formatProfessionalGuidanceForPrompt),
         recentUserFeedback: context.userFeedback.map((item) => ({
           signal: item.signal,
           tags: item.tags,
@@ -236,7 +249,7 @@ const formatUnderstandingContextForPrompt = (context: StructuredRagContext) =>
     "用户反馈表示过去哪些回复没有接住；优先避免重复同类错误，不要向用户解释系统如何利用反馈。",
   ].join("\n");
 
-const getUnderstandingMeta = (context?: StructuredRagContext | null): AiPromptMeta["understanding"] | undefined =>
+const getUnderstandingMeta = (context?: PromptUnderstandingContext | null): AiPromptMeta["understanding"] | undefined =>
   context
     ? {
         recentMemoryCount: context.recentMemories.length,
@@ -345,11 +358,75 @@ export const formatClinicalPlanForPrompt = (clinicalPlan: ClinicalPlan) => {
   ].join("\n");
 };
 
+export const formatPersonCenteredGateBoundary = ({
+  gateDecision,
+  selectedResponseGoal,
+}: {
+  gateDecision: PersonCenteredGateDecision;
+  selectedResponseGoal: ClinicalPlan["responseGoal"];
+}) =>
+  [
+    "【Person-Centered Intervention Boundary】",
+    "This is an authoritative execution boundary, not response text.",
+    `readiness: ${gateDecision.interventionReadiness}`,
+    `maxInterventionIntensity: ${gateDecision.maxInterventionIntensity}`,
+    `allowedInterventionFamilies: ${formatList(gateDecision.allowedInterventionFamilies)}`,
+    `allowedResponseGoals: ${formatList(gateDecision.responseGoalPolicy.allowed)}`,
+    `selectedResponseGoal: ${selectedResponseGoal}`,
+    "Use only the selected response goal and the explicitly allowed intervention families.",
+    "When no intervention family is allowed, do not provide advice, interpretation, diagnosis, assessment, or an action plan.",
+    "Do not mention this boundary or its fields in the user-visible reply.",
+  ].join("\n");
+
+type LegacyUnderstandingPromptInput = {
+  understandingContext?: StructuredRagContext | null;
+  gatedUnderstandingContext?: never;
+  personCenteredGateDecision?: null | undefined;
+};
+
+type GatedUnderstandingPromptInput = {
+  understandingContext?: never;
+  gatedUnderstandingContext: GatedStructuredRagContext | null;
+  personCenteredGateDecision: PersonCenteredGateDecision;
+};
+
+export type ChatUnderstandingPromptInput =
+  | LegacyUnderstandingPromptInput
+  | GatedUnderstandingPromptInput;
+
+const resolvePromptUnderstandingContext = ({
+  understandingContext,
+  gatedUnderstandingContext,
+  personCenteredGateDecision,
+}: ChatUnderstandingPromptInput): PromptUnderstandingContext | null | undefined => {
+  if (!personCenteredGateDecision) {
+    if (gatedUnderstandingContext !== undefined) {
+      throw new Error("Gated understanding context requires a Person-Centered Gate decision.");
+    }
+    return understandingContext;
+  }
+
+  if (understandingContext !== undefined) {
+    throw new Error("Raw StructuredRagContext cannot enter a gate-enabled prompt.");
+  }
+
+  if (gatedUnderstandingContext) {
+    assertPromptEligibleContextForDecision({
+      context: gatedUnderstandingContext,
+      gateDecision: personCenteredGateDecision,
+    });
+  }
+
+  return gatedUnderstandingContext;
+};
+
 export const buildChatPrompt = ({
   userMessage,
   recentMessages,
   memoryContext,
   understandingContext,
+  gatedUnderstandingContext,
+  personCenteredGateDecision,
   conversationContext,
   voiceConstraints,
   clinicalPlan,
@@ -358,12 +435,53 @@ export const buildChatPrompt = ({
   userMessage: string;
   recentMessages: AiConversationMessage[];
   memoryContext?: AiMemoryContext | null;
-  understandingContext?: StructuredRagContext | null;
   conversationContext?: ConversationContext | null;
   voiceConstraints?: AiVoiceConstraints | null;
   clinicalPlan?: ClinicalPlan | null;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
-}): { messages: AiModelMessage[]; meta: AiPromptMeta } => {
+} & ChatUnderstandingPromptInput): { messages: AiModelMessage[]; meta: AiPromptMeta } => {
+  if (personCenteredGateDecision && !clinicalPlan) {
+    throw new Error("A gate-enabled prompt requires the gated ClinicalPlan.");
+  }
+  if (personCenteredGateDecision) {
+    const snapshot = clinicalPlan?.personCenteredGate;
+    const snapshotMatchesDecision =
+      snapshot?.version === personCenteredGateDecision.version &&
+      snapshot.readiness === personCenteredGateDecision.interventionReadiness &&
+      snapshot.maxIntensity === personCenteredGateDecision.maxInterventionIntensity &&
+      snapshot.allowedFamilies.length ===
+        personCenteredGateDecision.allowedInterventionFamilies.length &&
+      snapshot.allowedFamilies.every(
+        (family, index) =>
+          family === personCenteredGateDecision.allowedInterventionFamilies[index]
+      ) &&
+      snapshot.allowedResponseGoals.length ===
+        personCenteredGateDecision.responseGoalPolicy.allowed.length &&
+      snapshot.allowedResponseGoals.every(
+        (goal, index) =>
+          goal === personCenteredGateDecision.responseGoalPolicy.allowed[index]
+      );
+
+    if (!snapshotMatchesDecision) {
+      throw new Error(
+        "ClinicalPlan does not match the active Person-Centered Gate decision."
+      );
+    }
+  }
+  if (
+    personCenteredGateDecision &&
+    clinicalPlan &&
+    !personCenteredGateDecision.responseGoalPolicy.allowed.includes(
+      clinicalPlan.responseGoal
+    )
+  ) {
+    throw new Error("ClinicalPlan response goal is outside the active Person-Centered Gate boundary.");
+  }
+  const promptUnderstandingContext = resolvePromptUnderstandingContext({
+    understandingContext,
+    gatedUnderstandingContext,
+    personCenteredGateDecision,
+  } as ChatUnderstandingPromptInput);
   const { included, filteredHistory } = sanitizeChatHistory({ userMessage, recentMessages });
   const clinicalPlanPrompt =
     clinicalPlan && isClinicalPlanPromptEnabled() ? formatClinicalPlanForPrompt(clinicalPlan) : null;
@@ -392,11 +510,11 @@ export const buildChatPrompt = ({
           },
         ]
       : []),
-    ...(understandingContext
+    ...(promptUnderstandingContext
       ? [
           {
             role: "developer" as const,
-            content: formatUnderstandingContextForPrompt(understandingContext),
+            content: formatUnderstandingContextForPrompt(promptUnderstandingContext),
           },
         ]
       : []),
@@ -424,6 +542,17 @@ export const buildChatPrompt = ({
           },
         ]
       : []),
+    ...(personCenteredGateDecision && clinicalPlan
+      ? [
+          {
+            role: "developer" as const,
+            content: formatPersonCenteredGateBoundary({
+              gateDecision: personCenteredGateDecision,
+              selectedResponseGoal: clinicalPlan.responseGoal,
+            }),
+          },
+        ]
+      : []),
     ...included,
     { role: "user", content: userMessage },
   ];
@@ -440,8 +569,8 @@ export const buildChatPrompt = ({
       memorySource: memoryContext?.source,
       memoryLayer: memoryContext?.layer,
       memoryTrust: memoryContext?.trust,
-      understandingIncluded: Boolean(understandingContext),
-      understanding: getUnderstandingMeta(understandingContext),
+      understandingIncluded: Boolean(promptUnderstandingContext),
+      understanding: getUnderstandingMeta(promptUnderstandingContext),
       conversationContext: conversationContext ?? undefined,
       voiceConstraints: voiceConstraints ?? undefined,
       filteredHistory,
@@ -455,6 +584,8 @@ export const buildChatMessages = ({
   recentMessages,
   memoryContext,
   understandingContext,
+  gatedUnderstandingContext,
+  personCenteredGateDecision,
   conversationContext,
   voiceConstraints,
   clinicalPlan,
@@ -463,17 +594,22 @@ export const buildChatMessages = ({
   userMessage: string;
   recentMessages: AiConversationMessage[];
   memoryContext?: AiMemoryContext | null;
-  understandingContext?: StructuredRagContext | null;
   conversationContext?: ConversationContext | null;
   voiceConstraints?: AiVoiceConstraints | null;
   clinicalPlan?: ClinicalPlan | null;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
-}): AiModelMessage[] => {
+} & ChatUnderstandingPromptInput): AiModelMessage[] => {
+  const understandingPromptInput: ChatUnderstandingPromptInput = personCenteredGateDecision
+    ? {
+        gatedUnderstandingContext: gatedUnderstandingContext ?? null,
+        personCenteredGateDecision,
+      }
+    : { understandingContext };
   return buildChatPrompt({
     userMessage,
     recentMessages,
     memoryContext,
-    understandingContext,
+    ...understandingPromptInput,
     conversationContext,
     voiceConstraints,
     clinicalPlan,

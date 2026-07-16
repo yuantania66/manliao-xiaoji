@@ -1,4 +1,4 @@
-import type { ClinicalContext, ResponseGoal } from "./clinicalTypes";
+import type { ClinicalContext, PersonCenteredGateDecision, ResponseGoal } from "./clinicalTypes";
 import { isUserCorrection } from "./userCorrectionSignal";
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
@@ -18,7 +18,7 @@ const isLongDisclosure = (text: string) => {
   return text.length >= 80 || punctuationCount >= 4;
 };
 
-export const selectResponseGoal = (context: ClinicalContext): ResponseGoal => {
+export const selectLegacyResponseGoal = (context: ClinicalContext): ResponseGoal => {
   const text = normalize(context.conversation.currentUserMessage);
 
   if (context.signals.explicitAdviceRequest) return "support_action";
@@ -31,4 +31,18 @@ export const selectResponseGoal = (context: ClinicalContext): ResponseGoal => {
   if (isUserCorrection(text)) return "clarify";
 
   return "reflect";
+};
+
+export const selectResponseGoal = (
+  context: ClinicalContext,
+  gateDecision: PersonCenteredGateDecision | null = null
+): ResponseGoal => {
+  const candidate = selectLegacyResponseGoal(context);
+
+  if (!gateDecision) return candidate;
+  if (gateDecision.responseGoalPolicy.preferred) {
+    return gateDecision.responseGoalPolicy.preferred;
+  }
+  if (gateDecision.responseGoalPolicy.allowed.includes(candidate)) return candidate;
+  return gateDecision.responseGoalPolicy.fallback;
 };

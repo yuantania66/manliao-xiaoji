@@ -12,6 +12,7 @@ import type {
   ClinicalSignals,
   ResponseGoal,
 } from "./clinicalTypes";
+import { derivePersonCenteredGateEvidence } from "./personCenteredInterventionGate";
 
 const emptyUnderstanding = (): ClinicalCurrentUnderstanding => ({
   event: [],
@@ -142,6 +143,7 @@ export const buildClinicalContext = ({
   locale = "zh-CN",
   timezone = "Asia/Shanghai",
   channel = "chat",
+  includePersonCenteredEvidence = false,
 }: {
   conversationId: string;
   userId?: string;
@@ -157,6 +159,7 @@ export const buildClinicalContext = ({
   locale?: string;
   timezone?: string;
   channel?: string;
+  includePersonCenteredEvidence?: boolean;
 }): ClinicalContext => {
   const previousAssistantMessage =
     [...recentTurns].reverse().find((turn) => turn.role === "assistant")?.content ?? null;
@@ -196,6 +199,15 @@ export const buildClinicalContext = ({
       channel,
     },
     signals,
+    ...(includePersonCenteredEvidence
+      ? {
+          personCenteredEvidence: derivePersonCenteredGateEvidence({
+            currentUserMessage: userTurn,
+            recentMessages: recentTurns,
+            legacyAdviceSignal: signals.explicitAdviceRequest,
+          }),
+        }
+      : {}),
     conversationId,
     userId,
     userTurn,

@@ -1,7 +1,13 @@
 import type { AiRiskLevel } from "@/services/ai/types";
 
 import { createEmptyClinicalSignals, deriveClinicalConversationSignals } from "./clinicalContextBuilder";
-import type { ClinicalContext, ClinicalPlan, ClinicalTrace } from "./clinicalTypes";
+import type {
+  ClinicalContext,
+  ClinicalPlan,
+  ClinicalTrace,
+  PersonCenteredGateDecision,
+  ProfessionalGuidanceGateTrace,
+} from "./clinicalTypes";
 
 const memoryUsedFromContext = (context: ClinicalContext): ClinicalTrace["memoryUsed"] => ({
   understandings: context.memory.understandings.map((item) => item.text),
@@ -20,6 +26,8 @@ const memoryExcludedFromContext = (context: ClinicalContext): ClinicalTrace["mem
 export const buildClinicalTrace = ({
   context,
   plan,
+  gateDecision = null,
+  professionalGuidanceProjection = null,
   safetyDecision = {
     level: "low",
     routedToSafety: false,
@@ -28,21 +36,40 @@ export const buildClinicalTrace = ({
 }: {
   context: ClinicalContext;
   plan: ClinicalPlan;
+  gateDecision?: PersonCenteredGateDecision | null;
+  professionalGuidanceProjection?: ProfessionalGuidanceGateTrace | null;
   safetyDecision?: {
     level: AiRiskLevel | "none";
     routedToSafety: boolean;
     notes: string[];
   };
-}): ClinicalTrace => ({
-  skippedBySafety: false,
-  conversationState: context.conversation.state,
-  safetyDecision,
-  inputSignals: deriveClinicalConversationSignals(context.conversation.currentUserMessage),
-  signals: context.signals,
-  memoryUsed: memoryUsedFromContext(context),
-  memoryExcluded: memoryExcludedFromContext(context),
-  selectedPlan: plan,
-});
+}): ClinicalTrace => {
+  if (gateDecision && !context.personCenteredEvidence) {
+    throw new Error("Person-Centered Gate trace requires personCenteredEvidence.");
+  }
+
+  return {
+    skippedBySafety: false,
+    conversationState: context.conversation.state,
+    safetyDecision,
+    inputSignals: deriveClinicalConversationSignals(context.conversation.currentUserMessage),
+    signals: context.signals,
+    memoryUsed: memoryUsedFromContext(context),
+    memoryExcluded: memoryExcludedFromContext(context),
+    selectedPlan: plan,
+    ...(gateDecision && context.personCenteredEvidence
+      ? {
+          personCenteredGate: {
+            evidence: context.personCenteredEvidence,
+            decision: gateDecision,
+            ...(professionalGuidanceProjection
+              ? { professionalGuidance: professionalGuidanceProjection }
+              : {}),
+          },
+        }
+      : {}),
+  };
+};
 
 export const buildSafetySkippedClinicalTrace = ({
   level = "crisis",

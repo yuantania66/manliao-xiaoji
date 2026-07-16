@@ -4,6 +4,7 @@ import {
   buildChatPrompt,
   CHAT_PROMPT_VERSION,
   FALLBACK_PROMPT_VERSION,
+  type ChatUnderstandingPromptInput,
   type ChatPromptEvaluationAdapter,
 } from "./promptBuilder";
 import { callModel, getDefaultAiModel } from "./modelProvider";
@@ -18,12 +19,36 @@ import {
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 import { runConversationPipeline } from "@/conversation-os";
 import { buildVoiceConstraints } from "./voiceLayer";
-import type { ClinicalPlan } from "@/services/clinical/clinicalTypes";
+import type {
+  ClinicalPlan,
+  PersonCenteredGateDecision,
+} from "@/services/clinical/clinicalTypes";
+import type { GatedStructuredRagContext } from "@/services/professional-rag/professionalGuidanceGateProjection";
 
 export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel();
 
 const getFinalReplySource = (model: string): AiGenerationResult["finalReplySource"] =>
   model.startsWith("mock:") ? "mock" : "llm";
+
+type GenerateChatReplyInput = {
+  conversationId?: string;
+  userMessage: string;
+  recentMessages: AiConversationMessage[];
+  memoryContext?: AiMemoryContext | null;
+  clinicalPlan?: ClinicalPlan | null;
+  evaluationAdapter?: ChatPromptEvaluationAdapter | null;
+} & (
+  | {
+      understandingContext?: StructuredRagContext | null;
+      gatedUnderstandingContext?: never;
+      personCenteredGateDecision?: null | undefined;
+    }
+  | {
+      understandingContext?: never;
+      gatedUnderstandingContext: GatedStructuredRagContext | null;
+      personCenteredGateDecision: PersonCenteredGateDecision;
+    }
+);
 
 export const generateChatReply = async ({
   conversationId = "unknown-conversation",
@@ -31,23 +56,23 @@ export const generateChatReply = async ({
   recentMessages,
   memoryContext,
   understandingContext,
+  gatedUnderstandingContext,
+  personCenteredGateDecision,
   clinicalPlan,
   evaluationAdapter,
-}: {
-  conversationId?: string;
-  userMessage: string;
-  recentMessages: AiConversationMessage[];
-  memoryContext?: AiMemoryContext | null;
-  understandingContext?: StructuredRagContext | null;
-  clinicalPlan?: ClinicalPlan | null;
-  evaluationAdapter?: ChatPromptEvaluationAdapter | null;
-}): Promise<AiGenerationResult> => {
+}: GenerateChatReplyInput): Promise<AiGenerationResult> => {
   const pipelineRecentMessages = recentMessages.flatMap((message) =>
     message.role === "user" || message.role === "assistant"
       ? [{ role: message.role, content: message.content }]
       : []
   );
   const responseBox: { value?: AiProviderResponse; promptMeta?: AiPromptMeta } = {};
+  const understandingPromptInput: ChatUnderstandingPromptInput = personCenteredGateDecision
+    ? {
+        gatedUnderstandingContext: gatedUnderstandingContext ?? null,
+        personCenteredGateDecision,
+      }
+    : { understandingContext };
 
   const pipelineResult = await runConversationPipeline({
     conversationId,
@@ -62,7 +87,7 @@ export const generateChatReply = async ({
       userMessage,
       recentMessages,
       memoryContext,
-      understandingContext,
+      ...understandingPromptInput,
       conversationContext: context,
       voiceConstraints,
       clinicalPlan,

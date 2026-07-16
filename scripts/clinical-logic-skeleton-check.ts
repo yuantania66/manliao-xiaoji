@@ -21,12 +21,16 @@ const legacyAiServiceSource = readFileSync("services/ai/aiService.ts", "utf8");
 
 const safetyBranchIndex = orchestration.indexOf("if (isCrisisInput(userMessage))");
 const clinicalContextIndex = orchestration.indexOf("const clinicalContext = buildClinicalContext");
-const clinicalPlanIndex = orchestration.indexOf("const clinicalPlan = createClinicalPlan");
+const clinicalPlanIndex = orchestration.indexOf("const clinicalPlan =");
 const generateIndex = orchestration.indexOf("generateChatReply({");
 
 assert(safetyBranchIndex >= 0, "Safety gate must remain in createChatReply().");
 assert(clinicalContextIndex > safetyBranchIndex, "Ordinary ClinicalContext must be built after Safety gate.");
-assert(clinicalPlanIndex > clinicalContextIndex, "ClinicalPlan must be created from ClinicalContext.");
+assert(
+  clinicalPlanIndex > clinicalContextIndex &&
+    orchestration.indexOf("createClinicalPlan(clinicalContext", clinicalPlanIndex) >= clinicalPlanIndex,
+  "ClinicalPlan must be created from ClinicalContext."
+);
 assert(generateIndex > clinicalPlanIndex, "ClinicalPlan must be created before Prompt Builder / LLM generation.");
 assert(promptBuilder.includes("CLINICAL_PLAN_PROMPT_ENABLED"), "ClinicalPlan prompt injection must be feature-flagged.");
 assert(

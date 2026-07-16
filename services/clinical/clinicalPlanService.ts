@@ -1,4 +1,4 @@
-import type { ClinicalContext, ClinicalPlan } from "./clinicalTypes";
+import type { ClinicalContext, ClinicalPlan, PersonCenteredGateDecision } from "./clinicalTypes";
 import { NOOP_CLINICAL_STRATEGY } from "./clinicalStrategyRegistry";
 import { selectClinicalStrategy } from "./clinicalStrategySelector";
 import { selectResponseGoal } from "./responseGoalSelector";
@@ -26,14 +26,38 @@ export const createNoOpClinicalPlan = (context: ClinicalContext): ClinicalPlan =
   ],
 });
 
-export const createClinicalPlan = (context: ClinicalContext): ClinicalPlan => {
-  const responseGoal = selectResponseGoal(context);
+export const createClinicalPlan = (
+  context: ClinicalContext,
+  gateDecision: PersonCenteredGateDecision | null = null
+): ClinicalPlan => {
+  const responseGoal = selectResponseGoal(context, gateDecision);
   const primaryStrategy = selectClinicalStrategy({
     context,
     responseGoal,
+    gateDecision,
   });
 
-  if (primaryStrategy === "rogers") return createRogersClinicalPlan(context, responseGoal);
+  const plan =
+    primaryStrategy === "rogers"
+      ? createRogersClinicalPlan(context, responseGoal)
+      : createNoOpClinicalPlan(context);
 
-  return createNoOpClinicalPlan(context);
+  if (!gateDecision) return plan;
+
+  const personCenteredGate = Object.freeze({
+    version: gateDecision.version,
+    readiness: gateDecision.interventionReadiness,
+    maxIntensity: gateDecision.maxInterventionIntensity,
+    allowedFamilies: Object.freeze([
+      ...gateDecision.allowedInterventionFamilies,
+    ]),
+    allowedResponseGoals: Object.freeze([
+      ...gateDecision.responseGoalPolicy.allowed,
+    ]),
+  });
+
+  return {
+    ...plan,
+    personCenteredGate,
+  };
 };

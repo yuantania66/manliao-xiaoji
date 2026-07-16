@@ -38,8 +38,9 @@ assert(
   "createChatReply() must build ClinicalContext before ClinicalPlan."
 );
 assert(
-  orchestration.includes("createClinicalPlan(clinicalContext)") &&
-    orchestration.indexOf("createClinicalPlan(clinicalContext)") < orchestration.indexOf("generateChatReply({"),
+  orchestration.includes("const clinicalPlan =") &&
+    orchestration.includes("createClinicalPlan(clinicalContext") &&
+    orchestration.indexOf("const clinicalPlan =") < orchestration.indexOf("generateChatReply({"),
   "createChatReply() must create ClinicalPlan before normal generation."
 );
 assert(
@@ -161,11 +162,11 @@ assert(
   "package.json must expose check:clinical-logic-skeleton."
 );
 assert(
-  clinicalPlanService.includes("selectResponseGoal(context)") &&
+  clinicalPlanService.includes("selectResponseGoal(context, gateDecision)") &&
     clinicalPlanService.includes("selectClinicalStrategy") &&
     clinicalPlanService.includes('primaryStrategy === "rogers"') &&
     clinicalPlanService.includes("createRogersClinicalPlan(context, responseGoal)"),
-  "Default normal ClinicalPlan must use ResponseGoalSelector -> StrategySelector -> Rogers dry-run strategy."
+  "ClinicalPlan must mechanically pass the optional Gate decision through ResponseGoalSelector -> StrategySelector -> Rogers dry-run strategy."
 );
 assert(
   clinicalPlanService.includes("createNoOpClinicalPlan"),
