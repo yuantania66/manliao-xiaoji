@@ -12,8 +12,8 @@ import { createClinicalPlan } from "../services/clinical/clinicalPlanService";
 
 const memoryContext = createClinicalMemoryContext(null);
 
-const createPlan = (userMessage: string, recentMessages: AiConversationMessage[] = []) => {
-  const context = buildClinicalContext({
+const createContext = (userMessage: string, recentMessages: AiConversationMessage[] = []) =>
+  buildClinicalContext({
     conversationId: "semantic-evidence-contract-check",
     userTurn: userMessage,
     recentTurns: recentMessages,
@@ -24,8 +24,8 @@ const createPlan = (userMessage: string, recentMessages: AiConversationMessage[]
     }).state,
   });
 
-  return createClinicalPlan(context);
-};
+const createPlan = (userMessage: string, recentMessages: AiConversationMessage[] = []) =>
+  createClinicalPlan(createContext(userMessage, recentMessages));
 
 const apply = ({
   userMessage = "1",
@@ -154,6 +154,72 @@ assert.equal(
 );
 assert.strictEqual(sufficientMeaningResult.outputGeneration, sufficientMeaningResult.inputGeneration);
 
+const activeAnswerFrameCases = [
+  { group: "preserved", assistant: "你现在几分？\n慢慢来。", user: "7", expected: "sufficient" },
+  { group: "preserved", assistant: "请回复 1、2 或 3。\n不用着急。", user: "2", expected: "sufficient" },
+  { group: "preserved", assistant: "请回复“收到”。", user: "收到", expected: "sufficient" },
+  { group: "preserved", assistant: "请选择：\n1. 现在说\n2. 稍后说", user: "2", expected: "sufficient" },
+  { group: "preserved", assistant: "你几岁？\n不用着急。", user: "18", expected: "sufficient" },
+  { group: "preserved", assistant: "如果 0 到 10 分，你会打几分\n慢慢回答。", user: "6", expected: "sufficient" },
+  { group: "preserved", assistant: "请用 0 到 10 分衡量。\n你现在几分？", user: "7", expected: "sufficient" },
+  { group: "preserved", assistant: "请用 0 到 10 分衡量。\n慢慢来。\n你现在几分？", user: "7", expected: "sufficient" },
+  { group: "preserved", assistant: "这件事发生过几次？", user: "3", expected: "sufficient" },
+  { group: "preserved", assistant: "告诉我你的具体年龄。", user: "18", expected: "sufficient" },
+  { group: "preserved", assistant: "你更接近哪一个数字？", user: "2", expected: "sufficient" },
+  { group: "preserved", assistant: "你今天吃饭了吗？", user: "是", expected: "sufficient" },
+  { group: "replaced", assistant: "你现在几分？\n你今天想说什么？", user: "7", expected: "insufficient" },
+  { group: "replaced", assistant: "请回复 1、2 或 3。\n你今天想说什么？", user: "2", expected: "insufficient" },
+  { group: "replaced", assistant: "请选择：\n1. 现在说\n2. 稍后说\n你今天想说什么？", user: "2", expected: "insufficient" },
+  { group: "replaced", assistant: "请回复 1、2 或 3，接下来你想说什么？", user: "2", expected: "insufficient" },
+  {
+    group: "replaced",
+    assistant: "你几岁？\n后来我们先聊点别的。\n你今天想说什么？",
+    user: "18",
+    expected: "insufficient",
+  },
+  { group: "replaced", assistant: "这件事发生过几次？\n你想从哪里说起？", user: "3", expected: "insufficient" },
+  { group: "replaced", assistant: "你现在几分？\n你想先休息吗？", user: "7", expected: "insufficient" },
+  { group: "replaced", assistant: "你现在几分？\n你呢？", user: "7", expected: "insufficient" },
+  { group: "replaced", assistant: "你现在几分，接下来你想说什么？", user: "7", expected: "insufficient" },
+  { group: "none", assistant: "我不会替你打分。", user: "1", expected: "insufficient" },
+  { group: "none", assistant: "我只是举例。\n答案可能是 1、2 或 3。", user: "2", expected: "insufficient" },
+  {
+    group: "none",
+    assistant: "请回复“收到”。\n我只是举例，答案可能是 1、2 或 3。",
+    user: "2",
+    expected: "insufficient",
+  },
+  {
+    group: "none",
+    assistant: "我只是举例。\n请回复“收到”。\n答案可能是 1、2 或 3。",
+    user: "2",
+    expected: "insufficient",
+  },
+  { group: "none", assistant: "这不是让你回答 1、2 或 3。", user: "2", expected: "insufficient" },
+  { group: "none", assistant: "你不需要告诉我具体年龄。", user: "18", expected: "insufficient" },
+  { group: "none", assistant: "我们先不讨论次数。", user: "3", expected: "insufficient" },
+  { group: "compatibility", assistant: "请回复 1、2 或 3。", user: "4", expected: "insufficient" },
+  { group: "compatibility", assistant: "如果 0 到 10 分，你会打几分？", user: "11", expected: "insufficient" },
+  { group: "compatibility", assistant: "请用 0 到 10 分衡量。\n你现在几分？", user: "11", expected: "insufficient" },
+  { group: "compatibility", assistant: "请用 0 到 10 分衡量。\n慢慢来。\n你现在几分？", user: "11", expected: "insufficient" },
+] as const;
+
+for (const { group, assistant, user, expected } of activeAnswerFrameCases) {
+  const recentMessages: AiConversationMessage[] = [{ role: "assistant", content: assistant }];
+  const context = createContext(user, recentMessages);
+  const plan = createClinicalPlan(context);
+  assert.equal(
+    context.signals.semanticEvidence.status,
+    expected,
+    `${group}: ${JSON.stringify(assistant)} must classify ${JSON.stringify(user)} as ${expected}.`
+  );
+  assert.equal(
+    plan.responseIntent,
+    expected === "insufficient" ? "receive" : "empathic_reflection",
+    `${JSON.stringify(assistant)} must produce the matching clinical-plan behavior.`
+  );
+}
+
 console.log(
   JSON.stringify(
     {
@@ -164,6 +230,7 @@ console.log(
       },
       naturalRepliesPreserved: naturalCounterexamples.length + 1,
       unsupportedMeaningRepliesBlocked: unsupportedCounterexamples.length + 1,
+      activeAnswerFramesVerified: activeAnswerFrameCases.length,
       safetyPriority: "verified_by_check:ai-orchestration",
     },
     null,
