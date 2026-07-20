@@ -60,6 +60,13 @@ const getPlanShapeForGoal = (
   if (responseGoal === "clarify") {
     const userCorrectedAi = isUserCorrection(context.conversation.currentUserMessage);
 
+    if (context.signals.semanticEvidence.status === "insufficient") {
+      return {
+        responseIntent: "receive",
+        questionFunction: "none",
+      };
+    }
+
     return {
       responseIntent: userCorrectedAi ? "repair" : "clarify",
       questionFunction: userCorrectedAi ? "repair_understanding" : "clarify_meaning",
@@ -80,6 +87,8 @@ export const createRogersClinicalPlan = (
   const supportActionElement =
     responseGoal === "support_action" ? getSupportActionElement(context.conversation.currentUserMessage) : null;
   const clarificationContract = planShape.responseIntent === "clarify";
+  const observationContract =
+    responseGoal === "clarify" && context.signals.semanticEvidence.status === "insufficient";
 
   return {
     responseGoal,
@@ -98,6 +107,9 @@ export const createRogersClinicalPlan = (
             "keep a low-pressure continuation entry; do not require immediate explanation.",
           ]
         : []),
+      ...(observationContract
+        ? ["remain at observation until the user or active conversation context establishes meaning."]
+        : []),
       ...(supportActionElement
         ? ["support_action must include one small, optional, user-adjustable action-support element."]
         : []),
@@ -109,6 +121,12 @@ export const createRogersClinicalPlan = (
         ? [
             "do not convert ambiguity into an emotion, score, activity, or conversational purpose.",
             "do not close the conversation unless the user asks to pause.",
+          ]
+        : []),
+      ...(observationContract
+        ? [
+            "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+            "do not treat an assistant-authored guess as established semantic evidence.",
           ]
         : []),
       ...(supportActionElement
@@ -124,6 +142,7 @@ export const createRogersClinicalPlan = (
       `ResponseGoalSelector dry-run selected responseGoal=${responseGoal}.`,
       "RogersStrategy remains the default dry-run strategy and serves the selected responseGoal.",
       "Plan is trace-first in this sprint; Prompt structure is not changed.",
+      `Semantic evidence is ${context.signals.semanticEvidence.status} (${context.signals.semanticEvidence.source}).`,
       ...(supportActionElement ? [supportActionElement] : []),
       `ClinicalContext memory received: understandings=${context.memory.understandings.length}, timelineEvents=${context.memory.timelineEvents.length}, relationships=${context.memory.relationships.length}, semanticMemories=${context.memory.semanticMemories.length}.`,
     ],
