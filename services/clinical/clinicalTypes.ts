@@ -31,6 +31,12 @@ export type ClinicalEmotionalIntensity = "LOW" | "MEDIUM" | "HIGH" | "UNKNOWN";
 
 export type ClinicalConversationStage = "OPENING" | "EXPLORING" | "CONTINUING";
 
+export type ClinicalSemanticEvidence = {
+  status: "sufficient" | "insufficient";
+  source: "current_user_message" | "established_conversation_frame" | "none";
+  reason: string;
+};
+
 export type ClinicalSignals = {
   messageLength: ClinicalMessageLength;
   expressionDifficulty: boolean;
@@ -38,6 +44,7 @@ export type ClinicalSignals = {
   emotionalIntensity: ClinicalEmotionalIntensity;
   hasPreviousAssistantReply: boolean;
   conversationStage: ClinicalConversationStage;
+  semanticEvidence: ClinicalSemanticEvidence;
   memoryAvailability: {
     hasUnderstanding: boolean;
     hasRelationship: boolean;

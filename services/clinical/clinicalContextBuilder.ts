@@ -13,6 +13,7 @@ import type {
   ResponseGoal,
 } from "./clinicalTypes";
 import { derivePersonCenteredGateEvidence } from "./personCenteredInterventionGate";
+import { evaluateSemanticEvidence } from "./semanticEvidence";
 
 const emptyUnderstanding = (): ClinicalCurrentUnderstanding => ({
   event: [],
@@ -79,6 +80,11 @@ export const createEmptyClinicalSignals = (): ClinicalSignals => ({
   emotionalIntensity: "UNKNOWN",
   hasPreviousAssistantReply: false,
   conversationStage: "OPENING",
+  semanticEvidence: {
+    status: "insufficient",
+    source: "none",
+    reason: "No user message or active conversation frame is available.",
+  },
   memoryAvailability: {
     hasUnderstanding: false,
     hasRelationship: false,
@@ -103,11 +109,13 @@ const buildClinicalSignals = ({
   userTurn,
   previousAssistantMessage,
   turnCount,
+  recentTurns,
   memoryContext,
 }: {
   userTurn: string;
   previousAssistantMessage?: string | null;
   turnCount: number;
+  recentTurns: AiConversationMessage[];
   memoryContext: ClinicalMemoryContext;
 }): ClinicalSignals => {
   const text = normalize(userTurn);
@@ -119,6 +127,7 @@ const buildClinicalSignals = ({
     emotionalIntensity: getEmotionalIntensity(text),
     hasPreviousAssistantReply: Boolean(previousAssistantMessage),
     conversationStage: getConversationStage(turnCount),
+    semanticEvidence: evaluateSemanticEvidence({ userTurn, recentMessages: recentTurns }),
     memoryAvailability: {
       hasUnderstanding: memoryContext.understandings.length > 0,
       hasRelationship: memoryContext.relationships.length > 0,
@@ -169,6 +178,7 @@ export const buildClinicalContext = ({
     userTurn,
     previousAssistantMessage,
     turnCount,
+    recentTurns,
     memoryContext,
   });
 
