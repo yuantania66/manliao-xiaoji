@@ -129,6 +129,17 @@ responseIntent: empathic_reflection
 - 不要说“你到底什么意思”。
 - 不要用校准术语。
 
+语义证据边界：
+
+- 在形成解释前，先读取 `ClinicalContext.signals.semanticEvidence`。
+- `sufficient` 表示当前消息本身已有可用语义，或当前回复与会话中明确建立的回答框架兼容；此时可以形成解释。
+- `insufficient` 表示当前只能确认输入本身；此时 `responseIntent=receive`、`questionFunction=none`，停留在观察，不根据消息格式或重复次数推断情绪、意图、分数、活动或会话目的。
+- 相同格式不能决定结果。例如独立出现的 `1` 证据不足，而在“吃了几个？”或“How old are you?”之后出现的 `1`/`34`具有明确回答框架，证据充分。
+- 回答框架只取当前五分钟会话片段里紧邻当前输入的 AI 消息；中间出现其他轮次或会话片段重置后，旧问题不再提供证据。
+- 兼容性需要验证：选择题只能接受已提供的选项，有界量表只能接受范围内数值；普通编号列表、年份区间和末尾标点不能自行建立语义。
+- `不对` 只有在紧邻 AI 消息、明确否定该消息时才形成纠错证据；独立出现时仍不推断纠错对象。
+- AI 自己先前提出、但用户没有确认的猜测，不构成已建立的语义证据。
+
 ### 4.3 reflect
 
 目标：
@@ -335,4 +346,3 @@ Clinical Logic first decides Response Goal.
 Strategy serves Response Goal.
 Rogers is not removed, but it is not the first decision.
 ```
-

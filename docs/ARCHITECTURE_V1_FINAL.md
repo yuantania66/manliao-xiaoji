@@ -23,7 +23,8 @@ Final Architecture v1 decision:
 - Product architecture remains five-layer.
 - Safety & Governance is a cross-cutting guardrail, not a normal linear pipeline step.
 - Conversation Layer may output facts and approved deterministic signals.
-- Clinical Logic owns `ResponseGoal`, `Strategy`, and `ClinicalPlan`.
+- Clinical Logic owns the optional Person-Centered eligibility boundary, `ResponseGoal`, `Strategy`, and `ClinicalPlan`.
+- The default-off Person-Centered Gate constrains eligibility before `ResponseGoal`; it does not select response content or create a sixth product layer.
 - ClinicalPlan contract must precede Prompt integration.
 - Memory owns long-term understanding and projection internals.
 - Legacy Conversation OS strategy fields are frozen and must not be expanded.
@@ -64,6 +65,8 @@ The runtime data flow for normal non-safety chat is:
 ```text
 Conversation outputs
   -> ClinicalContext
+  -> [Person-Centered Gate, when enabled]
+  -> [gated Professional RAG projection, when enabled]
   -> ResponseGoal
   -> Strategy
   -> ClinicalPlan
@@ -77,7 +80,10 @@ This is runtime data flow, not product architecture layering.
 Boundary definitions:
 
 - `ClinicalContext` is a cross-layer data contract consumed by Clinical Logic.
-- `ResponseGoal` is the first decision inside Clinical Logic.
+- Person-Centered Gate is a default-off runtime eligibility and boundary contract. When enabled, it is evaluated once after `ClinicalContext` and before `ResponseGoal`.
+- `createChatReply()` orchestration is the single execution owner of that evaluation; downstream consumers must not evaluate consent, readiness, or allowed intervention families again.
+- Gated Professional RAG projection is a runtime authorization projection. When the Gate is enabled, it prevents retrieved content from bypassing the Gate before Prompt construction.
+- `ResponseGoal` remains the first ordinary response-content decision inside Clinical Logic. A Gate decision may only constrain its eligible outcomes; it does not generate a response goal or user-visible reply independently.
 - `Strategy` is the method used to fulfill a `ResponseGoal`.
 - `ClinicalPlan` is the traceable output of Clinical Logic.
 - Prompt construction belongs to the reply generation flow. It is not a sixth product layer.
@@ -186,7 +192,8 @@ Conversation Layer may output facts and deterministic signals, but it must not c
 Responsibilities:
 
 - Consume `ClinicalContext`.
-- Make the first ordinary response decision: `ResponseGoal`.
+- When the reviewed feature flag is enabled, evaluate the Person-Centered intervention eligibility boundary once before `ResponseGoal`.
+- Make the first ordinary response-content decision: `ResponseGoal`, within any active Gate eligibility constraints.
 - Select a Strategy to fulfill the `ResponseGoal`.
 - Output `ClinicalPlan`.
 - Define question function, tone constraints, intervention boundaries, and safety notes.
@@ -200,6 +207,8 @@ Does not own:
 - Diagnosis, assessment, treatment plan, or clinical report.
 
 Clinical Logic may consume approved Conversation-derived signals, but it cannot modify them.
+
+The Person-Centered Gate is not a second response strategy system. It may derive eligibility only from the current user evidence and visible history defined by its reviewed contract, and may expose only a read-only decision snapshot downstream. It must not generate reply text, recalculate eligibility in downstream selectors, or turn retrieved Professional RAG content into consent or readiness.
 
 ### Memory & Mental Model Layer
 
@@ -283,19 +292,37 @@ Constraints:
 - Must not transform ordinary emotional expression into an advice request.
 - Must preserve user agency.
 
-### 6.3 `messageLength`
+### 6.3 `semanticEvidence`
 
 Type:
 
-- supporting feature only
+- approved decision signal
 
 Allowed effect:
 
-- may support a decision only when combined with other approved signals or explicit text conditions.
+- determines whether the current user reply has sufficient grounded semantic evidence for interpretation.
+- may suppress interpretation of unsupported atomic replies.
 
 Constraints:
 
-- Must not independently decide any `ResponseGoal`.
+- `ResponseGoalSelector` may read only `context.signals.semanticEvidence.status`; it must not derive a separate semantic-evidence decision.
+- Must not independently invent user intent.
+- Does not replace `ResponseGoal` selection.
+- Is an approved `ClinicalContext` signal, not a direct Prompt input or routing bypass.
+
+### 6.4 `messageLength`
+
+Type:
+
+- supporting metadata only
+
+Allowed effect:
+
+- may appear in `ClinicalContext` trace and diagnostics.
+
+Constraints:
+
+- Must not influence `ResponseGoal` selection.
 - Must not create rules such as "short message always means clarify".
 - Must not interpret low-information input as emotion, avoidance, testing, or resistance by itself.
 
@@ -392,6 +419,8 @@ As long as implementation does not cross responsibility boundaries, incomplete i
 
 Memory can provide structured context into `ClinicalContext`. Memory itself must not directly decide `ResponseGoal`.
 
+Professional RAG retrieval expresses relevance, not intervention authorization. When the default-off Person-Centered Gate is enabled, all Professional RAG content entering Prompt construction must pass through the single gated projection. Retrieved topics, cues, hypotheses, or cards must not create consent, readiness, or allowed intervention families, and raw retrieval context must not bypass that projection.
+
 ## 10. Accepted Architecture Rules
 
 ### R1: Reviewed Signal Whitelist Rule
@@ -414,13 +443,17 @@ Runtime contracts, internal objects, prompt construction, projection internals, 
 
 ### R4: Clinical Logic Ownership Rule
 
-Clinical Logic owns ordinary `ResponseGoal`, Strategy, and `ClinicalPlan`.
+Clinical Logic owns the optional Person-Centered eligibility boundary, ordinary `ResponseGoal`, Strategy, and `ClinicalPlan`.
+
+When enabled, the Gate constrains intervention eligibility before `ResponseGoal`. `ResponseGoal` remains the first response-content decision; the Gate must not generate user-visible reply content or become a parallel Strategy system.
 
 Conversation Layer may provide facts and approved signals, but it does not decide `ResponseGoal`.
 
 ### R5: Memory Boundary Rule
 
 Memory owns long-term understanding and may provide structured context. It must not directly decide ordinary `ResponseGoal`.
+
+Professional RAG retrieval must not create consent or readiness. With the Person-Centered Gate enabled, only Gate-projected Professional RAG context may enter Prompt construction.
 
 ### R6: Legacy Freeze Rule
 
@@ -429,6 +462,8 @@ Legacy Conversation OS strategy fields are frozen. They can be maintained for co
 ### R7: Prompt Boundary Rule
 
 Prompt construction is part of reply generation flow, not an architecture layer. Prompt must not become the owner of strategy decisions.
+
+When the Person-Centered Gate is enabled, Prompt may render the approved Gate boundary and projected Professional RAG context, but it must not recompute eligibility or accept raw Structured RAG context.
 
 ### R8: Feature Flag Rule
 
@@ -446,7 +481,7 @@ Known Architecture v1 debt:
 - Some V1/V2 Memory paths remain compatible rather than fully unified.
 - Projection Framework internals are still implementation-oriented and may need further repository/service cleanup.
 - `memoryAvailability` and `emotionalIntensity` may appear in trace but are prohibited from influencing `ResponseGoal`.
-- `messageLength` is a supporting feature only and needs guardrails against becoming an independent decision rule.
+- `messageLength` remains trace metadata and must not become a `ResponseGoal` decision rule.
 
 This debt does not block Architecture v1 finalization as long as the rules above are enforced.
 
@@ -493,6 +528,8 @@ The final ordinary runtime data flow is:
 ```text
 Conversation outputs
   -> ClinicalContext
+  -> [Person-Centered Gate, default off]
+  -> [gated Professional RAG projection, default off]
   -> ResponseGoal
   -> Strategy
   -> ClinicalPlan
@@ -502,14 +539,26 @@ Conversation outputs
 
 Safety & Governance remains cross-cutting and higher priority than the ordinary flow.
 
+The optional Gate and gated projection are runtime contracts, not additional product layers. They execute only when `PERSON_CENTERED_GATE_V1_ENABLED` is exactly `true`; otherwise the legacy ordinary runtime flow remains unchanged. The Gate constrains intervention eligibility, while `ResponseGoal` remains the first ordinary response-content decision.
+
 Architecture v1 does not accept `opening / exploring / deepening / action / closing` as formal Conversation State.
 
 Architecture v1 does accept a reviewed whitelist of deterministic Conversation-derived signals that may influence `ResponseGoal`:
 
 - `expressionDifficulty`
 - `explicitAdviceRequest`
-- `messageLength` only as a supporting feature
+- `semanticEvidence.status`
+
+`ResponseGoalSelector` may therefore read exactly:
+
+- `context.signals.expressionDifficulty`
+- `context.signals.explicitAdviceRequest`
+- `context.signals.semanticEvidence.status`
+
+`messageLength` remains available as supporting `ClinicalContext` metadata, but it is not an approved `ResponseGoalSelector` signal.
 
 All other state/signal inputs are prohibited from influencing `ResponseGoal` until they pass independent boundary review, Golden Dataset regression, real-model experience evaluation, and Architecture rule update.
+
+The reviewed Person-Centered Gate decision is a Clinical Logic eligibility contract derived from current user evidence and visible history, not a new Conversation State or a new Conversation-derived signal whitelist item. It does not authorize use of prohibited Conversation state/signal fields. Retrieved Professional RAG content cannot affect that decision.
 
 This document is the final Architecture v1 constraint source unless superseded by a later approved architecture review.

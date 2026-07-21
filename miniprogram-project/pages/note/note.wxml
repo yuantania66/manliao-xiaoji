@@ -84,8 +84,6 @@
     </view>
   </view>
 
-  <button wx:if="{{isDevRuntime}}" class="dev-media-test" bindtap="fillMediaLimitTest">生成 9 张图片测试</button>
-
   <view class="note-actions">
     <button class="media-button" bindtap="chooseMedia">+ <text class="media-title">添加图片</text><text class="media-sub">{{mediaCount}} / 9</text></button>
     <button class="save-note" disabled="{{!hasContent || isSaving}}" bindtap="saveNote">{{isSaving ? "保存中" : "记一下"}}</button>

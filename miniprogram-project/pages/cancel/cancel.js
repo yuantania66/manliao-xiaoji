@@ -38,11 +38,11 @@ Page({
     if (!this.data.phone || this.data.isSendingCode) return;
     this.setData({ isSendingCode: true, statusText: "正在发送验证码..." });
     sendCode({ phone: this.data.phone, scene: "cancel_account" })
-      .then((data) => {
+      .then(() => {
         this.setData({
           code: "",
           codeSent: true,
-          statusText: data.devCode ? `开发环境验证码：${data.devCode}` : "验证码已发送"
+          statusText: "验证码已发送"
         });
       })
       .catch((error) => {

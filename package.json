@@ -39,10 +39,11 @@
     "check:memory-v2-raw-worker": "tsx scripts/memory-v2-raw-worker-check.ts",
     "check:memory-v2-retrieval": "tsx scripts/memory-v2-retrieval-check.ts",
     "check:memory-v2-response-context": "tsx scripts/memory-v2-response-context-check.ts",
+    "check:person-centered-gate": "tsx scripts/person-centered-intervention-gate-check.ts",
     "check:memory-v2": "npm run check:memory-v2-raw && npm run check:memory-v2-refinement-job && npm run check:memory-v2-raw-worker && npm run check:memory-v2-retrieval && npm run check:memory-v2-response-context",
     "check:miniapp-js": "node scripts/check-miniapp-js.mjs",
     "check:prisma": "prisma validate && prisma generate && prisma migrate status",
-    "check:launch": "npm run lint && npm run audit:prelaunch && npm run check:ai-base && npm run check:ai-orchestration && npm run check:architecture-v1 && npm run check:clinical-logic && npm run check:semantic-evidence && npm run check:conversation-state && npm run check:conversation-trajectories && npm run check:conversation-os-architecture && npm run check:memory-v2 && npm run check:understanding && npm run check:ai-system && npm run check:prisma && npm run check:miniapp-js && npm run build",
+    "check:launch": "npm run lint && npm run audit:prelaunch && npm run check:ai-base && npm run check:ai-orchestration && npm run check:architecture-v1 && npm run check:clinical-logic && npm run check:person-centered-gate && npm run check:semantic-evidence && npm run check:conversation-state && npm run check:conversation-trajectories && npm run check:conversation-os-architecture && npm run check:memory-v2 && npm run check:understanding && npm run check:ai-system && npm run check:prisma && npm run check:miniapp-js && npm run build",
     "smoke:local-api": "node scripts/local-api-smoke.mjs",
     "smoke:prod": "node scripts/production-smoke.mjs"
   },

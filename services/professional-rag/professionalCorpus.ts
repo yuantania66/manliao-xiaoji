@@ -12,6 +12,11 @@ export const PROFESSIONAL_GUIDANCE_CARDS: ProfessionalGuidanceCard[] = [
     applyWhen: "用户把一个事件快速解释成别人讨厌自己、自己不行或事情全完了。",
     avoid: ["直接确认负面解释", "把一次事件写成长期人格结论", "马上给建议"],
     responseMove: "先承认这一下会让人不安，再轻轻区分“发生了什么”和“脑子里冒出的解释”。",
+    gate: {
+      role: "intervention",
+      interventionFamily: "cbt",
+      requiredIntensity: "moderate",
+    },
   },
   {
     id: "case-formulation-hypothesis-not-fact",
@@ -24,6 +29,11 @@ export const PROFESSIONAL_GUIDANCE_CARDS: ProfessionalGuidanceCard[] = [
     applyWhen: "同一人物、主题或情绪多次出现，模型想形成长期理解时。",
     avoid: ["诊断", "创伤定性", "把关系模式说死", "忽略反证"],
     responseMove: "用“我不确定，但好像……”表达低置信假设，并给用户修正空间。",
+    gate: {
+      role: "intervention",
+      interventionFamily: "case_formulation",
+      requiredIntensity: "high",
+    },
   },
   {
     id: "helping-skills-before-advice",
@@ -36,6 +46,11 @@ export const PROFESSIONAL_GUIDANCE_CARDS: ProfessionalGuidanceCard[] = [
     applyWhen: "用户主要在表达痛苦、疲惫或混乱，而不是明确要求解决方案。",
     avoid: ["过早建议", "讲大道理", "连续追问", "机械复述"],
     responseMove: "先接住情绪重量，再给一个很小的表达入口。",
+    gate: {
+      role: "baseline_boundary",
+      interventionFamily: null,
+      requiredIntensity: "none",
+    },
   },
   {
     id: "low-information-do-not-overread",
@@ -48,6 +63,11 @@ export const PROFESSIONAL_GUIDANCE_CARDS: ProfessionalGuidanceCard[] = [
     applyWhen: "用户只发数字、单字、表情式短句或撤回式表达。",
     avoid: ["猜测深层含义", "逼问原因", "把数字解释成分数", "连续问二选一"],
     responseMove: "允许不解释，给用户一个低压力继续或暂停的入口。",
+    gate: {
+      role: "baseline_boundary",
+      interventionFamily: null,
+      requiredIntensity: "none",
+    },
   },
   {
     id: "recovery-counter-evidence",
@@ -60,6 +80,11 @@ export const PROFESSIONAL_GUIDANCE_CARDS: ProfessionalGuidanceCard[] = [
     applyWhen: "用户提到同样压力仍在，但状态因某个行为或关系支持而改善。",
     avoid: ["继续只围绕压力源", "忽略改善", "把一次改善夸大成已经好了"],
     responseMove: "同时承认压力仍在和恢复线索出现，轻轻标记这个方法可能有用。",
+    gate: {
+      role: "intervention",
+      interventionFamily: "case_formulation",
+      requiredIntensity: "moderate",
+    },
   },
   {
     id: "crisis-switch-safety-mode",
@@ -72,5 +97,10 @@ export const PROFESSIONAL_GUIDANCE_CARDS: ProfessionalGuidanceCard[] = [
     applyWhen: "用户表达自杀、自伤、具体计划、无法保证安全或强烈绝望。",
     avoid: ["只说陪着你", "继续普通聊天", "承诺保密", "把危机当低落处理"],
     responseMove: "明确安全优先，鼓励联系身边可信的人、当地紧急服务或危机热线。",
+    gate: {
+      role: "safety",
+      interventionFamily: null,
+      requiredIntensity: "high",
+    },
   },
 ];

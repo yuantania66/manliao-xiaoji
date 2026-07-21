@@ -31,6 +31,12 @@ export type ClinicalEmotionalIntensity = "LOW" | "MEDIUM" | "HIGH" | "UNKNOWN";
 
 export type ClinicalConversationStage = "OPENING" | "EXPLORING" | "CONTINUING";
 
+export type ClinicalSemanticEvidence = {
+  status: "sufficient" | "insufficient";
+  source: "current_user_message" | "established_conversation_frame" | "none";
+  reason: string;
+};
+
 export type ClinicalSignals = {
   messageLength: ClinicalMessageLength;
   expressionDifficulty: boolean;
@@ -38,6 +44,7 @@ export type ClinicalSignals = {
   emotionalIntensity: ClinicalEmotionalIntensity;
   hasPreviousAssistantReply: boolean;
   conversationStage: ClinicalConversationStage;
+  semanticEvidence: ClinicalSemanticEvidence;
   memoryAvailability: {
     hasUnderstanding: boolean;
     hasRelationship: boolean;
@@ -53,6 +60,97 @@ export type ResponseGoal =
   | "summarize"
   | "support_action"
   | "hold_space";
+
+export type PersonCenteredInteractionStage =
+  | "expression"
+  | "exploration"
+  | "understanding"
+  | "intervention_requested"
+  | "action"
+  | "repair_or_pause"
+  | "unclear";
+
+export type InterventionFamily =
+  | "bounded_decision_support"
+  | "direct_judgment"
+  | "low_risk_action_support"
+  | "high_impact_action_support"
+  | "general_advice"
+  | "diagnostic_assessment"
+  | "cbt"
+  | "act"
+  | "mi"
+  | "case_formulation"
+  | "dream_interpretation";
+
+export type UnderstandingEvidence = {
+  status: "unverified" | "provisional" | "aligned" | "contradicted";
+  scope: "none" | "boundary" | "current_experience" | "request_scope" | "relevant_facts";
+  basis: Array<
+    | "current_explicit_content"
+    | "adjacent_user_confirmation"
+    | "clear_current_request"
+    | "visible_history"
+    | "user_correction"
+  >;
+};
+
+export type PersonCenteredGateEvidence = {
+  interactionStage: PersonCenteredInteractionStage;
+  understandingEvidence: UnderstandingEvidence;
+  unresolvedCorrectionOrBoundary: {
+    present: boolean;
+    kind: "correction" | "refusal" | "pause" | "hesitation" | null;
+  };
+  interventionConsent: {
+    status: "none" | "ambiguous" | "explicit_scoped" | "revoked";
+    scope: InterventionFamily[];
+    requestRisk: "simple_low_risk" | "interpretive_or_high_impact" | "unknown";
+    basis: Array<
+      | "current_explicit_request"
+      | "adjacent_acceptance_of_offered_scope"
+      | "visible_history"
+      | "current_revocation"
+    >;
+  };
+};
+
+export type InterventionReadiness = "blocked" | "limited" | "ready";
+
+export type InterventionIntensity = "none" | "low" | "moderate" | "high";
+
+export type EligibilityReasonCode =
+  | "correction_requires_repair"
+  | "boundary_or_pause_revoked"
+  | "no_scoped_consent"
+  | "ambiguous_consent"
+  | "understanding_unverified"
+  | "facts_insufficient_for_judgment"
+  | "explicit_low_risk_scoped_request"
+  | "aligned_and_scoped_consent"
+  | "topic_or_cue_is_not_consent";
+
+export type PersonCenteredGateDecision = {
+  version: "person-centered-gate-v1";
+  effectiveStage: PersonCenteredInteractionStage;
+  interventionReadiness: InterventionReadiness;
+  maxInterventionIntensity: InterventionIntensity;
+  allowedInterventionFamilies: InterventionFamily[];
+  blockedInterventionFamilies: InterventionFamily[];
+  responseGoalPolicy: {
+    allowed: ResponseGoal[];
+    preferred: ResponseGoal | null;
+    fallback: ResponseGoal;
+  };
+  eligibilityReason: EligibilityReasonCode[];
+};
+
+export type ProfessionalGuidanceGateTrace = {
+  retrievedIds: string[];
+  injectedIds: string[];
+  withheldIds: string[];
+  unknownMetadataIds: string[];
+};
 
 export type ClinicalContext = {
   conversation: {
@@ -81,6 +179,7 @@ export type ClinicalContext = {
     channel: string;
   };
   signals: ClinicalSignals;
+  personCenteredEvidence?: PersonCenteredGateEvidence;
   /**
    * @deprecated LEGACY / frozen compatibility field. New Clinical Logic code
    * must read structured fields from `conversation` instead.
@@ -168,6 +267,13 @@ export type ClinicalPlan = {
   interventionBoundary: string[];
   safetyNotes: string[];
   rationale: string[];
+  personCenteredGate?: Readonly<{
+    version: PersonCenteredGateDecision["version"];
+    readiness: InterventionReadiness;
+    maxIntensity: InterventionIntensity;
+    allowedFamilies: ReadonlyArray<InterventionFamily>;
+    allowedResponseGoals: ReadonlyArray<ResponseGoal>;
+  }>;
 };
 
 export type ClinicalStrategyDefinition = {
@@ -201,4 +307,9 @@ export type ClinicalTrace = {
     deterministicMemoryCaveat: string[];
   };
   selectedPlan?: ClinicalPlan;
+  personCenteredGate?: {
+    evidence: PersonCenteredGateEvidence;
+    decision: PersonCenteredGateDecision;
+    professionalGuidance?: ProfessionalGuidanceGateTrace;
+  };
 };

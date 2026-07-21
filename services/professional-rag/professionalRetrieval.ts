@@ -72,4 +72,5 @@ export const retrieveProfessionalGuidance = ({
       avoid: card.avoid,
       responseMove: card.responseMove,
       reason: `score=${score}`,
+      gate: card.gate,
     }));

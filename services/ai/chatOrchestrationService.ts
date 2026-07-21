@@ -17,6 +17,8 @@ import { buildClinicalContext } from "@/services/clinical/clinicalContextBuilder
 import { createClinicalPlan } from "@/services/clinical/clinicalPlanService";
 import { buildClinicalTrace, buildSafetySkippedClinicalTrace } from "@/services/clinical/clinicalTrace";
 import type { ClinicalTrace } from "@/services/clinical/clinicalTypes";
+import { evaluatePersonCenteredInterventionGate } from "@/services/clinical/personCenteredInterventionGate";
+import { projectPromptEligibleContext } from "@/services/professional-rag/professionalGuidanceGateProjection";
 import { determineConversationState } from "@/conversation-os/state";
 import {
   applySemanticEvidenceReplyContract,
@@ -49,6 +51,9 @@ export type ChatReplyResult = {
 };
 
 const getFallbackRiskLevel = (content: string): AiRiskLevel => (isCrisisInput(content) ? "crisis" : "low");
+
+export const isPersonCenteredGateV1Enabled = () =>
+  process.env.PERSON_CENTERED_GATE_V1_ENABLED === "true";
 
 const createFallbackJudge = (
   riskLevel: AiRiskLevel,
@@ -114,16 +119,11 @@ export const createChatReply = async ({
   includeDebugTrace = false,
   evaluationAdapter,
 }: CreateChatReplyInput): Promise<ChatReplyResult> => {
-  if (evaluationAdapter && !conversationId.startsWith("trajectory-eval-")) {
-    throw new Error("Evaluation adapters are restricted to trajectory-eval conversations.");
-  }
-  const clinicalMemoryContext = createClinicalMemoryContext(understandingContext);
-  const conversationState = determineConversationState({
-    currentUserMessage: userMessage,
-    recentMessages,
-  });
-
   if (isCrisisInput(userMessage)) {
+    const safetyConversationState = determineConversationState({
+      currentUserMessage: userMessage,
+      recentMessages,
+    });
     const generation = createSafetyGeneration(userMessage);
     const rewriteAttempted = false;
     const semanticEvidenceBlocked = false;
@@ -133,7 +133,7 @@ export const createChatReply = async ({
     const clinicalTrace = buildSafetySkippedClinicalTrace({
       level: "crisis",
       notes: ["Safety gate matched; ordinary ClinicalPlan skipped."],
-      conversationState: conversationState.state,
+      conversationState: safetyConversationState.state,
     });
 
     return {
@@ -159,6 +159,17 @@ export const createChatReply = async ({
     };
   }
 
+  if (evaluationAdapter && !conversationId.startsWith("trajectory-eval-")) {
+    throw new Error("Evaluation adapters are restricted to trajectory-eval conversations.");
+  }
+
+  const personCenteredGateEnabled = isPersonCenteredGateV1Enabled();
+  const clinicalMemoryContext = createClinicalMemoryContext(understandingContext);
+  const conversationState = determineConversationState({
+    currentUserMessage: userMessage,
+    recentMessages,
+  });
+
   const clinicalContext = buildClinicalContext({
     conversationId,
     userId,
@@ -167,11 +178,41 @@ export const createChatReply = async ({
     memoryContext: clinicalMemoryContext,
     conversationState: conversationState.state,
     safetyNotes: [],
+    ...(personCenteredGateEnabled
+      ? { includePersonCenteredEvidence: true }
+      : {}),
   });
-  const clinicalPlan = createClinicalPlan(clinicalContext);
+  const personCenteredGateEvidence =
+    clinicalContext.personCenteredEvidence;
+  if (personCenteredGateEnabled && !personCenteredGateEvidence) {
+    throw new Error(
+      "Person-Centered Gate is enabled but ClinicalContext has no evidence."
+    );
+  }
+  const personCenteredGateDecision = personCenteredGateEnabled
+    ? evaluatePersonCenteredInterventionGate(
+        personCenteredGateEvidence!
+      )
+    : null;
+  const promptEligibleProjection = personCenteredGateDecision
+    ? projectPromptEligibleContext({
+        raw: understandingContext,
+        gateDecision: personCenteredGateDecision,
+      })
+    : null;
+  const clinicalPlan = personCenteredGateDecision
+    ? createClinicalPlan(clinicalContext, personCenteredGateDecision)
+    : createClinicalPlan(clinicalContext);
   const clinicalTrace = buildClinicalTrace({
     context: clinicalContext,
     plan: clinicalPlan,
+    ...(personCenteredGateDecision
+      ? {
+          gateDecision: personCenteredGateDecision,
+          professionalGuidanceProjection:
+            promptEligibleProjection?.trace ?? null,
+        }
+      : {}),
     safetyDecision: {
       level: "low",
       routedToSafety: false,
@@ -183,12 +224,19 @@ export const createChatReply = async ({
     memoryContext !== undefined ? memoryContext : loadMemoryContext ? await loadMemoryContext() : null;
 
   try {
+    const generationUnderstandingInput = personCenteredGateDecision
+      ? {
+          gatedUnderstandingContext:
+            promptEligibleProjection?.understandingContext ?? null,
+          personCenteredGateDecision,
+        }
+      : { understandingContext };
     const modelGeneration = await generateChatReply({
       conversationId,
       userMessage,
       recentMessages,
       memoryContext: resolvedMemoryContext,
-      understandingContext,
+      ...generationUnderstandingInput,
       clinicalPlan,
       evaluationAdapter,
     });

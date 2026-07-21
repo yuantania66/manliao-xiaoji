@@ -41,7 +41,6 @@ const qrDots = [
 
 const DAILY_REGENERATE_LIMIT = 3;
 const SLIP_IMAGE_NAMESPACE = "MLXJ";
-const TEST_IMAGE_URL = "/assets/test-note-photo.svg";
 
 const pick = (items) => items[Math.floor(Math.random() * items.length)];
 
@@ -277,15 +276,6 @@ const drawSlipCanvas = (ctx, data) => {
   drawTextBlock(ctx, "慢聊小记", 166, 546, 240, 36, 1, 24, "#71877b", "700");
 };
 
-const isDevelopRuntime = () => {
-  try {
-    const account = wx.getAccountInfoSync && wx.getAccountInfoSync();
-    return !account || !account.miniProgram || account.miniProgram.envVersion !== "release";
-  } catch (error) {
-    return true;
-  }
-};
-
 const getSlip = (content, mood) => {
   const text = content.trim();
   if (text.includes("累") || text.includes("忙")) {
@@ -338,7 +328,6 @@ Page({
     mediaItems: [],
     hasMedia: false,
     mediaCount: 0,
-    isDevRuntime: false,
     moods,
     selectedMood: null,
     isMenuOpen: false,
@@ -361,8 +350,7 @@ Page({
     this.setData({
       todayLabel: formatDateLabel(),
       prompt: pick(prompts),
-      dataMode: getDataMode(),
-      isDevRuntime: isDevelopRuntime()
+      dataMode: getDataMode()
     });
   },
 
@@ -442,23 +430,6 @@ Page({
       hasMedia: mediaItems.length > 0,
       hasContent: this.data.content.trim().length > 0 || mediaItems.length > 0
     });
-  },
-
-  fillMediaLimitTest() {
-    const mediaItems = Array.from({ length: 9 }, () => ({
-      type: "image",
-      url: TEST_IMAGE_URL,
-      thumbUrl: TEST_IMAGE_URL,
-      duration: 0
-    }));
-
-    this.setData({
-      mediaItems,
-      mediaCount: mediaItems.length,
-      hasMedia: true,
-      hasContent: true
-    });
-    wx.showToast({ title: "已生成 9 张图片测试", icon: "none" });
   },
 
   openMoodPicker() {

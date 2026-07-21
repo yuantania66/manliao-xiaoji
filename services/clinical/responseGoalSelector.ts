@@ -1,4 +1,4 @@
-import type { ClinicalContext, ResponseGoal } from "./clinicalTypes";
+import type { ClinicalContext, PersonCenteredGateDecision, ResponseGoal } from "./clinicalTypes";
 import { isUserCorrection } from "./userCorrectionSignal";
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
@@ -11,14 +11,12 @@ const SOFT_PAUSE_PATTERN = /算了|先不说了|不说了|不聊了|暂停|先�
 
 const QUESTION_PATTERN = /[?？]|吗$|呢$/;
 
-const HIGH_AMBIGUITY_PATTERN = /^([0-9０-９]+|[a-zA-Z]|[^\s\p{L}\p{N}]|嗯+|啊+|哦+)$/u;
-
 const isLongDisclosure = (text: string) => {
   const punctuationCount = (text.match(/[，。！？；、,.!?;]/g) ?? []).length;
   return text.length >= 80 || punctuationCount >= 4;
 };
 
-export const selectResponseGoal = (context: ClinicalContext): ResponseGoal => {
+export const selectLegacyResponseGoal = (context: ClinicalContext): ResponseGoal => {
   const text = normalize(context.conversation.currentUserMessage);
 
   if (context.signals.explicitAdviceRequest) return "support_action";
@@ -27,8 +25,22 @@ export const selectResponseGoal = (context: ClinicalContext): ResponseGoal => {
   if (SOFT_PAUSE_PATTERN.test(text)) return "hold_space";
   if (HIGH_EMOTION_PATTERN.test(text) && !QUESTION_PATTERN.test(text)) return "hold_space";
   if (isLongDisclosure(text)) return text.length >= 120 ? "summarize" : "reflect";
-  if (context.signals.messageLength === "SHORT" && HIGH_AMBIGUITY_PATTERN.test(text)) return "clarify";
+  if (context.signals.semanticEvidence.status === "insufficient") return "clarify";
   if (isUserCorrection(text)) return "clarify";
 
   return "reflect";
+};
+
+export const selectResponseGoal = (
+  context: ClinicalContext,
+  gateDecision: PersonCenteredGateDecision | null = null
+): ResponseGoal => {
+  const candidate = selectLegacyResponseGoal(context);
+
+  if (!gateDecision) return candidate;
+  if (gateDecision.responseGoalPolicy.preferred) {
+    return gateDecision.responseGoalPolicy.preferred;
+  }
+  if (gateDecision.responseGoalPolicy.allowed.includes(candidate)) return candidate;
+  return gateDecision.responseGoalPolicy.fallback;
 };

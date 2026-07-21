@@ -12,6 +12,8 @@ import type {
   ClinicalSignals,
   ResponseGoal,
 } from "./clinicalTypes";
+import { derivePersonCenteredGateEvidence } from "./personCenteredInterventionGate";
+import { evaluateSemanticEvidence } from "./semanticEvidence";
 
 const emptyUnderstanding = (): ClinicalCurrentUnderstanding => ({
   event: [],
@@ -78,6 +80,11 @@ export const createEmptyClinicalSignals = (): ClinicalSignals => ({
   emotionalIntensity: "UNKNOWN",
   hasPreviousAssistantReply: false,
   conversationStage: "OPENING",
+  semanticEvidence: {
+    status: "insufficient",
+    source: "none",
+    reason: "No user message or active conversation frame is available.",
+  },
   memoryAvailability: {
     hasUnderstanding: false,
     hasRelationship: false,
@@ -102,11 +109,13 @@ const buildClinicalSignals = ({
   userTurn,
   previousAssistantMessage,
   turnCount,
+  recentTurns,
   memoryContext,
 }: {
   userTurn: string;
   previousAssistantMessage?: string | null;
   turnCount: number;
+  recentTurns: AiConversationMessage[];
   memoryContext: ClinicalMemoryContext;
 }): ClinicalSignals => {
   const text = normalize(userTurn);
@@ -118,6 +127,7 @@ const buildClinicalSignals = ({
     emotionalIntensity: getEmotionalIntensity(text),
     hasPreviousAssistantReply: Boolean(previousAssistantMessage),
     conversationStage: getConversationStage(turnCount),
+    semanticEvidence: evaluateSemanticEvidence({ userTurn, recentMessages: recentTurns }),
     memoryAvailability: {
       hasUnderstanding: memoryContext.understandings.length > 0,
       hasRelationship: memoryContext.relationships.length > 0,
@@ -142,6 +152,7 @@ export const buildClinicalContext = ({
   locale = "zh-CN",
   timezone = "Asia/Shanghai",
   channel = "chat",
+  includePersonCenteredEvidence = false,
 }: {
   conversationId: string;
   userId?: string;
@@ -157,6 +168,7 @@ export const buildClinicalContext = ({
   locale?: string;
   timezone?: string;
   channel?: string;
+  includePersonCenteredEvidence?: boolean;
 }): ClinicalContext => {
   const previousAssistantMessage =
     [...recentTurns].reverse().find((turn) => turn.role === "assistant")?.content ?? null;
@@ -166,6 +178,7 @@ export const buildClinicalContext = ({
     userTurn,
     previousAssistantMessage,
     turnCount,
+    recentTurns,
     memoryContext,
   });
 
@@ -196,6 +209,15 @@ export const buildClinicalContext = ({
       channel,
     },
     signals,
+    ...(includePersonCenteredEvidence
+      ? {
+          personCenteredEvidence: derivePersonCenteredGateEvidence({
+            currentUserMessage: userTurn,
+            recentMessages: recentTurns,
+            legacyAdviceSignal: signals.explicitAdviceRequest,
+          }),
+        }
+      : {}),
     conversationId,
     userId,
     userTurn,

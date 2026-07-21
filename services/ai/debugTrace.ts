@@ -49,6 +49,7 @@ export const buildAiDebugTrace = ({
   const voiceConstraints = promptMeta?.voiceConstraints;
   const filteredHistory = promptMeta?.filteredHistory ?? [];
   const modelMessageRoles = promptMeta?.modelMessageRoles ?? [];
+  const personCenteredGate = clinicalTrace?.personCenteredGate;
   const thinkingLayers = [
     {
       title: "1. 路由",
@@ -125,7 +126,9 @@ export const buildAiDebugTrace = ({
       body: clinicalTrace
         ? clinicalTrace.skippedBySafety
           ? "Safety 命中，普通 ClinicalPlan 已跳过。"
-          : "Clinical Logic Sprint 1 NoOp plan 已生成，仅进入 trace，不进入 prompt。"
+          : personCenteredGate
+            ? "Person-Centered Gate 已在 ClinicalPlan 和 prompt 前执行；专业参考只使用投影后的内容。"
+            : "Clinical Logic Sprint 1 NoOp plan 已生成，仅进入 trace，不进入 prompt。"
         : "Clinical Logic trace unavailable.",
       evidence: clinicalTrace
         ? [
@@ -134,6 +137,17 @@ export const buildAiDebugTrace = ({
             `responseIntent=${clinicalTrace.selectedPlan?.responseIntent ?? "none"}`,
             `primaryStrategy=${clinicalTrace.selectedPlan?.primaryStrategy ?? "none"}`,
             `questionFunction=${clinicalTrace.selectedPlan?.questionFunction ?? "none"}`,
+            ...(personCenteredGate
+              ? [
+                  `personCenteredGate=${personCenteredGate.decision.version}`,
+                  `interactionStage=${personCenteredGate.evidence.interactionStage}`,
+                  `interventionReadiness=${personCenteredGate.decision.interventionReadiness}`,
+                  `maxInterventionIntensity=${personCenteredGate.decision.maxInterventionIntensity}`,
+                  `allowedInterventionFamilies=${personCenteredGate.decision.allowedInterventionFamilies.join(",") || "none"}`,
+                  `eligibilityReason=${personCenteredGate.decision.eligibilityReason.join(",") || "none"}`,
+                  `professionalGuidance=retrieved:${personCenteredGate.professionalGuidance?.retrievedIds.join(",") || "none"}; injected:${personCenteredGate.professionalGuidance?.injectedIds.join(",") || "none"}; withheld:${personCenteredGate.professionalGuidance?.withheldIds.join(",") || "none"}; unknownMetadata:${personCenteredGate.professionalGuidance?.unknownMetadataIds.join(",") || "none"}`,
+                ]
+              : []),
             `memoryUsed=understandings:${clinicalTrace.memoryUsed.understandings.length}, relationships:${clinicalTrace.memoryUsed.relationships.length}, timeline:${clinicalTrace.memoryUsed.timelineEvents.length}`,
             `rawMemory=${clinicalTrace.memoryExcluded.rawMemory}`,
           ]
