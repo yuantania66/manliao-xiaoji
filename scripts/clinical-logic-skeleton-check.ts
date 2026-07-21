@@ -347,29 +347,20 @@ const numericContext = buildClinicalContext({
 const numericPlan = createClinicalPlan(numericContext);
 assert.equal(numericContext.signals.messageLength, "SHORT", "Pure numeric input must set messageLength=SHORT.");
 assert.equal(numericPlan.responseGoal, "clarify", "Pure numeric input must remain clarify.");
-assert(
-  numericPlan.toneConstraint.includes("clarify unestablished meaning without assigning one."),
-  "Pure numeric clarification must carry the groundedness contract in ClinicalPlan."
-);
+assert.equal(numericContext.signals.semanticEvidence.status, "insufficient");
+assert.equal(numericPlan.responseIntent, "receive", "Insufficient semantic evidence must remain at observation.");
+assert.equal(numericPlan.questionFunction, "none", "Observation must not force a meaning question.");
 assert(
   numericPlan.toneConstraint.includes(
-    "keep a low-pressure continuation entry; do not require immediate explanation."
+    "remain at observation until the user or active conversation context establishes meaning."
   ),
-  "Pure numeric clarification must carry the conversation-movement contract in ClinicalPlan."
-);
-assert(
-  numericPlan.toneConstraint.includes("ask one direct, small clarification question when meaning is absent."),
-  "Pure numeric clarification must ask one direct, small question when meaning is absent."
+  "Insufficient evidence must carry the observation contract in ClinicalPlan."
 );
 assert(
   numericPlan.interventionBoundary.includes(
-    "do not convert ambiguity into an emotion, score, activity, or conversational purpose."
+    "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition."
   ),
-  "Pure numeric clarification must forbid unsupported meaning in ClinicalPlan."
-);
-assert(
-  numericPlan.interventionBoundary.includes("do not close the conversation unless the user asks to pause."),
-  "Pure numeric clarification must not close the conversation without a pause request."
+  "Insufficient evidence must forbid intent inference from format or repetition."
 );
 
 const promptInput = {
