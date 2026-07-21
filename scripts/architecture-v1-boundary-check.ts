@@ -28,7 +28,7 @@ const responseGoalSelector = stripComments(read("services/clinical/responseGoalS
 const usedSignals = Array.from(responseGoalSelector.matchAll(/context\.signals\.([a-zA-Z0-9_]+)/g)).map(
   (match) => match[1]
 );
-const allowedSignals = new Set(["expressionDifficulty", "explicitAdviceRequest", "messageLength"]);
+const allowedSignals = new Set(["expressionDifficulty", "explicitAdviceRequest", "semanticEvidence"]);
 
 for (const signal of usedSignals) {
   assert(
@@ -64,8 +64,8 @@ assert(
   "ResponseGoalSelector must continue to use approved explicitAdviceRequest signal."
 );
 assert(
-  responseGoalSelector.includes("context.signals.messageLength"),
-  "ResponseGoalSelector may use messageLength only as a supporting feature."
+  responseGoalSelector.includes("context.signals.semanticEvidence.status"),
+  "ResponseGoalSelector must use semanticEvidence.status to determine grounded interpretation eligibility."
 );
 
 const clinicalFiles = walk("services/clinical");

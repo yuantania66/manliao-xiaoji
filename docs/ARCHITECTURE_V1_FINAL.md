@@ -292,19 +292,37 @@ Constraints:
 - Must not transform ordinary emotional expression into an advice request.
 - Must preserve user agency.
 
-### 6.3 `messageLength`
+### 6.3 `semanticEvidence`
 
 Type:
 
-- supporting feature only
+- approved decision signal
 
 Allowed effect:
 
-- may support a decision only when combined with other approved signals or explicit text conditions.
+- determines whether the current user reply has sufficient grounded semantic evidence for interpretation.
+- may suppress interpretation of unsupported atomic replies.
 
 Constraints:
 
-- Must not independently decide any `ResponseGoal`.
+- `ResponseGoalSelector` may read only `context.signals.semanticEvidence.status`; it must not derive a separate semantic-evidence decision.
+- Must not independently invent user intent.
+- Does not replace `ResponseGoal` selection.
+- Is an approved `ClinicalContext` signal, not a direct Prompt input or routing bypass.
+
+### 6.4 `messageLength`
+
+Type:
+
+- supporting metadata only
+
+Allowed effect:
+
+- may appear in `ClinicalContext` trace and diagnostics.
+
+Constraints:
+
+- Must not influence `ResponseGoal` selection.
 - Must not create rules such as "short message always means clarify".
 - Must not interpret low-information input as emotion, avoidance, testing, or resistance by itself.
 
@@ -463,7 +481,7 @@ Known Architecture v1 debt:
 - Some V1/V2 Memory paths remain compatible rather than fully unified.
 - Projection Framework internals are still implementation-oriented and may need further repository/service cleanup.
 - `memoryAvailability` and `emotionalIntensity` may appear in trace but are prohibited from influencing `ResponseGoal`.
-- `messageLength` is a supporting feature only and needs guardrails against becoming an independent decision rule.
+- `messageLength` remains trace metadata and must not become a `ResponseGoal` decision rule.
 
 This debt does not block Architecture v1 finalization as long as the rules above are enforced.
 
@@ -529,7 +547,15 @@ Architecture v1 does accept a reviewed whitelist of deterministic Conversation-d
 
 - `expressionDifficulty`
 - `explicitAdviceRequest`
-- `messageLength` only as a supporting feature
+- `semanticEvidence.status`
+
+`ResponseGoalSelector` may therefore read exactly:
+
+- `context.signals.expressionDifficulty`
+- `context.signals.explicitAdviceRequest`
+- `context.signals.semanticEvidence.status`
+
+`messageLength` remains available as supporting `ClinicalContext` metadata, but it is not an approved `ResponseGoalSelector` signal.
 
 All other state/signal inputs are prohibited from influencing `ResponseGoal` until they pass independent boundary review, Golden Dataset regression, real-model experience evaluation, and Architecture rule update.
 
