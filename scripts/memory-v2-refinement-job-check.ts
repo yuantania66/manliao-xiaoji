@@ -61,13 +61,37 @@ const main = async () => {
     });
     assert(chatJobCount === 1, `Expected 1 chat job, got ${chatJobCount}`);
 
-    const pendingJobs = await listPendingRefinementJobs({
+    const pendingWindow = await listPendingRefinementJobs({
       step: RefinementStep.RAW_CAPTURED,
       take: 10,
     });
+    assert(pendingWindow.length <= 10, "Pending job list must respect the requested take limit");
+    assert(
+      pendingWindow.every(
+        (job) => job.status === RefinementStatus.PENDING && job.step === RefinementStep.RAW_CAPTURED
+      ),
+      "Pending job list must apply status and step filters"
+    );
+    assert(
+      pendingWindow.every(
+        (job, index) => index === 0 || pendingWindow[index - 1].createdAt <= job.createdAt
+      ),
+      "Pending job list must preserve FIFO creation order"
+    );
+
+    const pendingJobCount = await prisma.refinementJob.count({
+      where: {
+        status: RefinementStatus.PENDING,
+        step: RefinementStep.RAW_CAPTURED,
+      },
+    });
+    const pendingJobs = await listPendingRefinementJobs({
+      step: RefinementStep.RAW_CAPTURED,
+      take: pendingJobCount,
+    });
     assert(
       pendingJobs.some((job) => job.id === chatJob.id),
-      "Pending job list should include chat job"
+      "Complete pending job list should include chat job"
     );
 
     const runningChatJob = await claimPendingRefinementJob({ jobId: chatJob.id });
