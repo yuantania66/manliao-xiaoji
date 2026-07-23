@@ -13,7 +13,9 @@ export const buildAiDebugTrace = ({
   finalSource,
   fallbackUsed,
   rewriteAttempted,
+  regenerateAttempted = false,
   clinicalTrace,
+  controlTrace,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
@@ -22,7 +24,9 @@ export const buildAiDebugTrace = ({
   finalSource: AiDebugTrace["route"]["finalSource"];
   fallbackUsed: boolean;
   rewriteAttempted: boolean;
+  regenerateAttempted?: boolean;
   clinicalTrace?: AiDebugTrace["clinicalLogic"];
+  controlTrace?: AiDebugTrace["conversationControl"];
 }): AiDebugTrace => {
   const promptMeta = generation.promptMeta;
   const providerReasoningLabel = generation.providerReasoning?.available
@@ -45,6 +49,7 @@ export const buildAiDebugTrace = ({
   const conversationOrientation = promptMeta?.conversationOrientation;
   const conversationUpdate = promptMeta?.conversationUpdate;
   const voiceConstraints = promptMeta?.voiceConstraints;
+  const responsePlan = promptMeta?.responsePlan;
   const filteredHistory = promptMeta?.filteredHistory ?? [];
   const modelMessageRoles = promptMeta?.modelMessageRoles ?? [];
   const thinkingLayers = [
@@ -52,15 +57,22 @@ export const buildAiDebugTrace = ({
       title: "1. 路由",
       body:
         finalSource === "llm"
-          ? "产品底座 prompt + 基模直出；没有本地分析、规划、短路或二次改写参与回复。"
-          : finalSource === "safety"
-            ? "安全闸门命中，普通聊天模型未调用。"
-            : finalSource === "guard_rewrite"
-              ? "语义证据 guard 检出模型回复包含无依据含义，最终回复经过 guard rewrite。"
-              : "模型调用失败后走 fallback；没有二次改写。",
+          ? controlTrace
+            ? "Conversation OS ResponsePlan 经 Surface Realization 一次实现并通过 Output Validation；没有普通下游改写。"
+            : "兼容路径的模型输出直达。"
+          : finalSource === "llm_regenerate"
+            ? "首次生成未通过语义证据约束；受控重生成一次后通过，guard 未创作最终文案。"
+            : finalSource === "constraint_failure"
+              ? "两次生成均未通过语义证据约束；返回系统约束硬失败状态，不伪装成对用户内容的理解。"
+              : finalSource === "safety"
+                ? "安全闸门命中，普通聊天模型未调用。"
+                : finalSource === "guard_rewrite"
+                  ? "兼容读取：历史语义证据 guard rewrite 路径（当前成功路径不再使用）。"
+                  : "模型调用失败后走 fallback；没有二次改写。",
       evidence: [
         `路线：${finalSource}`,
         `rewrite=${rewriteAttempted}`,
+        `regenerate=${regenerateAttempted}`,
         `fallback=${fallbackUsed}`,
         `safety=${finalSource === "safety"}`,
       ],
@@ -103,7 +115,26 @@ export const buildAiDebugTrace = ({
       ],
     },
     {
-      title: "3. Provider",
+      title: "3. Conversation OS Control",
+      body: controlTrace
+        ? `唯一决策者 ${controlTrace.responsePlan.decisionOwner} 生成 planId=${controlTrace.responsePlan.planId}。`
+        : finalSource === "safety"
+          ? "Safety 在普通规划前阻断。"
+          : "Conversation OS control trace unavailable.",
+      evidence: controlTrace
+        ? [
+            `dialogueAct=${controlTrace.interpretation.primaryDialogueAct}`,
+            `answerObligations=${controlTrace.responsePlan.answerObligations.map((item) => item.kind).join(",") || "none"}`,
+            `responseActions=${controlTrace.responsePlan.responseActions.join(",")}`,
+            `clinicalInvoked=${controlTrace.clinicalInvoked}`,
+            `questionPolicy=${controlTrace.responsePlan.questionPolicy.mode}`,
+            `closurePolicy=${controlTrace.responsePlan.closurePolicy.mode}`,
+            `validation=${controlTrace.validation.map((item) => item.passed).join(" -> ")}`,
+          ]
+        : ["decisionOwner=safety_or_unavailable"],
+    },
+    {
+      title: "4. Provider",
       body: `${generation.model} / ${generation.latencyMs}ms`,
       evidence: [
         `finalReplySource=${generation.finalReplySource ?? "unknown"}`,
@@ -118,11 +149,13 @@ export const buildAiDebugTrace = ({
       ],
     },
     {
-      title: "4. Clinical Logic",
+      title: "5. Clinical Logic",
       body: clinicalTrace
         ? clinicalTrace.skippedBySafety
           ? "Safety 命中，普通 ClinicalPlan 已跳过。"
-          : "Clinical Logic Sprint 1 NoOp plan 已生成，仅进入 trace，不进入 prompt。"
+          : clinicalTrace.invokedByPlanner
+            ? "Response Planner 按需调用 Clinical，Clinical 仅返回策略建议。"
+            : "Response Planner 未请求 Clinical Strategy。"
         : "Clinical Logic trace unavailable.",
       evidence: clinicalTrace
         ? [
@@ -142,6 +175,7 @@ export const buildAiDebugTrace = ({
     visibleSteps: thinkingLayers.map((layer) => `${layer.title}：${layer.body}`),
     thinkingLayers,
     clinicalLogic: clinicalTrace,
+    conversationControl: controlTrace,
     prompt: {
       mode: promptMeta?.mode ?? (fallbackUsed ? "fallback" : finalSource === "safety" ? "safety" : "base_product"),
       promptVersion,
@@ -158,6 +192,7 @@ export const buildAiDebugTrace = ({
       conversationOrientation,
       conversationUpdate,
       voiceConstraints,
+      responsePlan,
       filteredHistory,
       modelMessageRoles,
     },
@@ -184,7 +219,9 @@ export const buildAiDebugTrace = ({
       finalSource,
       fallbackUsed,
       rewriteAttempted,
+      regenerateAttempted,
       safetyUsed: finalSource === "safety",
+      safetyOverrideReason: finalSource === "safety" ? judge.reason : undefined,
     },
   };
 };

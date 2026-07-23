@@ -5,6 +5,7 @@ import { join } from "node:path";
 const ROOTS = ["app", "services", "conversation-os"];
 const ALLOWED_LLM_CALL_FILES = new Set([
   "services/ai/aiService.ts",
+  "services/ai/turnInterpretationAdapter.ts",
   "services/ai/proactiveGreeting.ts",
   "services/understanding/extractService.ts",
   "services/experience/experienceExtractorService.ts",
@@ -24,7 +25,7 @@ const llmCallFiles = files.filter((file) => readFileSync(file, "utf8").includes(
 for (const file of llmCallFiles) {
   assert(
     ALLOWED_LLM_CALL_FILES.has(file),
-    `Unexpected direct LLM call in ${file}. Normal chat replies must go through conversation-os pipeline.`
+    `Unexpected direct LLM call in ${file}. Only Turn Interpretation and Surface Realization adapters may call the model.`
   );
 }
 
@@ -34,15 +35,11 @@ for (const file of files.filter((file) => file.startsWith("app/api/chat/"))) {
 }
 
 const aiService = readFileSync("services/ai/aiService.ts", "utf8");
-const pipelineIndex = aiService.indexOf("runConversationPipeline(");
 const callModelIndex = aiService.indexOf("callModel(");
 
-assert(pipelineIndex >= 0, "generateChatReply must invoke runConversationPipeline().");
 assert(callModelIndex >= 0, "generateChatReply must still delegate language generation to the LLM.");
-assert(
-  pipelineIndex < callModelIndex,
-  "runConversationPipeline() must wrap the normal chat LLM call."
-);
+assert(!aiService.includes("runConversationPipeline("), "Surface Realization must not invoke the legacy Engage decision owner.");
+assert(aiService.includes("responsePlan"), "Surface Realization must receive the one finalized ResponsePlan.");
 
 const callModelCount = (aiService.match(/callModel\(/g) ?? []).length;
 assert.equal(
@@ -53,8 +50,8 @@ assert.equal(
 
 const promptBuilder = readFileSync("services/ai/promptBuilder.ts", "utf8");
 assert(
-  promptBuilder.includes("Conversation OS Context"),
-  "LLM prompt composition must receive Conversation OS context."
+  promptBuilder.includes("Conversation OS ResponsePlan"),
+  "LLM prompt composition must receive the single Conversation OS ResponsePlan."
 );
 
 const conversationTypes = readFileSync("conversation-os/types.ts", "utf8");
@@ -70,7 +67,7 @@ const assertFrozenUnion = (typeName: string, expected: string[]) => {
   assert.deepEqual(
     readUnionMembers(conversationTypes, typeName),
     expected,
-    `${typeName} is legacy/frozen/do not extend. Future response strategy must use ClinicalPlan.`
+    `${typeName} is legacy/frozen/do not extend. Production response strategy must use ResponsePlan.`
   );
 };
 
@@ -115,7 +112,7 @@ const voiceConstraintFields = Array.from(voiceConstraintsMatch[1].matchAll(/^\s{
 assert.deepEqual(
   voiceConstraintFields,
   ["source", "styleDirectives", "rhythm", "prohibitedExpressions", "questionDirectives"],
-  "AiVoiceConstraints is legacy/frozen/do not extend. Future response strategy must use ClinicalPlan."
+  "AiVoiceConstraints is legacy/frozen/do not extend. Production response strategy must use ResponsePlan."
 );
 assert(
   voiceConstraintsMatch[1].includes('source: "voice_layer_v1"'),
@@ -126,7 +123,7 @@ console.log(
   JSON.stringify(
     {
       llmCallFiles,
-      normalChatPipeline: "runConversationPipeline -> callModel",
+      normalChatPipeline: "ContextAssembly -> TurnInterpretation -> DialogueState -> ResponsePlanner -> SurfaceRealization -> OutputValidation -> StateUpdate",
       frozenLegacyStrategyFields: {
         engageMode: readUnionMembers(conversationTypes, "EngageMode").length,
         experienceGoal: readUnionMembers(conversationTypes, "ExperienceGoal").length,

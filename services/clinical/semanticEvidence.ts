@@ -42,7 +42,7 @@ const BINARY_ALLOWED_ANSWERS = new Set(
   ["是", "不是", "对", "不对", "好", "不好", "可以", "不可以", "能", "不能", "yes", "no", "yeah", "nope", "ok", "okay", "sure"]
 );
 
-type ActiveAnswerFrame = {
+export type ActiveAnswerFrame = {
   type: "explicit_choice" | "numeric_scale" | "count" | "age" | "numeric_selection" | "yes_no" | "open_question";
   segment: string;
   question: string;
@@ -368,7 +368,8 @@ const extractCandidateAnswerFrames = (segment: ConversationalSegment): AnswerFra
     }
   }
 
-  if (isNumericAnswerRequest(clause)) {
+  const numericAnswerRequested = isNumericAnswerRequest(clause);
+  if (numericAnswerRequested) {
     const scaleQuestion = SCALE_QUESTION_PATTERN.exec(clause);
     const ageQuestion = AGE_QUESTION_PATTERN.exec(clause);
     const countQuestion = COUNT_QUESTION_PATTERN.exec(clause);
@@ -393,7 +394,7 @@ const extractCandidateAnswerFrames = (segment: ConversationalSegment): AnswerFra
   }
 
   const binaryQuestion = BINARY_QUESTION_PATTERN.exec(clause);
-  if (binaryQuestion) {
+  if (binaryQuestion && !numericAnswerRequested) {
     addCandidate(
       createFrame("yes_no", "yes_no", { allowedAnswers: BINARY_ALLOWED_ANSWERS }),
       binaryQuestion.index
@@ -472,6 +473,26 @@ const isCompatibleWithEstablishedAnswerFrame = (
   const activeFrame = selectActiveAnswerFrame(previousAssistantMessage);
   if (SHORT_CORRECTION_PATTERN.test(text)) return true;
   return bindReplyToActiveFrame(text, activeFrame);
+};
+
+export const inspectActiveAnswerFrame = ({
+  userTurn,
+  recentMessages,
+}: {
+  userTurn: string;
+  recentMessages: AiConversationMessage[];
+}) => {
+  const activeMessages = getActiveRecentMessages(recentMessages);
+  const latestMessage = activeMessages[activeMessages.length - 1];
+  const previousAssistantMessage = latestMessage?.role === "assistant" ? latestMessage.content : null;
+  const frame = previousAssistantMessage ? selectActiveAnswerFrame(previousAssistantMessage) : null;
+  const normalizedReply = normalizeAtomicAnswer(userTurn);
+
+  return {
+    previousAssistantMessage,
+    frame,
+    compatible: SHORT_CORRECTION_PATTERN.test(normalizedReply) || bindReplyToActiveFrame(normalizedReply, frame),
+  };
 };
 
 export const evaluateSemanticEvidence = ({

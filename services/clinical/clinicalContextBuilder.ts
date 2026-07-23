@@ -1,6 +1,6 @@
 import type { ClinicalMemoryContext } from "@/services/ai/clinicalMemoryAdapter";
 import type { AiConversationMessage } from "@/services/ai/types";
-import type { ConversationState } from "@/conversation-os/state";
+import type { ConversationInteractionSignals, ConversationState, ConversationStateResult } from "@/conversation-os/state";
 
 import type {
   ClinicalAmbiguityLevel,
@@ -36,7 +36,7 @@ const getAmbiguityLevel = (userTurn: string): ClinicalAmbiguityLevel => {
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
 
 const EXPRESSION_DIFFICULTY_PATTERN =
-  /不知道(说什么|想说什么|怎么说|怎么讲|从哪说|从哪里说|从哪开始|从哪里开始|该不该说|要不要说)|不知(从哪说|从哪里说|从哪开始|从哪里开始)|说不出来|讲不出来|开不了口|不知道怎么开口|想说但说不出来|想说又不想说|卡住了|(?:我也|我)?说不清.*(?:感受|感觉|心里|难受)|想继续说.*(?:但是|但|又).*(?:不太想|又不想)说|(?:^|[，。！？!?])(?:我)?(?:脑子|脑袋)(?:很|有点)?乱(?:[。！？!?]|$)/;
+  /不知道(说什么|想说什么|怎么说|怎么讲|从哪说|从哪里说|从哪开始|从哪里开始|该不该说|要不要说)|不知(从哪说|从哪里说|从哪开始|从哪里开始)|说不出来|讲不出来|开不了口|不知道怎么开口|想说但说不出来|想说又不想说|卡住了|(?:我也|我)?说不清.*(?:感受|感觉|心里|难受)|想继续说.*(?:但是|但|又).*(?:不太想|又不想)说|(?:不想|没法|无法).{0,4}(?:组织|整理).{0,4}(?:语言|话)|(?:脑子|脑袋)一片空白.*(?:什么也)?不想说|(?:^|[，。！？!?])(?:我)?(?:脑子|脑袋)(?:很|有点)?乱(?:[。！？!?]|$)/;
 
 const EXPLICIT_ADVICE_REQUEST_PATTERN =
   /给我.*建议|给点建议|一些建议|有.*建议|需要.*建议|帮我.*(想|看看|处理|解决|判断|决定|理一下)|怎么办|怎么做|怎么开口|如何开口|开口.*比较好|该怎么|我该|先做什么|该先做什么|能做什么|能不能.*建议|可以.*建议/;
@@ -72,6 +72,15 @@ const getConversationStage = (turnCount: number): ClinicalSignals["conversationS
   return "CONTINUING";
 };
 
+const createUnknownInteractionSignals = (): ConversationInteractionSignals => ({
+  contentAvailability: "unknown",
+  engagement: "open",
+  initiativeDirection: "shared",
+  affect: "unknown",
+  stopIntent: false,
+  evidence: ["Conversation interaction analysis was not supplied."],
+});
+
 export const createEmptyClinicalSignals = (): ClinicalSignals => ({
   messageLength: "SHORT",
   expressionDifficulty: false,
@@ -84,6 +93,7 @@ export const createEmptyClinicalSignals = (): ClinicalSignals => ({
     source: "none",
     reason: "No user message or active conversation frame is available.",
   },
+  interaction: createUnknownInteractionSignals(),
   memoryAvailability: {
     hasUnderstanding: false,
     hasRelationship: false,
@@ -110,12 +120,14 @@ const buildClinicalSignals = ({
   turnCount,
   recentTurns,
   memoryContext,
+  interaction,
 }: {
   userTurn: string;
   previousAssistantMessage?: string | null;
   turnCount: number;
   recentTurns: AiConversationMessage[];
   memoryContext: ClinicalMemoryContext;
+  interaction: ConversationInteractionSignals;
 }): ClinicalSignals => {
   const text = normalize(userTurn);
 
@@ -127,6 +139,7 @@ const buildClinicalSignals = ({
     hasPreviousAssistantReply: Boolean(previousAssistantMessage),
     conversationStage: getConversationStage(turnCount),
     semanticEvidence: evaluateSemanticEvidence({ userTurn, recentMessages: recentTurns }),
+    interaction,
     memoryAvailability: {
       hasUnderstanding: memoryContext.understandings.length > 0,
       hasRelationship: memoryContext.relationships.length > 0,
@@ -143,6 +156,7 @@ export const buildClinicalContext = ({
   recentTurns,
   memoryContext,
   conversationState,
+  conversationStateResult,
   safetyNotes = [],
   currentResponseGoal = null,
   previousResponseGoal = null,
@@ -158,6 +172,7 @@ export const buildClinicalContext = ({
   recentTurns: AiConversationMessage[];
   memoryContext: ClinicalMemoryContext;
   conversationState: ConversationState;
+  conversationStateResult?: ConversationStateResult;
   safetyNotes?: string[];
   currentResponseGoal?: ResponseGoal | null;
   previousResponseGoal?: ResponseGoal | null;
@@ -177,6 +192,7 @@ export const buildClinicalContext = ({
     turnCount,
     recentTurns,
     memoryContext,
+    interaction: conversationStateResult?.interaction ?? createUnknownInteractionSignals(),
   });
 
   return {

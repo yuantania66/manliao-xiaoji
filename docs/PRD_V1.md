@@ -2,7 +2,7 @@
 
 本文件是 SlowTalk Notes v1 的正式产品与架构需求基准。
 
-本文只归并已经确认的 PRD、Architecture v1 Final、Memory V2、Clinical Logic 与 Safety 文档口径，不新增产品能力、不新增架构层、不扩展已冻结边界。
+本文归并已经确认的 PRD、Architecture v1 Final、Memory V2、Clinical Logic 与 Safety 文档口径。2026-07-23 已批准的 Conversation OS 控制权收口更新了普通聊天运行时职责，但不新增产品层或产品能力。
 
 ## 1. Product Positioning
 
@@ -124,16 +124,15 @@ Safety & Governance Layer
 职责：
 
 - 接收用户输入。
-- 对本轮与最近若干轮对话做实时 Observe / Understand / Update。
-- 维护实时 conversation mechanics。
-- 输出客观会话事实和已批准 deterministic signals。
-- 组装 trace-relevant conversation context。
-- 调用 Clinical Logic。
+- 组装当前消息、必要相邻话轮、回答义务、主动权、修复状态、Assistant Grounding 和相关记忆。
+- 形成可组合的 Turn Interpretation 与 Dialogue State。
+- 由唯一 Response Planner 输出一个 `ResponsePlan`。
+- 按需请求 Clinical 策略建议，并在表达后记录 obligation/state update。
 
 不负责：
 
-- 决定 `ResponseGoal`。
-- 选择心理学方法。
+- 绕过 Response Planner 让其他模块决定本轮动作。
+- 自己实现心理学方法。
 - 写长期 Memory。
 - 形成用户画像。
 - 扩展旧 Conversation OS 策略字段。
@@ -142,17 +141,16 @@ Safety & Governance Layer
 
 职责：
 
-- 消费 `ClinicalContext`。
-- 做第一普通回应决策：`ResponseGoal`。
-- 选择服务于 `ResponseGoal` 的 `Strategy`。
-- 输出 `ClinicalPlan`。
-- 明确 question function、tone constraints、intervention boundaries、safety notes。
+- 仅在 Response Planner 确认存在情绪支持、关系/感受探索或行动支持需求时消费 `ClinicalContext`。
+- 提供可选 Clinical Strategy advice，包括 question function、tone constraints 和 intervention boundaries。
+- 保留旧 `ClinicalPlan` / `ResponseGoalSelector` 作为兼容和评测合同，不进入生产普通决策链。
 
 不负责：
 
 - 直接读取 RawMemory。
 - 写 Memory。
 - 覆盖 Safety。
+- 决定生产普通回复的 `ResponseGoal` 或删除直接回答义务。
 - 生成最终中文文案。
 - 诊断、评估、治疗计划、临床报告。
 
@@ -189,14 +187,14 @@ Safety 可以在输入、ClinicalPlan、Prompt、最终回复等位置否决普�
 普通非安全聊天的运行时数据流：
 
 ```text
-Conversation outputs
-  -> ClinicalContext
-  -> ResponseGoal
-  -> Strategy
-  -> ClinicalPlan
-  -> Prompt construction
-  -> LLM generation
-  -> post-processing / trace / save
+Context Assembly
+  -> Turn Interpretation
+  -> Dialogue State
+  -> Response Planner (optional Clinical/Memory/Grounding providers)
+  -> one ResponsePlan
+  -> Surface Realization
+  -> same-plan Output Validation
+  -> State Update / trace / save
 ```
 
 该流程不是产品层级划分。任何实现变化都必须继续遵守五层架构。
@@ -277,9 +275,9 @@ Understanding 表达当前对用户的长期理解草稿。
 - 必须可追溯 Evidence。
 - 必须允许修正和下降置信。
 
-## 9. Clinical Logic: Response Goal Before Strategy
+## 9. Conversation Plan Before Optional Clinical Strategy
 
-Clinical Logic 的第一决策是 `ResponseGoal`，不是 Rogers / CBT / ACT / MI。
+Conversation OS Response Planner 是唯一普通决策所有者。它先确定直接回答义务和具体对话动作，再决定是否需要 Clinical Strategy。
 
 最小 Response Goal：
 
@@ -290,9 +288,9 @@ Clinical Logic 的第一决策是 `ResponseGoal`，不是 Rogers / CBT / ACT / M
 - `support_action`
 - `hold_space`
 
-Strategy 是完成 Response Goal 的方法。
+这些旧 Response Goal 继续作为 Clinical 兼容语义和策略评测输入，但不再构成生产的第二套决策链。Strategy 是按需提供给 ResponsePlan 的方法建议。
 
-当前 Rogers dry-run 只作为默认策略之一，不是第一决策入口。CBT / ACT / MI 不在 v1 实现范围内。
+当前 Rogers 仅在 Planner 请求 emotional/action support 时作为策略服务。身份、能力、词义、普通纠正、轻闲聊和无话题但愿意互动不会仅因产品定位进入 Clinical。
 
 ## 10. Safety Priority
 
@@ -322,7 +320,7 @@ Safety 永远高于 Clinical Logic。
 - Understanding MVP。
 - Conversation trace。
 - Safety 最小规则。
-- ResponseGoal dry-run / minimal prompt flag。
+- 一个可追踪的 ResponsePlan、Surface Realization 与同计划 Output Validation。
 
 不做：
 
@@ -374,8 +372,8 @@ Safety 永远高于 Clinical Logic。
 - Legacy `EngageMode` / `ExperienceGoal` / `QuestionStyle` / `VoiceConstraints`。
 - Memory V2 Phase 2。
 - Clinical Logic skeleton。
-- ResponseGoal dry-run。
-- ClinicalPlan prompt flag 默认关闭。
+- Conversation OS 单一 ResponsePlan 决策闭环。
+- Clinical Logic 按需策略服务边界；旧 ResponseGoal/ClinicalPlan 仅兼容评测。
 - Golden Dataset 与 eval 基础。
 - Architecture v1 final constraints。
 
@@ -385,7 +383,7 @@ Safety 永远高于 Clinical Logic。
 - Timeline schema 深化。
 - Understanding schema 深化。
 - Relationship 消歧 / 合并。
-- Conversation State 影响 ResponseGoal。
+- 未经审查扩展 Conversation State 决策字段。
 - CBT / ACT / MI 策略实现。
 - Prompt 大改。
 - 旧 Conversation OS 策略扩展。

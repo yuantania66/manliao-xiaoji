@@ -82,14 +82,17 @@ export const createRefinementJobForRawMemory = async ({
 export const listPendingRefinementJobs = async ({
   take = 20,
   step,
+  userId,
 }: {
   take?: number;
   step?: RefinementStep;
+  userId?: string;
 } = {}) =>
   prisma.refinementJob.findMany({
     where: {
       status: RefinementStatus.PENDING,
       ...(step ? { step } : {}),
+      ...(userId ? { userId } : {}),
     },
     orderBy: { createdAt: "asc" },
     take,

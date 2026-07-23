@@ -20,6 +20,7 @@ export const createNoOpClinicalPlan = (context: ClinicalContext): ClinicalPlan =
     "Do not provide fixed response text.",
   ],
   safetyNotes: context.safety.safetyTriggered ? [`safetyLevel=${context.safety.safetyLevel}`] : [],
+  interaction: context.signals.interaction,
   rationale: [
     "NoOp ClinicalPlan created to prove normal chat passes through Clinical Logic Layer.",
     `ClinicalContext memory received: understandings=${context.memory.understandings.length}, timelineEvents=${context.memory.timelineEvents.length}, relationships=${context.memory.relationships.length}, semanticMemories=${context.memory.semanticMemories.length}.`,

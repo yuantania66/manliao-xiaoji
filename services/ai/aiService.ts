@@ -11,14 +11,11 @@ import {
   AiConversationMessage,
   AiGenerationResult,
   AiMemoryContext,
-  AiPromptMeta,
-  AiProviderResponse,
   AiRiskLevel,
 } from "./types";
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
-import { runConversationPipeline } from "@/conversation-os";
-import { buildVoiceConstraints } from "./voiceLayer";
-import type { ClinicalPlan } from "@/services/clinical/clinicalTypes";
+import type { ResponsePlan } from "@/conversation-os/control";
+import { inspectPromptBeforeExternalCall } from "./externalPromptInspection";
 
 export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel();
 
@@ -31,61 +28,42 @@ export const generateChatReply = async ({
   recentMessages,
   memoryContext,
   understandingContext,
-  clinicalPlan,
+  responsePlan,
   evaluationAdapter,
+  responsePlanRegenerateConstraint = null,
+  inspectExternalPrompt,
 }: {
   conversationId?: string;
   userMessage: string;
   recentMessages: AiConversationMessage[];
   memoryContext?: AiMemoryContext | null;
   understandingContext?: StructuredRagContext | null;
-  clinicalPlan?: ClinicalPlan | null;
+  responsePlan: ResponsePlan;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
+  responsePlanRegenerateConstraint?: string | null;
+  inspectExternalPrompt?: (input: { stage: "surface_realization"; messages: import("./types").AiModelMessage[] }) => void | Promise<void>;
 }): Promise<AiGenerationResult> => {
-  const pipelineRecentMessages = recentMessages.flatMap((message) =>
-    message.role === "user" || message.role === "assistant"
-      ? [{ role: message.role, content: message.content }]
-      : []
-  );
-  const responseBox: { value?: AiProviderResponse; promptMeta?: AiPromptMeta } = {};
-
-  const pipelineResult = await runConversationPipeline({
-    conversationId,
-    userMessage: {
-      conversationId,
-      content: userMessage,
-    },
-    recentMessages: pipelineRecentMessages,
-  }, async ({ context }) => {
-    const voiceConstraints = buildVoiceConstraints(context.responseGoal);
-    const prompt = buildChatPrompt({
-      userMessage,
-      recentMessages,
-      memoryContext,
-      understandingContext,
-      conversationContext: context,
-      voiceConstraints,
-      clinicalPlan,
-      evaluationAdapter,
-    });
-    responseBox.promptMeta = prompt.meta;
-    responseBox.value = await callModel({
-      model: getMainModel(),
-      messages: prompt.messages,
-      temperature: 0.75,
-    });
-
-    return responseBox.value.text;
+  void conversationId;
+  const prompt = buildChatPrompt({
+    userMessage,
+    recentMessages,
+    memoryContext,
+    understandingContext,
+    responsePlan,
+    evaluationAdapter,
+    semanticEvidenceRegenerateConstraint: responsePlanRegenerateConstraint,
   });
-
-  if (!responseBox.value || !responseBox.promptMeta) {
-    throw new AppError("AI_GENERATION_FAILED", "Conversation OS pipeline did not produce a reply", 502);
-  }
-
-  const response = responseBox.value;
-  const promptMeta = responseBox.promptMeta;
-  promptMeta.conversationOrientation = pipelineResult.orientation;
-  promptMeta.conversationUpdate = pipelineResult.update;
+  await inspectPromptBeforeExternalCall(inspectExternalPrompt, {
+    stage: "surface_realization" as const,
+    messages: prompt.messages,
+  });
+  const response = await callModel({
+    model: getMainModel(),
+    messages: prompt.messages,
+    temperature: 0.75,
+  });
+  if (!response.text) throw new AppError("AI_GENERATION_FAILED", "Surface realization did not produce a reply", 502);
+  const promptMeta = prompt.meta;
 
   return {
     ...response,

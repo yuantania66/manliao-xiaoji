@@ -64,6 +64,7 @@ const main = async () => {
     const pendingJobs = await listPendingRefinementJobs({
       step: RefinementStep.RAW_CAPTURED,
       take: 10,
+      userId: user.id,
     });
     assert(
       pendingJobs.some((job) => job.id === chatJob.id),

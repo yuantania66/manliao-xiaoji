@@ -31,7 +31,12 @@ const getPlanShapeForGoal = (
 ): Pick<ClinicalPlan, "responseIntent" | "questionFunction"> => {
   if (responseGoal === "help_continue_expression") {
     return {
-      responseIntent: "invite_expression",
+      responseIntent:
+        context.signals.interaction.contentAvailability === "no_topic" &&
+        (context.signals.interaction.engagement === "engaged" ||
+          context.signals.interaction.engagement === "open")
+          ? "initiate_topic"
+          : "invite_expression",
       questionFunction: "open_gentle_invitation",
     };
   }
@@ -110,6 +115,18 @@ export const createRogersClinicalPlan = (
       ...(observationContract
         ? ["remain at observation until the user or active conversation context establishes meaning."]
         : []),
+      ...(planShape.responseIntent === "initiate_topic"
+        ? [
+            "The user has no topic but remains engaged; take one light, low-pressure topic initiative instead of asking them to supply a topic.",
+            "Keep the initiative easy to decline and do not turn it into a checklist, choice test, or demand for self-explanation.",
+            ...(context.signals.interaction.initiativeDirection === "shared"
+              ? ["Recent turns already contain repeated assistant questions; do not add another information-gathering question."]
+              : []),
+          ]
+        : []),
+      ...(responseGoal === "hold_space" && context.signals.interaction.affect === "negative"
+        ? ["Lower interaction intensity because the user supplied explicit distress or fatigue evidence."]
+        : []),
       ...(supportActionElement
         ? ["support_action must include one small, optional, user-adjustable action-support element."]
         : []),
@@ -129,6 +146,12 @@ export const createRogersClinicalPlan = (
             "do not treat an assistant-authored guess as established semantic evidence.",
           ]
         : []),
+      ...(planShape.responseIntent === "initiate_topic"
+        ? [
+            "do not interpret no topic as withdrawal, sadness, or a request for silence.",
+            "do not make the user choose or explain a topic before the assistant offers a light entry.",
+          ]
+        : []),
       ...(supportActionElement
         ? [
             "do not decide for the user",
@@ -138,11 +161,13 @@ export const createRogersClinicalPlan = (
         : []),
     ],
     safetyNotes: context.safety.safetyTriggered ? [`safetyLevel=${context.safety.safetyLevel}`] : [],
+    interaction: context.signals.interaction,
     rationale: [
       `ResponseGoalSelector dry-run selected responseGoal=${responseGoal}.`,
       "RogersStrategy remains the default dry-run strategy and serves the selected responseGoal.",
-      "Plan is trace-first in this sprint; Prompt structure is not changed.",
+      "Plan remains trace-first unless an approved interaction decision requires a bounded Prompt rendering.",
       `Semantic evidence is ${context.signals.semanticEvidence.status} (${context.signals.semanticEvidence.source}).`,
+      `Interaction: content=${context.signals.interaction.contentAvailability}, engagement=${context.signals.interaction.engagement}, initiative=${context.signals.interaction.initiativeDirection}, affect=${context.signals.interaction.affect}, stopIntent=${context.signals.interaction.stopIntent}.`,
       ...(supportActionElement ? [supportActionElement] : []),
       `ClinicalContext memory received: understandings=${context.memory.understandings.length}, timelineEvents=${context.memory.timelineEvents.length}, relationships=${context.memory.relationships.length}, semanticMemories=${context.memory.semanticMemories.length}.`,
     ],

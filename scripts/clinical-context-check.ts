@@ -26,6 +26,10 @@ assert(
   selectorSource.includes("context.signals.explicitAdviceRequest"),
   "ResponseGoalSelector must consume ClinicalContext.signals.explicitAdviceRequest."
 );
+assert(
+  selectorSource.includes("context.signals.semanticEvidence.status"),
+  "ResponseGoalSelector must consume the structured semantic-evidence decision."
+);
 
 const clinicalDir = "services/clinical";
 const legacyClinicalContextAccess =
@@ -143,6 +147,8 @@ assert.equal(context.signals.explicitAdviceRequest, false);
 assert.equal(context.signals.emotionalIntensity, "LOW");
 assert.equal(context.signals.hasPreviousAssistantReply, true);
 assert.equal(context.signals.conversationStage, "EXPLORING");
+assert.equal(context.signals.semanticEvidence.status, "sufficient");
+assert.equal(context.signals.semanticEvidence.source, "current_user_message");
 assert.deepEqual(context.signals.memoryAvailability, {
   hasUnderstanding: true,
   hasRelationship: true,
@@ -295,8 +301,24 @@ assert.equal(numericContext.conversation.state, "opening");
 assert.equal(numericContext.signals.messageLength, "SHORT");
 assert.equal(numericContext.signals.expressionDifficulty, false);
 assert.equal(numericContext.signals.explicitAdviceRequest, false);
+assert.equal(numericContext.signals.semanticEvidence.status, "insufficient");
+assert.equal(numericContext.signals.semanticEvidence.source, "none");
 assert.equal(selectResponseGoal(numericContext), "clarify");
 assert.equal(createClinicalPlan(numericContext).responseGoal, "clarify");
+assert.equal(createClinicalPlan(numericContext).responseIntent, "receive");
+
+const groundedNumericHistory = [{ role: "assistant" as const, content: "How old are you?" }];
+const groundedNumericContext = buildClinicalContext({
+  conversationId: "clinical-context-check",
+  userId: "check-user",
+  userTurn: "34",
+  recentTurns: groundedNumericHistory,
+  memoryContext,
+  conversationState: buildConversationState("34", groundedNumericHistory),
+});
+assert.equal(groundedNumericContext.signals.semanticEvidence.status, "sufficient");
+assert.equal(groundedNumericContext.signals.semanticEvidence.source, "established_conversation_frame");
+assert.equal(selectResponseGoal(groundedNumericContext), "reflect");
 
 console.log(
   JSON.stringify(

@@ -10,20 +10,26 @@ functions that use:
 - `modelProvider.ts` for provider-specific API calls
 - `debugTrace.ts` for engineering trace output
 
-The chat route is intentionally in base-model mode:
+The production chat route is controlled by Conversation OS:
 
-- product baseline prompt + recent sanitized history + current user input
-- no local conversation-understanding layer
-- no slow-chat state machine
-- no response-policy planner
-- no RAG guidance injection
-- one narrow final-response contract for pure numeric input whose meaning has not been established;
-  explicit scales, numbered choices, and counting frames continue through normal model rendering
-- no judge/rewrite loop
+- `chatOrchestrationService.ts` performs Context Assembly, structured Turn
+  Interpretation, Dialogue State, one ResponsePlan, Surface Realization,
+  same-plan Output Validation, and State Update;
+- `aiService.ts` is only the Surface Realization adapter and requires the
+  finalized ResponsePlan;
+- `turnInterpretationAdapter.ts` may call the model only for ambiguous
+  pragmatics and may not write a reply or plan;
+- Memory, Assistant Grounding and Clinical Logic are bounded providers;
+- Clinical Logic is invoked only when Response Planner requests an emotional
+  or action-support strategy;
+- Output Validation may accept, reject, or request one regeneration against the
+  exact same plan; a second failure returns `constraint_failure` system status;
+- ordinary fallback chat copy and `guard_rewrite` are not production success
+  paths (`guard_rewrite` remains readable for historical trace compatibility);
+- Safety may bypass ordinary planning and records an explicit override reason.
 
-The old understanding/planning/review modules were removed from this directory.
-Do not reintroduce them into the chat request path without first changing the
-base-chat regression checks.
+Legacy Engage, Voice and ClinicalPlan helpers remain importable for compatibility
+checks. Do not call them from production Surface Realization or orchestration.
 
 Supported providers are selected with `AI_PROVIDER`:
 

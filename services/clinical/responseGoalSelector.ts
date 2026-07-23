@@ -19,8 +19,17 @@ const isLongDisclosure = (text: string) => {
 export const selectResponseGoal = (context: ClinicalContext): ResponseGoal => {
   const text = normalize(context.conversation.currentUserMessage);
 
+  if (context.signals.interaction.stopIntent) return "hold_space";
   if (context.signals.explicitAdviceRequest) return "support_action";
-  if (context.signals.expressionDifficulty) return "help_continue_expression";
+  if (
+    context.signals.interaction.contentAvailability === "no_topic" &&
+    (context.signals.interaction.engagement === "engaged" || context.signals.interaction.engagement === "open")
+  ) {
+    return context.signals.interaction.affect === "negative" ? "hold_space" : "help_continue_expression";
+  }
+  if (context.signals.expressionDifficulty) {
+    return context.signals.interaction.affect === "negative" ? "hold_space" : "help_continue_expression";
+  }
   if (SUMMARY_REQUEST_PATTERN.test(text)) return "summarize";
   if (SOFT_PAUSE_PATTERN.test(text)) return "hold_space";
   if (HIGH_EMOTION_PATTERN.test(text) && !QUESTION_PATTERN.test(text)) return "hold_space";

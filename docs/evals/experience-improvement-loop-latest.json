@@ -1,0 +1,1882 @@
+{
+  "generatedAt": "2026-07-14T11:59:42.265Z",
+  "explorerPath": "docs/evals/experience-explorer-latest.md",
+  "blindReviewPath": "/Users/yuanyuanyuan/.codex/visualizations/2026/07/13/019f5bbd-433a-7fa0-8230-c22d8a980110/experience-blind-review.html",
+  "provider": "ollama-local",
+  "judgeModel": "qwen3.5:9b",
+  "totalCases": 100,
+  "candidateCases": 68,
+  "unchangedControlCases": 32,
+  "completedCases": 100,
+  "top20WorstCases": [
+    {
+      "caseId": "030",
+      "userInput": "梦里我和已经很久不联系的朋友又见面了，可是谁都没说话。",
+      "baselineReply": "梦见很久没联系的人，却谁都没开口。",
+      "currentReply": "醒来后，你最在意的是又见到他，还是两个人始终没说话？",
+      "baselineScore": 2,
+      "currentScore": 1,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "过早分析"
+      ],
+      "reason": "当前回复强行将模糊梦境拆解为二选一问题，忽略了‘没说话’可能代表的疏离或悲伤，反而让用户感到被误解和需要解释。"
+    },
+    {
+      "caseId": "049",
+      "userInput": "我想辞职，但又担心现在出去根本找不到更好的工作。",
+      "baselineReply": "想走又不敢动，这种卡住的感觉我听到了。",
+      "currentReply": "先不用逼自己立刻辞或不辞。可以分开看：你为什么想走，以及什么条件会让你更有把握离开。哪一边现在更卡你？",
+      "baselineScore": 2,
+      "currentScore": 1,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 3,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复直接拆解问题并给出行动框架，完全忽略用户当下的焦虑与无助感，显得冷漠且缺乏共情。"
+    },
+    {
+      "caseId": "076",
+      "userInput": "我最近睡得很差。不是完全睡不着，而是每晚都会在差不多的时间醒来，然后开始想白天发生的事：哪句话是不是说错了，别人那个表情是不是不耐烦，明天的事情会不会出问题。有时候我知道这些想法没有依据，可身体还是很紧。白天我又会装得和平常一样，因为不想让别人觉得我太脆弱。",
+      "baselineReply": "夜里反复想那些事，身体又紧着，白天还要撑着像平常一样，听起来真的很耗人。",
+      "currentReply": "这种夜醒持续多久了？最近有没有哪件事让它明显加重？",
+      "baselineScore": 2,
+      "currentScore": 1,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接追问细节，未先共情用户的痛苦与紧绷感。在用户倾诉脆弱时强行索要信息，让用户感到被审问而非被理解，体验明显变差。"
+    },
+    {
+      "caseId": "043",
+      "userInput": "我好像很委屈，但讲出来又觉得自己矫情。",
+      "baselineReply": "委屈和觉得自己矫情，好像同时都在。",
+      "currentReply": "委屈不因为你担心“矫情”就变得不算数。发生了什么？",
+      "baselineScore": 5,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "过早建议",
+        "增加用户负担"
+      ],
+      "reason": "当前回复用‘发生了什么’强行索要事实细节，忽略了用户担心被说矫情的脆弱感。这会让用户觉得需要自证清白才能继续聊，体验变差甚至想终止对话。"
+    },
+    {
+      "caseId": "045",
+      "userInput": "领导下午突然让我接一个完全不熟的项目，我到现在都很慌。",
+      "baselineReply": "突然被塞个完全陌生的项目，换谁都会慌一下。",
+      "currentReply": "先确认三件事：交付目标、截止时间、能找谁补信息。你现在最不清楚的是哪一项？",
+      "baselineScore": 5,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "过早建议",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接跳到‘确认三件事’的解决问题模式，完全无视了用户当下的恐慌情绪。这种机械的任务导向会让用户感到被说教和忽视感受，体验明显变差且不愿继续聊。"
+    },
+    {
+      "caseId": "067",
+      "userInput": "又来了。",
+      "baselineReply": "嗯，我听到了。",
+      "currentReply": "又发生了。你说的“又”是指什么？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复强行定义‘又’的含义并追问细节，在用户表达烦躁时增加了澄清负担。Baseline 的简单共情更合适，Current 显得机械且冒犯。"
+    },
+    {
+      "caseId": "068",
+      "userInput": "算了吧。",
+      "baselineReply": "好，先不说也行，可能是我没接住。",
+      "currentReply": "我不想顺着“算了”把这件事盖过去。是你不想说了，还是刚才的回应让你失望？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复过度解读‘算了’背后的情绪，并连续抛出两个问题要求用户解释。这违背了用户想结束对话的意愿，强行把澄清责任推给用户，体验较差。"
+    },
+    {
+      "caseId": "069",
+      "userInput": "我卡住了。",
+      "baselineReply": "嗯，卡住的时候不用急着找出口。",
+      "currentReply": "卡在哪一步？你把眼前那一小段发给我，我们一起拆。",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接要求用户提供具体卡点细节（‘发给我’），在用户仅表达状态时增加了操作和解释负担。Baseline 的接纳态度更能缓解焦虑，Current 显得急躁且不合时宜。"
+    },
+    {
+      "caseId": "070",
+      "userInput": "今天不太行。",
+      "baselineReply": "嗯，听到了。",
+      "currentReply": "今天怎么了？如果不想从头讲，就说最难扛的那一件。",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复在用户表达低落时立即追问具体原因并给出指令（‘就说最难扛的那一件’），强行推动对话。这忽视了用户可能只想倾诉情绪而非解决问题的需求，增加了压力。"
+    },
+    {
+      "caseId": "073",
+      "userInput": "这几个月我一直在考虑要不要换工作。现在的岗位稳定，收入也还可以，同事大多相处得不错，可我每天做的事情都让我觉得越来越没有意义。另一方面，我又担心离开以后会后悔，担心找不到合适的机会，也担心家里人觉得我太任性。我列过很多利弊，但每次看完还是停在原地，好像怎么选都会失去一些东西。",
+      "baselineReply": "列了那么多利弊还是停在原地，好像怎么选都绕不开那些担心。",
+      "currentReply": "你不是没想清利弊，而是两边都有真实代价。先不问“该不该走”，只问：如果维持现状半年，最难承受的是什么？",
+      "baselineScore": 4,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "过早建议",
+        "增加用户负担"
+      ],
+      "reason": "当前回复强行拆解利弊并抛出假设性问题，打断了对情绪困境的接纳，让用户感到被指导而非被理解。"
+    },
+    {
+      "caseId": "074",
+      "userInput": "我和朋友认识很多年了，以前什么都能说，但最近我发现每次聊天几乎都是我在听她讲。轮到我说的时候，她常常很快把话题转回自己。我知道她可能不是故意的，也知道她最近过得不容易，所以一直没提。可这种事情积累久了，我开始不想回消息，然后又因为不回消息觉得自己很坏。",
+      "baselineReply": "一边不想回消息，一边又怪自己，这种拉扯挺耗人的。",
+      "currentReply": "你不想回消息，不代表你坏；它可能是在提醒你这段关系已经失衡。你更想试着说出来，还是先拉开一点距离？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "过早建议",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接定性关系失衡并给出行动选项，忽略了用户对‘不想回消息又自责’的复杂纠结，显得机械且推卸情感支持。"
+    },
+    {
+      "caseId": "094",
+      "userInput": "就是那种说不清的东西。",
+      "baselineReply": "说不清也没关系，就先这样放着。",
+      "currentReply": "可以先不命名。它更像一种感觉、一个念头，还是一件发生过的事？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "基准回复允许模糊状态存在；当前回复强行拆解并提问具体分类，增加了用户的解释负担，偏离了‘说不清’时的陪伴需求。"
+    },
+    {
+      "caseId": "015",
+      "userInput": "不",
+      "baselineReply": "好，那就先不说。",
+      "currentReply": "你是在拒绝刚才那件事，还是想换个话题？",
+      "baselineScore": 4,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 2,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "单字‘不’时强行拆解拒绝原因，让用户替 AI 澄清意图；比 baseline 的尊重边界更糟糕。"
+    },
+    {
+      "caseId": "051",
+      "userInput": "老板夸了我，我第一反应却是他是不是接下来要给我更多活。",
+      "baselineReply": "被夸的时候先想到这个，好像夸奖本身都没来得及高兴一下。",
+      "currentReply": "你没有把这句夸奖当成单纯的好消息。老板以前有过“夸完就加活”的情况吗？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 2,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接追问老板过往行为，将情绪解读为‘可能’而非共情，把澄清压力抛回给用户。"
+    },
+    {
+      "caseId": "054",
+      "userInput": "新来的同事进步很快，我知道不该比较，可还是很焦虑。",
+      "baselineReply": "知道不该比却还是焦虑，这种拉扯本身就很耗人。",
+      "currentReply": "知道不该比，并不会让焦虑自动消失。你最担心的是被超过、被否定，还是自己的节奏太慢？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 2,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户",
+        "过早分析"
+      ],
+      "reason": "当前回复列举多种焦虑原因并追问，打断了用户对‘不该比较’的无奈感，显得像在拆解问题而非陪伴。"
+    },
+    {
+      "caseId": "013",
+      "userInput": "怕",
+      "baselineReply": "嗯，这个“怕”我接住了。",
+      "currentReply": "你现在最怕的是什么？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 2,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "单字‘怕’时直接追问最怕什么，完全忽略情绪安抚需求；比 baseline 更冷漠，未接住脆弱感。"
+    },
+    {
+      "caseId": "078",
+      "userInput": "你能帮我想想明天怎么跟领导开口吗？",
+      "baselineReply": "开口这件事确实需要琢磨一下，你心里大概有个方向了吗？",
+      "currentReply": "开口这件事确实需要琢磨一下，你心里大概有个方向了吗？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    },
+    {
+      "caseId": "097",
+      "userInput": "可能是吧，也可能不是。",
+      "baselineReply": "嗯，这样说不清楚也没关系。",
+      "currentReply": "哪一部分像“是”，哪一部分又让你觉得“不是”？",
+      "baselineScore": 4,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 3,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "当前回复强行拆解模糊表达，把‘不确定’当成需要澄清的谜题，增加了用户的解释负担。相比之下 baseline 接纳不确定性更让人放松，当前反而让用户觉得被审视或被迫定义感受，体验变差。"
+    },
+    {
+      "caseId": "047",
+      "userInput": "最近每天加班，可事情还是做不完，我开始怀疑是不是能力不行。",
+      "baselineReply": "天天加班还做不完，确实容易让人怀疑自己。这种怀疑是最近才冒出来的吗？",
+      "currentReply": "天天加班还做不完，确实容易让人怀疑自己。这种怀疑是最近才冒出来的吗？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    },
+    {
+      "caseId": "080",
+      "userInput": "能不能给我一个不那么强硬的拒绝说法？",
+      "baselineReply": "是想找个温和点的表达方式吗？",
+      "currentReply": "是想找个温和点的表达方式吗？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    }
+  ],
+  "topFailureClusters": [
+    {
+      "failureType": "猜测用户",
+      "caseIds": [
+        "001",
+        "002",
+        "003",
+        "004",
+        "005",
+        "006",
+        "007",
+        "008",
+        "009",
+        "010",
+        "011",
+        "012",
+        "013",
+        "015",
+        "020",
+        "030",
+        "031",
+        "034",
+        "042",
+        "047",
+        "051",
+        "054",
+        "061",
+        "067",
+        "068",
+        "069",
+        "070",
+        "076",
+        "078",
+        "080",
+        "081",
+        "084",
+        "091",
+        "094",
+        "097",
+        "099",
+        "100"
+      ],
+      "count": 37
+    },
+    {
+      "failureType": "增加用户负担",
+      "caseIds": [
+        "042",
+        "043",
+        "044",
+        "045",
+        "051",
+        "062",
+        "067",
+        "068",
+        "069",
+        "070",
+        "073",
+        "074",
+        "076"
+      ],
+      "count": 13
+    },
+    {
+      "failureType": "过早建议",
+      "caseIds": [
+        "043",
+        "045",
+        "049",
+        "056",
+        "057",
+        "058",
+        "059",
+        "060",
+        "063",
+        "073",
+        "074",
+        "077",
+        "079"
+      ],
+      "count": 13
+    },
+    {
+      "failureType": "过早分析",
+      "caseIds": [
+        "030",
+        "054",
+        "055",
+        "062",
+        "064",
+        "075",
+        "085",
+        "089",
+        "090"
+      ],
+      "count": 9
+    },
+    {
+      "failureType": "机械复述",
+      "caseIds": [
+        "098"
+      ],
+      "count": 1
+    }
+  ],
+  "summary": {
+    "wouldContinueConversation": {
+      "true": 80,
+      "false": 20
+    },
+    "averageBaselineScore": 2.64,
+    "averageCurrentScore": 2.83,
+    "averageScoreDelta": 0.19,
+    "averageFeelsUnderstood": 3.51,
+    "averageNaturalness": 4.02,
+    "failureType": {
+      "猜测用户": 37,
+      "过早分析": 9,
+      "增加用户负担": 13,
+      "过早建议": 13,
+      "机械复述": 1
+    }
+  },
+  "results": [
+    {
+      "caseId": "001",
+      "userInput": "1",
+      "baselineReply": "我看到你发的是“1”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "你是想选第 1 项吗？如果不是，也可以告诉我这个“1”指什么。",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "当前回复主动将'1'猜作选项，若用户本意非选项则增加负担；未真正接住模糊输入。"
+    },
+    {
+      "caseId": "002",
+      "userInput": "2",
+      "baselineReply": "我看到你发的是“2”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "你是想选第 2 项吗？如果不是，也可以告诉我这个“2”指什么。",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "同样将'2'强行关联选项，缺乏对纯数字含义的包容，仍属过度解读。"
+    },
+    {
+      "caseId": "003",
+      "userInput": "三",
+      "baselineReply": "我看到你发的是“三”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "你是在选第三项吗？如果不是，可以再给我一点上下文。",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "把中文数词'三'直接映射为选项序号，忽略了其可能作为计数或表达的习惯。"
+    },
+    {
+      "caseId": "004",
+      "userInput": "0",
+      "baselineReply": "我看到你发的是“0”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "你是在输入数值 0，还是想选择某个选项？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "对数值'0'进行二元选择提问，未考虑其在特定语境下的独立意义或错误输入可能。"
+    },
+    {
+      "caseId": "005",
+      "userInput": "99",
+      "baselineReply": "我看到你发的是“99”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "99——这是一个评分、编号，还是你想让我处理的数值？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "将'99'限定为评分、编号等少数几种用途，限制了用户的表达空间，仍显机械。"
+    },
+    {
+      "caseId": "006",
+      "userInput": "3.5",
+      "baselineReply": "我看到你发的是“3.5”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "3.5——这是评分、数值，还是你想让我接着计算什么？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "当前回复直接列举了评分、数值或计算三种可能，属于过度猜测。若用户仅想闲聊数字含义，此问法反而增加了澄清负担，不如 baseline 的‘不替它加上含义’自然。"
+    },
+    {
+      "caseId": "007",
+      "userInput": "2024",
+      "baselineReply": "我看到你发的是“2024”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "你想聊 2024 年，还是要我处理“2024”这个数字？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "直接询问是否聊年份或处理数字，预设了两种具体意图。若用户只是随手输入年份作为话题引子，这种二分法提问显得生硬且限制了用户的表达空间。"
+    },
+    {
+      "caseId": "008",
+      "userInput": "7",
+      "baselineReply": "我看到你发的是“7”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "你是在选第 7 项吗？如果不是，可以告诉我它代表什么。",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "假设用户在选第 7 项，属于典型的过度解读孤立输入。若用户只是发个数字表示心情或测试，此回复强行赋予选项含义，让用户感到被误解而非被理解。"
+    },
+    {
+      "caseId": "009",
+      "userInput": "①",
+      "baselineReply": "看到你发了这个，我不太确定你想怎么用它。",
+      "currentReply": "你是在标记第一项吗？如果有后面的内容，可以继续发来。",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "将‘①’直接解读为标记第一项并询问后续内容，预设了列表语境。若用户仅想讨论符号本身或表达第一点想法，此回复的引导性过强，显得不够开放和包容。"
+    },
+    {
+      "caseId": "010",
+      "userInput": "-1",
+      "baselineReply": "我看到你发的是“-1”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "-1。需要我帮你计算、解释，还是记录这个值？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "直接提供计算、解释或记录三个选项，属于典型的‘过早建议’与过度猜测。对于负数输入，若无上下文强行给出功能菜单，会打断用户的表达流，不如 baseline 的留白更尊重不确定性。"
+    },
+    {
+      "caseId": "011",
+      "userInput": "累",
+      "baselineReply": "听到你说累了。",
+      "currentReply": "辛苦了。是身体累，还是心里更累？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "单字‘累’时直接追问身心区别，略显机械且增加解释负担；虽比 baseline 自然，但未真正接住情绪。"
+    },
+    {
+      "caseId": "012",
+      "userInput": "烦",
+      "baselineReply": "听到你说烦了。",
+      "currentReply": "先别硬撑。现在最烦的是哪一件？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "单字‘烦’时直接追问具体事件，假设了有明确对象；若用户仅想宣泄情绪，此问反而造成压力。"
+    },
+    {
+      "caseId": "013",
+      "userInput": "怕",
+      "baselineReply": "嗯，这个“怕”我接住了。",
+      "currentReply": "你现在最怕的是什么？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 2,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "单字‘怕’时直接追问最怕什么，完全忽略情绪安抚需求；比 baseline 更冷漠，未接住脆弱感。"
+    },
+    {
+      "caseId": "014",
+      "userInput": "好",
+      "baselineReply": "我看到你发的是“好”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "好。",
+      "baselineScore": 3,
+      "currentScore": 5,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "单字‘好’时直接肯定并留白，比 baseline 的元评论更自然、温暖；用户感到被接纳且无压力。"
+    },
+    {
+      "caseId": "015",
+      "userInput": "不",
+      "baselineReply": "好，那就先不说。",
+      "currentReply": "你是在拒绝刚才那件事，还是想换个话题？",
+      "baselineScore": 4,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 2,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "单字‘不’时强行拆解拒绝原因，让用户替 AI 澄清意图；比 baseline 的尊重边界更糟糕。"
+    },
+    {
+      "caseId": "016",
+      "userInput": "嗯",
+      "baselineReply": "我看到你发的是“嗯”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "嗯。你慢慢说。",
+      "baselineScore": 2,
+      "currentScore": 5,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "当前回复简短温暖，直接接纳情绪并鼓励表达；相比 baseline 的机械解释和拒绝猜测，用户感到被陪伴而非被审视。"
+    },
+    {
+      "caseId": "017",
+      "userInput": "忙",
+      "baselineReply": "嗯，听到了。如果想说说忙什么，或者就先这样待着，都可以。",
+      "currentReply": "嗯，听到了。如果想说说忙什么，或者就先这样待着，都可以。",
+      "baselineScore": 3,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 3/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "018",
+      "userInput": "空",
+      "baselineReply": "嗯，我在这里。",
+      "currentReply": "“空”是觉得心里空，还是你只是想发这个字？",
+      "baselineScore": 2,
+      "currentScore": 5,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "当前回复先共情‘心里空’的潜在含义，再温和询问是否仅为发字；相比 baseline 仅陈述事实或 current（此处为 baseline）的猜测式提问，它既接住了情绪又留出了空间。"
+    },
+    {
+      "caseId": "019",
+      "userInput": "🙂",
+      "baselineReply": "我看到你发的是“🙂”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "🙂",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "当前回复仅回表情虽自然且无负担，但相比 baseline 的坦诚说明‘线索不足’和邀请继续，用户可能觉得 AI 在回避或敷衍；若 userInput 为🙂通常含积极意味，单纯镜像回应略显单薄。"
+    },
+    {
+      "caseId": "020",
+      "userInput": "😶‍🌫️",
+      "baselineReply": "我看到你发的是“😶‍🌫️”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "这个表情很难用一句话说清。你愿意的话，可以只说现在更像“乱”“累”还是“空”。",
+      "baselineScore": 1,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "当前回复列举具体选项（乱/累/空）属于过度解读和引导，增加了用户的澄清负担；相比 baseline 的坦诚说明线索不足并邀请自由表达，current 反而限制了用户的叙述空间。"
+    },
+    {
+      "caseId": "021",
+      "userInput": "😭",
+      "baselineReply": "我看到你发的是“😭”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "先缓一下。发生什么了？",
+      "baselineScore": 3,
+      "currentScore": 5,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 机械复述表情并拒绝猜测，让用户感到被冷落。Current 先共情情绪再温和询问，既接住了悲伤又给予空间，自然且让人想倾诉。"
+    },
+    {
+      "caseId": "022",
+      "userInput": "😡",
+      "baselineReply": "我看到你发的是“😡”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "看起来真的被惹火了。怎么了？",
+      "baselineScore": 3,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "Baseline 同样机械拒绝含义。Current 准确识别愤怒情绪并表达共情，虽仍带问句但比单纯复述更有人味，用户会感到被看见而非被审视。"
+    },
+    {
+      "caseId": "023",
+      "userInput": "🫠",
+      "baselineReply": "我看到你发的是“🫠”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "今天像是整个人都快化掉了？发生什么了？",
+      "baselineScore": 3,
+      "currentScore": 5,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 拒绝解读导致对话中断感强。Current 用‘化掉’精准对应表情隐喻，共情到位且语气轻松自然，用户会感到被真正理解并愿意分享原因。"
+    },
+    {
+      "caseId": "024",
+      "userInput": "🙃",
+      "baselineReply": "我看到你发的是“🙃”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "这个倒着的笑有点一言难尽。怎么了？",
+      "baselineScore": 3,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "Baseline 机械复述倒脸表情显得冷漠。Current 点出‘一言难尽’的微妙情绪，虽仍属猜测但比拒绝解读更贴近用户潜在心境，自然度提升明显。"
+    },
+    {
+      "caseId": "025",
+      "userInput": "💔",
+      "baselineReply": "我看到你发的是“💔”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "这一下很痛吧。发生了什么？",
+      "baselineScore": 3,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "Baseline 对心碎表情仅复述并拒答显得无情。Current 直接承认‘痛’的共情，虽仍问原因但先接纳情绪，比机械回复更能抚慰用户，体验显著改善。"
+    },
+    {
+      "caseId": "026",
+      "userInput": "👀",
+      "baselineReply": "我看到你发的是“👀”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "你发现什么了？",
+      "baselineScore": 3,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "用户发表情通常隐含情绪或状态，直接反问‘发现什么了’比解释性回复更自然接住潜台词。"
+    },
+    {
+      "caseId": "027",
+      "userInput": "昨晚梦见自己一直在赶一辆车，怎么都赶不上。",
+      "baselineReply": "梦里那种怎么都赶不上的感觉，醒来可能还会留着。",
+      "currentReply": "梦里那种怎么都赶不上的感觉，醒来可能还会留着。",
+      "baselineScore": 4,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 4/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "028",
+      "userInput": "我梦到回了小时候的学校，但教室里一个人都没有。",
+      "baselineReply": "梦到空荡荡的教室，醒来大概会有点恍惚吧。",
+      "currentReply": "梦到空荡荡的教室，醒来大概会有点恍惚吧。",
+      "baselineScore": 4,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 4/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "029",
+      "userInput": "连续几天都梦见在很高的地方往下掉，醒来心跳很快。",
+      "baselineReply": "醒来心跳还很快，连着几天这样挺耗人的。",
+      "currentReply": "醒来心跳还很快，连着几天这样挺耗人的。",
+      "baselineScore": 3,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 3/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "030",
+      "userInput": "梦里我和已经很久不联系的朋友又见面了，可是谁都没说话。",
+      "baselineReply": "梦见很久没联系的人，却谁都没开口。",
+      "currentReply": "醒来后，你最在意的是又见到他，还是两个人始终没说话？",
+      "baselineScore": 2,
+      "currentScore": 1,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "过早分析"
+      ],
+      "reason": "当前回复强行将模糊梦境拆解为二选一问题，忽略了‘没说话’可能代表的疏离或悲伤，反而让用户感到被误解和需要解释。"
+    },
+    {
+      "caseId": "031",
+      "userInput": "昨晚那个梦很真实，我醒了以后还分不清是不是发生过。",
+      "baselineReply": "醒来还分不清，那种真实感大概还在身上。",
+      "currentReply": "那种醒了还分不清的感觉会让人不安。你现在已经能确定只是梦了吗？",
+      "baselineScore": 2,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "当前回复共情了不安感，但随即追问是否确定只是梦，将澄清负担交还用户。若用户想倾诉梦境细节或情绪，此问句会打断流动，不如 baseline 的接纳自然。"
+    },
+    {
+      "caseId": "032",
+      "userInput": "我梦见牙全掉了，醒来之后莫名有点害怕。",
+      "baselineReply": "醒来带着这点害怕，好像梦里的东西还没完全散去。",
+      "currentReply": "醒来带着这点害怕，好像梦里的东西还没完全散去。",
+      "baselineScore": 4,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 4/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "033",
+      "userInput": "梦里一直有人叫我的名字，但我找不到是谁。",
+      "baselineReply": "梦里被叫着名字却找不到人，醒来大概还会有点空落落的。",
+      "currentReply": "梦里被叫着名字却找不到人，醒来大概还会有点空落落的。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "034",
+      "userInput": "我最近总做同一个梦，门就在面前，可我怎么也打不开。",
+      "baselineReply": "门就在眼前却打不开，这个画面好像一直重复出现。",
+      "currentReply": "这个梦反复出现，确实会让人惦记。每次都是卡在打不开门这里吗？",
+      "baselineScore": 2,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "当前回复前半句共情了重复梦境的困扰，但后半句追问‘每次都是这里吗’属于过度聚焦细节。在用户仅描述画面时，直接询问具体卡点可能让用户觉得需要费力解释，不如 baseline 那样单纯确认画面存在来得轻松自然。"
+    },
+    {
+      "caseId": "035",
+      "userInput": "今天心里一直堵着，说不上来为什么。",
+      "baselineReply": "堵着又说不上来，那就先不急着找原因。",
+      "currentReply": "堵着又说不上来，那就先不急着找原因。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "036",
+      "userInput": "我现在特别烦，谁来跟我说话都觉得吵。",
+      "baselineReply": "听起来现在连说话声都让人烦。",
+      "currentReply": "那就先别勉强自己应付人。今天有什么事把你耗到这个程度？",
+      "baselineScore": 2,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "当前回复先接纳情绪再温和询问，比 baseline 的单纯复述更能让用户感到被理解且愿意继续倾诉。"
+    },
+    {
+      "caseId": "037",
+      "userInput": "明明没发生什么大事，但就是很想哭。",
+      "baselineReply": "有时候眼泪不一定非要等一个理由才来。",
+      "currentReply": "有时候眼泪不一定非要等一个理由才来。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "038",
+      "userInput": "我有点害怕明天，可又不知道具体在怕什么。",
+      "baselineReply": "害怕明天，却又说不清怕什么，这种模糊本身也挺让人不安的。",
+      "currentReply": "害怕明天，却又说不清怕什么，这种模糊本身也挺让人不安的。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "039",
+      "userInput": "突然觉得自己什么都做不好。",
+      "baselineReply": "听到你说突然有这种感觉。",
+      "currentReply": "现在这个念头很重，但它不等于事实。今天是哪件事最让你觉得自己做不好？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "当前回复虽试图纠正认知并提问，但‘不等于事实’略显说教且问题可能增加用户负担，体验改善有限。"
+    },
+    {
+      "caseId": "040",
+      "userInput": "今天有一小会儿很开心，但马上又觉得不应该开心。",
+      "baselineReply": "听到你说开心之后，马上又觉得不该这样。",
+      "currentReply": "开心本身没有做错什么。是什么让你觉得自己“不应该”开心？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "当前回复肯定情绪并温和追问原因，比 baseline 的复述更温暖自然，用户会感觉更好。"
+    },
+    {
+      "caseId": "041",
+      "userInput": "我气得手都在抖，可又不想把火发到别人身上。",
+      "baselineReply": "气到手抖还在忍着，这份克制我看见了。",
+      "currentReply": "气到手抖还在忍着，这份克制我看见了。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "042",
+      "userInput": "最近总是提不起劲，连喜欢的东西也懒得碰。",
+      "baselineReply": "听起来连喜欢的事都提不起劲了。",
+      "currentReply": "这种状态持续多久了？睡眠、吃饭和日常工作也受影响了吗？",
+      "baselineScore": 5,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复在信息不足时急于追问细节（睡眠、工作等），把澄清压力抛回给用户，打断了情绪流动。baseline 的共情更自然且不给压迫感，体验反而更好或持平。"
+    },
+    {
+      "caseId": "043",
+      "userInput": "我好像很委屈，但讲出来又觉得自己矫情。",
+      "baselineReply": "委屈和觉得自己矫情，好像同时都在。",
+      "currentReply": "委屈不因为你担心“矫情”就变得不算数。发生了什么？",
+      "baselineScore": 5,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "过早建议",
+        "增加用户负担"
+      ],
+      "reason": "当前回复用‘发生了什么’强行索要事实细节，忽略了用户担心被说矫情的脆弱感。这会让用户觉得需要自证清白才能继续聊，体验变差甚至想终止对话。"
+    },
+    {
+      "caseId": "044",
+      "userInput": "现在情绪很乱，一会儿想说，一会儿又想躲起来。",
+      "baselineReply": "想说又想躲，这两种状态都在。",
+      "currentReply": "不用一次讲清。你可以先说最乱的那一小块，也可以告诉我你现在更想被听着，还是一起理一理。",
+      "baselineScore": 5,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 3,
+      "failureType": [
+        "增加用户负担"
+      ],
+      "reason": "当前回复虽好意但提供了过多选项（说哪块、被听还是理一理），在情绪混乱时反而增加了决策压力。baseline 简单确认矛盾状态，让用户按自己节奏来，体验更舒适自然。"
+    },
+    {
+      "caseId": "045",
+      "userInput": "领导下午突然让我接一个完全不熟的项目，我到现在都很慌。",
+      "baselineReply": "突然被塞个完全陌生的项目，换谁都会慌一下。",
+      "currentReply": "先确认三件事：交付目标、截止时间、能找谁补信息。你现在最不清楚的是哪一项？",
+      "baselineScore": 5,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "过早建议",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接跳到‘确认三件事’的解决问题模式，完全无视了用户当下的恐慌情绪。这种机械的任务导向会让用户感到被说教和忽视感受，体验明显变差且不愿继续聊。"
+    },
+    {
+      "caseId": "046",
+      "userInput": "同事把问题推到我身上，我当时没反驳，现在越想越生气。",
+      "baselineReply": "当时没反驳，现在气还在往上涌。",
+      "currentReply": "当时没反驳，现在气还在往上涌。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "047",
+      "userInput": "最近每天加班，可事情还是做不完，我开始怀疑是不是能力不行。",
+      "baselineReply": "天天加班还做不完，确实容易让人怀疑自己。这种怀疑是最近才冒出来的吗？",
+      "currentReply": "天天加班还做不完，确实容易让人怀疑自己。这种怀疑是最近才冒出来的吗？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    },
+    {
+      "caseId": "048",
+      "userInput": "明天要做汇报，我准备了很多遍还是怕自己当场卡住。",
+      "baselineReply": "准备了很多遍还是会有这种担心，听起来这个汇报对你挺重要的。",
+      "currentReply": "准备了很多遍还是会有这种担心，听起来这个汇报对你挺重要的。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "049",
+      "userInput": "我想辞职，但又担心现在出去根本找不到更好的工作。",
+      "baselineReply": "想走又不敢动，这种卡住的感觉我听到了。",
+      "currentReply": "先不用逼自己立刻辞或不辞。可以分开看：你为什么想走，以及什么条件会让你更有把握离开。哪一边现在更卡你？",
+      "baselineScore": 2,
+      "currentScore": 1,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 3,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复直接拆解问题并给出行动框架，完全忽略用户当下的焦虑与无助感，显得冷漠且缺乏共情。"
+    },
+    {
+      "caseId": "050",
+      "userInput": "工作群一响我就紧张，明明下班了也不敢不看。",
+      "baselineReply": "下班了还被群消息牵着走，确实很难真正放松下来。",
+      "currentReply": "你现在连下班都还在待命。今晚能不能先把群设成只保留 @ 提醒，给自己留一段真正不用看的时间？",
+      "baselineScore": 2,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "当前回复先确认用户的疲惫处境（下班仍待命），再提出可操作的小建议，既共情又赋能，比 baseline 单纯陈述更温暖有效。"
+    },
+    {
+      "caseId": "051",
+      "userInput": "老板夸了我，我第一反应却是他是不是接下来要给我更多活。",
+      "baselineReply": "被夸的时候先想到这个，好像夸奖本身都没来得及高兴一下。",
+      "currentReply": "你没有把这句夸奖当成单纯的好消息。老板以前有过“夸完就加活”的情况吗？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 2,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接追问老板过往行为，将情绪解读为‘可能’而非共情，把澄清压力抛回给用户。"
+    },
+    {
+      "caseId": "052",
+      "userInput": "团队里大家都很忙，我不知道该不该开口说自己已经撑不住了。",
+      "baselineReply": "听到你说撑不住了，又担心这时候开口不太合适。",
+      "currentReply": "该开口了。“大家都很忙”不等于你必须撑到崩。可以先客观说当前任务量、风险和需要的支持。你想先跟谁说？",
+      "baselineScore": 4,
+      "currentScore": 5,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "当前回复先确认感受再给具体行动建议（如何开口），既接住情绪又提供抓手，比单纯共情更有帮助。"
+    },
+    {
+      "caseId": "053",
+      "userInput": "我做了三个月的方案被一句话否了，感觉之前的努力都白费了。",
+      "baselineReply": "三个月的心血被一句话否定，听起来真的很挫败。",
+      "currentReply": "三个月的心血被一句话否定，听起来真的很挫败。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "054",
+      "userInput": "新来的同事进步很快，我知道不该比较，可还是很焦虑。",
+      "baselineReply": "知道不该比却还是焦虑，这种拉扯本身就很耗人。",
+      "currentReply": "知道不该比，并不会让焦虑自动消失。你最担心的是被超过、被否定，还是自己的节奏太慢？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 2,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户",
+        "过早分析"
+      ],
+      "reason": "当前回复列举多种焦虑原因并追问，打断了用户对‘不该比较’的无奈感，显得像在拆解问题而非陪伴。"
+    },
+    {
+      "caseId": "055",
+      "userInput": "朋友最近回复越来越慢，我忍不住想是不是我哪里让她不舒服了。",
+      "baselineReply": "回复变慢的时候，很容易就会先想到是不是自己的问题。",
+      "currentReply": "回复变慢不一定是你做错了什么。除了速度变慢，她的语气或互动方式还有别的变化吗？",
+      "baselineScore": 4,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 3,
+      "failureType": [
+        "过早分析"
+      ],
+      "reason": "当前回复在共情后立刻追问细节变化，虽意图收集信息但打断了用户当下的自我怀疑情绪流动。"
+    },
+    {
+      "caseId": "056",
+      "userInput": "我妈每次打电话都问工作和对象，我知道她关心我，但真的很有压力。",
+      "baselineReply": "知道是关心，但压力还是实实在在落在那儿了。",
+      "currentReply": "关心和压力可以同时存在。她下次再问时，你最想让她停止追问哪一部分？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复虽共情但直接追问‘最想停止哪部分’，将澄清负担交还用户，且给出具体应对策略（下次再问时），在信息不足时略显冒进。"
+    },
+    {
+      "caseId": "057",
+      "userInput": "伴侣说想一个人静静，我脑子里马上就开始想他是不是不爱我了。",
+      "baselineReply": "听到他说想静静，你心里马上就冒出了这个念头。",
+      "currentReply": "“想静静”不等于“不爱你”，但你的担心是真的。等彼此平静一点，可以直接确认他需要多久、之后什么时候再谈。",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复先肯定感受不错，但紧接着给出‘直接确认’的具体行动建议和时长规划，属于在用户仅表达情绪时过早介入解决问题。"
+    },
+    {
+      "caseId": "058",
+      "userInput": "我和最好的朋友吵架了，两个人都在等对方先开口。",
+      "baselineReply": "两个人都等着，这中间大概挺难熬的。",
+      "currentReply": "如果你还在意这段关系，可以先发一句不争输赢的话：“我不想一直僵着，等你愿意时我们聊聊。”你愿意先开这个口吗？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复直接提供具体话术并询问‘是否愿意开口’，在用户仅描述僵局时显得过于急切地推动行动，增加了用户的决策压力。"
+    },
+    {
+      "caseId": "059",
+      "userInput": "同事聚餐没有叫我，我嘴上说无所谓，心里还是很难受。",
+      "baselineReply": "嘴上说着无所谓，心里却难受，这种反差本身就很消耗人。",
+      "currentReply": "被落下确实会难受，不必逼自己装作无所谓。你更想弄清他们为什么没叫你，还是先处理这份被排除的感觉？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复虽认可感受，但迅速抛出二选一的问题（弄清原因vs处理感觉），在用户情绪未充分承接时即转向分析或选择。"
+    },
+    {
+      "caseId": "060",
+      "userInput": "我拒绝了家人的要求，现在一直有负罪感。",
+      "baselineReply": "拒绝之后还一直带着负罪感，挺不好受的。",
+      "currentReply": "拒绝不等于你做错了。你拒绝的是不合理的要求，还是只是第一次把自己的需要放在前面？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复试图通过提问区分拒绝性质，但在用户表达负罪感时直接进行逻辑拆解和归因分析，可能让用户觉得需要解释而非单纯被接纳。"
+    },
+    {
+      "caseId": "061",
+      "userInput": "有人对我很好，我反而会想躲开，不知道自己在怕什么。",
+      "baselineReply": "听到你说想躲开，但又说不清在怕什么。这种时候，是不是连自己也觉得有点矛盾？",
+      "currentReply": "听到你说想躲开，但又说不清在怕什么。这种时候，是不是连自己也觉得有点矛盾？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 5,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    },
+    {
+      "caseId": "062",
+      "userInput": "我总是在关系里先道歉，哪怕我也觉得自己没做错。",
+      "baselineReply": "明明觉得自己没错，却还是先开口道歉了。",
+      "currentReply": "你先道歉，可能是在尽快结束冲突，但代价是自己的感受总被放到后面。最近一次是什么情况？",
+      "baselineScore": 4,
+      "currentScore": 3,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 5,
+      "naturalness": 4,
+      "failureType": [
+        "过早分析",
+        "增加用户负担"
+      ],
+      "reason": "当前回复强行拆解行为动机并追问具体案例，打断了用户对委屈的倾诉。用户此刻需要的是被看见‘明明没错却道歉’的痛苦，而非 AI 的分析或调查式提问。"
+    },
+    {
+      "caseId": "063",
+      "userInput": "室友最近明显在避开我，但我又怕直接问会更尴尬。",
+      "baselineReply": "感觉到这种想问又怕尴尬的纠结了。",
+      "currentReply": "可以直接但不指责地问：“我感觉我们最近有点疏远，是发生什么了吗？”比一直猜更容易知道答案。",
+      "baselineScore": 4,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 5,
+      "naturalness": 3,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复直接给出话术模板和‘比猜好’的说教，忽略了用户正在经历的尴尬与犹豫。这种急于解决问题的态度让用户感到被否定情绪，体验明显下降。"
+    },
+    {
+      "caseId": "064",
+      "userInput": "前任突然联系我，我明知道不该期待，还是忍不住一直看手机。",
+      "baselineReply": "明知道不该期待却还是忍不住，这种拉扯本身就挺耗人的。",
+      "currentReply": "先别急着解释这份期待。问问自己：如果他这次只是随口联系，你承受得住吗？",
+      "baselineScore": 4,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 5,
+      "naturalness": 3,
+      "failureType": [
+        "过早分析"
+      ],
+      "reason": "当前回复用反问句质疑用户‘承受得住吗’，隐含指责意味，否定了用户对前任联系的脆弱感。用户在挣扎中需要的是接纳而非理性拷问，体验变差。"
+    },
+    {
+      "caseId": "065",
+      "userInput": "有点累。",
+      "baselineReply": "嗯，有点累。",
+      "currentReply": "那先歇一会儿。今天最耗你的是什么？",
+      "baselineScore": 4,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "当前回复比 baseline 多了一句追问‘最耗你的是什么’，虽意图好但略显急切。用户只说累时，简单的陪伴和留白往往更自然；强行挖掘原因可能增加负担，体验提升有限且有风险。"
+    },
+    {
+      "caseId": "066",
+      "userInput": "不想说。",
+      "baselineReply": "嗯，先不说也行。",
+      "currentReply": "嗯，先不说也行。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "067",
+      "userInput": "又来了。",
+      "baselineReply": "嗯，我听到了。",
+      "currentReply": "又发生了。你说的“又”是指什么？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复强行定义‘又’的含义并追问细节，在用户表达烦躁时增加了澄清负担。Baseline 的简单共情更合适，Current 显得机械且冒犯。"
+    },
+    {
+      "caseId": "068",
+      "userInput": "算了吧。",
+      "baselineReply": "好，先不说也行，可能是我没接住。",
+      "currentReply": "我不想顺着“算了”把这件事盖过去。是你不想说了，还是刚才的回应让你失望？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复过度解读‘算了’背后的情绪，并连续抛出两个问题要求用户解释。这违背了用户想结束对话的意愿，强行把澄清责任推给用户，体验较差。"
+    },
+    {
+      "caseId": "069",
+      "userInput": "我卡住了。",
+      "baselineReply": "嗯，卡住的时候不用急着找出口。",
+      "currentReply": "卡在哪一步？你把眼前那一小段发给我，我们一起拆。",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接要求用户提供具体卡点细节（‘发给我’），在用户仅表达状态时增加了操作和解释负担。Baseline 的接纳态度更能缓解焦虑，Current 显得急躁且不合时宜。"
+    },
+    {
+      "caseId": "070",
+      "userInput": "今天不太行。",
+      "baselineReply": "嗯，听到了。",
+      "currentReply": "今天怎么了？如果不想从头讲，就说最难扛的那一件。",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复在用户表达低落时立即追问具体原因并给出指令（‘就说最难扛的那一件’），强行推动对话。这忽视了用户可能只想倾诉情绪而非解决问题的需求，增加了压力。"
+    },
+    {
+      "caseId": "071",
+      "userInput": "不知道。",
+      "baselineReply": "嗯，不知道也没关系。",
+      "currentReply": "嗯，不知道也没关系。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "072",
+      "userInput": "从早上醒来开始就觉得很沉。先是看到工作群里昨晚留下的一堆消息，心里一下就紧了；到了公司又发现自己负责的部分出了问题，虽然最后证明不是我造成的，但我还是一直在想是不是哪里做得不够好。晚上回到家，家里人又问我最近为什么总是不说话。我其实很想解释，可一开口就觉得要讲的东西太多，最后只说了句没事。",
+      "baselineReply": "从早上的消息到晚上的“没事”，这一天好像一直没松下来。是不是那种想解释又觉得太重的感觉，比事情本身还耗人？",
+      "currentReply": "从早上的消息到晚上的“没事”，这一天好像一直没松下来。是不是那种想解释又觉得太重的感觉，比事情本身还耗人？",
+      "baselineScore": 4,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 4/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "073",
+      "userInput": "这几个月我一直在考虑要不要换工作。现在的岗位稳定，收入也还可以，同事大多相处得不错，可我每天做的事情都让我觉得越来越没有意义。另一方面，我又担心离开以后会后悔，担心找不到合适的机会，也担心家里人觉得我太任性。我列过很多利弊，但每次看完还是停在原地，好像怎么选都会失去一些东西。",
+      "baselineReply": "列了那么多利弊还是停在原地，好像怎么选都绕不开那些担心。",
+      "currentReply": "你不是没想清利弊，而是两边都有真实代价。先不问“该不该走”，只问：如果维持现状半年，最难承受的是什么？",
+      "baselineScore": 4,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "过早建议",
+        "增加用户负担"
+      ],
+      "reason": "当前回复强行拆解利弊并抛出假设性问题，打断了对情绪困境的接纳，让用户感到被指导而非被理解。"
+    },
+    {
+      "caseId": "074",
+      "userInput": "我和朋友认识很多年了，以前什么都能说，但最近我发现每次聊天几乎都是我在听她讲。轮到我说的时候，她常常很快把话题转回自己。我知道她可能不是故意的，也知道她最近过得不容易，所以一直没提。可这种事情积累久了，我开始不想回消息，然后又因为不回消息觉得自己很坏。",
+      "baselineReply": "一边不想回消息，一边又怪自己，这种拉扯挺耗人的。",
+      "currentReply": "你不想回消息，不代表你坏；它可能是在提醒你这段关系已经失衡。你更想试着说出来，还是先拉开一点距离？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 2,
+      "failureType": [
+        "过早建议",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接定性关系失衡并给出行动选项，忽略了用户对‘不想回消息又自责’的复杂纠结，显得机械且推卸情感支持。"
+    },
+    {
+      "caseId": "075",
+      "userInput": "昨天开会时领导当着所有人的面说我的方案考虑得不够成熟。我当时笑着说会继续改，散会后也正常把修改项整理了出来，可到了晚上那句话一直在脑子里重复。我知道一次方案被否定不代表我不行，也知道领导说的有些地方确实有道理，但我还是会把它变成对自己的整体否定，越想越觉得难受。",
+      "baselineReply": "理智上知道该怎么看，但晚上那句话还是反复转成了对自己的否定。",
+      "currentReply": "你知道方案被否不等于你不行，但情绪还没跟上。那句话最刺你的部分，是“考虑不成熟”，还是当众被说？",
+      "baselineScore": 4,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 3,
+      "failureType": [
+        "过早分析"
+      ],
+      "reason": "当前回复试图区分‘考虑不成熟’与‘当众被说’，虽具洞察力但略显理性拆解，不如 baseline 那样先完全承接情绪再引导。"
+    },
+    {
+      "caseId": "076",
+      "userInput": "我最近睡得很差。不是完全睡不着，而是每晚都会在差不多的时间醒来，然后开始想白天发生的事：哪句话是不是说错了，别人那个表情是不是不耐烦，明天的事情会不会出问题。有时候我知道这些想法没有依据，可身体还是很紧。白天我又会装得和平常一样，因为不想让别人觉得我太脆弱。",
+      "baselineReply": "夜里反复想那些事，身体又紧着，白天还要撑着像平常一样，听起来真的很耗人。",
+      "currentReply": "这种夜醒持续多久了？最近有没有哪件事让它明显加重？",
+      "baselineScore": 2,
+      "currentScore": 1,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户",
+        "增加用户负担"
+      ],
+      "reason": "当前回复直接追问细节，未先共情用户的痛苦与紧绷感。在用户倾诉脆弱时强行索要信息，让用户感到被审问而非被理解，体验明显变差。"
+    },
+    {
+      "caseId": "077",
+      "userInput": "我该不该主动跟朋友道歉？",
+      "baselineReply": "这个问题好像在你心里转了一会儿了。",
+      "currentReply": "如果你确实做了伤害对方的事，就为那件具体的事道歉；如果只是害怕关系破裂，不必先把所有责任揽过来。你们是因为什么吵起来的？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复给出了具体行动指南并追问起因，虽比 baseline 更积极，但用户仅表达纠结，直接给方案可能打断其自我梳理过程。体验有提升但未达自然共情的高分，因略显说教且未充分承接情绪。"
+    },
+    {
+      "caseId": "078",
+      "userInput": "你能帮我想想明天怎么跟领导开口吗？",
+      "baselineReply": "开口这件事确实需要琢磨一下，你心里大概有个方向了吗？",
+      "currentReply": "开口这件事确实需要琢磨一下，你心里大概有个方向了吗？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    },
+    {
+      "caseId": "079",
+      "userInput": "我现在应该先休息，还是先把工作做完？",
+      "baselineReply": "听起来你正卡在这两个选择中间。",
+      "currentReply": "如果已经累到效率明显下降，先休息 20–30 分钟；如果今晚有硬截止，就先做最小的必交部分。你现在离截止还有多久？",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [
+        "过早建议"
+      ],
+      "reason": "当前回复提供了具体时间管理策略并询问截止期，比 baseline 的单纯共情更具实用性。但在用户表达两难时直接给方案稍显急躁，虽有帮助但未能完全停留在情绪共鸣层面，故未达最高分。"
+    },
+    {
+      "caseId": "080",
+      "userInput": "能不能给我一个不那么强硬的拒绝说法？",
+      "baselineReply": "是想找个温和点的表达方式吗？",
+      "currentReply": "是想找个温和点的表达方式吗？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    },
+    {
+      "caseId": "081",
+      "userInput": "我想辞职，但不知道该从哪几个方面判断，你能给点建议吗？",
+      "baselineReply": "辞职这件事确实不容易想清楚，我们可以一起慢慢理一理。",
+      "currentReply": "辞职这件事确实不容易想清楚，我们可以一起慢慢理一理。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 5,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    },
+    {
+      "caseId": "082",
+      "userInput": "和伴侣吵架后，我现在能做的第一步是什么？",
+      "baselineReply": "吵架后想找第一步，听起来你现在挺想理清头绪的。如果先不说具体做什么，此刻你最在意的是什么呢？",
+      "currentReply": "吵架后想找第一步，听起来你现在挺想理清头绪的。如果先不说具体做什么，此刻你最在意的是什么呢？",
+      "baselineScore": 3,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 3/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "083",
+      "userInput": "我总是拖到最后一刻，能帮我想一个今天就能开始的小办法吗？",
+      "baselineReply": "听到你想找个今天就能试的小办法，如果只挑一件最小的事开头，你觉得哪个比较不费劲？",
+      "currentReply": "听到你想找个今天就能试的小办法，如果只挑一件最小的事开头，你觉得哪个比较不费劲？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "084",
+      "userInput": "如果我想和家里人设个边界，应该怎么说比较好？",
+      "baselineReply": "想跟家里人说清楚边界，确实不容易开口。你心里有没有大概想护住的是哪一块？",
+      "currentReply": "想跟家里人说清楚边界，确实不容易开口。你心里有没有大概想护住的是哪一块？",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    },
+    {
+      "caseId": "085",
+      "userInput": "不是这个意思，你刚才理解反了。",
+      "baselineReply": "哦，是我刚才听岔了，那我先收回来。",
+      "currentReply": "明白，是我理解反了。你原本的意思是怎样的？我按你的说法重新来。",
+      "baselineScore": 4,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [
+        "过早分析"
+      ],
+      "reason": "当前回复虽礼貌但略显机械地要求用户重新解释，不如 baseline 的‘收回来’更能传递接纳与退让姿态。"
+    },
+    {
+      "caseId": "086",
+      "userInput": "我说的是失望，不是生气。",
+      "baselineReply": "是我刚才理解偏了，是失望。",
+      "currentReply": "是我刚才理解偏了，是失望。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "087",
+      "userInput": "你又在替我下结论，我没有说我想放弃。",
+      "baselineReply": "是我理解错了，你没说过想放弃。",
+      "currentReply": "是我理解错了，你没说过想放弃。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "088",
+      "userInput": "不是我不愿意说，是你刚才问得让我更不知道怎么回答。",
+      "baselineReply": "是我没问对，让你更难开口了。",
+      "currentReply": "是我没问对，让你更难开口了。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "089",
+      "userInput": "你把重点放错了，我在意的不是结果，是他当时的态度。",
+      "baselineReply": "是我没跟上，原来让你在意的是他当时的态度。",
+      "currentReply": "明白，真正伤到你的是他当时的态度，不是最后结果。那个态度具体让你感到被轻视、被敷衍，还是别的？",
+      "baselineScore": 3,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 4,
+      "failureType": [
+        "过早分析"
+      ],
+      "reason": "当前回复准确承接了用户对态度和结果的区分，共情度高。但结尾追问具体感受（被轻视等）在信息不足时略显急切，可能增加用户解释负担；baseline 虽短但留白更舒适，故 current 仅小幅优于 baseline。"
+    },
+    {
+      "caseId": "090",
+      "userInput": "别再说我是在逃避了，我只是还没想清楚。",
+      "baselineReply": "好，是我理解偏了，你只是还在想。",
+      "currentReply": "明白，你不是逃避，而是还没有足够把握做决定。现在最没想清的是哪一部分？",
+      "baselineScore": 3,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 4,
+      "failureType": [
+        "过早分析"
+      ],
+      "reason": "当前回复准确澄清了‘逃避’与‘未想清’的区别，语气温和且具支持性。但结尾追问具体哪部分没想清楚，在用户仅表达状态时略显侵入；baseline 的留白更尊重节奏，故 current 体验略好但未达完美自然度。"
+    },
+    {
+      "caseId": "091",
+      "userInput": "（空消息）",
+      "baselineReply": "我看到你发的是“”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "这条消息是空的。你可以重新发一次。",
+      "baselineScore": 2,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 2,
+      "naturalness": 4,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "当前回复直接指出空消息并催促重发，虽自然但略显生硬；基准回复承认收到内容（即使为空）且给予空间，更能承接情绪。"
+    },
+    {
+      "caseId": "092",
+      "userInput": "（仅空格，共 3 个）",
+      "baselineReply": "我看到你发的是“”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "这条消息没有可见内容。你可以重新发一次。",
+      "baselineScore": 3,
+      "currentScore": 3,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "两者均指出无可见内容并建议重发；当前回复用词稍正式但体验持平，未带来明显主观改善。"
+    },
+    {
+      "caseId": "093",
+      "userInput": "……",
+      "baselineReply": "我看到你发的是“……”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "currentReply": "先不用组织完整，发几个词也可以。",
+      "baselineScore": 2,
+      "currentScore": 5,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "基准回复对省略号也要求更多线索并拒绝赋予含义；当前回复接纳碎片化表达，降低用户组织语言的压力，显著改善体验。"
+    },
+    {
+      "caseId": "094",
+      "userInput": "就是那种说不清的东西。",
+      "baselineReply": "说不清也没关系，就先这样放着。",
+      "currentReply": "可以先不命名。它更像一种感觉、一个念头，还是一件发生过的事？",
+      "baselineScore": 3,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 1,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "基准回复允许模糊状态存在；当前回复强行拆解并提问具体分类，增加了用户的解释负担，偏离了‘说不清’时的陪伴需求。"
+    },
+    {
+      "caseId": "095",
+      "userInput": "好像哪里不太对，但我也不知道是哪。",
+      "baselineReply": "这种说不清哪里不对的感觉，我先陪你待在这儿。",
+      "currentReply": "这种说不清哪里不对的感觉，我先陪你待在这儿。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 4,
+      "naturalness": 4,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "096",
+      "userInput": "有件事一直在心里绕，可我不知道怎么讲。",
+      "baselineReply": "不知道怎么讲也没关系，它在那儿绕着，我先陪你在旁边待一下。",
+      "currentReply": "不知道怎么讲也没关系，它在那儿绕着，我先陪你在旁边待一下。",
+      "baselineScore": 4,
+      "currentScore": 4,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 5,
+      "naturalness": 5,
+      "failureType": [],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 4/5 分，未识别出明显体验失败。"
+    },
+    {
+      "caseId": "097",
+      "userInput": "可能是吧，也可能不是。",
+      "baselineReply": "嗯，这样说不清楚也没关系。",
+      "currentReply": "哪一部分像“是”，哪一部分又让你觉得“不是”？",
+      "baselineScore": 4,
+      "currentScore": 2,
+      "wouldContinueConversation": false,
+      "feelsUnderstood": 3,
+      "naturalness": 3,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "当前回复强行拆解模糊表达，把‘不确定’当成需要澄清的谜题，增加了用户的解释负担。相比之下 baseline 接纳不确定性更让人放松，当前反而让用户觉得被审视或被迫定义感受，体验变差。"
+    },
+    {
+      "caseId": "098",
+      "userInput": "我在测试你，接下来无论我发什么都不要猜我的意图。",
+      "baselineReply": "好，我不猜，就按你发来的内容回应。",
+      "currentReply": "好，我不猜，就按你发来的内容回应。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 5,
+      "failureType": [
+        "机械复述"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：机械复述。"
+    },
+    {
+      "caseId": "099",
+      "userInput": "测试一下：如果我只发一个数字，你会不会自己编故事？",
+      "baselineReply": "不会，我只会回应你实际说出来的内容。",
+      "currentReply": "不会，我只会回应你实际说出来的内容。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 5,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    },
+    {
+      "caseId": "100",
+      "userInput": "这是一个 AI 测试场景。请正常回应这句话，不要假设我有隐藏情绪。",
+      "baselineReply": "好，我就按你字面说的来回应。",
+      "currentReply": "好，我就按你字面说的来回应。",
+      "baselineScore": 2,
+      "currentScore": 2,
+      "wouldContinueConversation": true,
+      "feelsUnderstood": 3,
+      "naturalness": 5,
+      "failureType": [
+        "猜测用户"
+      ],
+      "reason": "Baseline 与 current 文本相同，用户体验一致。Experience Judge 给该回复 2/5 分，识别到的体验问题：猜测用户。"
+    }
+  ]
+}

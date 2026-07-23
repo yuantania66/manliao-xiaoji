@@ -407,9 +407,21 @@ Memory Layer may not:
 - own current conversation state,
 - force state based on old memories.
 
-## 10. Migration Plan
+## 10. Approved implementation note (2026-07-23)
 
-### Phase 1: Documentation Only
+The historical phased plan below was superseded for one bounded product repair. The implementation does not promote the candidate five-state vocabulary into a formal decision input. Instead, the Conversation Layer now emits deterministic `ConversationStateResult.interaction` evidence into `ClinicalContext`:
+
+- content availability;
+- engagement stance;
+- initiative direction;
+- affect evidence;
+- explicit or reliable contextual stop evidence.
+
+Clinical Logic consumes that evidence to select an existing ResponseGoal. It does not create or update it. The bounded ClinicalPlan rendering supplies the same structured evidence to the model for `no_topic` and low-interaction paths; it does not alter legacy Conversation OS strategy fields or create a reply template. See `docs/CONVERSATION_INTERACTION_DECISION.md` for the full contract and regressions.
+
+## 11. Historical Migration Plan
+
+### Phase 1: Documentation Only (historical)
 
 Current sprint.
 
@@ -494,13 +506,13 @@ Expected: hold_space
 
 This verifies that state, not only message text, affects response goal.
 
-## 11. Non-Goals
+## 12. Non-Goals
 
 Conversation State v1 does not:
 
 - add a new architecture layer,
-- implement a state machine in code,
-- change Prompt,
+- implement an unreviewed state machine in code,
+- make Prompt own strategy decisions,
 - change Memory,
 - change Safety,
 - add ResponseGoals,
@@ -509,7 +521,7 @@ Conversation State v1 does not:
 - persist user identity or persona,
 - diagnose user stage or readiness.
 
-## 12. Acceptance Criteria For Future Implementation
+## 13. Acceptance Criteria For Future Implementation
 
 When implemented, Conversation State v1 is acceptable only if:
 
@@ -520,4 +532,3 @@ When implemented, Conversation State v1 is acceptable only if:
 - Debug trace shows current state and reason.
 - Golden Dataset includes state-sensitive cases.
 - No Prompt wording changes are required just to introduce state.
-

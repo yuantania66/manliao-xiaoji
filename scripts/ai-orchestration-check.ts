@@ -15,6 +15,8 @@ const loginService = read("services/ai/chatReplyService.ts");
 const guestRoute = read("app/api/chat/guest/route.ts");
 const loginRoute = read("app/api/chat/sessions/[sessionId]/messages/route.ts");
 const semanticEvidenceGuard = read("services/ai/semanticEvidenceReplyGuard.ts");
+const responsePlanValidator = read("services/ai/responsePlanValidator.ts");
+const typesSource = read("services/ai/types.ts");
 const packageJson = read("package.json");
 const envExample = read(".env.example");
 
@@ -33,52 +35,62 @@ assert(
   "createChatReply() must resolve memory before normal generation."
 );
 assert(
-  orchestration.includes("buildClinicalContext") &&
-    orchestration.indexOf("buildClinicalContext") < orchestration.indexOf("createClinicalPlan("),
-  "createChatReply() must build ClinicalContext before ClinicalPlan."
-);
-assert(
-  orchestration.includes("createClinicalPlan(clinicalContext)") &&
-    orchestration.indexOf("createClinicalPlan(clinicalContext)") < orchestration.indexOf("generateChatReply({"),
-  "createChatReply() must create ClinicalPlan before normal generation."
-);
-assert(
   orchestration.includes("createClinicalMemoryContext(understandingContext)") &&
     orchestration.indexOf("createClinicalMemoryContext(understandingContext)") <
       orchestration.indexOf("buildClinicalContext("),
-  "createChatReply() must adapt StructuredRagContext into ClinicalMemoryContext before ClinicalContext."
+  "Clinical advice must receive the approved memory adapter when the Response Planner requests it."
 );
 assert(
   orchestration.includes("buildSafetySkippedClinicalTrace") &&
     orchestration.indexOf("buildSafetySkippedClinicalTrace") < orchestration.indexOf("buildClinicalContext("),
-  "Safety path must skip ordinary ClinicalPlan and emit a safety ClinicalTrace."
+  "Safety path must return before any optional Clinical advice."
 );
 assert(
-  orchestration.includes("createFallbackGeneration"),
-  "createChatReply() must own fallback orchestration."
+  orchestration.includes("assembleConversationControlContext") &&
+    orchestration.includes("interpretTurnDeterministically") &&
+    orchestration.includes("buildDialogueState") &&
+    (orchestration.match(/createResponsePlan\(/g) ?? []).length === 1,
+  "createChatReply() must assemble, interpret, build state, and create exactly one ResponsePlan."
 );
-const guardApplications = Array.from(orchestration.matchAll(/applySemanticEvidenceReplyContract\(\{/g));
+assert(
+  orchestration.indexOf("createResponsePlan({") < orchestration.indexOf("generateChatReply({"),
+  "The single ResponsePlan must be finalized before Surface Realization."
+);
+assert(
+  orchestration.includes("createClinicalStrategyAdvice") && !orchestration.includes("createClinicalPlan("),
+  "Production orchestration may request Clinical advice but must not let Clinical select a ResponseGoal."
+);
+assert(
+  !orchestration.includes("createFallbackGeneration") && !orchestration.includes("getFallbackReply"),
+  "Ordinary model failure must not create a second fallback chat goal."
+);
+const guardApplications = Array.from(orchestration.matchAll(/enforceResponsePlan\(\{/g));
 assert.equal(
   guardApplications.length,
-  2,
-  "Both model and fallback generation paths must enforce the semantic-evidence reply contract."
+  1,
+  "Normal generation must validate the same ResponsePlan once via regenerate-capable enforcement."
 );
 assert(
-  orchestration.indexOf("applySemanticEvidenceReplyContract({", orchestration.indexOf("generateChatReply({")) >
-    orchestration.indexOf("generateChatReply({"),
-  "Normal model output must pass through the semantic-evidence reply contract."
+  responsePlanValidator.includes("validateResponsePlanOutput") &&
+    responsePlanValidator.includes("planChanged: false") &&
+    !responsePlanValidator.includes("createResponsePlan(") &&
+    !responsePlanValidator.includes("selectResponseGoal("),
+  "Output Validation must reject or regenerate against the same plan and must not re-plan."
 );
 assert(
-  orchestration.lastIndexOf("applySemanticEvidenceReplyContract({") >
-    orchestration.indexOf("createFallbackGeneration({"),
-  "Fallback output must pass through the semantic-evidence reply contract."
+  !orchestration.includes("enforceSemanticEvidenceReplyContract") &&
+    orchestration.includes("enforceResponsePlan"),
+  "The legacy semantic guard must be deauthorized from production; ResponsePlan validation owns output checks."
 );
 assert(
   semanticEvidenceGuard.includes('clinicalPlan.responseIntent === "receive"') &&
     semanticEvidenceGuard.includes('clinicalPlan.questionFunction === "none"') &&
-    semanticEvidenceGuard.includes("containsUnsupportedMeaning(generation.text)") &&
-    semanticEvidenceGuard.includes('finalReplySource: "guard_rewrite"'),
-  "The semantic-evidence guard must rewrite only unsupported meaning and mark a real rewrite."
+    semanticEvidenceGuard.includes("hasUnsupportedMeaning") &&
+    semanticEvidenceGuard.includes('finalReplySource: "constraint_failure"') &&
+    semanticEvidenceGuard.includes('finalSource: "llm_regenerate"') &&
+    !semanticEvidenceGuard.includes("buildGroundedClarificationReply") &&
+    !semanticEvidenceGuard.includes("你发的“"),
+  "The semantic-evidence guard must detect unsupported meaning, allow one regenerate, and hard-fail without authoring chat copy."
 );
 assert(
   !semanticEvidenceGuard.includes("我看到你发的是") &&
@@ -87,27 +99,37 @@ assert(
   "The removed deterministic observation template must not remain in the semantic-evidence guard."
 );
 assert(
-  orchestration.includes('const rewriteAttempted = generation.finalReplySource === "guard_rewrite"') &&
-    orchestration.includes('rewriteAttempted ? "guard_rewrite" : "llm"'),
-  "rewriteAttempted and finalSource must reflect whether the guard actually rewrote model output."
+  orchestration.includes("regenerateAttempted") &&
+    !orchestration.includes('rewriteAttempted ? "guard_rewrite" : "llm"'),
+  "finalSource must come from ResponsePlan realization/validation, not guard_rewrite authorship."
+);
+assert(
+  typesSource.includes('"llm_regenerate"') &&
+    typesSource.includes('"constraint_failure"') &&
+    typesSource.includes('"guard_rewrite"'),
+  "finalReplySource must include llm_regenerate and constraint_failure while retaining guard_rewrite for compatibility reads."
 );
 assert(
   orchestration.indexOf("isCrisisInput(userMessage)") <
-    orchestration.indexOf("applySemanticEvidenceReplyContract({"),
-  "Safety must retain priority and return before the semantic-evidence guard can run."
+    orchestration.indexOf("enforceResponsePlan({"),
+  "Safety must retain priority and return before ordinary planning validation."
 );
 assert(
   chatSafety.includes('finalReplySource: "safety"'),
   "Safety generation must be named safety, not fallback."
 );
 assert(
+  typesSource.includes("safetyOverrideReason?: string") &&
+    read("services/ai/debugTrace.ts").includes(
+      'safetyOverrideReason: finalSource === "safety" ? judge.reason : undefined'
+    ),
+  "Safety override must expose an explicit reason in debug trace."
+);
+assert(
   !chatSafety.includes('finalReplySource: "fallback"'),
   "Safety generation must not reuse fallback source naming."
 );
-assert(
-  aiService.includes('finalReplySource: "fallback"'),
-  "Ordinary fallback generation must keep fallback source naming."
-);
+assert(!orchestration.includes('finalSource: "fallback"'), "Production orchestration must not emit ordinary fallback chat copy.");
 
 assert(
   loginService.includes('import { createChatReply } from "./chatOrchestrationService"'),
@@ -148,10 +170,8 @@ assert(
   "Logged-in chat persistence service must not duplicate orchestration helper logic."
 );
 
-assert(
-  aiService.includes("runConversationPipeline("),
-  "Normal generation must still go through Conversation OS."
-);
+assert(!aiService.includes("runConversationPipeline("), "Surface Realization must not run the legacy Engage planner.");
+assert(aiService.includes("responsePlan"), "Surface Realization must require the finalized ResponsePlan.");
 assert(
   packageJson.includes('"check:ai-orchestration"'),
   "package.json must expose check:ai-orchestration."
@@ -160,13 +180,7 @@ assert(
   packageJson.includes('"check:clinical-logic-skeleton"'),
   "package.json must expose check:clinical-logic-skeleton."
 );
-assert(
-  clinicalPlanService.includes("selectResponseGoal(context)") &&
-    clinicalPlanService.includes("selectClinicalStrategy") &&
-    clinicalPlanService.includes('primaryStrategy === "rogers"') &&
-    clinicalPlanService.includes("createRogersClinicalPlan(context, responseGoal)"),
-  "Default normal ClinicalPlan must use ResponseGoalSelector -> StrategySelector -> Rogers dry-run strategy."
-);
+assert(clinicalPlanService.includes("selectResponseGoal(context)"), "Legacy ClinicalPlan compatibility service remains unit-testable.");
 assert(
   clinicalPlanService.includes("createNoOpClinicalPlan"),
   "NoOp ClinicalStrategy fallback must remain available."
@@ -176,9 +190,10 @@ assert(
   "ClinicalPlan prompt feature flag must default to false in .env.example."
 );
 assert(
-  promptBuilder.includes("CLINICAL_PLAN_PROMPT_ENABLED") &&
-    promptBuilder.includes("formatClinicalPlanForPrompt"),
-  "ClinicalPlan prompt integration must be feature-flagged in Prompt Builder."
+  promptBuilder.includes("formatResponsePlanForPrompt") &&
+    promptBuilder.includes("Conversation OS ResponsePlan") &&
+    promptBuilder.includes("responsePlan ? RESPONSE_PLAN_PRODUCT_PROMPT : BASE_PRODUCT_PROMPT"),
+  "Production Prompt Builder must render the single ResponsePlan and suppress legacy strategy carriers."
 );
 
 const structuredContext: StructuredRagContext = {
@@ -303,7 +318,8 @@ console.log(
         rawMemory: clinicalMemory.excluded.rawMemory,
         directRecentMemories: clinicalMemory.excluded.directRecentMemories,
       },
-      clinicalLogic: "Rogers dry-run ClinicalPlan receives ClinicalMemoryContext and enters debug trace",
+      conversationControl: "Context -> Interpretation -> DialogueState -> one ResponsePlan -> Surface -> Validation -> StateUpdate",
+      clinicalLogic: "Clinical is invoked only when Response Planner requests emotional/action strategy advice",
     },
     null,
     2

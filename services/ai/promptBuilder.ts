@@ -3,8 +3,9 @@ import { formatMemoryContextForPrompt } from "./dataLayers";
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 import { ConversationContext } from "@/conversation-os";
 import type { ClinicalPlan } from "@/services/clinical/clinicalTypes";
+import type { ResponsePlan } from "@/conversation-os/control";
 
-export const CHAT_PROMPT_VERSION = "chat-base-product-v11";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v12";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -57,7 +58,7 @@ const BASE_PRODUCT_PROMPT = [
   "engageMode=invite 时：更适合主动邀请用户校准；问题必须低压力，允许用户不用解释。",
   "如果用户只发数字、字母、符号、单字、表情、嗯/啊/好，不要把它比喻成敲门、开头或信号，不要猜它代表分数、编号或暗号；如果提问，按 questionStyle 的姿态来问。",
   "遇到低信息输入时，要体现你想理解，但想理解不等于一直提问；很多时候先承认、先停留，比索取解释更接近理解。",
-  "如果用户说随手打的、没什么、不知道聊什么、没做什么、没发生特别的事，就顺着这句话本身回应；不要追问原因，不要主动转到电影、音乐、游戏、天气闲聊，也不要建议喝茶、喝水、休息或出门。",
+  "如果用户说随手打的、没什么、不知道聊什么、没做什么、没发生特别的事，就顺着这句话本身回应；不要追问原因，不要主动转到电影、音乐、游戏、天气闲聊，也不要建议喝茶、喝水、休息或出门。若后续的 Clinical Plan 明确标注 contentAvailability=no_topic、engagement=engaged/open、initiativeDirection=assistant_invited，则这不是沉默或退出：由助手接过一次轻量话题主动权，不要求用户先想出话题。",
   "避免机械口癖：不要只说“收到/收到了/听到了/嗯/好/在的”，不要连续使用“可以”“也行”“慢慢来”“放在这里”“我在听”“我在”“待着”“停一会儿”。",
   "只有当用户明确给出事件、关系、感受或困扰时，才可以轻轻澄清；澄清只能问一个很小的问题。",
   "不要模仿历史里明显模板化的助理回复。",
@@ -71,8 +72,22 @@ const BASE_PRODUCT_PROMPT = [
   "用户情绪强时，少解释，多承接。",
 ].join("\n");
 
+const RESPONSE_PLAN_PRODUCT_PROMPT = [
+  "你是慢聊小记的 AI 聊天助手，通过文字与用户交流，不是人类、心理医生或治疗师。",
+  "始终用自然、简短的中文回应。",
+  "Conversation OS 的 ResponsePlan 是本轮唯一的非安全回复决策。只实现该计划，不重新解释用户，不另选目标或策略。",
+  "若存在 answerObligations，先直接回答，再做计划允许的解释、修复或支持；不得用反问、同理或澄清替代回答。",
+  "Assistant Grounding 是身份与能力事实；不得虚构身体、语音、视觉、听觉、现实陪伴或未提供的工具能力。",
+  "不要输出内部分类、计划、证据或推理过程。不要照抄计划措辞。",
+  "匹配用户句长和语气；温暖但不做作，直接但不生硬。避免咨询师腔、客服腔、机械复述和通用安抚套话。",
+  "不要把普通问题心理化，不要把缺少话题理解成退出，也不要让用户承担修复助手表达的成本。",
+].join("\n");
+
 export const isBaseChatPromptVersion = (promptVersion?: string | null) =>
-  Boolean(promptVersion?.startsWith(BASE_CHAT_PROMPT_VERSION_PREFIX));
+  Boolean(
+    promptVersion === CHAT_PROMPT_VERSION ||
+      promptVersion?.startsWith(BASE_CHAT_PROMPT_VERSION_PREFIX)
+  );
 
 const preview = (content: string) => {
   const normalized = content.replace(/\s+/g, " ").trim();
@@ -290,6 +305,40 @@ export const isClinicalPlanPromptEnabled = () =>
 
 const formatList = (items: string[]) => (items.length > 0 ? items.join(" / ") : "none");
 
+export const formatResponsePlanForPrompt = (responsePlan: ResponsePlan) => [
+  "【Conversation OS ResponsePlan】",
+  "This plan is the single decision authority for this non-safety turn. Surface realization must not re-plan it.",
+  `planId: ${responsePlan.planId}`,
+  `decisionOwner: ${responsePlan.decisionOwner}`,
+  `answerObligations: ${JSON.stringify(responsePlan.answerObligations)}`,
+  `responseActions: ${responsePlan.responseActions.join(" / ") || "none"}`,
+  `groundingFacts: ${responsePlan.groundingFacts.join(" / ") || "none"}`,
+  `clinicalStrategy: ${responsePlan.clinicalStrategy ? JSON.stringify(responsePlan.clinicalStrategy) : "none"}`,
+  `questionPolicy: ${JSON.stringify(responsePlan.questionPolicy)}`,
+  `closurePolicy: ${JSON.stringify(responsePlan.closurePolicy)}`,
+  `tone: ${responsePlan.tone.join(" / ")}`,
+  `stance: ${responsePlan.stance.join(" / ")}`,
+  `lengthGuidance: ${responsePlan.lengthGuidance}`,
+  `prohibitedClaims: ${responsePlan.prohibitedClaims.join(" / ")}`,
+  `safetyConstraints: ${responsePlan.safetyConstraints.join(" / ") || "none"}`,
+  `planEvidence: ${responsePlan.evidence.join(" / ")}`,
+  "Realize the plan as one natural user-facing reply. Do not mention ResponsePlan.",
+].join("\n");
+
+const formatInteractionDecisionForPrompt = (clinicalPlan: ClinicalPlan) => {
+  const interaction = clinicalPlan.interaction;
+  return [
+    "【Interaction Decision】",
+    "This is a structured conversation decision, not a reply template.",
+    `contentAvailability: ${interaction.contentAvailability}`,
+    `engagement: ${interaction.engagement}`,
+    `initiativeDirection: ${interaction.initiativeDirection}`,
+    `affect: ${interaction.affect}`,
+    `stopIntent: ${interaction.stopIntent}`,
+    `evidence: ${formatList(interaction.evidence)}`,
+  ];
+};
+
 const getActionSupportElements = (clinicalPlan: ClinicalPlan) =>
   [...clinicalPlan.toneConstraint, ...clinicalPlan.interventionBoundary, ...clinicalPlan.rationale].filter((item) =>
     /actionSupportElement:\s*(concrete step|option set|wording frame|sorting scaffold|decision frame)/.test(item)
@@ -321,6 +370,25 @@ export const formatClinicalPlanForPrompt = (clinicalPlan: ClinicalPlan) => {
       "Do not create a large plan.",
       "Do not retreat into pure reflection when the plan already contains a safe action-support element.",
       "Do not diagnose, assess pathology, or propose a treatment plan.",
+      ...formatInteractionDecisionForPrompt(clinicalPlan),
+    ].join("\n");
+  }
+
+  if (clinicalPlan.responseGoal === "hold_space") {
+    return [
+      "【Clinical Plan】",
+      "This is a minimal response-goal instruction. It is not a reply template.",
+      `responseGoal: ${clinicalPlan.responseGoal}`,
+      `responseIntent: ${clinicalPlan.responseIntent}`,
+      `primaryStrategy: ${clinicalPlan.primaryStrategy}`,
+      `questionFunction: ${clinicalPlan.questionFunction}`,
+      `toneConstraint: ${formatList(clinicalPlan.toneConstraint)}`,
+      `interventionBoundary: ${formatList(clinicalPlan.interventionBoundary)}`,
+      `safetyNotes: ${formatList(clinicalPlan.safetyNotes)}`,
+      "Goal: respect an explicit request to lower interaction, or lower pressure only where explicit distress or fatigue evidence exists.",
+      "Do not turn no_topic alone into a request for silence. Do not ask a follow-up question when stopIntent is true.",
+      "Do not diagnose, assess pathology, or propose a treatment plan.",
+      ...formatInteractionDecisionForPrompt(clinicalPlan),
     ].join("\n");
   }
 
@@ -336,14 +404,29 @@ export const formatClinicalPlanForPrompt = (clinicalPlan: ClinicalPlan) => {
     `toneConstraint: ${formatList(clinicalPlan.toneConstraint)}`,
     `interventionBoundary: ${formatList(clinicalPlan.interventionBoundary)}`,
     `safetyNotes: ${formatList(clinicalPlan.safetyNotes)}`,
-    "Goal: help the user continue expressing themselves.",
-    "Do not only say it is okay and end the reply.",
-    "You may gently invite the user to say one first word, image, feeling, or body sensation that comes up.",
-    "Do not require the user to organize a complete thought.",
+    ...(clinicalPlan.responseIntent === "initiate_topic"
+      ? [
+          "Goal: take one light, low-pressure topic initiative because the user has no topic but remains engaged.",
+          "Do not treat no_topic as withdrawal, low mood, a wish for silence, or a request for the user to explain themselves.",
+          "Do not ask the user to choose or invent a topic before you offer the light entry.",
+        ]
+      : [
+          "Goal: help the user continue expressing themselves.",
+          "Do not only say it is okay and end the reply.",
+          "You may gently invite the user to say one first word, image, feeling, or body sensation that comes up.",
+          "Do not require the user to organize a complete thought.",
+        ]),
     "Do not diagnose, assess pathology, or propose a treatment plan.",
     "Do not force advice.",
+    ...formatInteractionDecisionForPrompt(clinicalPlan),
   ].join("\n");
 };
+
+const shouldRenderClinicalPlanForPrompt = (clinicalPlan: ClinicalPlan) =>
+  isClinicalPlanPromptEnabled() ||
+  clinicalPlan.interaction.contentAvailability === "no_topic" ||
+  clinicalPlan.interaction.stopIntent ||
+  (clinicalPlan.responseGoal === "hold_space" && clinicalPlan.interaction.affect === "negative");
 
 export const buildChatPrompt = ({
   userMessage,
@@ -354,6 +437,8 @@ export const buildChatPrompt = ({
   voiceConstraints,
   clinicalPlan,
   evaluationAdapter,
+  semanticEvidenceRegenerateConstraint,
+  responsePlan,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
@@ -363,14 +448,16 @@ export const buildChatPrompt = ({
   voiceConstraints?: AiVoiceConstraints | null;
   clinicalPlan?: ClinicalPlan | null;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
+  semanticEvidenceRegenerateConstraint?: string | null;
+  responsePlan?: ResponsePlan | null;
 }): { messages: AiModelMessage[]; meta: AiPromptMeta } => {
   const { included, filteredHistory } = sanitizeChatHistory({ userMessage, recentMessages });
   const clinicalPlanPrompt =
-    clinicalPlan && isClinicalPlanPromptEnabled() ? formatClinicalPlanForPrompt(clinicalPlan) : null;
+    clinicalPlan && shouldRenderClinicalPlanForPrompt(clinicalPlan) ? formatClinicalPlanForPrompt(clinicalPlan) : null;
   const messages: AiModelMessage[] = [
     {
       role: "developer",
-      content: BASE_PRODUCT_PROMPT,
+      content: responsePlan ? RESPONSE_PLAN_PRODUCT_PROMPT : BASE_PRODUCT_PROMPT,
     },
     ...(evaluationAdapter
       ? [
@@ -400,7 +487,7 @@ export const buildChatPrompt = ({
           },
         ]
       : []),
-    ...(conversationContext
+    ...(!responsePlan && conversationContext
       ? [
           {
             role: "developer" as const,
@@ -408,7 +495,7 @@ export const buildChatPrompt = ({
           },
         ]
       : []),
-    ...(voiceConstraints
+    ...(!responsePlan && voiceConstraints
       ? [
           {
             role: "developer" as const,
@@ -416,11 +503,22 @@ export const buildChatPrompt = ({
           },
         ]
       : []),
-    ...(clinicalPlanPrompt
+    ...(!responsePlan && clinicalPlanPrompt
       ? [
           {
             role: "developer" as const,
             content: clinicalPlanPrompt,
+          },
+        ]
+      : []),
+    ...(responsePlan
+      ? [{ role: "developer" as const, content: formatResponsePlanForPrompt(responsePlan) }]
+      : []),
+    ...(semanticEvidenceRegenerateConstraint
+      ? [
+          {
+            role: "developer" as const,
+            content: semanticEvidenceRegenerateConstraint,
           },
         ]
       : []),
@@ -444,6 +542,7 @@ export const buildChatPrompt = ({
       understanding: getUnderstandingMeta(understandingContext),
       conversationContext: conversationContext ?? undefined,
       voiceConstraints: voiceConstraints ?? undefined,
+      responsePlan: responsePlan ?? undefined,
       filteredHistory,
       modelMessageRoles: messages.map((message) => message.role),
     },
@@ -459,6 +558,8 @@ export const buildChatMessages = ({
   voiceConstraints,
   clinicalPlan,
   evaluationAdapter,
+  semanticEvidenceRegenerateConstraint,
+  responsePlan,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
@@ -468,6 +569,8 @@ export const buildChatMessages = ({
   voiceConstraints?: AiVoiceConstraints | null;
   clinicalPlan?: ClinicalPlan | null;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
+  semanticEvidenceRegenerateConstraint?: string | null;
+  responsePlan?: ResponsePlan | null;
 }): AiModelMessage[] => {
   return buildChatPrompt({
     userMessage,
@@ -478,5 +581,7 @@ export const buildChatMessages = ({
     voiceConstraints,
     clinicalPlan,
     evaluationAdapter,
+    semanticEvidenceRegenerateConstraint,
+    responsePlan,
   }).messages;
 };

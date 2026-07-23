@@ -59,16 +59,41 @@ export async function GET(
 
     const { searchParams } = new URL(request.url);
     const pagination = parsePagination(searchParams);
+    const before = searchParams.get("before")?.trim() || null;
+    const beforeMessage = before
+      ? await prisma.chatMessage.findFirst({
+          where: {
+            id: before,
+            sessionId,
+            userId: user.id,
+          },
+          select: { id: true, createdAt: true },
+        })
+      : null;
+    if (before && !beforeMessage) {
+      throw new AppError("VALIDATION_ERROR", "before 游标无效", 400, { field: "before" });
+    }
 
-    const [items, total] = await prisma.$transaction([
+    const [newestItems, total] = await prisma.$transaction([
       prisma.chatMessage.findMany({
         where: {
           sessionId,
           userId: user.id,
+          ...(beforeMessage
+            ? {
+                OR: [
+                  { createdAt: { lt: beforeMessage.createdAt } },
+                  {
+                    createdAt: beforeMessage.createdAt,
+                    id: { lt: beforeMessage.id },
+                  },
+                ],
+              }
+            : {}),
         },
-        orderBy: { createdAt: "asc" },
-        skip: pagination.skip,
-        take: pagination.take,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: beforeMessage ? 0 : pagination.skip,
+        take: pagination.take + 1,
         select: {
           id: true,
           role: true,
@@ -89,6 +114,8 @@ export async function GET(
         },
       }),
     ]);
+    const hasMore = newestItems.length > pagination.pageSize;
+    const items = newestItems.slice(0, pagination.pageSize).reverse();
 
     return ok({
       items: items.map((item) => ({
@@ -102,6 +129,8 @@ export async function GET(
       page: pagination.page,
       pageSize: pagination.pageSize,
       total,
+      hasMore,
+      nextCursor: hasMore ? items[0]?.id ?? null : null,
     });
   } catch (error) {
     return failFromError(error);

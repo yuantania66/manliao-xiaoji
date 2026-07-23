@@ -35,6 +35,7 @@ export const buildClinicalTrace = ({
   };
 }): ClinicalTrace => ({
   skippedBySafety: false,
+  invokedByPlanner: true,
   conversationState: context.conversation.state,
   safetyDecision,
   inputSignals: deriveClinicalConversationSignals(context.conversation.currentUserMessage),
@@ -54,6 +55,7 @@ export const buildSafetySkippedClinicalTrace = ({
   conversationState?: ClinicalTrace["conversationState"];
 }): ClinicalTrace => ({
   skippedBySafety: true,
+  invokedByPlanner: false,
   conversationState,
   safetyDecision: {
     level,

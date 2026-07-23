@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
+import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { CalendarDays, Search } from "lucide-react";
 
 import { apiRequest, ClientApiError } from "@/lib/client-api";
@@ -123,6 +123,15 @@ type AiDebugTrace = {
       prohibitedExpressions: string[];
       questionDirectives: string[];
     };
+    responsePlan?: {
+      planId: string;
+      decisionOwner: string;
+      answerObligations: { kind: string }[];
+      responseActions: string[];
+      clinicalStrategy: unknown | null;
+      questionPolicy: { mode: string };
+      closurePolicy: { mode: string };
+    };
     filteredHistory: {
       role: string;
       reason: string;
@@ -142,7 +151,14 @@ type AiDebugTrace = {
       after: string;
       reason?: string;
     }[];
-    finalReplySource?: "llm" | "guard_rewrite" | "fallback" | "mock" | "safety";
+    finalReplySource?:
+      | "llm"
+      | "llm_regenerate"
+      | "constraint_failure"
+      | "guard_rewrite"
+      | "fallback"
+      | "mock"
+      | "safety";
     tokenInput?: number;
     tokenOutput?: number;
     providerReasoning?: {
@@ -163,7 +179,23 @@ type AiDebugTrace = {
     finalSource: string;
     fallbackUsed: boolean;
     rewriteAttempted: boolean;
+    regenerateAttempted?: boolean;
     safetyUsed?: boolean;
+    safetyOverrideReason?: string;
+  };
+  conversationControl?: {
+    interpretation: { primaryDialogueAct: string };
+    responsePlan: {
+      planId: string;
+      decisionOwner: string;
+      answerObligations: { kind: string }[];
+      responseActions: string[];
+      questionPolicy: { mode: string };
+      closurePolicy: { mode: string };
+    };
+    clinicalInvoked: boolean;
+    validation: { passed: boolean; failureReasons: string[]; planChanged: false }[];
+    stateUpdate: { remainingOpenLoops: string[] };
   };
 };
 
@@ -192,11 +224,18 @@ type ChatMessageResponse = {
 
 type ChatMessagesListResponse = {
   items: ChatMessageResponse[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+  nextCursor: string | null;
 };
 
 type CachedChat = {
   sessionId: string;
   messages: Message[];
+  hasMore?: boolean;
+  nextCursor?: string | null;
 };
 
 type GuestAiUsage = {
@@ -312,6 +351,9 @@ const formatEngineDetails = (trace: AiDebugTrace) => {
     prompt?.conversationContext
       ? `Conversation OS: notice=${prompt.conversationContext.latestNotice.observations.length}, unknowns=${prompt.conversationContext.understanding.unknowns.length}, experienceGoal=${prompt.conversationContext.responseGoal.experienceGoal?.join(",") ?? "unknown"}, engageMode=${prompt.conversationContext.responseGoal.engageMode ?? "unknown"}`
       : "Conversation OS: unknown",
+    trace.conversationControl
+      ? `Conversation OS Control: owner=${trace.conversationControl.responsePlan.decisionOwner}, plan=${trace.conversationControl.responsePlan.planId}, act=${trace.conversationControl.interpretation.primaryDialogueAct}, obligations=${trace.conversationControl.responsePlan.answerObligations.map((item) => item.kind).join(",") || "none"}, actions=${trace.conversationControl.responsePlan.responseActions.join(",")}, clinical=${trace.conversationControl.clinicalInvoked}, validation=${trace.conversationControl.validation.map((item) => item.passed).join(" -> ")}, open=${trace.conversationControl.stateUpdate.remainingOpenLoops.length}`
+      : "Conversation OS Control: safety or unavailable",
     prompt?.conversationOrientation
       ? `Orientation: current=${prompt.conversationOrientation.currentUnderstanding.length}, unknowns=${prompt.conversationOrientation.unknowns.length}, directions=${prompt.conversationOrientation.possibleDirections.length}`
       : "Orientation: unknown",
@@ -345,7 +387,10 @@ const formatEngineDetails = (trace: AiDebugTrace) => {
       ? `Clinical: state=${trace.clinicalLogic.conversationState}, skippedBySafety=${trace.clinicalLogic.skippedBySafety}, intent=${trace.clinicalLogic.selectedPlan?.responseIntent ?? "none"}, strategy=${trace.clinicalLogic.selectedPlan?.primaryStrategy ?? "none"}, memory=understanding:${trace.clinicalLogic.memoryUsed.understandings.length}/relationship:${trace.clinicalLogic.memoryUsed.relationships.length}/timeline:${trace.clinicalLogic.memoryUsed.timelineEvents.length}`
       : "Clinical: unknown",
     `审查: disabled / ${trace.judge.reason}`,
-    `路线: ${trace.route.finalSource}, rewrite=${trace.route.rewriteAttempted}, fallback=${trace.route.fallbackUsed}`,
+    `路线: ${trace.route.finalSource}, rewrite=${trace.route.rewriteAttempted}, regenerate=${trace.route.regenerateAttempted ?? false}, fallback=${trace.route.fallbackUsed}`,
+    ...(trace.route.safetyOverrideReason
+      ? [`Safety override: ${trace.route.safetyOverrideReason}`]
+      : []),
   ].join("\n");
 };
 
@@ -530,20 +575,28 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(!canUseInitialChat || !initialChat);
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
+  const [hasMoreOlderMessages, setHasMoreOlderMessages] = useState(initialChat?.hasMore ?? false);
+  const [olderMessagesCursor, setOlderMessagesCursor] = useState<string | null>(
+    initialChat?.nextCursor ?? null
+  );
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [typingMessageIds, setTypingMessageIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [isDebugLoggingIn, setIsDebugLoggingIn] = useState(false);
   const typingCancelledRef = useRef(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
+  const isLoadingOlderMessagesRef = useRef(false);
+  const shouldAutoScrollToBottomRef = useRef(true);
+  const prependScrollRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
   const hydratedFromCacheRef = useRef(false);
   const positionedTargetRef = useRef<string | null>(null);
 
-  const getErrorMessage = (error: unknown) => {
+  const getErrorMessage = useCallback((error: unknown) => {
     if (error instanceof ClientApiError) return error.message;
     if (error instanceof Error) return error.message;
     return "服务暂时不可用，请稍后再试";
-  };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -559,7 +612,10 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         }
         setIsGuestMode(true);
         setSessionId(GUEST_SESSION_ID);
+        shouldAutoScrollToBottomRef.current = true;
         setMessages(await readOrSeedGuestMessages());
+        setHasMoreOlderMessages(false);
+        setOlderMessagesCursor(null);
         setIsLoadingMessages(false);
         return;
       }
@@ -569,7 +625,10 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       if (!hydratedFromCacheRef.current && cached && !requestedSessionId) {
         hydratedFromCacheRef.current = true;
         setSessionId(cached.sessionId);
+        shouldAutoScrollToBottomRef.current = true;
         setMessages(cached.messages);
+        setHasMoreOlderMessages(cached.hasMore ?? false);
+        setOlderMessagesCursor(cached.nextCursor ?? null);
       }
 
       if (initialChat && !requestedSessionId) {
@@ -578,7 +637,10 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
 
       if (initialChat && canUseInitialChat) {
         setSessionId(initialChat.sessionId);
+        shouldAutoScrollToBottomRef.current = true;
         setMessages(initialChat.messages);
+        setHasMoreOlderMessages(initialChat.hasMore ?? false);
+        setOlderMessagesCursor(initialChat.nextCursor ?? null);
         setIsLoadingMessages(false);
         return;
       }
@@ -619,11 +681,22 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         if (cancelled) return;
         const nextMessages = toMessages(data.items);
         setSessionId(activeSessionId);
+        shouldAutoScrollToBottomRef.current = true;
         setMessages(nextMessages);
-        writeChatCache({ sessionId: activeSessionId, messages: nextMessages });
+        setHasMoreOlderMessages(data.hasMore);
+        setOlderMessagesCursor(data.nextCursor);
+        writeChatCache({
+          sessionId: activeSessionId,
+          messages: nextMessages,
+          hasMore: data.hasMore,
+          nextCursor: data.nextCursor,
+        });
       } catch (error) {
         if (cancelled) return;
+        shouldAutoScrollToBottomRef.current = true;
         setMessages([]);
+        setHasMoreOlderMessages(false);
+        setOlderMessagesCursor(null);
         setErrorMessage(getErrorMessage(error));
       } finally {
         if (!cancelled) setIsLoadingMessages(false);
@@ -635,7 +708,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     return () => {
       cancelled = true;
     };
-  }, [canUseInitialChat, initialChat, requestedSessionId]);
+  }, [canUseInitialChat, getErrorMessage, initialChat, requestedSessionId]);
 
   useEffect(() => {
     return () => {
@@ -671,8 +744,115 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       }
     }
 
+    if (prependScrollRef.current) {
+      const previous = prependScrollRef.current;
+      prependScrollRef.current = null;
+      scrollElement.scrollTop =
+        scrollElement.scrollHeight - previous.scrollHeight + previous.scrollTop;
+      return;
+    }
+
+    if (!shouldAutoScrollToBottomRef.current) return;
+
     scrollElement.scrollTop = scrollElement.scrollHeight;
   }, [date, messages, targetMessageId, typingMessageIds]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (
+      isGuestMode ||
+      !sessionId ||
+      !hasMoreOlderMessages ||
+      !olderMessagesCursor ||
+      isLoadingOlderMessagesRef.current
+    ) {
+      return;
+    }
+
+    const scrollElement = messagesScrollRef.current;
+    if (!scrollElement) return;
+
+    isLoadingOlderMessagesRef.current = true;
+    setIsLoadingOlderMessages(true);
+    setErrorMessage("");
+
+    try {
+      const data = await apiRequest<ChatMessagesListResponse>(
+        `/api/chat/sessions/${sessionId}/messages?pageSize=50&before=${encodeURIComponent(
+          olderMessagesCursor
+        )}`
+      );
+      const olderMessages = toMessages(data.items);
+      prependScrollRef.current = {
+        scrollHeight: scrollElement.scrollHeight,
+        scrollTop: scrollElement.scrollTop,
+      };
+      shouldAutoScrollToBottomRef.current = false;
+      setMessages((current) => {
+        const currentIds = new Set(current.map((message) => message.id));
+        const uniqueOlderMessages = olderMessages.filter((message) => !currentIds.has(message.id));
+        if (uniqueOlderMessages.length === 0) {
+          prependScrollRef.current = null;
+          return current;
+        }
+        const nextMessages = [...uniqueOlderMessages, ...current];
+        writeChatCache({
+          sessionId,
+          messages: nextMessages,
+          hasMore: data.hasMore,
+          nextCursor: data.nextCursor,
+        });
+        return nextMessages;
+      });
+      setHasMoreOlderMessages(data.hasMore);
+      setOlderMessagesCursor(data.nextCursor);
+    } catch (error) {
+      prependScrollRef.current = null;
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      isLoadingOlderMessagesRef.current = false;
+      setIsLoadingOlderMessages(false);
+    }
+  }, [
+    getErrorMessage,
+    hasMoreOlderMessages,
+    isGuestMode,
+    olderMessagesCursor,
+    sessionId,
+  ]);
+
+  const handleMessagesScroll = () => {
+    const scrollElement = messagesScrollRef.current;
+    if (scrollElement && scrollElement.scrollTop <= 32) {
+      void loadOlderMessages();
+    }
+  };
+
+  useEffect(() => {
+    const targetKey = targetMessageId ?? date;
+    if (
+      !targetKey ||
+      isGuestMode ||
+      isLoadingMessages ||
+      isLoadingOlderMessages ||
+      !hasMoreOlderMessages
+    ) {
+      return;
+    }
+
+    const targetIsLoaded = targetMessageId
+      ? messages.some((message) => message.id === targetMessageId)
+      : messages.some((message) => formatMessageDate(message.createdAt) === date);
+    if (!targetIsLoaded) void loadOlderMessages();
+  }, [
+    date,
+    hasMoreOlderMessages,
+    isGuestMode,
+    isLoadingMessages,
+    isLoadingOlderMessages,
+    loadOlderMessages,
+    messages,
+    targetMessageId,
+  ]);
 
   const revealAssistantReply = (messageId: string, fullText: string) =>
     new Promise<void>(async (resolve) => {
@@ -722,6 +902,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     const pendingAssistantId = `typing-${Date.now()}`;
     const now = new Date().toISOString();
     const userMessage: Message = { id: optimisticId, role: "user", text, createdAt: now };
+    shouldAutoScrollToBottomRef.current = true;
     setMessages((current) => [
       ...current,
       userMessage,
@@ -839,7 +1020,12 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       const refreshed = await apiRequest<ChatMessagesListResponse>(
         `/api/chat/sessions/${sessionId}/messages?pageSize=50`
       );
-      writeChatCache({ sessionId, messages: toMessages(refreshed.items) });
+      writeChatCache({
+        sessionId,
+        messages: toMessages(refreshed.items),
+        hasMore: refreshed.hasMore,
+        nextCursor: refreshed.nextCursor,
+      });
     } catch (error) {
       setMessages((current) =>
         current.filter(
@@ -971,6 +1157,8 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         ) : (
           <div
             ref={messagesScrollRef}
+            onScroll={handleMessagesScroll}
+            aria-busy={isLoadingOlderMessages}
             className="chat-scrollbar absolute left-[22px] right-[18px] top-[150px] flex max-h-[534px] flex-col gap-2 overflow-y-auto pb-5 pr-3"
           >
             {messages.map((message, index) => (

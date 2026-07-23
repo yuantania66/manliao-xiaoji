@@ -1,5 +1,6 @@
 import type { ConversationContext, Orientation, UpdateResult } from "@/conversation-os";
 import type { ClinicalTrace } from "@/services/clinical/clinicalTypes";
+import type { ConversationControlTrace, ResponsePlan } from "@/conversation-os/control";
 
 export type AiConversationRole = "user" | "assistant" | "system";
 
@@ -61,7 +62,14 @@ export type AiGenerationResult = {
     after: string;
     reason?: string;
   }[];
-  finalReplySource?: "llm" | "guard_rewrite" | "fallback" | "mock" | "safety";
+  finalReplySource?:
+    | "llm"
+    | "llm_regenerate"
+    | "constraint_failure"
+    | "guard_rewrite"
+    | "fallback"
+    | "mock"
+    | "safety";
   tokenInput?: number;
   tokenOutput?: number;
   promptMeta?: AiPromptMeta;
@@ -85,6 +93,7 @@ export type AiPromptMeta = {
   conversationOrientation?: Orientation;
   conversationUpdate?: UpdateResult;
   voiceConstraints?: AiVoiceConstraints;
+  responsePlan?: ResponsePlan;
   filteredHistory: {
     role: AiConversationRole;
     reason: string;
@@ -150,6 +159,7 @@ export type AiDebugTrace = {
     evidence: string[];
   }[];
   clinicalLogic?: ClinicalTrace;
+  conversationControl?: ConversationControlTrace;
   prompt: {
     mode: "base_product" | "fallback" | "safety";
     promptVersion: string;
@@ -166,6 +176,7 @@ export type AiDebugTrace = {
     conversationOrientation?: Orientation;
     conversationUpdate?: UpdateResult;
     voiceConstraints?: AiVoiceConstraints;
+    responsePlan?: ResponsePlan;
     filteredHistory: AiPromptMeta["filteredHistory"];
     modelMessageRoles: AiModelRole[];
   };
@@ -189,9 +200,17 @@ export type AiDebugTrace = {
     judgeModel?: string;
   };
   route: {
-    finalSource: "llm" | "guard_rewrite" | "fallback" | "safety";
+    finalSource:
+      | "llm"
+      | "llm_regenerate"
+      | "constraint_failure"
+      | "guard_rewrite"
+      | "fallback"
+      | "safety";
     fallbackUsed: boolean;
     rewriteAttempted: boolean;
+    regenerateAttempted?: boolean;
     safetyUsed?: boolean;
+    safetyOverrideReason?: string;
   };
 };

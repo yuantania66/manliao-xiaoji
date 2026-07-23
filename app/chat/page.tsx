@@ -60,13 +60,13 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
       force: true,
     });
 
-    const items = await prisma.chatMessage.findMany({
+    const newestItems = await prisma.chatMessage.findMany({
       where: {
         sessionId: chatSession.id,
         userId: session.user.id,
       },
-      orderBy: { createdAt: "asc" },
-      take: 50,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 51,
       select: {
         id: true,
         role: true,
@@ -79,9 +79,13 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
         },
       },
     });
+    const hasMore = newestItems.length > 50;
+    const items = newestItems.slice(0, 50).reverse();
 
     return {
       sessionId: chatSession.id,
+      hasMore,
+      nextCursor: hasMore ? items[0]?.id ?? null : null,
       messages: items
         .filter((item) => item.role === "USER" || item.role === "ASSISTANT")
         .map((item) => ({

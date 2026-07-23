@@ -3,6 +3,7 @@ export { observe } from "./observe";
 export { orient } from "./orient";
 export { createEmptyUnderstandingState, runConversationPipeline } from "./pipeline";
 export { update } from "./update";
+export * from "./control";
 export type {
   ConversationContext,
   ConversationMessage,
