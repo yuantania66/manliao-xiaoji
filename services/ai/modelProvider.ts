@@ -331,6 +331,9 @@ export const callModel = async ({
     };
   } catch (error) {
     if (error instanceof AppError) throw error;
+    if (controller.signal.aborted) {
+      throw new AppError("AI_GENERATION_FAILED", "AI 服务调用超时", 504);
+    }
     throw new AppError("AI_GENERATION_FAILED", "AI 服务暂时不可用", 502);
   } finally {
     clearTimeout(timer);

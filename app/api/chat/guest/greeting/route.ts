@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { ok, failFromError } from "@/lib/api-response";
+import { AppError } from "@/lib/errors";
 import { generateProactiveGreeting } from "@/services/ai/proactiveGreeting";
 import { AiConversationMessage } from "@/services/ai/types";
 
@@ -27,6 +28,17 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
   });
 };
 
+const normalizeRecentGreetings = (value: unknown) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .slice(-3)
+    .flatMap((item) =>
+      typeof item === "string" && item.trim()
+        ? [item.trim().slice(0, 120)]
+        : []
+    );
+};
+
 const readJson = async (request: Request) => {
   try {
     return await request.json();
@@ -42,6 +54,7 @@ export async function POST(request: NextRequest) {
     const generation = await generateProactiveGreeting({
       kind,
       recentMessages: normalizeRecentMessages(body.recentMessages),
+      recentGreetings: normalizeRecentGreetings(body.recentGreetings),
     });
     const now = new Date().toISOString();
 
@@ -55,6 +68,17 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    const diagnostic = error instanceof AppError
+      ? {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        }
+      : {
+          code: "UNCLASSIFIED",
+          message: error instanceof Error ? error.message : "unknown error",
+        };
+    console.error("guest proactive greeting generation failed", diagnostic);
     return failFromError(error);
   }
 }

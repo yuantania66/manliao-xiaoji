@@ -77,6 +77,7 @@ const createUnknownInteractionSignals = (): ConversationInteractionSignals => ({
   engagement: "open",
   initiativeDirection: "shared",
   affect: "unknown",
+  affectEvidence: [],
   stopIntent: false,
   evidence: ["Conversation interaction analysis was not supplied."],
 });

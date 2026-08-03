@@ -73,6 +73,12 @@ export const generateChatReply = async ({
     postProcessSteps: [],
     finalReplySource: getFinalReplySource(response.model),
     promptMeta,
+    promptMessages: prompt.messages,
+    generationParameters: {
+      temperature: 0.75,
+      topP: null,
+      seed: null,
+    },
   };
 };
 

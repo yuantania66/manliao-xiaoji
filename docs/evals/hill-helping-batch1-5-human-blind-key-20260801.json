@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 2,
+  "datasetVersion": "chat-gate-v0-provisional-2026-07-30",
+  "blindReviewPath": "docs/evals/hill-helping-batch1-5-human-blind-review.md",
+  "blindReviewHtmlPath": "docs/evals/hill-helping-batch1-5-human-blind-review.html",
+  "rawArtifactCommitments": {
+    "A": "efb3337a9bbb5a27d3405320fc86cf4abb8c7f906166ba615a339efad27e8328",
+    "B": "edd11c8dcaf5e016ce8c030984c3ae09573a3f07b5af55ab8be8e2c239c19d17"
+  },
+  "items": [
+    {
+      "reviewId": "S01",
+      "episodeId": "EP-20260712-REPAIR-001",
+      "runIndex": 2,
+      "X": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      },
+      "Y": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      }
+    },
+    {
+      "reviewId": "S02",
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "runIndex": 3,
+      "X": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      },
+      "Y": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      }
+    },
+    {
+      "reviewId": "S03",
+      "episodeId": "EP-20260712-REFLECT-001",
+      "runIndex": 1,
+      "X": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      },
+      "Y": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      }
+    },
+    {
+      "reviewId": "S04",
+      "episodeId": "EP-20260712-REFLECT-001",
+      "runIndex": 3,
+      "X": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      },
+      "Y": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      }
+    },
+    {
+      "reviewId": "S05",
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "runIndex": 1,
+      "X": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      },
+      "Y": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      }
+    },
+    {
+      "reviewId": "S06",
+      "episodeId": "EP-20260712-REPAIR-001",
+      "runIndex": 1,
+      "X": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      },
+      "Y": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      }
+    },
+    {
+      "reviewId": "S07",
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "runIndex": 3,
+      "X": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      },
+      "Y": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      }
+    },
+    {
+      "reviewId": "S08",
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "runIndex": 1,
+      "X": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      },
+      "Y": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      }
+    },
+    {
+      "reviewId": "S09",
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "runIndex": 2,
+      "X": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      },
+      "Y": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      }
+    },
+    {
+      "reviewId": "S10",
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "runIndex": 2,
+      "X": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      },
+      "Y": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      }
+    },
+    {
+      "reviewId": "S11",
+      "episodeId": "EP-20260712-REFLECT-001",
+      "runIndex": 2,
+      "X": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      },
+      "Y": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      }
+    },
+    {
+      "reviewId": "S12",
+      "episodeId": "EP-20260712-REPAIR-001",
+      "runIndex": 3,
+      "X": {
+        "side": "H0",
+        "sourceId": "hill-batch0-current-runtime"
+      },
+      "Y": {
+        "side": "B15R2",
+        "sourceId": "hill-batch1-5-rerun2-handoff-only"
+      }
+    }
+  ]
+}

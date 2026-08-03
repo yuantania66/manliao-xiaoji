@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { MessageStatus } from "@prisma/client";
 
 import { failFromError, ok } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth";
@@ -94,6 +95,7 @@ export async function GET(request: NextRequest) {
       prisma.chatMessage.findMany({
         where: {
           userId: user.id,
+          status: { not: MessageStatus.BLOCKED },
           createdAt: { gte: start, lt: end },
         },
         orderBy: { createdAt: "asc" },

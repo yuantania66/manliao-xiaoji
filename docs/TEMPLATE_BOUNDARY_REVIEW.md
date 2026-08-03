@@ -1,5 +1,10 @@
 # Template Boundary Review
 
+> 2026-07-29 follow-up：TA-011 的 guarded production template 已移除。两次
+> 欢迎语验证失败现在终止生成且不创建欢迎消息；固定文案仅保留在显式
+> deterministic 开发模式。第二轮修订又取消 production “欢迎语必须是问题”
+> 合同，改为三种开场动作与问题频率约束。下方表格保留为审查时的历史判定。
+
 ## 审查目标
 
 本审查基于 `docs/TEMPLATE_AUDIT.md` 的 16 个 Template ID，判断哪些固定措辞属于合理的系统固定行为，哪些已经越过边界进入正常聊天表达。

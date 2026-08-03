@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "batch": "1.5",
+  "datasetVersion": "chat-gate-v0-provisional-2026-07-30",
+  "reviewer": "user-human-review",
+  "reviewedBeforeKeyRead": true,
+  "adjudicationSha256": "cb88fbac65df88dab523afe7a4d7ca89d9c263ab5ee6ddf4bcb061bdc72b491b",
+  "keyCommitment": "92961bacb4ce21c1eab137bf44f8c63a67bae29f5e93b614d6ceca29f041aac3",
+  "baseline": {
+    "side": "H0",
+    "sourceId": "hill-batch0-current-runtime"
+  },
+  "candidate": {
+    "side": "B15R2",
+    "sourceId": "hill-batch1-5-rerun2-handoff-only"
+  },
+  "thresholds": {
+    "totalReviews": 12,
+    "minimumPassesPerPositiveMetric": 11,
+    "maximumClearlyWorse": 1,
+    "maximumCriticalFailures": 0
+  },
+  "candidateSummary": {
+    "absolutePasses": 7,
+    "appropriateConversationOutcomes": 11,
+    "wouldContinue": 10,
+    "criticalFailures": 0,
+    "preferred": 7,
+    "clearlyWorse": 3
+  },
+  "baselineSummary": {
+    "absolutePasses": 4,
+    "appropriateConversationOutcomes": 5,
+    "wouldContinue": 5,
+    "criticalFailures": 0,
+    "preferred": 4,
+    "clearlyWorse": 7
+  },
+  "ties": 1,
+  "checks": {
+    "absolutePass": false,
+    "appropriateConversationOutcome": true,
+    "wouldContinue": false,
+    "clearlyWorse": false,
+    "criticalFailures": true
+  },
+  "passed": false,
+  "conclusion": "batch1_5_human_gate_failed",
+  "rows": [
+    {
+      "reviewId": "S01",
+      "episodeId": "EP-20260712-REPAIR-001",
+      "runIndex": 2,
+      "candidateBlindLabel": "X",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "baseline",
+      "notes": "两条都不完美"
+    },
+    {
+      "reviewId": "S02",
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "runIndex": 3,
+      "candidateBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "baseline",
+      "notes": "Y也没有非常好"
+    },
+    {
+      "reviewId": "S03",
+      "episodeId": "EP-20260712-REFLECT-001",
+      "runIndex": 1,
+      "candidateBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "candidate",
+      "notes": "X也不是非常完美"
+    },
+    {
+      "reviewId": "S04",
+      "episodeId": "EP-20260712-REFLECT-001",
+      "runIndex": 3,
+      "candidateBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "candidate",
+      "notes": ""
+    },
+    {
+      "reviewId": "S05",
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "runIndex": 1,
+      "candidateBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "baseline",
+      "notes": ""
+    },
+    {
+      "reviewId": "S06",
+      "episodeId": "EP-20260712-REPAIR-001",
+      "runIndex": 1,
+      "candidateBlindLabel": "X",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "candidate",
+      "notes": ""
+    },
+    {
+      "reviewId": "S07",
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "runIndex": 3,
+      "candidateBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "baseline",
+      "notes": ""
+    },
+    {
+      "reviewId": "S08",
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "runIndex": 1,
+      "candidateBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "baseline",
+      "notes": ""
+    },
+    {
+      "reviewId": "S09",
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "runIndex": 2,
+      "candidateBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "baseline",
+      "notes": ""
+    },
+    {
+      "reviewId": "S10",
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "runIndex": 2,
+      "candidateBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "baseline",
+      "notes": ""
+    },
+    {
+      "reviewId": "S11",
+      "episodeId": "EP-20260712-REFLECT-001",
+      "runIndex": 2,
+      "candidateBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "none",
+      "notes": ""
+    },
+    {
+      "reviewId": "S12",
+      "episodeId": "EP-20260712-REPAIR-001",
+      "runIndex": 3,
+      "candidateBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "tie",
+      "clearlyWorse": "none",
+      "notes": "两条一样"
+    }
+  ]
+}

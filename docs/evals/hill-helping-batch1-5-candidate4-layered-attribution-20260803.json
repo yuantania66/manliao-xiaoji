@@ -1,0 +1,507 @@
+{
+  "schemaVersion": 1,
+  "status": "frozen_before_code_change",
+  "reviewer": "codex-layered-functional-audit",
+  "sourceArtifact": "docs/evals/hill-helping-batch1-5-preservation-candidate4-20260803.json",
+  "sourceArtifactSha256": "a422cf41358afa01aca5724e6d3c7f646fc80850385dde9bc17e9404c592cc13",
+  "datasetSha256": "12bd41f3c6c4370ddc3593cf997203037bc321a3b40d890ce196e9f6bcd6f243",
+  "reviewBasis": [
+    "HILL_HELPING_BATCH1_5_RESPONSE_PLAN_POSITIVE_FUNCTION_CONTRACT_V1",
+    "HILL_HELPING_BATCH1_5_CANDIDATE4_POSITIVE_ACCEPTANCE_CONTRACT_V1"
+  ],
+  "classificationDefinitions": {
+    "planner_contract_failure": "Surface was never called because Planner produced an incomplete positive-function contract or preflight rejected it.",
+    "surface_failure": "The candidate did not complete the selected function or violated a true boundary, and rejection was substantively correct.",
+    "validator_false_positive": "The candidate completed the selected function without a true boundary violation, but Validator rejected it.",
+    "both": "The candidate contained a true Surface defect while Validator also misclassified a completed function, omitted a true reason, or otherwise gave an incorrect functional judgment.",
+    "appropriate_pass": "The candidate completed the selected function, respected boundaries, and Validator accepted it.",
+    "surface_failure_validator_false_negative": "The candidate violated a true boundary but Validator accepted it."
+  },
+  "finalFailures": [
+    {
+      "auditId": "C4-F01",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "both",
+      "observedFailure": "emotional_support:missing_grounded_affect_or_impact + emotional_support:out_of_scope_topic_switch",
+      "functionalFinding": "The reply grounded the user's '心里有点堵' through '心里堵着/这股堵' and offered a focus choice, but '聊点别的透透气' switched away from the selected current-focus function.",
+      "validatorFinding": "The topic-switch rejection was correct; missing grounded affect was a false reason."
+    },
+    {
+      "auditId": "C4-F02",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "emotional_support:generic_normalization_or_reassurance",
+      "functionalFinding": "'担心也没关系' evaluated the affect itself rather than permitting an expression choice; focus control was otherwise present.",
+      "validatorFinding": "The final rejection and reason were substantively correct."
+    },
+    {
+      "auditId": "C4-F03",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 1,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "emotional_support:out_of_scope_topic_switch",
+      "functionalFinding": "The reply grounded '有点丢脸' and returned focus control, but added an option to change topics. '刚才提到' can refer to the immediately current utterance and is not independently treated as an invented event here.",
+      "validatorFinding": "The final rejection and topic-switch reason were substantively correct."
+    },
+    {
+      "auditId": "C4-F04",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 2,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "emotional_support:out_of_scope_topic_switch",
+      "functionalFinding": "The reply explicitly grounded '有点丢脸' and offered a focus choice, then exceeded the selected function by offering another topic.",
+      "validatorFinding": "The final rejection and reason were substantively correct."
+    },
+    {
+      "auditId": "C4-F05",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "emotional_support:generic_normalization_or_reassurance + emotional_support:out_of_scope_topic_switch",
+      "functionalFinding": "'有点丢脸也没关系' reassured the affect itself, and the reply also offered a topic switch; both violate the frozen function boundary.",
+      "validatorFinding": "Both reported reasons were substantively correct."
+    },
+    {
+      "auditId": "C4-F06",
+      "scenarioId": "emotion-lonely",
+      "runIndex": 2,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "emotional_support:out_of_scope_topic_switch",
+      "functionalFinding": "The second attempt grounded loneliness and offered a focus, but '说点别的换换心情' was an unrequested topic switch and regulation move.",
+      "validatorFinding": "The topic-switch rejection was substantively correct."
+    },
+    {
+      "auditId": "C4-F07",
+      "scenarioId": "emotion-no-analysis",
+      "runIndex": 1,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "emotional_support:unrequested_pause_or_closure",
+      "functionalFinding": "The reply completed expression-burden reduction but added '待一会儿', an unrequested pause.",
+      "validatorFinding": "The final rejection and reason were substantively correct."
+    },
+    {
+      "auditId": "C4-F08",
+      "scenarioId": "emotion-no-analysis",
+      "runIndex": 2,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "emotional_support:unrequested_pause_or_closure",
+      "functionalFinding": "The reply removed analysis burden but again prescribed waiting for a while before any expression.",
+      "validatorFinding": "The final rejection and reason were substantively correct."
+    },
+    {
+      "auditId": "C4-F09",
+      "scenarioId": "emotion-no-analysis",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "emotional_support:unrequested_pause_or_closure",
+      "functionalFinding": "The reply grounded '有点难受' and removed analysis/organization burden, but '待一会儿' remained an unrequested pause.",
+      "validatorFinding": "The final rejection and reason were substantively correct."
+    },
+    {
+      "auditId": "C4-F10",
+      "scenarioId": "repair-advice-boundary",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "validator_false_positive",
+      "observedFailure": "repair:missing_interaction_move_withdrawal:unsolicited_advice",
+      "functionalFinding": "'不该给你出主意列方案，是我没守住边界' owned and functionally disavowed the exact unsolicited-advice move without defending or continuing it.",
+      "validatorFinding": "Validator required a narrower advice token pattern even though the contracted interaction move was completed."
+    },
+    {
+      "auditId": "C4-F11",
+      "scenarioId": "repair-generic-listening",
+      "runIndex": 1,
+      "generationAttempts": 2,
+      "attribution": "validator_false_positive",
+      "observedFailure": "repair:missing_interaction_move_withdrawal:generic_listening",
+      "functionalFinding": "Apology plus '光说会听确实没抓住重点' specifically owned and rejected the generic-listening move; no fixed stop/withdraw word was required.",
+      "validatorFinding": "Validator treated a natural functional disavowal as incomplete."
+    },
+    {
+      "auditId": "C4-F12",
+      "scenarioId": "repair-generic-listening",
+      "runIndex": 2,
+      "generationAttempts": 2,
+      "attribution": "validator_false_positive",
+      "observedFailure": "repair:missing_interaction_move_withdrawal:generic_listening",
+      "functionalFinding": "The reply quoted the prior '我会认真听' move and owned that it failed to engage the user's stated focus; it completed a bounded repair without continuing another goal.",
+      "validatorFinding": "Validator rejected the completed repair because its fixed disavowal pattern did not recognize this construction."
+    },
+    {
+      "auditId": "C4-F13",
+      "scenarioId": "repair-generic-listening",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "validator_false_positive",
+      "observedFailure": "repair:missing_interaction_move_withdrawal:generic_listening",
+      "functionalFinding": "'光顾着说会听，确实没抓住你说的重点' identified, owned, and functionally rejected the exact generic-listening move.",
+      "validatorFinding": "Validator required a fixed negative token rather than judging the completed function."
+    },
+    {
+      "auditId": "C4-F14",
+      "scenarioId": "repair-moralizing",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "validator_false_positive",
+      "observedFailure": "repair:missing_interaction_move_withdrawal:moralizing",
+      "functionalFinding": "The reply quoted '应该勇敢点', said it should not have been said, and explicitly owned getting the focus wrong. This is a specific moralizing repair, not vague '那样说'.",
+      "validatorFinding": "Validator failed on the natural '勇敢点' surface form despite the exact target being named and disavowed."
+    },
+    {
+      "auditId": "C4-F15",
+      "scenarioId": "repair-topic-switch",
+      "runIndex": 2,
+      "generationAttempts": 2,
+      "attribution": "validator_false_positive",
+      "observedFailure": "repair:missing_interaction_move_withdrawal:topic_switch",
+      "functionalFinding": "'抱歉，刚才不该提放松练习' owned and disavowed the precise out-of-scope move rejected by the user; it did not need to contain the literal words 'topic switch'.",
+      "validatorFinding": "Validator required a narrower topic-switch phrase rather than evaluating the evidenced target action."
+    },
+    {
+      "auditId": "C4-F16",
+      "scenarioId": "repair-topic-switch",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "validator_false_positive",
+      "observedFailure": "repair:missing_interaction_move_withdrawal:topic_switch",
+      "functionalFinding": "The same apology and specific disavowal of the unsolicited relaxation detour completed the topic-switch repair.",
+      "validatorFinding": "Validator falsely rejected a functionally complete target-specific repair."
+    }
+  ],
+  "regenerationAudits": [
+    {
+      "auditId": "C4-R01",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 1,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt grounded the blocked feeling and returned focus control, but '聊点别的' switched topics.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt used the current affect and let the user choose which part to discuss first.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R02",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 2,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt added an unrelated topic and regulation option after grounding the affect.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt stayed within the current feeling and returned focus/expression control.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R03",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 3,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "'心里堵着' grounded the same turn-local affect; '换个方式表达' changed expression form, not topic, and focus control was present.",
+      "secondAttribution": "both",
+      "secondFinding": "The second attempt still grounded the affect, making the missing-grounding reason false, but added a true switch to another topic for relief.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R04",
+      "scenarioId": "emotion-sudden-sadness",
+      "runIndex": 1,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt offered to discuss something else outside the selected focus function.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt grounded sadness and returned control over which part to say first.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R05",
+      "scenarioId": "emotion-sudden-sadness",
+      "runIndex": 2,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt explicitly offered another topic.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "'别的方面' remained grammatically scoped by '关于这份情绪' and functioned as a current-content focus choice, not an explicit topic switch.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R06",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 1,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "'担心是很自然的' normalized the affect itself; focus control was otherwise complete.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt grounded the stated worry and offered a bounded focus choice.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R07",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 2,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt both reassured the affect and offered a topic switch.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt removed both defects while preserving focus control.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R08",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 3,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt normalized worry as natural.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The second attempt reassured the affect with '担心也没关系'.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R09",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 1,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt invented a prior event/time and requested its details.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The second attempt switched away from the selected current focus.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R10",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 2,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "'这种时候确实不好受' did not preserve the stated shame category, and the reply also invented a preceding event/time.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The second attempt grounded shame but offered another topic.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R11",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 3,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt invented a prior event and then opened an unspecified alternative focus.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The second attempt reassured the shame itself and offered a topic switch.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R12",
+      "scenarioId": "emotion-lonely",
+      "runIndex": 1,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt explicitly proposed distraction and another topic.",
+      "secondAttribution": "surface_failure_validator_false_negative",
+      "secondFinding": "'还是聊聊别的什么' remained an out-of-scope topic option but Validator accepted it.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R13",
+      "scenarioId": "emotion-lonely",
+      "runIndex": 2,
+      "firstAttribution": "both",
+      "firstFinding": "The first attempt did not give control over a known sub-focus and also offered a light-topic switch; Validator reported only the missing function.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The second attempt supplied focus control but kept an out-of-scope mood-changing topic option.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R14",
+      "scenarioId": "emotion-lonely",
+      "runIndex": 3,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt both lacked a known-part focus and explicitly proposed distraction; both reasons were reported.",
+      "secondAttribution": "surface_failure_validator_false_negative",
+      "secondFinding": "The accepted second attempt still offered '聊聊别的什么' outside the selected current-focus scope.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R15",
+      "scenarioId": "emotion-irritated",
+      "runIndex": 1,
+      "firstAttribution": "both",
+      "firstFinding": "The first attempt switched topics and added the unsupported distress label '难受'; Validator reported only the switch.",
+      "secondAttribution": "surface_failure_validator_false_negative",
+      "secondFinding": "The accepted reply offered '说说别的什么', which was not restricted to an already-known part of the user's irritation.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R16",
+      "scenarioId": "emotion-irritated",
+      "runIndex": 2,
+      "firstAttribution": "both",
+      "firstFinding": "The first attempt added both an unsupported distress label and a topic switch, while Validator reported only the latter.",
+      "secondAttribution": "surface_failure_validator_false_negative",
+      "secondFinding": "The accepted second attempt again offered unspecified other content outside the known focus.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R17",
+      "scenarioId": "emotion-irritated",
+      "runIndex": 3,
+      "firstAttribution": "both",
+      "firstFinding": "The first attempt added '难受' and a topic switch; Validator omitted the unsupported affect claim.",
+      "secondAttribution": "surface_failure_validator_false_negative",
+      "secondFinding": "'别的让你烦的事' introduced unmentioned causes/events instead of limiting focus to known current content.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R18",
+      "scenarioId": "emotion-no-analysis",
+      "runIndex": 1,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt completed burden reduction but added an unrequested pause, silence, and another-topic option.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The second attempt preserved burden reduction but still prescribed waiting quietly.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R19",
+      "scenarioId": "emotion-no-analysis",
+      "runIndex": 2,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The first attempt completed the selected function but added '待一会儿'.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The regenerated reply retained the same unrequested pause.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R20",
+      "scenarioId": "emotion-no-analysis",
+      "runIndex": 3,
+      "firstAttribution": "both",
+      "firstFinding": "The first attempt lacked same-affect grounding and also prescribed an unrequested pause; Validator omitted the pause reason.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The second attempt grounded the affect and reduced burden but retained the unrequested pause.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R21",
+      "scenarioId": "repair-advice-boundary",
+      "runIndex": 1,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "Apology plus '不该让你列方案，是我多嘴了' owned and disavowed the exact unsolicited advice without a required fixed category word.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt made the advice category explicit and was correctly accepted.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R22",
+      "scenarioId": "repair-advice-boundary",
+      "runIndex": 2,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "The same target-specific natural disavowal completed the advice repair.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The explicit-category regeneration was correctly accepted.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R23",
+      "scenarioId": "repair-advice-boundary",
+      "runIndex": 3,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "'不该让你列方案，是我越界了' specifically owned and rejected the prior advice move.",
+      "secondAttribution": "validator_false_positive",
+      "secondFinding": "'不该给你出主意列方案' explicitly named and disavowed unsolicited advice; rejection was incorrect.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R24",
+      "scenarioId": "repair-generic-listening",
+      "runIndex": 1,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "'刚才那句没接住重点' remained too vague to identify the rejected generic-listening move.",
+      "secondAttribution": "validator_false_positive",
+      "secondFinding": "'光说会听确实没抓住重点' specifically owned and functionally rejected the generic-listening move.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R25",
+      "scenarioId": "repair-generic-listening",
+      "runIndex": 2,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "Calling the adjacent reply '只是空话' in an apology specifically categorized and rejected the generic response.",
+      "secondAttribution": "validator_false_positive",
+      "secondFinding": "The quoted listening promise and its failure to engage the user's focus completed the repair naturally.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R26",
+      "scenarioId": "repair-generic-listening",
+      "runIndex": 3,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "The first attempt quoted the exact generic-listening move and owned its failure.",
+      "secondAttribution": "validator_false_positive",
+      "secondFinding": "The second attempt identified '光顾着说会听' and its conversational failure; no fixed withdrawal token was required.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R27",
+      "scenarioId": "repair-moralizing",
+      "runIndex": 3,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "The reply quoted the exact '应该勇敢点' judgment, disavowed it, and owned missing the focus.",
+      "secondAttribution": "validator_false_positive",
+      "secondFinding": "The second attempt preserved the same specific moralizing repair with explicit first-person ownership.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R28",
+      "scenarioId": "repair-topic-switch",
+      "runIndex": 1,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "'不该提放松的事' owned and disavowed the exact detour identified by the user; the literal phrase 'topic switch' was not required.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt used an explicit detour phrase and was correctly accepted.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C4-R29",
+      "scenarioId": "repair-topic-switch",
+      "runIndex": 2,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "'是我岔开话题了' explicitly owned the target subtype and functionally disavowed it through the apology.",
+      "secondAttribution": "validator_false_positive",
+      "secondFinding": "The target-specific apology and rejection of the relaxation detour completed repair without a fixed category token.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C4-R30",
+      "scenarioId": "repair-topic-switch",
+      "runIndex": 3,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "The first attempt specifically owned and disavowed mentioning relaxation outside the user's topic.",
+      "secondAttribution": "validator_false_positive",
+      "secondFinding": "The second attempt completed the same target-specific topic-switch repair and was falsely rejected.",
+      "finalExecutionPhase": "FAILED"
+    }
+  ],
+  "summary": {
+    "finalFailureCount": 16,
+    "finalFailureAttributionCounts": {
+      "surface_failure": 8,
+      "validator_false_positive": 7,
+      "both": 1
+    },
+    "regenerationCount": 30,
+    "firstAttemptAttributionCounts": {
+      "surface_failure": 15,
+      "validator_false_positive": 10,
+      "both": 5
+    },
+    "secondAttemptAttributionCounts": {
+      "appropriate_pass": 9,
+      "surface_failure": 8,
+      "validator_false_positive": 7,
+      "both": 1,
+      "surface_failure_validator_false_negative": 5
+    },
+    "acceptedSecondAttemptsWithTrueSurfaceFailure": 5,
+    "rejectedSecondAttemptsWithValidatorMisclassification": 8
+  }
+}

@@ -21,6 +21,12 @@ import {
 } from "./types";
 import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
+import {
+  toUserSafeExecutionStatus,
+  type ChatExecutionTrace,
+  type UserSafeExecutionStatus,
+} from "./chatExecutionLifecycle";
+import type { InteractionState } from "@/conversation-os/control";
 
 const mapRiskLevel = (riskLevel: AiRiskLevel) => {
   const value = riskLevel.toUpperCase();
@@ -106,6 +112,9 @@ const saveGeneration = async ({
   generation,
   status,
   rewriteOfId,
+  execution,
+  attemptId,
+  turnId,
 }: {
   userId: string;
   sessionId: string;
@@ -113,18 +122,25 @@ const saveGeneration = async ({
   generation: AiGenerationResult;
   status: AiGenerationStatus;
   rewriteOfId?: string;
+  execution: ChatExecutionTrace;
+  attemptId?: string;
+  turnId: string;
 }) =>
   prisma.aiGeneration.create({
     data: {
       userId,
       sessionId,
       sourceType: AiSourceType.CHAT,
-      sourceId: sessionId,
+      sourceId: turnId,
       model: generation.model,
       promptVersion: generation.promptVersion,
       inputText,
       outputText: generation.text,
       rewriteOfId,
+      requestId: execution.requestId,
+      turnId,
+      attemptId,
+      executionTrace: execution as unknown as Prisma.InputJsonValue,
       latencyMs: generation.latencyMs,
       tokenInput: generation.tokenInput,
       tokenOutput: generation.tokenOutput,
@@ -158,68 +174,163 @@ const saveJudgeResult = async ({
     select: { id: true },
   });
 
-const saveAssistantMessage = async ({
+export const commitValidatedAssistantMessage = async ({
   userId,
   sessionId,
   content,
   status,
   aiGenerationId,
+  replyToMessageId,
+  interactionMetadata,
+  execution,
 }: {
   userId: string;
   sessionId: string;
   content: string;
   status: MessageStatus;
   aiGenerationId: string;
+  replyToMessageId: string;
+  interactionMetadata: InteractionState["lastCommittedAssistantMove"];
+  execution?: ChatExecutionTrace;
 }) => {
+  const select = {
+    id: true,
+    role: true,
+    content: true,
+    status: true,
+    aiGenerationId: true,
+    aiGeneration: {
+      select: {
+        promptVersion: true,
+      },
+    },
+    createdAt: true,
+  } satisfies Prisma.ChatMessageSelect;
+  let created = false;
   const savedMessage = await prisma.$transaction(async (tx) => {
-    const message = await tx.chatMessage.create({
-      data: {
+    const inserted = await tx.chatMessage.createMany({
+      data: [{
         sessionId,
         userId,
         role: MessageRole.ASSISTANT,
         content,
         status,
         aiGenerationId,
-      },
-      select: {
-        id: true,
-        role: true,
-        content: true,
-        status: true,
-        aiGenerationId: true,
-        aiGeneration: {
-          select: {
-            promptVersion: true,
-          },
-        },
-        createdAt: true,
-      },
+        replyToMessageId,
+        interactionMetadata: interactionMetadata as unknown as Prisma.InputJsonValue,
+      }],
+      skipDuplicates: true,
+    });
+    created = inserted.count === 1;
+    const message = await tx.chatMessage.findUniqueOrThrow({
+      where: { replyToMessageId },
+      select,
     });
 
-    await tx.chatSession.update({
-      where: { id: sessionId },
-      data: {
-        lastMessage: content,
-        lastMessageAt: message.createdAt,
-      },
-    });
+    if (created) {
+      await tx.chatSession.update({
+        where: { id: sessionId },
+        data: {
+          lastMessage: content,
+          lastMessageAt: message.createdAt,
+        },
+      });
+    }
+    if (created && execution) {
+      await tx.aiGeneration.update({
+        where: { id: aiGenerationId },
+        data: {
+          executionTrace: {
+            ...execution,
+            phase: "COMMITTED",
+            transitions: [
+              ...execution.transitions,
+              {
+                phase: "COMMITTED",
+                reason: "Assistant Message and interaction metadata committed atomically.",
+              },
+            ],
+            committedMessageId: message.id,
+          } as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
 
     return message;
   });
 
-  await createRawMemoryFromChatMessage({
-    chatMessageId: savedMessage.id,
-    metadata: { source: "chat_reply_service_assistant_message" },
-  }).catch((error) => {
-    console.error("raw memory assistant message write failed", error);
-  });
+  if (created) {
+    await createRawMemoryFromChatMessage({
+      chatMessageId: savedMessage.id,
+      metadata: { source: "chat_reply_service_assistant_message" },
+    }).catch((error) => {
+      console.error("raw memory assistant message write failed", error);
+    });
+  }
 
   return savedMessage;
 };
 
+export const buildCommittedAssistantMove = (
+  reply: Awaited<ReturnType<typeof createChatReply>>
+): NonNullable<InteractionState["lastCommittedAssistantMove"]> => {
+  const plan = reply.controlTrace?.responsePlan;
+  const question = Boolean(
+    plan &&
+    plan.questionPolicy.mode !== "none" &&
+    /[？?]/u.test(reply.generation.text)
+  );
+  return {
+    purpose: plan?.responseActions ?? [],
+    claims: [
+      ...(plan?.groundingFacts ?? []),
+      ...(plan?.requiredDisclosure ?? []),
+    ].map((text) => ({
+      text,
+      subject: plan?.requiredDisclosure.includes(text) ? "assistant" as const : "user" as const,
+      source: plan?.relevanceProvenance.find((item) => item.planElement.endsWith(text))?.source,
+      provenance: plan?.relevanceProvenance
+        .filter((item) => item.planElement.endsWith(text))
+        .flatMap((item) => item.evidence) ?? [],
+    })),
+    assumptions: [],
+    questionOrRequest: question ? { kind: "question" } : null,
+    expectedUserContribution: question
+      ? plan?.responseActions.includes("take_light_topic_initiative")
+        ? "share"
+        : "answer"
+      : "none",
+    userBurden: question ? "low" : "none",
+    sourceTurnId: reply.execution.turnId,
+    evidence: [
+      `planId=${reply.execution.planId}`,
+      `requestId=${reply.execution.requestId}`,
+      "Created only after the validated Assistant Message committed.",
+    ],
+  };
+};
+
+const markCommitted = (
+  execution: ChatExecutionTrace,
+  messageId: string
+): ChatExecutionTrace => ({
+  ...execution,
+  phase: "COMMITTED",
+  transitions: [
+    ...execution.transitions,
+    {
+      phase: "COMMITTED",
+      reason: "Assistant Message and interaction metadata committed atomically.",
+    },
+  ],
+  committedMessageId: messageId,
+});
+
 export const createReviewedChatReply = async ({
   userId,
   sessionId,
+  currentTurnId,
+  retrying = false,
   userMessage,
   recentMessages,
   understandingContext,
@@ -227,19 +338,33 @@ export const createReviewedChatReply = async ({
 }: {
   userId: string;
   sessionId: string;
+  currentTurnId?: string;
+  retrying?: boolean;
   userMessage: string;
   recentMessages: AiConversationMessage[];
   understandingContext?: StructuredRagContext | null;
   includeDebugTrace?: boolean;
-}): Promise<{
-  assistantMessage: ReturnType<typeof serializeMessage>;
-  judge: AiJudgeResult & { judgeModel: string; promptVersion: string };
-  rewriteAttempted: boolean;
-  fallbackUsed: boolean;
-  debugTrace?: AiDebugTrace;
-}> => {
+}): Promise<
+  | {
+      outcome: "committed";
+      assistantMessage: ReturnType<typeof serializeMessage>;
+      judge: AiJudgeResult & { judgeModel: string; promptVersion: string };
+      rewriteAttempted: boolean;
+      fallbackUsed: boolean;
+      debugTrace?: AiDebugTrace;
+      execution: ChatExecutionTrace;
+    }
+  | {
+      outcome: "failed";
+      systemStatus: UserSafeExecutionStatus;
+      debugTrace?: AiDebugTrace;
+      execution: ChatExecutionTrace;
+    }
+> => {
   const reply = await createChatReply({
     conversationId: sessionId,
+    currentTurnId,
+    retrying,
     userId,
     userMessage,
     recentMessages,
@@ -247,35 +372,114 @@ export const createReviewedChatReply = async ({
     understandingContext,
     includeDebugTrace,
   });
-  const generationStatus =
-    reply.finalSource === "fallback" ? AiGenerationStatus.FALLBACK : AiGenerationStatus.GENERATED;
-  const messageStatus = reply.finalSource === "fallback" ? MessageStatus.FALLBACK : MessageStatus.SAVED;
+  try {
+    const attemptedGenerations = reply.generationAttempts.length
+      ? reply.generationAttempts
+      : [reply.generation];
+    let previousGenerationId: string | undefined;
+    const savedGenerations: Array<{ id: string }> = [];
+    for (const [index, generation] of attemptedGenerations.entries()) {
+      const accepted = reply.execution.phase === "VALIDATED" &&
+        index === attemptedGenerations.length - 1;
+      const saved = await saveGeneration({
+        userId,
+        sessionId,
+        inputText: userMessage,
+        generation,
+        status: accepted
+          ? reply.finalSource === "fallback"
+            ? AiGenerationStatus.FALLBACK
+            : AiGenerationStatus.GENERATED
+          : AiGenerationStatus.FAILED,
+        rewriteOfId: previousGenerationId,
+        execution: reply.execution,
+        attemptId: reply.execution.attempts[index]?.attemptId,
+        turnId: reply.execution.turnId,
+      });
+      previousGenerationId = saved.id;
+      savedGenerations.push(saved);
+    }
 
-  const savedGeneration = await saveGeneration({
-    userId,
-    sessionId,
-    inputText: userMessage,
-    generation: reply.generation,
-    status: generationStatus,
-  });
-  await saveJudgeResult({
-    userId,
-    generationId: savedGeneration.id,
-    judgeResult: reply.judge,
-  });
-  const assistantMessage = await saveAssistantMessage({
-    userId,
-    sessionId,
-    content: reply.generation.text,
-    status: messageStatus,
-    aiGenerationId: savedGeneration.id,
-  });
+    if (reply.execution.phase !== "VALIDATED") {
+      return {
+        outcome: "failed",
+        systemStatus: toUserSafeExecutionStatus(reply.execution),
+        debugTrace: reply.debugTrace,
+        execution: reply.execution,
+      };
+    }
 
-  return {
-    assistantMessage: serializeMessage(assistantMessage),
-    judge: reply.judge,
-    rewriteAttempted: reply.rewriteAttempted,
-    fallbackUsed: reply.fallbackUsed,
-    debugTrace: reply.debugTrace,
-  };
+    const messageStatus = reply.finalSource === "fallback" ? MessageStatus.FALLBACK : MessageStatus.SAVED;
+    const savedGeneration = savedGenerations.at(-1);
+    if (!savedGeneration) throw new Error("Validated reply has no saved generation.");
+    await saveJudgeResult({
+      userId,
+      generationId: savedGeneration.id,
+      judgeResult: reply.judge,
+    });
+    const assistantMessage = await commitValidatedAssistantMessage({
+      userId,
+      sessionId,
+      content: reply.generation.text,
+      status: messageStatus,
+      aiGenerationId: savedGeneration.id,
+      replyToMessageId: reply.execution.turnId,
+      interactionMetadata: buildCommittedAssistantMove(reply),
+      execution: reply.execution,
+    });
+    const execution = markCommitted(reply.execution, assistantMessage.id);
+    if (reply.controlTrace) {
+      const answeredObligations = reply.controlTrace.responsePlan.answerObligations.map((item) => item.id);
+      reply.controlTrace.stateUpdate = {
+        answeredObligations,
+        remainingOpenLoops: [],
+        obligationTransitions: reply.controlTrace.responsePlan.answerObligations.map((item) => ({
+          id: item.id,
+          from: "open",
+          to: "answered",
+          closeReason: "response_committed",
+          sourceConversationId: item.sourceConversationId,
+          sourceTurnId: item.sourceTurnId,
+        })),
+        notes: ["Validated Assistant Message committed; obligation transitions are now official."],
+      };
+      if (reply.debugTrace) reply.debugTrace.conversationControl = reply.controlTrace;
+    }
+    if (reply.debugTrace) reply.debugTrace.execution = execution;
+
+    return {
+      outcome: "committed",
+      assistantMessage: serializeMessage(assistantMessage),
+      judge: reply.judge,
+      rewriteAttempted: reply.rewriteAttempted,
+      fallbackUsed: reply.fallbackUsed,
+      debugTrace: reply.debugTrace,
+      execution,
+    };
+  } catch (error) {
+    const execution: ChatExecutionTrace = {
+      ...reply.execution,
+      phase: "FAILED",
+      transitions: [
+        ...reply.execution.transitions,
+        {
+          phase: "FAILED",
+          reason: "Persistence failed before the commit boundary completed.",
+        },
+      ],
+      failure: {
+        code: "PERSISTENCE_ERROR",
+        reason: error instanceof Error ? error.message : "Unknown persistence failure",
+        retryable: true,
+      },
+      committedMessageId: undefined,
+    };
+    if (reply.debugTrace) reply.debugTrace.execution = execution;
+    return {
+      outcome: "failed",
+      systemStatus: toUserSafeExecutionStatus(execution),
+      debugTrace: reply.debugTrace,
+      execution,
+    };
+  }
 };

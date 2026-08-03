@@ -1,0 +1,2406 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "batch1-5-d-20260803",
+  "datasetVersion": "hill-helping-batch1-5-preservation-v1-2026-08-01",
+  "datasetSha256": "12bd41f3c6c4370ddc3593cf997203037bc321a3b40d890ce196e9f6bcd6f243",
+  "provider": "qwen",
+  "model": "qwen3.7-max",
+  "startedAt": "2026-08-03T13:00:02.464Z",
+  "completedAt": "2026-08-03T13:06:08.329Z",
+  "gate": {
+    "runsPerScenario": 3,
+    "scenarioCount": 20,
+    "requiredValidatedRate": 1,
+    "requiredExpectedActionRate": 1,
+    "maximumConstraintFailures": 0,
+    "maximumHelpingProviderCalls": 0,
+    "maximumRegenerationRate": 0.2
+  },
+  "summary": {
+    "total": 60,
+    "validated": 59,
+    "validatedRate": 0.9833333333333333,
+    "preflightPassed": 60,
+    "preflightPassedRate": 1,
+    "expectedAction": 60,
+    "expectedActionRate": 1,
+    "constraintFailures": 1,
+    "helpingProviderCalls": 0,
+    "regenerations": 6,
+    "regenerationRate": 0.1
+  },
+  "checks": {
+    "completeRunCount": true,
+    "preflightPassed": true,
+    "validatedRate": false,
+    "expectedActionRate": true,
+    "constraintFailures": false,
+    "helpingProviderCalls": true,
+    "regenerationRate": true
+  },
+  "passed": false,
+  "rows": [
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我今天有点不太高兴",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你今天有点不太高兴，想说多少、说到哪儿都行，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你今天有点不太高兴，想说多少、说到哪儿都行，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5774
+    },
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我今天有点不太高兴",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你今天有点不太高兴，想说多少都可以，不想说也没关系。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你今天有点不太高兴，想说多少都可以，不想说也没关系。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15320
+    },
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我今天有点不太高兴",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你有点不太高兴，想说多少都可以，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你有点不太高兴，想说多少都可以，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 4648
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "心里有点堵",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "心里有点堵，想说多少都行，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "心里有点堵，想说多少都行，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6200
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "心里有点堵",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "心里有点堵，想说多少、说到哪儿都行，不用非得讲完整。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "心里有点堵，想说多少、说到哪儿都行，不用非得讲完整。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 4461
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "心里有点堵",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "心里有点堵，想说多少都行，不用非得说全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "心里有点堵，想说多少都行，不用非得说全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5013
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "今天突然有点难过",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你有点难过，想说多少、说到哪儿都可以，不用非得讲完整。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你有点难过，想说多少、说到哪儿都可以，不用非得讲完整。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5790
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "今天突然有点难过",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你有点难过，想说多少都可以，不想说完也没关系。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你有点难过，想说多少都可以，不想说完也没关系。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 4476
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "今天突然有点难过",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你有点难过，想说多少、说到哪儿都可以，不用非得讲完整。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你有点难过，想说多少、说到哪儿都可以，不用非得讲完整。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 4193
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我现在又委屈又生气",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "委屈和生气都在，你想先聊哪个都行，按你的节奏来。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "委屈和生气都在，你想先聊哪个都行，按你的节奏来。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7503
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我现在又委屈又生气",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "委屈和生气都在，你想先聊哪个都可以。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "委屈和生气都在，你想先聊哪个都可以。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6262
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我现在又委屈又生气",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "委屈和生气都在，你想先聊哪个都行，按你的节奏来就好。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "委屈和生气都在，你想先聊哪个都行，按你的节奏来就好。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 8923
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "明天那件事让我有点担心",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你有点担心了，想说多少都行，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "有点担心是可以的，想说多少就說多少，不用非得讲全。",
+          "validationPassed": false,
+          "validationFailures": [
+            "emotional_support:generic_normalization_or_reassurance"
+          ]
+        },
+        {
+          "attempt": 2,
+          "text": "听到你有点担心了，想说多少都行，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7421
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "明天那件事让我有点担心",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你有点担心了，想说多少都行，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "有点担心是可以的，你想说多少就说多少，不用非得讲全。",
+          "validationPassed": false,
+          "validationFailures": [
+            "emotional_support:generic_normalization_or_reassurance"
+          ]
+        },
+        {
+          "attempt": 2,
+          "text": "听到你有点担心了，想说多少都行，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 8053
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "明天那件事让我有点担心",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你有点担心了，想说多少都行，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "有点担心是可以的，想说多少都行，不用非得讲全。",
+          "validationPassed": false,
+          "validationFailures": [
+            "emotional_support:generic_normalization_or_reassurance"
+          ]
+        },
+        {
+          "attempt": 2,
+          "text": "听到你有点担心了，想说多少都行，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 8239
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "刚才被忽略的时候挺难受的",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "被忽略确实挺难受的。你想先说说这份难受，还是聊聊被忽略的那个瞬间，都可以按你的节奏来。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "被忽略确实挺难受的。你想先说说刚才那种感觉，还是别的什么，都可以按你的节奏来。",
+          "validationPassed": false,
+          "validationFailures": [
+            "emotional_support:out_of_scope_unknown_content"
+          ]
+        },
+        {
+          "attempt": 2,
+          "text": "被忽略确实挺难受的。你想先说说这份难受，还是聊聊被忽略的那个瞬间，都可以按你的节奏来。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6447
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "刚才被忽略的时候挺难受的",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "被忽略确实挺难受的。你想先说说这份难受，还是聊聊被忽略的那个瞬间，都按你的节奏来。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "被忽略确实挺难受的。你想先说说这份难受，还是聊聊被忽略的那个瞬间，都按你的节奏来。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6924
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "刚才被忽略的时候挺难受的",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "被忽略确实挺难受的。你想先说说这份难受，还是聊聊被忽略的那个瞬间，都按你的节奏来。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "被忽略确实挺难受的。你想先说说这份难受，还是聊聊被忽略的那个瞬间，都按你的节奏来。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 4377
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我觉得有点丢脸",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "有点丢脸的感觉收到了，你想说多少都行，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "有点丢脸的感觉收到了，你想说多少都行，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5075
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我觉得有点丢脸",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "有点丢脸的感觉收到了，你想说多少就说多少，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "有点丢脸的感觉收到了，你想说多少就说多少，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7459
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我觉得有点丢脸",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "有点丢脸的感觉我收到了，你想说多少、说到哪儿都可以。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "有点丢脸的感觉我收到了，你想说多少、说到哪儿都可以。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6158
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "今晚莫名有点孤单",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你说有点孤单，想聊多少都可以，只说一点点也没关系。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你说有点孤单，想聊多少都可以，只说一点点也没关系。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 4190
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "今晚莫名有点孤单",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到了，这份孤单你想说多少、说到哪儿都行，不用非得讲完整。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到了，这份孤单你想说多少、说到哪儿都行，不用非得讲完整。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 4193
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "今晚莫名有点孤单",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你说有点孤单，想说多少、说到哪儿都行，不用非得讲完整。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你说有点孤单，想说多少、说到哪儿都行，不用非得讲完整。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 4855
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我现在真的很烦",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你说真的很烦，想说多少、说到哪儿都行，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你说真的很烦，想说多少、说到哪儿都行，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 4078
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我现在真的很烦",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你说真的很烦，想说多少都行，不用非得讲全。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你说真的很烦，想说多少都行，不用非得讲全。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5250
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我现在真的很烦",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "听到你说真的很烦，想说多少、说到哪儿都行，不用非得讲完整。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "听到你说真的很烦，想说多少、说到哪儿都行，不用非得讲完整。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6118
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我不想分析，只是有点难受",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "难受就待一会儿，不用分析原因，也不用急着说清楚。",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "emotional_support:unrequested_pause_or_closure"
+      ],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "难受就待一会儿，不用非得分析或说清楚。",
+          "validationPassed": false,
+          "validationFailures": [
+            "emotional_support:unrequested_pause_or_closure"
+          ]
+        },
+        {
+          "attempt": 2,
+          "text": "难受就待一会儿，不用分析原因，也不用急着说清楚。",
+          "validationPassed": false,
+          "validationFailures": [
+            "emotional_support:unrequested_pause_or_closure"
+          ]
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7517
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我不想分析，只是有点难受",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "难受就难受着，不用非得分析什么，也不用急着整理清楚。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "难受就难受着，不用非得分析什么，也不用急着整理清楚。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6920
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我不想分析，只是有点难受",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "难受就难受着，不用非得分析或说清楚什么。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "难受就难受着，不用非得分析或说清楚什么。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7339
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "不是，我没说我害怕被否定，你理解偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我今天开会一直没说话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你其实是害怕被大家否定。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "是我刚才说错了，收回那句关于害怕被否定的话。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "是我刚才说错了，收回那句关于害怕被否定的话。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 917
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "不是，我没说我害怕被否定，你理解偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我今天开会一直没说话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你其实是害怕被大家否定。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "是我刚才说错了，收回那句关于你害怕被否定的话。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "是我刚才说错了，收回那句关于你害怕被否定的话。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 855
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "不是，我没说我害怕被否定，你理解偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我今天开会一直没说话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你其实是害怕被大家否定。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "是我刚才说错了，收回“害怕被否定”这个说法。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "是我刚才说错了，收回“害怕被否定”这个说法。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 863
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我说了不想要建议，你还是在教我怎么做",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只想说说今天的事，不要建议"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你可以先列三个方案，再决定怎么做。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "刚才让你列方案确实是在给建议，我不该这么说。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "刚才让你列方案确实是在给建议，我不该这么说。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6468
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我说了不想要建议，你还是在教我怎么做",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只想说说今天的事，不要建议"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你可以先列三个方案，再决定怎么做。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，刚才让你列方案确实是在给建议，我不该这么说。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，刚才让你列方案确实是在给建议，我不该这么说。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6745
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我说了不想要建议，你还是在教我怎么做",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只想说说今天的事，不要建议"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你可以先列三个方案，再决定怎么做。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "刚才让你列方案确实是在给建议，我不该这么说。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "刚才让你列方案确实是在给建议，我不该这么说。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6222
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我没有撑不住，我只是说今天有点累",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "今天有点累"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "听起来你已经快撑不住了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，我说得太重了，收回那句“快撑不住了”。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，我说得太重了，收回那句“快撑不住了”。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6110
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我没有撑不住，我只是说今天有点累",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "今天有点累"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "听起来你已经快撑不住了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "是我用词太重了，收回“快撑不住了”这个说法。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "是我用词太重了，收回“快撑不住了”这个说法。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6421
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我没有撑不住，我只是说今天有点累",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "今天有点累"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "听起来你已经快撑不住了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "是我刚才说重了，收回“快撑不住了”这个说法。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "是我刚才说重了，收回“快撑不住了”这个说法。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7341
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "不是同事，是我姐姐，你把人弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "她昨天又给我打电话了"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "那个同事又联系你了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉弄错了，是你姐姐。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉弄错了，是你姐姐。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6293
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "不是同事，是我姐姐，你把人弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "她昨天又给我打电话了"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "那个同事又联系你了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "是我弄错了，是你姐姐。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "是我弄错了，是你姐姐。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5238
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "不是同事，是我姐姐，你把人弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "她昨天又给我打电话了"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "那个同事又联系你了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉记错了，是你姐姐。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉记错了，是你姐姐。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5772
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "你又在追问，没有回应我刚才说的重点",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "那件事让我很难受"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "具体什么时候、在哪里、还有谁在场？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，刚才不该追问那些细节，忽略了你说的重点。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，刚才不该追问那些细节，忽略了你说的重点。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7227
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "你又在追问，没有回应我刚才说的重点",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "那件事让我很难受"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "具体什么时候、在哪里、还有谁在场？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，刚才追问细节确实没回应到你的重点。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，刚才追问细节确实没回应到你的重点。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6797
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "你又在追问，没有回应我刚才说的重点",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "那件事让我很难受"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "具体什么时候、在哪里、还有谁在场？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，刚才问那些细节确实没回应到你的重点。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，刚才问那些细节确实没回应到你的重点。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6754
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "你没有听我说的重点，只是在说你会听",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我最在意的是他当时那句话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "我在，我会认真听你说。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "刚才那句“我会认真听”确实没抓到重点，是我没对上你真正在意的地方。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "刚才那句“我会认真听”确实没抓到重点，是我没对上你真正在意的地方。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7026
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "你没有听我说的重点，只是在说你会听",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我最在意的是他当时那句话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "我在，我会认真听你说。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "刚才那句“我会认真听”确实没抓到重点，是我说偏了。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "刚才那句“我会认真听”确实没抓到重点，是我说偏了。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6464
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "你没有听我说的重点，只是在说你会听",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我最在意的是他当时那句话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "我在，我会认真听你说。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "刚才那句“我会认真听”确实没对上重点，是我没接住。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "刚才那句“我会认真听”确实没对上重点，是我没接住。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7211
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我已经说了不是内疚，你还在重复这个判断",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只是觉得这件事很麻烦"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "这种内疚感一直压着你。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，我收回“内疚感压着你”这个说法，不再这样讲了。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，我收回“内疚感压着你”这个说法，不再这样讲了。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5964
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我已经说了不是内疚，你还在重复这个判断",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只是觉得这件事很麻烦"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "这种内疚感一直压着你。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，我不该再说那是内疚，已经收回这个说法。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，我不该再说那是内疚，已经收回这个说法。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6032
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我已经说了不是内疚，你还在重复这个判断",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只是觉得这件事很麻烦"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "这种内疚感一直压着你。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "是我用错了，收回“内疚感压着你”这个说法。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "是我用错了，不再提内疚这个说法。",
+          "validationPassed": false,
+          "validationFailures": [
+            "repair:missing_proposition_withdrawal"
+          ]
+        },
+        {
+          "attempt": 2,
+          "text": "是我用错了，收回“内疚感压着你”这个说法。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6859
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "你一点都不懂我，刚才完全说偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不去不是因为害怕"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你是在逃避面对这件事。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "我收回刚才说你逃避的话，确实说偏了。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "我收回刚才说你逃避的话，确实说偏了。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7654
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "你一点都不懂我，刚才完全说偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不去不是因为害怕"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你是在逃避面对这件事。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "刚才说你在逃避，是我讲错了，收回这句话。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "刚才说你在逃避，是我讲错了，收回这句话。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6600
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "你一点都不懂我，刚才完全说偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不去不是因为害怕"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你是在逃避面对这件事。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "是我刚才说错了，不该说你是在逃避。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "是我刚才说错了，不该说你是在逃避。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 7392
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我不是来听你讲应该不应该的，你把重点弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不想去参加那次聚会"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你应该勇敢一点，不能总躲着。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "刚才说“应该勇敢”确实不对，是我把重点弄错了。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "刚才说“应该勇敢”确实不对，是我把重点弄错了。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5588
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我不是来听你讲应该不应该的，你把重点弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不想去参加那次聚会"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你应该勇敢一点，不能总躲着。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，刚才不该跟你说“应该勇敢点”，是我没抓对重点。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，刚才不该跟你说“应该勇敢点”，是我没抓对重点。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6370
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我不是来听你讲应该不应该的，你把重点弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不想去参加那次聚会"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你应该勇敢一点，不能总躲着。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "刚才不该跟你说“应该勇敢点”，是我跑题了。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "刚才不该跟你说“应该勇敢点”，是我跑题了。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 6195
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我说的是和妈妈吵架，不是在问怎么放松",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我刚和妈妈吵了一架"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "要不要先做个呼吸练习放松一下？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，刚才不该扯到呼吸练习上。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，刚才不该扯到呼吸练习上。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5917
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我说的是和妈妈吵架，不是在问怎么放松",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我刚和妈妈吵了一架"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "要不要先做个呼吸练习放松一下？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，刚才不该扯到呼吸练习上。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，刚才不该扯到呼吸练习上。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5940
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我说的是和妈妈吵架，不是在问怎么放松",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我刚和妈妈吵了一架"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "要不要先做个呼吸练习放松一下？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "抱歉，刚才不该扯到呼吸练习上。",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "text": "抱歉，刚才不该扯到呼吸练习上。",
+          "validationPassed": true,
+          "validationFailures": []
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 5445
+    }
+  ]
+}

@@ -1,8 +1,14 @@
 # Conversation Trajectory Eval Specification v1
 
+Status: existing runner retained; Hill v1 extension approved for migration batches
+
 ## 1. Purpose
 
 Conversation Trajectory Eval v1 evaluates failures whose meaning depends on several turns. It complements, and does not replace, `clinical-evals/golden-dataset-v1.json` or the existing Experience Review workflow.
+
+For the Hill migration, trajectory evaluation becomes the primary evidence for
+the action—reaction—next-intention loop. The existing v1 dataset remains a
+pre-Hill regression asset; it is not sufficient to accept Hill behavior.
 
 The first consumers are EXP-BL-012A, EXP-BL-012B, and EXP-BL-012C:
 
@@ -12,13 +18,20 @@ The first consumers are EXP-BL-012A, EXP-BL-012B, and EXP-BL-012C:
 
 This document specifies data and runner behavior only. It does not create the dataset, implement a runner, modify product prompts, or authorize a product fix.
 
-## 2. Proposed Canonical Data File
+## 2. Canonical Data Files
 
 ```text
 clinical-evals/conversation-trajectories-v1.json
+clinical-evals/hill-helping-trajectories-v1.json
 ```
 
-The file must contain complete ordered trajectories. A turn that depends on earlier context must not be copied into the single-turn Golden Dataset as an independent case.
+The first file preserves existing groundedness, template-rut and meta-repair
+fixtures. The second is created in the implementation batches and owns Hill
+applicability, goal, intention, skill, committed move and reaction expectations.
+
+Both files must contain complete ordered trajectories. A turn that depends on
+earlier context must not be copied into the single-turn Golden Dataset as an
+independent case.
 
 ## 3. Proposed Schema
 
@@ -60,7 +73,23 @@ The file must contain complete ordered trajectories. A turn that depends on earl
 }
 ```
 
-This is an illustrative schema. Exact field names must be validated against runner ergonomics before the canonical JSON file is created.
+This is the legacy v1 illustrative schema. Hill trajectories extend each turn
+with:
+
+```text
+direct obligations
+user boundaries
+previous committed Helping move candidates
+expected applicability
+allowed / forbidden goal, intention and skill
+reaction relation and evidence
+impactKnown
+formal commit expectation
+next-goal constraints
+```
+
+The extension must use typed fields and preserve source turn ids. It must not
+encode a preferred final sentence.
 
 ## 4. Required Top-level Metadata
 
@@ -97,15 +126,21 @@ For real-model evaluation, the runner must use the official reply entrypoint for
 ```text
 createChatReply()
   -> Safety
-  -> ClinicalContext
-  -> ResponseGoal
-  -> Strategy
-  -> ClinicalPlan
-  -> Prompt
-  -> model reply
+  -> Context Assembly
+  -> Turn Interpretation
+  -> Dialogue / Interaction State
+  -> Helping Logic / HillHelpingDecision
+  -> Response Planner / one ResponsePlan
+  -> Surface Realization
+  -> same-plan Validation
+  -> commit successful Assistant and optional Helping move
   -> append to trajectory history
   -> next user turn
 ```
+
+During Batch 1-2 Shadow runs, the runner records Hill trace separately while the
+existing behavior source produces the reply. Shadow data cannot be appended as
+a `CommittedHelpingMove`.
 
 The runner must not replace product replies with handcrafted templates. Deterministic replay mode may use captured replies only to validate report structure and machine-check logic; replay is not evidence of current model quality.
 
@@ -115,7 +150,12 @@ The runner must not replace product replies with handcrafted templates. Determin
 
 Allowed merge-gating checks include:
 
-- selected `ResponseGoal`, Strategy, response intent, and question function match the expected structure when specified;
+- existing v1 `ResponseGoal` and Strategy fields match their legacy fixtures;
+- Hill applicability, goal, intention and skill match allowed/forbidden
+  structure when the Hill dataset is active;
+- exactly one behavior source and one final ResponsePlan;
+- Shadow never changes the baseline plan, prompt projection or formal state;
+- only an executed and committed Hill reply produces `CommittedHelpingMove`;
 - Safety routing and reply source are visible;
 - exact forbidden phrases or bounded regex patterns are absent;
 - a bounded sentence-opening pattern does not repeat above a declared count;
@@ -149,6 +189,17 @@ Required reviewer fields include:
 - `conversationMovement`: did the reply support continued conversation without forcing disclosure or closing prematurely?
 - `reviewerNotes`
 
+Hill review additionally requires:
+
+- `goalFit`;
+- `skillFit`;
+- `responsivenessToPreviousMove`;
+- `meaningAuthority`;
+- `agency`;
+- `relationshipIntegrity`;
+- `pressureRisk`;
+- `methodDrift`.
+
 An LLM judge may prefill suggestions with model and Prompt version recorded. A human reviewer must confirm any semantic field used for an acceptance decision.
 
 ## 7. Known Literal Regression Patterns
@@ -177,7 +228,9 @@ Variant sets are child-specific:
 
 - 012A variants test low-information groundedness and history contamination;
 - 012B variants test removal of concrete recorder-style examples and addition of a semantic-value contract, but only after at least three semantically distinct emotional inputs reproduce a materially similar skeleton in one trajectory across repeated real-model runs and a human reviewer confirms the rut hypothesis;
-- 012C variants test repair rendering and, only after separate approval, a possible ClinicalPlan contract change.
+- 012C is a frozen pre-Hill repair experiment. Any new repair capability must
+  use the Hill relationship-repair contract rather than changing
+  `ClinicalPlan`.
 
 The runner must not mix product changes for multiple child issues into a single treatment branch.
 
@@ -228,10 +281,13 @@ The existing `docs/evals/experience-review-latest.md` requires its own follow-up
 
 ## 11. Relationship to Existing Evaluation Assets
 
-- `golden-dataset-v1.json`: retain single-turn cases and structural expectations.
+- `golden-dataset-v1.json`: retain legacy single-turn cases and ResponseGoal
+  expectations; do not use it as the Hill acceptance dataset.
 - Experience Review: retain baseline/treatment human review for individual cases.
 - existing direct probes: inventory and reuse before creating duplicate checks.
 - trajectory eval: own ordered multi-turn state, cross-turn contamination, template rut, and meta-repair.
+- `hill-helping-trajectories-v1.json`: own Hill process acceptance after its
+  schema is implemented and reviewed.
 
 No existing dataset or runner is modified by this specification task.
 
@@ -249,15 +305,19 @@ No existing dataset or runner is modified by this specification task.
 
 ## 13. Implementation Boundary
 
-The next task may implement only:
+Batch 0 may only align this specification and freeze existing evidence. Batch 1
+may implement only:
 
-- the canonical trajectory schema after review;
-- a runner and deterministic runner checks;
-- initial captured/reproduced trajectory fixtures;
+- the Hill schema and structural Shadow fields after review;
+- deterministic checks proving Shadow isolation and decision completeness;
+- initial contract/counterexample fixtures;
 - report and freshness metadata generation.
 
-It must not modify product Prompt, Selector, Strategy, ClinicalPlan, Safety, Memory, model provider configuration, or the single-turn Golden Dataset.
+It must not modify product Prompt, Surface behavior, Safety, Memory, model
+provider configuration, or the legacy single-turn Golden Dataset.
 
 ## Next Unique Action
 
-Review this schema and runner contract. If approved, open one independent eval-infrastructure issue to implement the harness before any EXP-BL-012 child product fix.
+After Batch 0 acceptance, implement the typed Hill decision and its Shadow
+evaluation fields together in Batch 1. Do not run a user-visible Hill treatment
+before Shadow isolation passes.

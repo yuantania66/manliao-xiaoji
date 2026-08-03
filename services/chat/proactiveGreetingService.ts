@@ -98,6 +98,7 @@ export const ensureProactiveChatGreeting = async ({
     where: {
       sessionId,
       userId,
+      status: { not: MessageStatus.BLOCKED },
     },
     orderBy: { createdAt: "desc" },
     select: {
@@ -124,9 +125,10 @@ export const ensureProactiveChatGreeting = async ({
     where: {
       sessionId,
       userId,
+      status: { not: MessageStatus.BLOCKED },
     },
     orderBy: { createdAt: "desc" },
-    take: 12,
+    take: 24,
     select: {
       role: true,
       content: true,
@@ -138,6 +140,12 @@ export const ensureProactiveChatGreeting = async ({
       },
     },
   });
+  const recentGreetings = recentMessages
+    .filter((message) =>
+      isProactiveGreetingPromptVersion(message.aiGeneration?.promptVersion)
+    )
+    .slice(0, 3)
+    .map((message) => message.content);
   const modelMessages: AiConversationMessage[] = recentMessages
     .filter((message) => !isProactiveGreetingPromptVersion(message.aiGeneration?.promptVersion))
     .slice(0, 6)
@@ -154,7 +162,7 @@ export const ensureProactiveChatGreeting = async ({
       const generation = await generateProactiveGreeting({
         kind: "initial",
         recentMessages: [],
-        now,
+        recentGreetings,
       });
       return createGreetingMessage({ sessionId, userId, generation, createdAt: now });
     } catch (error) {
@@ -172,7 +180,7 @@ export const ensureProactiveChatGreeting = async ({
     const generation = await generateProactiveGreeting({
       kind: "return",
       recentMessages: modelMessages,
-      now,
+      recentGreetings,
     });
     return createGreetingMessage({ sessionId, userId, generation, createdAt: now });
   } catch (error) {

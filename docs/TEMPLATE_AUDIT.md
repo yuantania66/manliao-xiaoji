@@ -1,5 +1,12 @@
 # Template Audit
 
+> 2026-07-29 follow-up：TA-011 的 production guarded fallback 已移除。模型欢迎语
+> 于第二轮修订中改为 `simple_greeting/open_statement/light_question` 多动作合同，
+> 不再强制问题；固定候选只服务显式 deterministic 开发模式。模型欢迎语
+> 连续两次未通过自然度约束时，现在返回生成失败并不创建欢迎消息；只有显式
+> `PROACTIVE_GREETING_MODE="deterministic"` 的开发配置仍使用固定动作候选。
+> 下方数量统计保留为本审计形成时的历史基线。
+
 ## 审计目标
 
 本审计检查当前系统中的固定回复模板和固定措辞注入，判断安全、约束或产品逻辑是否越界成为正常聊天中的用户可见回复。
@@ -155,11 +162,12 @@
 ## TA-011
 
 1. **文件位置**：`services/ai/proactiveGreeting.ts:8, 145-152, 167-186`；落库与展示入口 `services/chat/proactiveGreetingService.ts`
-2. **触发条件**：`PROACTIVE_GREETING_MODE="deterministic"`；或模型主动问候连续两次未通过 `validateGreeting`。
-3. **当前回复内容**：`你可以先放一句话在这里，不用想清楚。`
+2. **触发条件**：仅显式 `PROACTIVE_GREETING_MODE="deterministic"`；模型主动问候连续两次未通过 validator 时不再生成固定回复。
+3. **当前回复内容**：按选定动作从开发专用候选中选择；例如 `你好。`、
+   `我先来打个招呼。` 或一个具体轻量问题。
 4. **类型**：product behavior template
 5. **是否用户可见**：yes
-6. **判断**：需要后续 review。它位于正常产品入口，并在 guard 拒绝模型问候后成为固定最终回复；句式中的“放一句话在这里”“不用想清楚”容易形成机械陪伴腔并降低首次 conversation movement。
+6. **判断**：仅保留为显式开发模式的 deterministic 文案。production 模型路径不会再用它覆盖失败候选；普通欢迎语由多动作合同、问题频率、近似重复和话题复用校验控制。
 
 ## TA-012
 

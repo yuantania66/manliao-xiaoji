@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "blindReviewPath": "docs/evals/chat-gate-v0-blind-review-20260730.md",
+  "X": {
+    "side": "A-repo",
+    "sourceId": "3e34257c392cce79afbd12bfe36a5fbdbe84ab6c"
+  },
+  "Y": {
+    "side": "B0",
+    "sourceId": "B0-20260730T-current-source"
+  }
+}

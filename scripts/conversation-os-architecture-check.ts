@@ -6,6 +6,7 @@ const ROOTS = ["app", "services", "conversation-os"];
 const ALLOWED_LLM_CALL_FILES = new Set([
   "services/ai/aiService.ts",
   "services/ai/turnInterpretationAdapter.ts",
+  "services/helping/hillHelpingDecisionService.ts",
   "services/ai/proactiveGreeting.ts",
   "services/understanding/extractService.ts",
   "services/experience/experienceExtractorService.ts",
@@ -25,7 +26,7 @@ const llmCallFiles = files.filter((file) => readFileSync(file, "utf8").includes(
 for (const file of llmCallFiles) {
   assert(
     ALLOWED_LLM_CALL_FILES.has(file),
-    `Unexpected direct LLM call in ${file}. Only Turn Interpretation and Surface Realization adapters may call the model.`
+    `Unexpected direct LLM call in ${file}. Chat-domain calls are limited to Turn Interpretation, Helping Logic, and Surface Realization.`
   );
 }
 
@@ -46,6 +47,23 @@ assert.equal(
   callModelCount,
   1,
   "Normal chat generation must not add extra direct LLM repair/rewrite calls outside the pipeline."
+);
+
+const helpingDecisionService = readFileSync("services/helping/hillHelpingDecisionService.ts", "utf8");
+assert.equal(
+  (helpingDecisionService.match(/callModel\(/g) ?? []).length,
+  1,
+  "Helping Logic may have only one structured provider call site."
+);
+assert(
+  helpingDecisionService.includes("Output JSON only") &&
+    helpingDecisionService.includes("never write final chat copy"),
+  "Helping Logic provider must be constrained to a structured domain decision, not final copy."
+);
+assert(
+  !helpingDecisionService.includes("createResponsePlan(") &&
+    !helpingDecisionService.includes("generateChatReply("),
+  "Helping Logic must not become a second final Planner or Surface."
 );
 
 const promptBuilder = readFileSync("services/ai/promptBuilder.ts", "utf8");
@@ -123,7 +141,7 @@ console.log(
   JSON.stringify(
     {
       llmCallFiles,
-      normalChatPipeline: "ContextAssembly -> TurnInterpretation -> DialogueState -> ResponsePlanner -> SurfaceRealization -> OutputValidation -> StateUpdate",
+      normalChatPipeline: "ContextAssembly -> TurnInterpretation -> DialogueState -> HelpingLogicShadow -> ResponsePlanner -> SurfaceRealization -> OutputValidation -> StateUpdate",
       frozenLegacyStrategyFields: {
         engageMode: readUnionMembers(conversationTypes, "EngageMode").length,
         experienceGoal: readUnionMembers(conversationTypes, "ExperienceGoal").length,

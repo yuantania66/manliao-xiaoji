@@ -1,8 +1,13 @@
-export { ASSISTANT_GROUNDING, getGroundingFacts } from "./assistantGrounding";
+export {
+  ASSISTANT_GROUNDING,
+  formatAssistantGroundingForPrompt,
+  getRequiredGroundingDisclosure,
+} from "./assistantGrounding";
 export { assembleConversationControlContext } from "./contextAssembly";
 export { buildDialogueState } from "./dialogueState";
+export { selectOrdinaryHandoffAction } from "./ordinaryHandoff";
 export { createResponsePlan } from "./responsePlanner";
 export type { ClinicalAdviceProvider } from "./responsePlanner";
 export { interpretTurnDeterministically, mergeModelInterpretation } from "./turnInterpreter";
-export { isAssistantRepairSignal } from "./repairSignal";
+export { detectAssistantCorrection, isAssistantRepairSignal } from "./repairSignal";
 export type * from "./types";

@@ -5,6 +5,7 @@ import {
   AiJudgeResult,
 } from "./types";
 import { FALLBACK_PROMPT_VERSION } from "./promptBuilder";
+import type { ChatExecutionTrace } from "./chatExecutionLifecycle";
 
 export const buildAiDebugTrace = ({
   recentMessages,
@@ -15,7 +16,9 @@ export const buildAiDebugTrace = ({
   rewriteAttempted,
   regenerateAttempted = false,
   clinicalTrace,
+  helpingTrace,
   controlTrace,
+  execution,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
@@ -26,7 +29,9 @@ export const buildAiDebugTrace = ({
   rewriteAttempted: boolean;
   regenerateAttempted?: boolean;
   clinicalTrace?: AiDebugTrace["clinicalLogic"];
+  helpingTrace?: AiDebugTrace["helpingLogic"];
   controlTrace?: AiDebugTrace["conversationControl"];
+  execution?: ChatExecutionTrace;
 }): AiDebugTrace => {
   const promptMeta = generation.promptMeta;
   const providerReasoningLabel = generation.providerReasoning?.available
@@ -123,9 +128,13 @@ export const buildAiDebugTrace = ({
           : "Conversation OS control trace unavailable.",
       evidence: controlTrace
         ? [
-            `dialogueAct=${controlTrace.interpretation.primaryDialogueAct}`,
+            `responseRelations=${controlTrace.interpretation.responseRelation.candidates.map((item) => `${item.relation}:${item.confidence}`).join(",") || "none"}`,
+            `currentActivity=${controlTrace.dialogueState.currentActivity.primary}`,
+            `concurrentActivities=${controlTrace.dialogueState.currentActivity.concurrent.join(",") || "none"}`,
+            `initiativeOwner=${controlTrace.dialogueState.initiativeOwner}`,
             `answerObligations=${controlTrace.responsePlan.answerObligations.map((item) => item.kind).join(",") || "none"}`,
             `responseActions=${controlTrace.responsePlan.responseActions.join(",")}`,
+            `behaviorSource=${controlTrace.responsePlan.behaviorSource}`,
             `clinicalInvoked=${controlTrace.clinicalInvoked}`,
             `questionPolicy=${controlTrace.responsePlan.questionPolicy.mode}`,
             `closurePolicy=${controlTrace.responsePlan.closurePolicy.mode}`,
@@ -134,7 +143,38 @@ export const buildAiDebugTrace = ({
         : ["decisionOwner=safety_or_unavailable"],
     },
     {
-      title: "4. Provider",
+      title: "4. Helping Logic Shadow",
+      body: helpingTrace
+        ? helpingTrace.skippedReason === "safety_pre_gate"
+          ? "Safety 在普通 Helping Logic 前接管。"
+          : helpingTrace.skippedReason === "ordinary_handoff_no_fast_boundary"
+            ? "本轮不满足确定性 uncertain 边界；批次 1.5 未调用完整 Hill Shadow。"
+          : helpingTrace.enabled
+            ? controlTrace?.responsePlan.responseActions.some((action) =>
+                action === "invite_low_pressure_calibration" ||
+                action === "continue_established_frame" ||
+                action === "continue_established_thread" ||
+                action === "offer_neutral_conversation_entry"
+              )
+              ? "Helping 只把 uncertain 适用性边界交给普通 Planner；Hill 目标和技术未进入回复。"
+              : `Shadow 产生 ${helpingTrace.decision?.status ?? "missing"} 结果；未进入 ResponsePlan 或正式状态。`
+            : "Helping Shadow 已关闭；正式回复路径不变。"
+        : "Helping Shadow trace unavailable.",
+      evidence: helpingTrace
+        ? [
+            `enabled=${helpingTrace.enabled}`,
+            `skippedReason=${helpingTrace.skippedReason ?? "none"}`,
+            `decision=${helpingTrace.decision?.status ?? "none"}`,
+            `applicability=${helpingTrace.decision?.status === "decided" ? helpingTrace.decision.plan.applicability : "none"}`,
+            `failureCode=${helpingTrace.decision?.status === "failed" ? helpingTrace.decision.failureCode : "none"}`,
+            `providerAttempted=${helpingTrace.provider.attempted}`,
+            `providerUsed=${helpingTrace.provider.used}`,
+            ...helpingTrace.inputEvidence,
+          ]
+        : ["helpingLogic=none"],
+    },
+    {
+      title: "5. Provider",
       body: `${generation.model} / ${generation.latencyMs}ms`,
       evidence: [
         `finalReplySource=${generation.finalReplySource ?? "unknown"}`,
@@ -149,7 +189,7 @@ export const buildAiDebugTrace = ({
       ],
     },
     {
-      title: "5. Clinical Logic",
+      title: "6. Legacy Clinical Logic",
       body: clinicalTrace
         ? clinicalTrace.skippedBySafety
           ? "Safety 命中，普通 ClinicalPlan 已跳过。"
@@ -175,7 +215,9 @@ export const buildAiDebugTrace = ({
     visibleSteps: thinkingLayers.map((layer) => `${layer.title}：${layer.body}`),
     thinkingLayers,
     clinicalLogic: clinicalTrace,
+    helpingLogic: helpingTrace,
     conversationControl: controlTrace,
+    execution,
     prompt: {
       mode: promptMeta?.mode ?? (fallbackUsed ? "fallback" : finalSource === "safety" ? "safety" : "base_product"),
       promptVersion,

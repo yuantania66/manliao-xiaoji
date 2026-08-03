@@ -6,6 +6,7 @@ export { update } from "./update";
 export * from "./control";
 export type {
   ConversationContext,
+  CommittedAssistantMove,
   ConversationMessage,
   ConversationPipelineInput,
   ConversationPipelineLanguageInput,

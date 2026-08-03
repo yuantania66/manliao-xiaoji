@@ -383,19 +383,23 @@ model ChatSession {
 }
 
 model ChatMessage {
-  id             String              @id @default(cuid())
-  sessionId      String
-  userId         String
-  role           MessageRole
-  content        String
-  status         MessageStatus       @default(SAVED)
-  aiGenerationId String?
-  createdAt      DateTime            @default(now())
-  session        ChatSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  aiGeneration   AiGeneration?       @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
-  emotionSlices  EmotionSlice[]
-  feedbacks      AiMessageFeedback[]
+  id                  String              @id @default(cuid())
+  sessionId           String
+  userId              String
+  role                MessageRole
+  content             String
+  status              MessageStatus       @default(SAVED)
+  aiGenerationId      String?
+  replyToMessageId    String?             @unique
+  interactionMetadata Json?
+  createdAt           DateTime            @default(now())
+  session             ChatSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiGeneration        AiGeneration?       @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
+  replyToMessage      ChatMessage?        @relation("ChatMessageReply", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  assistantReply      ChatMessage?        @relation("ChatMessageReply")
+  emotionSlices       EmotionSlice[]
+  feedbacks           AiMessageFeedback[]
 
   @@index([sessionId, createdAt])
   @@index([userId, createdAt])
@@ -634,28 +638,34 @@ model AiMessageFeedback {
 }
 
 model AiGeneration {
-  id            String             @id @default(cuid())
-  userId        String
-  sessionId     String?
-  sourceType    AiSourceType
-  sourceId      String?
-  model         String
-  promptVersion String
-  inputText     String
-  outputText    String
-  rewriteOfId   String?
-  latencyMs     Int?
-  tokenInput    Int?
-  tokenOutput   Int?
-  status        AiGenerationStatus
-  createdAt     DateTime           @default(now())
-  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages      ChatMessage[]
-  judgeResults  AiJudgeResult[]
+  id             String             @id @default(cuid())
+  userId         String
+  sessionId      String?
+  sourceType     AiSourceType
+  sourceId       String?
+  model          String
+  promptVersion  String
+  inputText      String
+  outputText     String
+  rewriteOfId    String?
+  requestId      String?
+  turnId         String?
+  attemptId      String?            @unique
+  executionTrace Json?
+  latencyMs      Int?
+  tokenInput     Int?
+  tokenOutput    Int?
+  status         AiGenerationStatus
+  createdAt      DateTime           @default(now())
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages       ChatMessage[]
+  judgeResults   AiJudgeResult[]
 
   @@index([userId, createdAt])
   @@index([sessionId, createdAt])
   @@index([sourceType, sourceId])
+  @@index([requestId])
+  @@index([turnId])
 }
 
 model AiJudgeResult {

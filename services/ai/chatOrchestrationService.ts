@@ -26,16 +26,33 @@ import {
   createResponsePlan,
   interpretTurnDeterministically,
   type ConversationControlTrace,
+  type OrdinaryHandoffBoundary,
   type ResponseValidationResult,
 } from "@/conversation-os/control";
 import { enrichTurnInterpretation } from "./turnInterpretationAdapter";
+import { enforceResponsePlan } from "./responsePlanValidator";
 import {
-  RESPONSE_PLAN_CONSTRAINT_FAILURE_REPLY,
-  enforceResponsePlan,
-} from "./responsePlanValidator";
+  buildAttemptTransitions,
+  classifyExecutionError,
+  createExecutionIdentity,
+  preflightResponsePlan,
+  type ChatExecutionTrace,
+} from "./chatExecutionLifecycle";
+import {
+  buildHillHelpingInput,
+  createSkippedHillHelpingTrace,
+  isHillHelpingOrdinaryHandoffEnabled,
+  isHillHelpingShadowEnabled,
+  runHillHelpingShadow,
+  type HillHelpingDecisionProvider,
+  type HillHelpingShadowTrace,
+} from "@/services/helping";
 
 type CreateChatReplyInput = {
   conversationId: string;
+  currentTurnId?: string;
+  requestId?: string;
+  retrying?: boolean;
   userId?: string;
   userMessage: string;
   recentMessages: AiConversationMessage[];
@@ -44,6 +61,13 @@ type CreateChatReplyInput = {
   understandingContext?: StructuredRagContext | null;
   includeDebugTrace?: boolean;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
+  helpingShadowEnabled?: boolean;
+  helpingOrdinaryHandoffEnabled?: boolean;
+  helpingDecisionProvider?: HillHelpingDecisionProvider;
+  inspectHelpingPrompt?: (input: {
+    stage: "helping_shadow";
+    messages: AiModelMessage[];
+  }) => void | Promise<void>;
   inspectExternalPrompt?: (input: {
     stage: "turn_interpretation" | "surface_realization";
     messages: AiModelMessage[];
@@ -62,7 +86,9 @@ export type ChatReplyResult = {
   fallbackUsed: boolean;
   debugTrace?: AiDebugTrace;
   clinicalTrace: ClinicalTrace;
+  helpingTrace: HillHelpingShadowTrace;
   controlTrace?: ConversationControlTrace;
+  execution: ChatExecutionTrace;
 };
 
 const getFallbackRiskLevel = (content: string): AiRiskLevel => (isCrisisInput(content) ? "crisis" : "low");
@@ -94,7 +120,9 @@ const buildMaybeDebugTrace = ({
   rewriteAttempted,
   regenerateAttempted,
   clinicalTrace,
+  helpingTrace,
   controlTrace,
+  execution,
 }: {
   includeDebugTrace: boolean;
   userMessage: string;
@@ -106,7 +134,9 @@ const buildMaybeDebugTrace = ({
   rewriteAttempted: boolean;
   regenerateAttempted: boolean;
   clinicalTrace: ClinicalTrace;
+  helpingTrace: HillHelpingShadowTrace;
   controlTrace?: ConversationControlTrace;
+  execution?: ChatExecutionTrace;
 }) =>
   includeDebugTrace
     ? buildAiDebugTrace({
@@ -119,12 +149,17 @@ const buildMaybeDebugTrace = ({
         rewriteAttempted,
         regenerateAttempted,
         clinicalTrace,
+        helpingTrace,
         controlTrace,
+        execution,
       })
     : undefined;
 
 export const createChatReply = async ({
   conversationId,
+  currentTurnId,
+  requestId,
+  retrying = false,
   userId = "anonymous",
   userMessage,
   recentMessages,
@@ -133,8 +168,20 @@ export const createChatReply = async ({
   understandingContext,
   includeDebugTrace = false,
   evaluationAdapter,
+  helpingShadowEnabled,
+  helpingOrdinaryHandoffEnabled,
+  helpingDecisionProvider,
+  inspectHelpingPrompt,
   inspectExternalPrompt,
 }: CreateChatReplyInput): Promise<ChatReplyResult> => {
+  const executionIdentity = createExecutionIdentity({ requestId, turnId: currentTurnId });
+  const resolvedTurnId = executionIdentity.turnId;
+  const requestStartTransitions: ChatExecutionTrace["transitions"] = retrying
+    ? [{
+        phase: "RETRYING",
+        reason: "The client retried the same conversationId and turnId with a fresh requestId.",
+      }]
+    : [];
   if (evaluationAdapter && !conversationId.startsWith("trajectory-eval-")) {
     throw new Error("Evaluation adapters are restricted to trajectory-eval conversations.");
   }
@@ -156,6 +203,22 @@ export const createChatReply = async ({
       notes: ["Safety gate matched; ordinary ClinicalPlan skipped."],
       conversationState: conversationState.state,
     });
+    const helpingTrace = createSkippedHillHelpingTrace("safety_pre_gate");
+    const execution: ChatExecutionTrace = {
+      requestId: executionIdentity.requestId,
+      conversationId,
+      turnId: resolvedTurnId,
+      planId: "safety-pre-gate",
+      phase: "VALIDATED",
+      planPreflight: { passed: true, failureReasons: [] },
+      transitions: [
+        ...requestStartTransitions,
+        { phase: "PLANNED", reason: "Safety pre-gate selected the safety-owned response path." },
+        { phase: "GENERATED", reason: "Safety generation produced a user-facing candidate." },
+        { phase: "VALIDATED", reason: "Safety candidate passed the safety response boundary." },
+      ],
+      attempts: [],
+    };
 
     return {
       generation,
@@ -166,7 +229,9 @@ export const createChatReply = async ({
       regenerateAttempted,
       fallbackUsed,
       clinicalTrace,
+      helpingTrace,
       controlTrace: undefined,
+      execution,
       debugTrace: buildMaybeDebugTrace({
         includeDebugTrace,
         userMessage,
@@ -178,13 +243,16 @@ export const createChatReply = async ({
         rewriteAttempted,
         regenerateAttempted,
         clinicalTrace,
+        helpingTrace,
         controlTrace: undefined,
+        execution,
       }),
     };
   }
 
   const controlContext = assembleConversationControlContext({
     conversationId,
+    currentTurnId: resolvedTurnId,
     userMessage,
     recentMessages,
     conversationState,
@@ -192,10 +260,14 @@ export const createChatReply = async ({
   const deterministicInterpretation = interpretTurnDeterministically(controlContext);
   const interpreted = await enrichTurnInterpretation(controlContext, deterministicInterpretation, inspectExternalPrompt);
   const interpretation = interpreted.interpretation;
+  const responseRelations = new Set(
+    interpretation.responseRelation.candidates.map((candidate) => candidate.relation)
+  );
   const memoryRelevant =
     interpretation.directQuestions.length === 0 &&
-    interpretation.primaryDialogueAct !== "yield_initiative" &&
-    !interpretation.interaction.stopIntent;
+    !responseRelations.has("yields_initiative") &&
+    !responseRelations.has("requests_pause") &&
+    !responseRelations.has("repairs_previous_move");
   const resolvedMemoryContext = memoryRelevant
     ? memoryContext !== undefined
       ? memoryContext
@@ -209,6 +281,35 @@ export const createChatReply = async ({
     controlContext.unconfirmedHypotheses.push(`Selected observed context: ${resolvedMemoryContext.text}`);
   }
   const dialogueState = buildDialogueState(controlContext, interpretation);
+  const helpingInput = buildHillHelpingInput({
+    context: controlContext,
+    interpretation,
+    dialogueState,
+  });
+  const ordinaryHandoffEnabled = helpingOrdinaryHandoffEnabled ??
+    isHillHelpingOrdinaryHandoffEnabled();
+  const shadowEnabled = helpingShadowEnabled ?? isHillHelpingShadowEnabled();
+  const helpingTrace = await runHillHelpingShadow({
+    input: helpingInput,
+    enabled: ordinaryHandoffEnabled || shadowEnabled,
+    fastBoundaryOnly: ordinaryHandoffEnabled && !shadowEnabled,
+    provider: helpingDecisionProvider,
+    inspectHelpingPrompt,
+  });
+  const ordinaryHandoffBoundary: OrdinaryHandoffBoundary | null =
+    ordinaryHandoffEnabled &&
+    helpingTrace.decision?.status === "decided" &&
+    helpingTrace.decision.plan.applicability === "uncertain"
+      ? {
+          source: "hill_helping",
+          applicability: "uncertain",
+          userBoundaries: helpingInput.userBoundaries.map((item) => item.kind),
+          evidence: [
+            ...helpingTrace.decision.plan.evidence,
+            ...helpingTrace.inputEvidence,
+          ],
+        }
+      : null;
   let compatibilityClinicalTrace: ClinicalTrace = {
     skippedBySafety: false,
     invokedByPlanner: false,
@@ -246,6 +347,7 @@ export const createChatReply = async ({
     context: controlContext,
     interpretation,
     dialogueState,
+    ordinaryHandoffBoundary,
     clinicalAdviceProvider: ({ need }) => {
       const clinicalContext = buildClinicalContext({
         conversationId,
@@ -267,12 +369,89 @@ export const createChatReply = async ({
     },
   });
   const clinicalTrace = compatibilityClinicalTrace;
+  const planPreflight = preflightResponsePlan(responsePlan);
+  if (!planPreflight.passed) {
+    const generation: AiGenerationResult = {
+      text: "",
+      model: "not-called",
+      promptVersion: JUDGE_PROMPT_VERSION,
+      latencyMs: 0,
+      postProcessSteps: [],
+      finalReplySource: "constraint_failure",
+    };
+    const judge = createFallbackJudge("low", "ResponsePlan failed preflight; model not called.");
+    const controlTrace: ConversationControlTrace = {
+      context: controlContext,
+      interpretation,
+      interpretationModel: interpreted.modelTrace,
+      dialogueState,
+      responsePlan,
+      clinicalInvoked: Boolean(responsePlan.clinicalStrategy),
+      validation: [],
+      stateUpdate: {
+        answeredObligations: [],
+        remainingOpenLoops: responsePlan.answerObligations.map((item) => item.id),
+        obligationTransitions: [],
+        notes: ["PLAN_INVALID is an execution failure; no Interaction State transition was committed."],
+      },
+    };
+    const execution: ChatExecutionTrace = {
+      requestId: executionIdentity.requestId,
+      conversationId,
+      turnId: resolvedTurnId,
+      planId: responsePlan.planId,
+      phase: "FAILED",
+      planPreflight,
+      transitions: [
+        ...requestStartTransitions,
+        { phase: "PLANNED", reason: "The single Response Planner produced a plan." },
+        { phase: "REJECTED", reason: planPreflight.failureReasons.join(", ") },
+        { phase: "FAILED", reason: "ResponsePlan preflight failed before any model call." },
+      ],
+      attempts: [],
+      failure: {
+        code: "PLAN_INVALID",
+        reason: planPreflight.failureReasons.join(", "),
+        retryable: true,
+      },
+    };
+    return {
+      generation,
+      generationAttempts: [],
+      judge,
+      finalSource: "constraint_failure",
+      rewriteAttempted: false,
+      regenerateAttempted: false,
+      fallbackUsed: false,
+      clinicalTrace,
+      helpingTrace,
+      controlTrace,
+      execution,
+      debugTrace: buildMaybeDebugTrace({
+        includeDebugTrace,
+        userMessage,
+        recentMessages,
+        generation,
+        judge,
+        finalSource: "constraint_failure",
+        fallbackUsed: false,
+        rewriteAttempted: false,
+        regenerateAttempted: false,
+        clinicalTrace,
+        helpingTrace,
+        controlTrace,
+        execution,
+      }),
+    };
+  }
 
+  const attemptIds: string[] = [];
   try {
     const enforced = await enforceResponsePlan({
       plan: responsePlan,
-      generate: async (constraint) =>
-        generateChatReply({
+      generate: async (constraint) => {
+        attemptIds.push(createExecutionIdentity({}).requestId);
+        return generateChatReply({
           conversationId,
           userMessage,
           recentMessages,
@@ -284,7 +463,8 @@ export const createChatReply = async ({
           inspectExternalPrompt: inspectExternalPrompt
             ? ({ messages }) => inspectExternalPrompt({ stage: "surface_realization", messages })
             : undefined,
-        }),
+        });
+      },
     });
     const generation = enforced.generation;
     const judge = createDisabledJudge("judge/rewrite disabled; base model output returned directly");
@@ -296,7 +476,7 @@ export const createChatReply = async ({
       : generation.finalReplySource === "constraint_failure" ? "constraint_failure" : "llm";
     const fallbackUsed = false;
     const finalValidation = enforced.validations.at(-1);
-    const answeredObligations = finalValidation?.passed ? responsePlan.answerObligations.map((item) => item.id) : [];
+    const validated = enforced.outcome === "validated" && Boolean(finalValidation?.passed);
     const controlTrace: ConversationControlTrace = {
       context: controlContext,
       interpretation: {
@@ -307,15 +487,50 @@ export const createChatReply = async ({
           ...(interpreted.rawModelOutput ? [`modelInterpretationRaw=${interpreted.rawModelOutput}`] : []),
         ],
       },
+      interpretationModel: interpreted.modelTrace,
       dialogueState,
       responsePlan,
       clinicalInvoked: Boolean(responsePlan.clinicalStrategy),
       validation: enforced.validations,
       stateUpdate: {
-        answeredObligations,
-        remainingOpenLoops: responsePlan.answerObligations.map((item) => item.id).filter((id) => !answeredObligations.includes(id)),
-        notes: ["State update records whether the single ResponsePlan was fulfilled; it does not re-plan the reply."],
+        answeredObligations: [],
+        remainingOpenLoops: responsePlan.answerObligations.map((item) => item.id),
+        obligationTransitions: [],
+        notes: [
+          validated
+            ? "ResponsePlan output is validated but not committed; Interaction State remains unchanged until persistence succeeds."
+            : "GENERATION_NONCONFORMANT is an execution failure; Interaction State remains unchanged.",
+        ],
       },
+    };
+    const executionAttempts: ChatExecutionTrace["attempts"] = enforced.attempts.map((attempt, index) => ({
+      attemptId: attemptIds[index] ?? createExecutionIdentity({}).requestId,
+      phase: enforced.validations[index]?.passed ? "VALIDATED" : "REJECTED",
+      generation: attempt,
+      validation: enforced.validations[index],
+    }));
+    const execution: ChatExecutionTrace = {
+      requestId: executionIdentity.requestId,
+      conversationId,
+      turnId: resolvedTurnId,
+      planId: responsePlan.planId,
+      phase: validated ? "VALIDATED" : "FAILED",
+      planPreflight,
+      transitions: [
+        ...requestStartTransitions,
+        { phase: "PLANNED", reason: "The single Response Planner produced a preflight-valid plan." },
+        ...buildAttemptTransitions({ attempts: executionAttempts, validated }),
+      ],
+      attempts: executionAttempts,
+      ...(validated
+        ? {}
+        : {
+            failure: {
+              code: "GENERATION_NONCONFORMANT" as const,
+              reason: enforced.validations.flatMap((item) => item.failureReasons).join(", "),
+              retryable: true,
+            },
+          }),
     };
 
     return {
@@ -327,7 +542,9 @@ export const createChatReply = async ({
       regenerateAttempted,
       fallbackUsed,
       clinicalTrace,
+      helpingTrace,
       controlTrace,
+      execution,
       debugTrace: buildMaybeDebugTrace({
         includeDebugTrace,
         userMessage,
@@ -339,14 +556,17 @@ export const createChatReply = async ({
         rewriteAttempted,
         regenerateAttempted,
         clinicalTrace,
+        helpingTrace,
         controlTrace,
+        execution,
       }),
     };
   } catch (error) {
     if (error instanceof ExternalPromptRejectedError) throw error;
+    const classified = classifyExecutionError(error);
     const generation: AiGenerationResult = {
-      text: RESPONSE_PLAN_CONSTRAINT_FAILURE_REPLY,
-      model: "constraint-failure",
+      text: "",
+      model: "not-available",
       promptVersion: JUDGE_PROMPT_VERSION,
       latencyMs: 0,
       rawLLMOutput: undefined,
@@ -367,6 +587,7 @@ export const createChatReply = async ({
     const controlTrace: ConversationControlTrace = {
       context: controlContext,
       interpretation,
+      interpretationModel: interpreted.modelTrace,
       dialogueState,
       responsePlan,
       clinicalInvoked: Boolean(responsePlan.clinicalStrategy),
@@ -374,7 +595,47 @@ export const createChatReply = async ({
       stateUpdate: {
         answeredObligations: [],
         remainingOpenLoops: responsePlan.answerObligations.map((item) => item.id),
-        notes: ["No fallback chat plan was created after model failure."],
+        obligationTransitions: [],
+        notes: [
+          `${classified.code} is an execution failure; no Interaction State transition was committed.`,
+          "No fallback chat plan or Assistant message was created after model failure.",
+        ],
+      },
+    };
+    const execution: ChatExecutionTrace = {
+      requestId: executionIdentity.requestId,
+      conversationId,
+      turnId: resolvedTurnId,
+      planId: responsePlan.planId,
+      phase: "FAILED",
+      planPreflight,
+      transitions: [
+        ...requestStartTransitions,
+        { phase: "PLANNED", reason: "The single Response Planner produced a preflight-valid plan." },
+        ...attemptIds.flatMap((attemptId) => [
+          {
+            phase: "GENERATED" as const,
+            attemptId,
+            reason: "A provider attempt started but did not produce a validated candidate.",
+          },
+          {
+            phase: "FAILED" as const,
+            attemptId,
+            reason: classified.reason,
+          },
+        ]),
+        ...(!attemptIds.length
+          ? [{ phase: "FAILED" as const, reason: classified.reason }]
+          : []),
+      ],
+      attempts: attemptIds.map((attemptId) => ({
+        attemptId,
+        phase: "FAILED",
+      })),
+      failure: {
+        code: classified.code,
+        reason: classified.reason,
+        retryable: true,
       },
     };
 
@@ -387,7 +648,9 @@ export const createChatReply = async ({
       regenerateAttempted,
       fallbackUsed,
       clinicalTrace,
+      helpingTrace,
       controlTrace,
+      execution,
       debugTrace: buildMaybeDebugTrace({
         includeDebugTrace,
         userMessage,
@@ -399,7 +662,9 @@ export const createChatReply = async ({
         rewriteAttempted,
         regenerateAttempted,
         clinicalTrace,
+        helpingTrace,
         controlTrace,
+        execution,
       }),
     };
   }

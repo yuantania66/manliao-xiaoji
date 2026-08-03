@@ -8,6 +8,11 @@ import { CalendarDays, Search } from "lucide-react";
 
 import { apiRequest, ClientApiError } from "@/lib/client-api";
 import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
+import {
+  appendGuestRecentGreeting,
+  collapseConsecutiveGuestGreetings,
+  parseGuestRecentGreetings,
+} from "@/lib/guest-proactive-greeting";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
 
 type Message = {
@@ -17,6 +22,14 @@ type Message = {
   createdAt: string;
   promptVersion?: string | null;
   debugTrace?: AiDebugTrace;
+};
+
+type ExecutionSystemStatus = {
+  type: "system_status";
+  code: string;
+  message: string;
+  retryable: boolean;
+  turnId: string;
 };
 
 type AiDebugTrace = {
@@ -184,7 +197,16 @@ type AiDebugTrace = {
     safetyOverrideReason?: string;
   };
   conversationControl?: {
-    interpretation: { primaryDialogueAct: string };
+    interpretation: {
+      primaryDialogueAct: string;
+      responseRelation: {
+        candidates: { relation: string; confidence: number }[];
+      };
+    };
+    dialogueState: {
+      currentActivity: { primary: string; concurrent: string[] };
+      initiativeOwner: string;
+    };
     responsePlan: {
       planId: string;
       decisionOwner: string;
@@ -249,6 +271,7 @@ const CHAT_CACHE_PREFIX = "xinqingChatCache";
 const GUEST_MODE_KEY = "xinqingGuestMode";
 const GUEST_CHAT_CACHE_KEY = "xinqingGuestChatCache:v2";
 const GUEST_AI_USAGE_KEY = "xinqingGuestAiUsage";
+const GUEST_RECENT_GREETINGS_KEY = "xinqingGuestRecentGreetings:v1";
 const GUEST_AI_DAILY_LIMIT = 3;
 const GUEST_SESSION_ID = "guest-session";
 const LOCAL_DEMO_TOKEN_PREFIX = "local_demo_";
@@ -352,7 +375,7 @@ const formatEngineDetails = (trace: AiDebugTrace) => {
       ? `Conversation OS: notice=${prompt.conversationContext.latestNotice.observations.length}, unknowns=${prompt.conversationContext.understanding.unknowns.length}, experienceGoal=${prompt.conversationContext.responseGoal.experienceGoal?.join(",") ?? "unknown"}, engageMode=${prompt.conversationContext.responseGoal.engageMode ?? "unknown"}`
       : "Conversation OS: unknown",
     trace.conversationControl
-      ? `Conversation OS Control: owner=${trace.conversationControl.responsePlan.decisionOwner}, plan=${trace.conversationControl.responsePlan.planId}, act=${trace.conversationControl.interpretation.primaryDialogueAct}, obligations=${trace.conversationControl.responsePlan.answerObligations.map((item) => item.kind).join(",") || "none"}, actions=${trace.conversationControl.responsePlan.responseActions.join(",")}, clinical=${trace.conversationControl.clinicalInvoked}, validation=${trace.conversationControl.validation.map((item) => item.passed).join(" -> ")}, open=${trace.conversationControl.stateUpdate.remainingOpenLoops.length}`
+      ? `Conversation OS Control: owner=${trace.conversationControl.responsePlan.decisionOwner}, plan=${trace.conversationControl.responsePlan.planId}, relations=${trace.conversationControl.interpretation.responseRelation.candidates.map((item) => `${item.relation}:${item.confidence}`).join(",") || "none"}, activity=${trace.conversationControl.dialogueState.currentActivity.primary}, concurrent=${trace.conversationControl.dialogueState.currentActivity.concurrent.join(",") || "none"}, initiative=${trace.conversationControl.dialogueState.initiativeOwner}, obligations=${trace.conversationControl.responsePlan.answerObligations.map((item) => item.kind).join(",") || "none"}, actions=${trace.conversationControl.responsePlan.responseActions.join(",")}, clinical=${trace.conversationControl.clinicalInvoked}, validation=${trace.conversationControl.validation.map((item) => item.passed).join(" -> ")}, open=${trace.conversationControl.stateUpdate.remainingOpenLoops.length}`
       : "Conversation OS Control: safety or unavailable",
     prompt?.conversationOrientation
       ? `Orientation: current=${prompt.conversationOrientation.currentUnderstanding.length}, unknowns=${prompt.conversationOrientation.unknowns.length}, directions=${prompt.conversationOrientation.possibleDirections.length}`
@@ -440,7 +463,9 @@ const readGuestMessages = (): Message[] => {
 
   try {
     const cached = JSON.parse(window.sessionStorage.getItem(GUEST_CHAT_CACHE_KEY) || "[]");
-    return Array.isArray(cached) ? (cached as Message[]) : [];
+    return Array.isArray(cached)
+      ? collapseConsecutiveGuestGreetings(cached as Message[])
+      : [];
   } catch {
     return [];
   }
@@ -449,6 +474,22 @@ const readGuestMessages = (): Message[] => {
 const writeGuestMessages = (messages: Message[]) => {
   if (typeof window === "undefined") return;
   window.sessionStorage.setItem(GUEST_CHAT_CACHE_KEY, JSON.stringify(messages));
+};
+
+const readGuestRecentGreetings = () => {
+  if (typeof window === "undefined") return [];
+  return parseGuestRecentGreetings(
+    window.localStorage.getItem(GUEST_RECENT_GREETINGS_KEY)
+  );
+};
+
+const rememberGuestGreeting = (greeting: string) => {
+  if (typeof window === "undefined") return;
+  const next = appendGuestRecentGreeting(readGuestRecentGreetings(), greeting);
+  window.localStorage.setItem(
+    GUEST_RECENT_GREETINGS_KEY,
+    JSON.stringify(next)
+  );
 };
 
 const reserveGuestOpenGreeting = () => {
@@ -470,6 +511,7 @@ const createGuestGreetingMessage = async ({
   recentMessages: Message[];
 }): Promise<Message | null> => {
   try {
+    const recentGreetings = readGuestRecentGreetings();
     const data = await apiRequest<{ assistantMessage: ChatMessageResponse }>(
       "/api/chat/guest/greeting",
       {
@@ -482,9 +524,11 @@ const createGuestGreetingMessage = async ({
             content: message.text,
             promptVersion: message.promptVersion,
           })),
+          recentGreetings,
         },
       }
     );
+    rememberGuestGreeting(data.assistantMessage.content);
 
     return {
       id: data.assistantMessage.id,
@@ -583,6 +627,9 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [typingMessageIds, setTypingMessageIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [executionStatus, setExecutionStatus] = useState<
+    (ExecutionSystemStatus & { inputText: string; isGuest: boolean }) | null
+  >(null);
   const [isDebugLoggingIn, setIsDebugLoggingIn] = useState(false);
   const typingCancelledRef = useRef(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
@@ -898,7 +945,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       return;
     }
 
-    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticId = `turn-${crypto.randomUUID()}`;
     const pendingAssistantId = `typing-${Date.now()}`;
     const now = new Date().toISOString();
     const userMessage: Message = { id: optimisticId, role: "user", text, createdAt: now };
@@ -911,6 +958,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     setTypingMessageIds((current) => [...current, pendingAssistantId]);
     setInput("");
     setErrorMessage("");
+    setExecutionStatus(null);
 
     if (isGuestMode) {
       const replacePendingAssistant = async (assistantMessage: Message) => {
@@ -932,28 +980,34 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       };
 
       if (!showAiDebugTrace && getGuestAiRemaining() <= 0) {
-        const assistantMessage: Message = {
-          id: `guest-limit-${Date.now()}`,
-          role: "assistant",
-          text: GUEST_AI_LIMIT_MESSAGE,
-          createdAt: new Date().toISOString(),
-        };
-        await replacePendingAssistant(assistantMessage);
+        setMessages((current) => current.filter((message) => message.id !== pendingAssistantId));
+        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+        setExecutionStatus({
+          type: "system_status",
+          code: "RATE_LIMITED",
+          message: GUEST_AI_LIMIT_MESSAGE,
+          retryable: false,
+          turnId: optimisticId,
+          inputText: text,
+          isGuest: true,
+        });
         return;
       }
 
       try {
         const data = await apiRequest<{
-          assistantMessage: ChatMessageResponse;
-          fallbackUsed: boolean;
+          status: "committed" | "failed";
+          assistantMessage?: ChatMessageResponse;
+          systemStatus?: ExecutionSystemStatus;
           debugTrace?: AiDebugTrace;
         }>("/api/chat/guest", {
           method: "POST",
           auth: false,
           body: {
             content: text,
+            turnId: optimisticId,
             debugTrace: showAiDebugTrace,
-            recentMessages: messages.slice(-8).map((message) => ({
+            recentMessages: messages.slice(-24).map((message) => ({
               role: message.role,
               content: message.text,
               promptVersion: message.promptVersion,
@@ -963,6 +1017,18 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         });
         if (!showAiDebugTrace) {
           incrementGuestAiUsage();
+        }
+        if (data.status === "failed" || !data.assistantMessage) {
+          setMessages((current) => {
+            const next = current.filter((message) => message.id !== pendingAssistantId);
+            writeGuestMessages(next);
+            return next;
+          });
+          setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+          if (data.systemStatus) {
+            setExecutionStatus({ ...data.systemStatus, inputText: text, isGuest: true });
+          }
+          return;
         }
         await replacePendingAssistant({
           id: data.assistantMessage.id,
@@ -986,15 +1052,36 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
 
     try {
       const data = await apiRequest<{
+        status: "committed" | "failed";
         userMessage: ChatMessageResponse;
-        assistantMessage: ChatMessageResponse;
+        assistantMessage?: ChatMessageResponse;
+        systemStatus?: ExecutionSystemStatus;
         debugTrace?: AiDebugTrace;
       }>(`/api/chat/sessions/${sessionId}/messages`, {
         method: "POST",
-        body: { content: text, debugTrace: showAiDebugTrace },
+        body: { content: text, turnId: optimisticId, debugTrace: showAiDebugTrace },
       });
+      if (data.status === "failed" || !data.assistantMessage) {
+        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+        setMessages((current) => [
+          ...current.filter(
+            (message) => message.id !== optimisticId && message.id !== pendingAssistantId
+          ),
+          {
+            id: data.userMessage.id,
+            role: "user",
+            text: data.userMessage.content,
+            createdAt: data.userMessage.createdAt ?? now,
+          },
+        ]);
+        if (data.systemStatus) {
+          setExecutionStatus({ ...data.systemStatus, inputText: text, isGuest: false });
+        }
+        return;
+      }
+      const committedAssistantMessage = data.assistantMessage;
       setTypingMessageIds((current) =>
-        current.filter((id) => id !== pendingAssistantId).concat(data.assistantMessage.id)
+        current.filter((id) => id !== pendingAssistantId).concat(committedAssistantMessage.id)
       );
       setMessages((current) => [
         ...current.filter(
@@ -1008,15 +1095,15 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           promptVersion: data.userMessage.promptVersion,
         },
         {
-          id: data.assistantMessage.id,
+          id: committedAssistantMessage.id,
           role: "assistant",
           text: "",
-          createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
-          promptVersion: data.assistantMessage.promptVersion,
+          createdAt: committedAssistantMessage.createdAt ?? new Date().toISOString(),
+          promptVersion: committedAssistantMessage.promptVersion,
           debugTrace: data.debugTrace,
         },
       ]);
-      await revealAssistantReply(data.assistantMessage.id, data.assistantMessage.content);
+      await revealAssistantReply(committedAssistantMessage.id, committedAssistantMessage.content);
       const refreshed = await apiRequest<ChatMessagesListResponse>(
         `/api/chat/sessions/${sessionId}/messages?pageSize=50`
       );
@@ -1033,6 +1120,100 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         )
       );
       setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+      setErrorMessage(getErrorMessage(error));
+    }
+  };
+
+  const handleExecutionRetry = async () => {
+    const pending = executionStatus;
+    if (!pending?.retryable || !sessionId) return;
+    setExecutionStatus(null);
+    setErrorMessage("");
+    try {
+      if (pending.isGuest) {
+        const data = await apiRequest<{
+          status: "committed" | "failed";
+          assistantMessage?: ChatMessageResponse;
+          systemStatus?: ExecutionSystemStatus;
+          debugTrace?: AiDebugTrace;
+        }>("/api/chat/guest", {
+          method: "POST",
+          auth: false,
+          body: {
+            content: pending.inputText,
+            turnId: pending.turnId,
+            retry: true,
+            debugTrace: showAiDebugTrace,
+            recentMessages: messages
+              .filter((message) => message.id !== pending.turnId)
+              .slice(-24)
+              .map((message) => ({
+                role: message.role,
+                content: message.text,
+                promptVersion: message.promptVersion,
+                createdAt: message.createdAt,
+              })),
+          },
+        });
+        if (!showAiDebugTrace) incrementGuestAiUsage();
+        if (data.status === "failed" || !data.assistantMessage) {
+          setExecutionStatus({
+            ...(data.systemStatus ?? pending),
+            inputText: pending.inputText,
+            isGuest: true,
+          });
+          return;
+        }
+        const assistant: Message = {
+          id: data.assistantMessage.id,
+          role: "assistant",
+          text: "",
+          createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
+          promptVersion: data.assistantMessage.promptVersion,
+          debugTrace: data.debugTrace,
+        };
+        setMessages((current) => {
+          const next = [...current, assistant];
+          writeGuestMessages(next);
+          return next;
+        });
+        await revealAssistantReply(assistant.id, data.assistantMessage.content);
+        setMessages((current) => {
+          writeGuestMessages(current);
+          return current;
+        });
+        return;
+      }
+
+      const data = await apiRequest<{
+        status: "committed" | "failed";
+        assistantMessage?: ChatMessageResponse;
+        systemStatus?: ExecutionSystemStatus;
+        debugTrace?: AiDebugTrace;
+      }>(`/api/chat/sessions/${sessionId}/messages`, {
+        method: "POST",
+        body: { retryTurnId: pending.turnId, debugTrace: showAiDebugTrace },
+      });
+      if (data.status === "failed" || !data.assistantMessage) {
+        setExecutionStatus({
+          ...(data.systemStatus ?? pending),
+          inputText: pending.inputText,
+          isGuest: false,
+        });
+        return;
+      }
+      const assistant: Message = {
+        id: data.assistantMessage.id,
+        role: "assistant",
+        text: "",
+        createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
+        promptVersion: data.assistantMessage.promptVersion,
+        debugTrace: data.debugTrace,
+      };
+      setMessages((current) => [...current, assistant]);
+      await revealAssistantReply(assistant.id, data.assistantMessage.content);
+    } catch (error) {
+      setExecutionStatus(pending);
       setErrorMessage(getErrorMessage(error));
     }
   };
@@ -1224,6 +1405,24 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
             发送
           </button>
         </form>
+
+        {executionStatus ? (
+          <div
+            role="status"
+            className="absolute bottom-[82px] left-[18px] right-[18px] flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--page-bg)] px-3 py-2 text-[11px] leading-4 text-[var(--soft-copy)]"
+          >
+            <span>{executionStatus.message}</span>
+            {executionStatus.retryable ? (
+              <button
+                type="button"
+                onClick={handleExecutionRetry}
+                className="ml-3 shrink-0 font-semibold text-[var(--sage)]"
+              >
+                重新生成
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="absolute bottom-2.5 left-1/2 h-1 w-[100px] -translate-x-1/2 rounded-sm bg-[var(--ink)]" />
       </section>

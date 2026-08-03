@@ -1,0 +1,2054 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "planner-fix-real-20260803",
+  "datasetVersion": "hill-helping-batch1-5-preservation-v1-2026-08-01",
+  "datasetSha256": "12bd41f3c6c4370ddc3593cf997203037bc321a3b40d890ce196e9f6bcd6f243",
+  "provider": "qwen",
+  "model": "qwen3.7-max",
+  "startedAt": "2026-08-03T08:17:07.549Z",
+  "completedAt": "2026-08-03T08:17:38.261Z",
+  "gate": {
+    "runsPerScenario": 3,
+    "scenarioCount": 20,
+    "requiredValidatedRate": 1,
+    "requiredExpectedActionRate": 1,
+    "maximumConstraintFailures": 0,
+    "maximumHelpingProviderCalls": 0,
+    "maximumRegenerationRate": 0.2
+  },
+  "summary": {
+    "total": 60,
+    "validated": 0,
+    "validatedRate": 0,
+    "preflightPassed": 60,
+    "preflightPassedRate": 1,
+    "expectedAction": 33,
+    "expectedActionRate": 0.55,
+    "constraintFailures": 60,
+    "helpingProviderCalls": 0,
+    "regenerations": 0,
+    "regenerationRate": 0
+  },
+  "checks": {
+    "completeRunCount": true,
+    "preflightPassed": true,
+    "validatedRate": false,
+    "expectedActionRate": false,
+    "constraintFailures": false,
+    "helpingProviderCalls": true,
+    "regenerationRate": true
+  },
+  "passed": false,
+  "rows": [
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我今天有点不太高兴",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 1058
+    },
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我今天有点不太高兴",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 1050
+    },
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我今天有点不太高兴",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 491
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "心里有点堵",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 868
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "心里有点堵",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 502
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "心里有点堵",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 536
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "今天突然有点难过",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 505
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "今天突然有点难过",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 410
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "今天突然有点难过",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 385
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我现在又委屈又生气",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 864
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我现在又委屈又生气",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 442
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我现在又委屈又生气",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 528
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "明天那件事让我有点担心",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 517
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "明天那件事让我有点担心",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 383
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "明天那件事让我有点担心",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 376
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "刚才被忽略的时候挺难受的",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 366
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "刚才被忽略的时候挺难受的",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 446
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "刚才被忽略的时候挺难受的",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 392
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我觉得有点丢脸",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 747
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我觉得有点丢脸",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 774
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我觉得有点丢脸",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 773
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "今晚莫名有点孤单",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 459
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "今晚莫名有点孤单",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 394
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "今晚莫名有点孤单",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 390
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我现在真的很烦",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 533
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我现在真的很烦",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 450
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我现在真的很烦",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 380
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "userMessage": "我不想分析，只是有点难受",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 698
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "userMessage": "我不想分析，只是有点难受",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 723
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "userMessage": "我不想分析，只是有点难受",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 630
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "不是，我没说我害怕被否定，你理解偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我今天开会一直没说话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你其实是害怕被大家否定。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 226
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "不是，我没说我害怕被否定，你理解偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我今天开会一直没说话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你其实是害怕被大家否定。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 294
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "不是，我没说我害怕被否定，你理解偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我今天开会一直没说话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你其实是害怕被大家否定。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 194
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我说了不想要建议，你还是在教我怎么做",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只想说说今天的事，不要建议"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你可以先列三个方案，再决定怎么做。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "offer_action_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 527
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我说了不想要建议，你还是在教我怎么做",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只想说说今天的事，不要建议"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你可以先列三个方案，再决定怎么做。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "offer_action_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 379
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我说了不想要建议，你还是在教我怎么做",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只想说说今天的事，不要建议"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你可以先列三个方案，再决定怎么做。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "offer_action_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 365
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我没有撑不住，我只是说今天有点累",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "今天有点累"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "听起来你已经快撑不住了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 372
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我没有撑不住，我只是说今天有点累",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "今天有点累"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "听起来你已经快撑不住了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 468
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我没有撑不住，我只是说今天有点累",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "今天有点累"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "听起来你已经快撑不住了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 511
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "不是同事，是我姐姐，你把人弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "她昨天又给我打电话了"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "那个同事又联系你了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 524
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "不是同事，是我姐姐，你把人弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "她昨天又给我打电话了"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "那个同事又联系你了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 523
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "不是同事，是我姐姐，你把人弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "她昨天又给我打电话了"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "那个同事又联系你了。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 375
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "你又在追问，没有回应我刚才说的重点",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "那件事让我很难受"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "具体什么时候、在哪里、还有谁在场？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 876
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "你又在追问，没有回应我刚才说的重点",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "那件事让我很难受"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "具体什么时候、在哪里、还有谁在场？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 390
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "你又在追问，没有回应我刚才说的重点",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "那件事让我很难受"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "具体什么时候、在哪里、还有谁在场？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 470
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "你没有听我说的重点，只是在说你会听",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我最在意的是他当时那句话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "我在，我会认真听你说。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 395
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "你没有听我说的重点，只是在说你会听",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我最在意的是他当时那句话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "我在，我会认真听你说。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 452
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "你没有听我说的重点，只是在说你会听",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我最在意的是他当时那句话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "我在，我会认真听你说。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 584
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我已经说了不是内疚，你还在重复这个判断",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只是觉得这件事很麻烦"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "这种内疚感一直压着你。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 459
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我已经说了不是内疚，你还在重复这个判断",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只是觉得这件事很麻烦"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "这种内疚感一直压着你。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 394
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我已经说了不是内疚，你还在重复这个判断",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只是觉得这件事很麻烦"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "这种内疚感一直压着你。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 363
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "你一点都不懂我，刚才完全说偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不去不是因为害怕"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你是在逃避面对这件事。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 485
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "你一点都不懂我，刚才完全说偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不去不是因为害怕"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你是在逃避面对这件事。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 417
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "你一点都不懂我，刚才完全说偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不去不是因为害怕"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你是在逃避面对这件事。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 973
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我不是来听你讲应该不应该的，你把重点弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不想去参加那次聚会"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你应该勇敢一点，不能总躲着。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 512
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我不是来听你讲应该不应该的，你把重点弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不想去参加那次聚会"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你应该勇敢一点，不能总躲着。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 394
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我不是来听你讲应该不应该的，你把重点弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不想去参加那次聚会"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你应该勇敢一点，不能总躲着。"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "optional_after_answer",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 509
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "userMessage": "我说的是和妈妈吵架，不是在问怎么放松",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我刚和妈妈吵了一架"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "要不要先做个呼吸练习放松一下？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 356
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "userMessage": "我说的是和妈妈吵架，不是在问怎么放松",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我刚和妈妈吵了一架"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "要不要先做个呼吸练习放松一下？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 365
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "userMessage": "我说的是和妈妈吵架，不是在问怎么放松",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我刚和妈妈吵了一架"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "要不要先做个呼吸练习放松一下？"
+        }
+      ],
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "acknowledge_without_psychologizing"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "reply": "",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "surface_realization_unavailable"
+      ],
+      "regenerateAttempted": false,
+      "generationAttempts": 0,
+      "attempts": [],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 478
+    }
+  ]
+}

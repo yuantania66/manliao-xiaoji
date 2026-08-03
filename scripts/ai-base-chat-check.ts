@@ -57,15 +57,15 @@ const prompt = buildChatPrompt({
 });
 
 assert.equal(prompt.meta.promptVersion, CHAT_PROMPT_VERSION);
-assert.equal(prompt.meta.filteredHistoryCount, 4);
+assert.equal(prompt.meta.filteredHistoryCount, 0);
 assert.deepEqual(
   prompt.messages.map((message) => message.role),
-  ["developer", "user"]
+  ["developer", "user", "assistant", "user", "assistant", "user"]
 );
-assert(!JSON.stringify(prompt.messages).includes("还在这里"));
-assert(!JSON.stringify(prompt.messages).includes("往上了一点"));
-assert(!JSON.stringify(prompt.messages).includes("\"3\""));
-assert(!JSON.stringify(prompt.messages).includes("\"a\""));
+assert(JSON.stringify(prompt.messages).includes("还在这里"));
+assert(JSON.stringify(prompt.messages).includes("往上了一点"));
+assert(JSON.stringify(prompt.messages).includes("\"3\""));
+assert(JSON.stringify(prompt.messages).includes("\"a\""));
 assert(prompt.messages[0].content.includes("不是解题、测试、客服"));
 assert(prompt.messages[0].content.includes("好的问题不会让用户觉得自己正在回答 AI"));
 assert(prompt.messages[0].content.includes("不要替用户确认事实或感受"));
@@ -137,8 +137,8 @@ const implicitLegacyPrompt = buildChatPrompt({
   ],
 });
 
-assert.equal(implicitLegacyPrompt.meta.filteredHistoryCount, 3);
-assert.equal(implicitLegacyPrompt.meta.filteredHistory[0].reason, "legacy_template_text");
+assert.equal(implicitLegacyPrompt.meta.filteredHistoryCount, 0);
+assert.equal(implicitLegacyPrompt.meta.includedHistoryCount, 3);
 
 const repeatedLowInfoPrompt = buildChatPrompt({
   userMessage: "5",
@@ -170,28 +170,18 @@ const repeatedLowInfoPrompt = buildChatPrompt({
   ],
 });
 
-assert.equal(repeatedLowInfoPrompt.meta.filteredHistoryCount, 8);
+assert.equal(repeatedLowInfoPrompt.meta.filteredHistoryCount, 0);
 assert.deepEqual(
   repeatedLowInfoPrompt.messages.map((message) => message.role),
-  ["developer", "user"]
+  ["developer", "user", "assistant", "user", "assistant", "user", "assistant", "user", "assistant", "user"]
 );
 const repeatedLowInfoHistoryText = JSON.stringify(
   repeatedLowInfoPrompt.messages.filter((message) => message.role !== "developer")
 );
-assert(!repeatedLowInfoHistoryText.includes("是什么意思"));
-assert(!repeatedLowInfoHistoryText.includes("想换个东西说"));
-assert(!repeatedLowInfoHistoryText.includes("数字挺好的"));
-assert(!repeatedLowInfoHistoryText.includes("嗯，9"));
-assert(
-  repeatedLowInfoPrompt.meta.filteredHistory.some(
-    (item) => item.reason === "low_information_clarify_history_for_ambiguous_input"
-  )
-);
-assert(
-  repeatedLowInfoPrompt.meta.filteredHistory.some(
-    (item) => item.reason === "low_information_formulaic_history_for_ambiguous_input"
-  )
-);
+assert(repeatedLowInfoHistoryText.includes("是什么意思"));
+assert(repeatedLowInfoHistoryText.includes("想换个东西说"));
+assert(repeatedLowInfoHistoryText.includes("数字挺好的"));
+assert(repeatedLowInfoHistoryText.includes("嗯，9"));
 
 const debug = buildAiDebugTrace({
   userMessage: "b",
@@ -217,7 +207,7 @@ const debug = buildAiDebugTrace({
 });
 
 const debugText = JSON.stringify(debug);
-assert.equal(debug.prompt.filteredHistoryCount, 4);
+assert.equal(debug.prompt.filteredHistoryCount, 0);
 assert(!debugText.includes("理解层"));
 assert(!debugText.includes("慢聊状态"));
 

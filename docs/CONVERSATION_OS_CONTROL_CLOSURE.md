@@ -1,6 +1,6 @@
 # Conversation OS 控制权收口与自然会话闭环
 
-状态：代码迁移与本地结构回归完成；改造后真实 Qwen A/B 对照尚未调用，等待独立外发授权。
+状态：代码迁移、本地结构回归与三轮改造后真实 Qwen A/B 对照均已完成。
 
 ## 1. 改造前真实基线
 
@@ -80,10 +80,10 @@ fallback。Safety 是独立高优先级覆盖。身份与能力事实还散落�
 
 | 组件 | 唯一角色 | 权限边界 |
 |---|---|---|
-| Context Assembly | context provider | 仅必要相邻轮次、证据、Grounding、选择性 Memory |
+| Context Assembly | context provider | 仅必要相邻轮次、配对完整的历史投影、证据、Grounding、选择性 Memory |
 | semanticEvidence / Active Answer Frame | evidence provider | 不判断 engagement/goal，不写回复 |
-| Turn Interpretation | evidence interpreter | 组合 acts/signals；不计划、不回复 |
-| Dialogue State | state contract | 保存 open loops / obligations / continuity |
+| Turn Interpretation | evidence interpreter | 输出 contentMeaning、多个 responseRelation 候选及 stateUpdate；旧 acts 仅作兼容证据 |
+| Interaction / Dialogue State | state contract | 保存 currentActivity、activeThread、commonGround 三态、turn-scoped obligations、initiativeOwner、lastCommittedAssistantMove、repairState |
 | Assistant Grounding | constraint provider | 单一身份与能力事实来源 |
 | Memory | context provider | 仅确认事实或明确标注的 hypothesis |
 | Clinical | optional policy provider | 只在 Planner 请求时给策略建议 |
@@ -106,7 +106,7 @@ createChatReply
   -> interpretTurnDeterministically
   -> enrichTurnInterpretation (仅歧义语用，可选 LLM)
   -> selective Memory resolution
-  -> buildDialogueState
+  -> buildDialogueState                         [关系候选 -> Interaction State]
   -> createResponsePlan                         [唯一一次]
        -> createClinicalStrategyAdvice          [仅 emotional/action need]
   -> enforceResponsePlan
@@ -125,8 +125,10 @@ createChatReply
 改造前虽然 interaction 正确，但最终存在冲突目标。改造后：
 
 ```text
-primaryDialogueAct=yield_initiative
-answerObligations=[]
+responseRelation=[yields_initiative, continues_active_thread]
+initiativeOwner=assistant
+currentActivity=opening_thread
+openObligations=[]
 responseActions=[take_light_topic_initiative]
 clinicalInvoked=false
 questionPolicy=one_low_pressure_question
@@ -136,6 +138,10 @@ decisionOwner=conversation_os.response_planner
 
 `没关系，那我们就先这样待着。` 会因 `premature_closure` 被拒绝；validator
 只能要求按同一计划重新表达，不能改成陪伴/收口计划。
+
+`primaryDialogueAct` 仍可出现在兼容 trace 中，但不再被 Planner 读取。
+Planner 的动作只能来自更新后的 Interaction State，并为每个动作、义务和
+披露写入 `relevanceProvenance`。
 
 ### 场景 B
 
@@ -162,6 +168,25 @@ decisionOwner=conversation_os.response_planner
   `constraint_failure`，保留原计划和未完成义务。
 - user correction：共享 `isAssistantRepairSignal` evidence classifier，避免
   Clinical 与 Conversation 各维护一套纠正判断。
+- correction target：`detectAssistantCorrection` 记录目标助手话轮、被拒绝
+  命题和仍未完成的原始用户意图；被引用的问句不再创建新 obligation。
+- history projection：只过滤未提交、BLOCKED 或非对话事件；已提交原文不再
+  因旧 Prompt 版本、低信息形式或模板文本被删除，窗口裁剪继续保留显式
+  `replyToMessageId` 关系。
+- obligation lifecycle：义务只属于来源 `conversationId + turnId`；State
+  Update 将其记录为 answered/expired，不跨轮自动复用。
+- execution lifecycle：trace 显式记录 `PLANNED / GENERATED / VALIDATED /
+  REJECTED / RETRYING / COMMITTED / FAILED`，只有原子提交能产生 Assistant
+  事件和状态更新。
+- planning depth：唯一 Planner 根据关系复杂度选择 `minimal / standard /
+  deep`；Surface 只接收深度对应的最小计划投影。完整 provenance 保留在
+  trace，Surface 仅接收计划元素、来源/来源话轮及当前用户原话证据。
+- adjacent answer：已提交的 Assistant 回复若实际提出了计划允许的问题，会将
+  `questionOrRequest=question` 与 `expectedUserContribution=answer` 写入状态；
+  用户回答该问题时，Planner 默认使用 `questionPolicy=none`，避免连续采访。
+- ordinary acknowledgement：Surface 只能承接当前用户明确表达的内容；不得添加
+  用户未表达的好坏评价、通用因果机制或正向重构。validator 只做同计划语义约束，
+  不提供示例句、不改写回复。
 
 ## 7. 多轮与反例覆盖
 

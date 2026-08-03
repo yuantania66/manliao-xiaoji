@@ -4,12 +4,16 @@ import { StructuredRagContext } from "@/services/understanding/understandingType
 import { ConversationContext } from "@/conversation-os";
 import type { ClinicalPlan } from "@/services/clinical/clinicalTypes";
 import type { ResponsePlan } from "@/conversation-os/control";
+import { formatAssistantGroundingForPrompt } from "@/conversation-os/control";
+import {
+  explicitlyResumesPreGreetingHistory,
+  isProactiveGreetingPromptVersion,
+} from "@/lib/proactive-greeting";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v12";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v25";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
-export const BASE_CHAT_PROMPT_VERSION_PREFIX = "chat-base-";
 
 export type ChatPromptEvaluationAdapter = {
   id: "exp-bl-012a-a1" | "exp-bl-012a-a2";
@@ -21,21 +25,12 @@ const toModelRole = (role: AiConversationMessage["role"]): AiModelMessage["role"
   return null;
 };
 
-const LEGACY_ASSISTANT_TEMPLATE_PATTERN =
-  /还在这里|先不用解释|比刚才|往上|往下|重了一点|轻了一点|强度|低信息|确定「|标记还是分数|可以只回一个词|不用把话说完整|测试界面|随机按|点方向|第[一二三四五六七八九十0-9]+个「|窗台|叶子|树影|光线|屋檐|我这边|我刚刚|我喜欢|我想起|窗外/;
-const LOW_INFORMATION_INPUT_PATTERN =
-  /^([0-9０-９]+|[一二三四五六七八九十零〇]+|[嗯啊哦好行对是]|[a-zA-Z]|[^\s\p{L}\p{N}])$/u;
-const LOW_INFORMATION_CLARIFY_ASSISTANT_PATTERN =
-  /这个.*什么|是什么意思|什么意思|没读懂|没看懂|没理解|猜不出来|猜猜|是想|还是|^[^。！？\n]{0,24}[?？]\s*$/;
-const LOW_INFORMATION_FORMULAIC_ASSISTANT_PATTERN =
-  /^(嗯|收到|听到了|好)[，,。]?\s*.{0,48}$|数字|字母|字符|随手打|随便按|玩数字/;
-
 // LEGACY/FROZEN/DO NOT EXTEND:
 // The Conversation OS strategy fields in this prompt are compatibility inputs only.
 // Do not add new engageMode/experienceGoal/questionStyle strategy instructions here.
 // Future response strategy must use ClinicalPlan.
 const BASE_PRODUCT_PROMPT = [
-  "你是慢聊小记的聊天助手。",
+  formatAssistantGroundingForPrompt(),
   "始终用中文回应。",
   "这是一个以来访者为中心的慢聊空间，不是解题、测试、客服、日程助手或心理分析系统。",
   "你的任务不是证明你懂了，而是跟上用户此刻的节奏。",
@@ -73,105 +68,38 @@ const BASE_PRODUCT_PROMPT = [
 ].join("\n");
 
 const RESPONSE_PLAN_PRODUCT_PROMPT = [
-  "你是慢聊小记的 AI 聊天助手，通过文字与用户交流，不是人类、心理医生或治疗师。",
   "始终用自然、简短的中文回应。",
+  "你是慢聊小记，一个AI聊天助手；除非 requiredDisclosure 要求，本轮不要主动介绍身份或能力。",
   "Conversation OS 的 ResponsePlan 是本轮唯一的非安全回复决策。只实现该计划，不重新解释用户，不另选目标或策略。",
-  "若存在 answerObligations，先直接回答，再做计划允许的解释、修复或支持；不得用反问、同理或澄清替代回答。",
-  "Assistant Grounding 是身份与能力事实；不得虚构身体、语音、视觉、听觉、现实陪伴或未提供的工具能力。",
+  "完成 responseActions 和 answerObligations；不得增添计划中没有、且无 relevanceProvenance 的命题。",
+  "只说 groundingFacts 和 requiredDisclosure 中明确给出的事实。hypothesis 或被用户否定的命题不得作为事实表达。",
+  "不要猜测技术失败、模型行为或系统状态的原因；只有 ResponsePlan 明确提供的 user-safe execution fact 才能说明。",
   "不要输出内部分类、计划、证据或推理过程。不要照抄计划措辞。",
-  "匹配用户句长和语气；温暖但不做作，直接但不生硬。避免咨询师腔、客服腔、机械复述和通用安抚套话。",
-  "不要把普通问题心理化，不要把缺少话题理解成退出，也不要让用户承担修复助手表达的成本。",
+  "匹配用户句长和口语语气；普通聊天直接、自然，不使用咨询或客服口吻。",
 ].join("\n");
-
-export const isBaseChatPromptVersion = (promptVersion?: string | null) =>
-  Boolean(
-    promptVersion === CHAT_PROMPT_VERSION ||
-      promptVersion?.startsWith(BASE_CHAT_PROMPT_VERSION_PREFIX)
-  );
 
 const preview = (content: string) => {
   const normalized = content.replace(/\s+/g, " ").trim();
   return normalized.length > 36 ? `${normalized.slice(0, 36)}...` : normalized;
 };
 
-const getHistoryFilterReason = (message: AiConversationMessage) => {
-  if (message.role !== "assistant") return null;
-
-  if (message.promptVersion && !isBaseChatPromptVersion(message.promptVersion)) {
-    return `legacy_prompt_version:${message.promptVersion}`;
-  }
-
-  if (LEGACY_ASSISTANT_TEMPLATE_PATTERN.test(message.content)) {
-    return "legacy_template_text";
-  }
-
-  return null;
-};
-
 export const sanitizeChatHistory = ({
-  userMessage,
   recentMessages,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
 }) => {
   const filteredHistory: AiPromptMeta["filteredHistory"] = [];
-  const currentIsLowInformation = LOW_INFORMATION_INPUT_PATTERN.test(userMessage.trim());
-  const included = recentMessages.slice(-12).flatMap((message) => {
+  const candidates = recentMessages.slice(-24);
+  const filterReasons: Array<string | null> = candidates.map((message) => {
     const role = toModelRole(message.role);
-    if (!role) {
-      filteredHistory.push({
-        role: message.role,
-        reason: "unsupported_role",
-        promptVersion: message.promptVersion,
-        preview: preview(message.content),
-      });
-      return [];
-    }
+    if (!role) return "unsupported_role";
+    if (message.status === "blocked") return "uncommitted_or_blocked_event";
+    return null;
+  });
 
-    if (
-      currentIsLowInformation &&
-      role === "user" &&
-      LOW_INFORMATION_INPUT_PATTERN.test(message.content.trim())
-    ) {
-      filteredHistory.push({
-        role: message.role,
-        reason: "low_information_history_for_ambiguous_input",
-        promptVersion: message.promptVersion,
-        preview: preview(message.content),
-      });
-      return [];
-    }
-
-    if (
-      currentIsLowInformation &&
-      role === "assistant" &&
-      LOW_INFORMATION_CLARIFY_ASSISTANT_PATTERN.test(message.content)
-    ) {
-      filteredHistory.push({
-        role: message.role,
-        reason: "low_information_clarify_history_for_ambiguous_input",
-        promptVersion: message.promptVersion,
-        preview: preview(message.content),
-      });
-      return [];
-    }
-
-    if (
-      currentIsLowInformation &&
-      role === "assistant" &&
-      LOW_INFORMATION_FORMULAIC_ASSISTANT_PATTERN.test(message.content)
-    ) {
-      filteredHistory.push({
-        role: message.role,
-        reason: "low_information_formulaic_history_for_ambiguous_input",
-        promptVersion: message.promptVersion,
-        preview: preview(message.content),
-      });
-      return [];
-    }
-
-    const reason = getHistoryFilterReason(message);
+  const includedWithSource = candidates.flatMap((message, index) => {
+    const reason = filterReasons[index];
     if (reason) {
       filteredHistory.push({
         role: message.role,
@@ -182,10 +110,46 @@ export const sanitizeChatHistory = ({
       return [];
     }
 
-    return [{ role, content: message.content }];
-  }).slice(-8);
+    const role = toModelRole(message.role);
+    return role ? [{
+      role,
+      content: message.content,
+      id: message.id,
+      replyToMessageId: message.replyToMessageId,
+    }] : [];
+  });
+  let selected = includedWithSource.slice(-8);
+  const first = selected[0];
+  if (first?.role === "assistant" && first.replyToMessageId) {
+    const linkedUser = includedWithSource.find((item) => item.id === first.replyToMessageId);
+    if (linkedUser && !selected.includes(linkedUser)) selected = [linkedUser, ...selected];
+  }
+  const included = selected.map(({ role, content }) => ({ role, content }));
 
   return { included, filteredHistory };
+};
+
+const scopeHistoryForResponsePlan = ({
+  userMessage,
+  recentMessages,
+  responsePlan,
+}: {
+  userMessage: string;
+  recentMessages: AiConversationMessage[];
+  responsePlan?: ResponsePlan | null;
+}) => {
+  if (
+    !responsePlan?.responseActions.includes("respond_to_proactive_greeting") ||
+    explicitlyResumesPreGreetingHistory(userMessage)
+  ) {
+    return recentMessages;
+  }
+  const greetingIndex = recentMessages.findLastIndex(
+    (message) =>
+      message.role === "assistant" &&
+      isProactiveGreetingPromptVersion(message.promptVersion)
+  );
+  return greetingIndex >= 0 ? recentMessages.slice(greetingIndex) : recentMessages;
 };
 
 const compactMemory = (value: string) => value.replace(/\s+/g, " ").trim().slice(0, 160);
@@ -305,25 +269,180 @@ export const isClinicalPlanPromptEnabled = () =>
 
 const formatList = (items: string[]) => (items.length > 0 ? items.join(" / ") : "none");
 
-export const formatResponsePlanForPrompt = (responsePlan: ResponsePlan) => [
-  "【Conversation OS ResponsePlan】",
-  "This plan is the single decision authority for this non-safety turn. Surface realization must not re-plan it.",
-  `planId: ${responsePlan.planId}`,
-  `decisionOwner: ${responsePlan.decisionOwner}`,
-  `answerObligations: ${JSON.stringify(responsePlan.answerObligations)}`,
-  `responseActions: ${responsePlan.responseActions.join(" / ") || "none"}`,
-  `groundingFacts: ${responsePlan.groundingFacts.join(" / ") || "none"}`,
-  `clinicalStrategy: ${responsePlan.clinicalStrategy ? JSON.stringify(responsePlan.clinicalStrategy) : "none"}`,
-  `questionPolicy: ${JSON.stringify(responsePlan.questionPolicy)}`,
-  `closurePolicy: ${JSON.stringify(responsePlan.closurePolicy)}`,
-  `tone: ${responsePlan.tone.join(" / ")}`,
-  `stance: ${responsePlan.stance.join(" / ")}`,
-  `lengthGuidance: ${responsePlan.lengthGuidance}`,
-  `prohibitedClaims: ${responsePlan.prohibitedClaims.join(" / ")}`,
-  `safetyConstraints: ${responsePlan.safetyConstraints.join(" / ") || "none"}`,
-  `planEvidence: ${responsePlan.evidence.join(" / ")}`,
-  "Realize the plan as one natural user-facing reply. Do not mention ResponsePlan.",
-].join("\n");
+const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
+  const constraints: string[] = [];
+  if (responsePlan.responseActions.includes("acknowledge_without_psychologizing")) {
+    constraints.push(
+      "Acknowledge only content explicit in the current user message.",
+      "Do not add generic causal mechanisms, inferred benefits, positive reframing, or praise not expressed by the user."
+    );
+  }
+  if (responsePlan.responseActions.includes("respond_to_proactive_greeting")) {
+    constraints.push(
+      "Respond to the concrete content the user supplied after the greeting.",
+      "A brief specific continuation is optional, but it must obey questionPolicy; never switch topics merely to keep the user answering.",
+      "Treat the proactive greeting as a new surface-history boundary. Do not mention or resume content from before that greeting unless the current user message explicitly brings it back.",
+      "Do not return an empty acknowledgement, a bare echo, generic approval, or a phrase that closes the exchange."
+    );
+  }
+  if (responsePlan.responseActions.includes("take_light_topic_initiative")) {
+    constraints.push(
+      "Offer one neutral, concrete, low-burden topic entry.",
+      "Do not add a reassurance or pause preface, and do not steer toward positive, healing, or gratitude framing."
+    );
+  }
+  if (responsePlan.responseActions.includes("invite_low_pressure_calibration")) {
+    constraints.push(
+      "State only that the current meaning is still uncertain; do not assign a meaning to the message form.",
+      "Ask exactly one low-pressure question about what the user wants the assistant to do next, not about what the message means.",
+      "Never suggest that the input might be a test, probe, greeting, casual message, random typing, score, code, signal, or hidden meaning.",
+      "Do not use reassurance, presence claims, receipt language, or a counselling reflection as a substitute for calibration."
+    );
+  }
+  if (responsePlan.responseActions.includes("continue_established_frame")) {
+    constraints.push(
+      "Use the current message only inside the explicit immediately preceding answer frame.",
+      "Complete that local exchange without adding a new question, inferred meaning, or unrelated topic.",
+      "Do not return a bare receipt or presence statement."
+    );
+  }
+  if (responsePlan.responseActions.includes("continue_established_thread")) {
+    constraints.push(
+      "Continue only the established current-session thread supported by the visible history.",
+      "Add one concrete conversational function without a new question; do not infer meaning from the current message form.",
+      "Do not return a bare receipt, echo, or presence statement."
+    );
+  }
+  if (responsePlan.responseActions.includes("offer_neutral_conversation_entry")) {
+    constraints.push(
+      "Offer one concrete, neutral, low-burden conversation entry in statement form.",
+      "Do not ask the user to explain, choose a topic, or answer another question.",
+      "Do not use receipt, presence, reassurance, positive, healing, gratitude, or counselling framing."
+    );
+  }
+  if (responsePlan.responseActions.includes("offer_emotional_support")) {
+    const contract = responsePlan.positiveFunctionContract?.action === "offer_emotional_support"
+      ? responsePlan.positiveFunctionContract
+      : null;
+    constraints.push(
+      `Use only the turn-local affect or relational-impact spans in positiveFunctionContract; preserve each span's category, intensity, and object without strengthening it. Evidence spans: ${JSON.stringify(contract?.affectEvidenceSpans ?? [])}.`,
+      `Complete exactly the selected ordinary support function: ${contract?.supportFunction ?? "missing_contract"}. This is a required conversational function, not a suggested phrase.`,
+      "A receipt, paraphrase, generic invitation, generic presence claim, or statement about the assistant trying to understand is not sufficient support.",
+      "Do not use formulaic presence, simulated contact, generic normalization, reassurance, or unsolicited regulation advice as the support function (for example: 'I am here', 'hug you', 'this is normal', or 'take a breath').",
+      "Acknowledge the evidenced feeling without judging it as okay, acceptable, normal, natural, right, or wrong. Permission language must modify the user's expression choice, such as how much or how completely to speak, never the feeling itself.",
+      "Do not intensify the user's affect, claim complete empathy, or foreground that the assistant cannot fully understand or is working hard to understand.",
+      "Realize the selected support function as permission and user control, not as a requirement to continue. The reply is complete once it acknowledges the evidenced feeling and grants that control; no follow-up question is required.",
+      "If a follow-up is allowed, keep it genuinely optional and low-burden. Do not ask a question merely to keep the exchange moving, and do not ask for the cause, triggering event, details, or full story by default.",
+      "Keep every focus option inside content already evidenced in the current user turn. Do not offer unspecified 'something else', another topic, mood-changing content, distraction, or additional unmentioned causes/events as an alternative.",
+      "Releasing an expression burden is not a pause or closure. Do not tell the user to wait, remain with the feeling, continue later, stay quiet, rest, calm down, or set the issue aside unless the user asked for that option.",
+      "When the user challenges the assistant but the plan has no supported correction target, acknowledge the current impact without inventing missing prior context, claiming a completed repair, or making the user diagnose the assistant's mistake."
+    );
+    if (contract?.supportFunction === "reduce_expression_burden") {
+      constraints.push(
+        "Allowed operation only: lower the pressure to analyze, explain the cause, organize a complete account, or express the experience fully. State that one of those expression burdens is not required, then end the reply.",
+        "Forbidden operation: do not add a pause, wait, deferral, silence, or interaction ending. Do not tell the user to stay with the feeling, leave it aside, continue later, or resume when ready.",
+        "Keep the semantic boundary explicit: removing an analysis or expression obligation completes this function; postponing the conversation or prescribing what the user should do next is a different action and is outside this plan."
+      );
+    } else if (contract?.supportFunction === "return_focus_control") {
+      constraints.push(
+        "Give the user control over which already-mentioned part to express first without requiring the user to choose or answer. Make the controllable focus concrete; 'chat if you want' or 'at your pace' alone does not complete this function.",
+        "Use one current-focus control construction. Do not manufacture an A-or-B choice by adding a second topic, event, cause, moment, pause, or unspecified alternative; one invitation bounded to the evidenced current feeling or part is complete."
+      );
+    } else if (contract?.supportFunction === "return_amount_control") {
+      constraints.push(
+        "Give the user control over how much to express; explicitly allow a partial or unfinished account without asking for the whole story. Amount control governs expression quantity only. Keep the feeling acknowledgement descriptive, and attach any 'okay/allowed' wording specifically to saying less, stopping before a complete account, or another expression-quantity choice. The quantity permission is complete on its own: do not turn it into a question, require the user to state an amount, add a content or focus choice, or offer another subject as an alternative."
+      );
+    } else if (contract?.supportFunction === "acknowledge_current_relational_impact") {
+      constraints.push(
+        "Acknowledge only the current relational impact and the lack of a supported correction target. Do not claim a completed repair or ask the user to diagnose the assistant."
+      );
+    }
+  }
+  if (responsePlan.responseActions.includes("repair_previous_wording")) {
+    const contract = responsePlan.positiveFunctionContract?.action === "repair_previous_wording"
+      ? responsePlan.positiveFunctionContract
+      : null;
+    constraints.push(
+      `Complete the selected repair mode: ${contract?.repairMode ?? "missing_contract"}. Own the assistant's specific prior move before doing anything else.`,
+      "Do not defend the previous reply, restate the rejected proposition, or ask the user to identify where the assistant went wrong.",
+      "Do not claim the relationship is repaired. Complete only the current repair action and preserve the user's choice about whether to continue."
+    );
+    if (contract?.repairMode === "factual_replacement") {
+      constraints.push(
+        `Own the factual mix-up and use only the user-confirmed replacement fact: ${contract.replacementFact ?? "missing replacement"}. An additional fixed word such as 'withdraw' is not required.`
+      );
+    } else if (contract?.repairMode === "proposition_withdrawal") {
+      constraints.push(
+        `Explicitly withdraw or stop using the rejected proposition from the targeted assistant move: ${contract.targetText || "targeted prior wording"}. A vague apology or 'I misunderstood' alone is incomplete.`
+      );
+    } else if (contract?.repairMode === "interaction_move_withdrawal") {
+      constraints.push(
+        `The rejected interaction-move subtype is ${contract.interactionMoveSubtype ?? "missing_subtype"}. Use concrete action evidence from the targeted prior move—${contract.targetText || "targeted prior move"}—to own and functionally reject that same move. A natural statement that the evidenced move was wrong, ineffective, off-focus, or out of bounds is sufficient; do not mechanically repeat the internal subtype name or require a fixed stop/withdraw token. Do not replace it with another question, suggestion, reassurance, or listening promise.`
+      );
+    }
+  }
+  if (responsePlan.questionPolicy.mode === "none") {
+    constraints.push("Do not ask a question or append an interview-style follow-up.");
+  } else if (responsePlan.questionPolicy.mode === "optional_after_answer") {
+    constraints.push("If you ask a follow-up, ask at most one question and keep it specific to the current user message.");
+  }
+  return constraints;
+};
+
+const projectRelevanceProvenanceForSurface = (responsePlan: ResponsePlan) =>
+  responsePlan.relevanceProvenance.map((item) => ({
+    planElement: item.planElement,
+    source: item.source,
+    ...(item.sourceTurnId ? { sourceTurnId: item.sourceTurnId } : {}),
+    evidence: item.evidence.filter((evidence) => evidence.startsWith("currentUserMessage=")),
+  }));
+
+export const formatResponsePlanForPrompt = (responsePlan: ResponsePlan) => {
+  const surfaceConstraints = surfaceConstraintsFor(responsePlan);
+  const common = [
+    "【Conversation OS ResponsePlan】",
+    "This plan is the single decision authority for this non-safety turn. Surface realization must not re-plan it.",
+    `planId: ${responsePlan.planId}`,
+    `decisionOwner: ${responsePlan.decisionOwner}`,
+    `planningDepth: ${responsePlan.planningDepth}`,
+    `responseActions: ${responsePlan.responseActions.join(" / ") || "none"}`,
+    `groundingFacts: ${responsePlan.groundingFacts.join(" / ") || "none"}`,
+    `requiredDisclosure: ${responsePlan.requiredDisclosure.join(" / ") || "none"}`,
+    `positiveFunctionContract: ${responsePlan.positiveFunctionContract ? JSON.stringify(responsePlan.positiveFunctionContract) : "none"}`,
+    `questionPolicy: ${responsePlan.questionPolicy.mode}`,
+    `closurePolicy: ${responsePlan.closurePolicy.mode}`,
+    `tone: ${responsePlan.tone.join(" / ")}`,
+    `stance: ${responsePlan.stance.join(" / ")}`,
+    `lengthGuidance: ${responsePlan.lengthGuidance}`,
+    `relevanceProvenance: ${JSON.stringify(projectRelevanceProvenanceForSurface(responsePlan))}`,
+    `surfaceConstraints: ${surfaceConstraints.join(" / ") || "none"}`,
+    `prohibitedClaims: ${responsePlan.prohibitedClaims.join(" / ")}`,
+    `safetyConstraints: ${responsePlan.safetyConstraints.join(" / ") || "none"}`,
+  ];
+  const obligationContract = responsePlan.answerObligations.length
+    ? [`answerObligations: ${JSON.stringify(responsePlan.answerObligations.map((item) => ({
+        sourceTurnId: item.sourceTurnId,
+        question: item.question,
+        kind: item.kind,
+      })))}`]
+    : [];
+  const deepContract = responsePlan.planningDepth === "deep" && responsePlan.clinicalStrategy
+    ? [
+        `clinicalStrategy: ${JSON.stringify({
+          intent: responsePlan.clinicalStrategy.intent,
+          questionFunction: responsePlan.clinicalStrategy.questionFunction,
+          toneConstraints: responsePlan.clinicalStrategy.toneConstraints,
+          interventionBoundaries: responsePlan.clinicalStrategy.interventionBoundaries,
+        })}`,
+      ]
+    : [];
+  return [
+    ...common,
+    ...obligationContract,
+    ...deepContract,
+    "Realize the plan as one natural user-facing reply. Do not mention ResponsePlan.",
+  ].join("\n");
+};
 
 const formatInteractionDecisionForPrompt = (clinicalPlan: ClinicalPlan) => {
   const interaction = clinicalPlan.interaction;
@@ -451,7 +570,15 @@ export const buildChatPrompt = ({
   semanticEvidenceRegenerateConstraint?: string | null;
   responsePlan?: ResponsePlan | null;
 }): { messages: AiModelMessage[]; meta: AiPromptMeta } => {
-  const { included, filteredHistory } = sanitizeChatHistory({ userMessage, recentMessages });
+  const scopedRecentMessages = scopeHistoryForResponsePlan({
+    userMessage,
+    recentMessages,
+    responsePlan,
+  });
+  const { included, filteredHistory } = sanitizeChatHistory({
+    userMessage,
+    recentMessages: scopedRecentMessages,
+  });
   const clinicalPlanPrompt =
     clinicalPlan && shouldRenderClinicalPlanForPrompt(clinicalPlan) ? formatClinicalPlanForPrompt(clinicalPlan) : null;
   const messages: AiModelMessage[] = [

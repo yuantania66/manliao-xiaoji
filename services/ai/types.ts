@@ -1,15 +1,25 @@
 import type { ConversationContext, Orientation, UpdateResult } from "@/conversation-os";
+import type { CommittedAssistantMove } from "@/conversation-os";
 import type { ClinicalTrace } from "@/services/clinical/clinicalTypes";
-import type { ConversationControlTrace, ResponsePlan } from "@/conversation-os/control";
+import type { HillHelpingShadowTrace } from "@/services/helping/hillHelpingTypes";
+import type {
+  ConversationControlTrace,
+  ResponsePlan,
+} from "@/conversation-os/control";
+import type { ChatExecutionTrace } from "./chatExecutionLifecycle";
 
 export type AiConversationRole = "user" | "assistant" | "system";
 
 export type AiConversationMessage = {
+  id?: string;
   role: AiConversationRole;
   content: string;
   promptVersion?: string | null;
   aiGenerationId?: string | null;
   createdAt?: string;
+  status?: "saved" | "rewritten" | "fallback" | "blocked";
+  replyToMessageId?: string | null;
+  committedAssistantMove?: CommittedAssistantMove | null;
 };
 
 export type AiMemoryContext = {
@@ -73,6 +83,13 @@ export type AiGenerationResult = {
   tokenInput?: number;
   tokenOutput?: number;
   promptMeta?: AiPromptMeta;
+  /** Internal trace only. Never render these messages as conversation content. */
+  promptMessages?: AiModelMessage[];
+  generationParameters?: {
+    temperature: number;
+    topP: number | null;
+    seed: number | null;
+  };
   providerReasoning?: AiProviderReasoningMeta;
   raw?: unknown;
 };
@@ -159,7 +176,9 @@ export type AiDebugTrace = {
     evidence: string[];
   }[];
   clinicalLogic?: ClinicalTrace;
+  helpingLogic?: HillHelpingShadowTrace;
   conversationControl?: ConversationControlTrace;
+  execution?: ChatExecutionTrace;
   prompt: {
     mode: "base_product" | "fallback" | "safety";
     promptVersion: string;

@@ -74,16 +74,18 @@ const scenarioBHistory: AiConversationMessage[] = [
 const bodyQuestion = build("你会坐吗", scenarioBHistory);
 assert.equal(bodyQuestion.dialogueState.answerObligations[0]?.kind, "body_capability");
 assert(bodyQuestion.responsePlan.responseActions.includes("answer_directly"));
-assert(bodyQuestion.responsePlan.groundingFacts.some((fact) => fact.includes("没有身体")));
+assert(bodyQuestion.responsePlan.requiredDisclosure.some((fact) => fact.includes("没有真实身体")));
+assert(bodyQuestion.responsePlan.requiredDisclosure.some((fact) => fact.includes("身体化关系隐喻")));
 assert.equal(bodyQuestion.clinicalCalls, 0);
 
 const identityQuestion = build("你是谁", scenarioBHistory);
 assert.equal(identityQuestion.dialogueState.answerObligations[0]?.kind, "identity");
-assert(identityQuestion.responsePlan.groundingFacts.some((fact) => fact.includes("AI聊天助手")));
+assert(identityQuestion.responsePlan.requiredDisclosure.some((fact) => fact.includes("AI聊天助手")));
+assert(!identityQuestion.responsePlan.requiredDisclosure.some((fact) => fact.includes("心理医生")));
 
 const clinicianQuestion = build("你是心理医生吗", scenarioBHistory);
-assert.equal(clinicianQuestion.dialogueState.answerObligations[0]?.kind, "identity");
-assert(clinicianQuestion.responsePlan.groundingFacts.some((fact) => fact.includes("不是人类或临床专业人员")));
+assert.equal(clinicianQuestion.dialogueState.answerObligations[0]?.kind, "clinician_identity");
+assert(clinicianQuestion.responsePlan.requiredDisclosure.some((fact) => fact.includes("不是心理医生")));
 assert.equal(clinicianQuestion.clinicalCalls, 0);
 
 const voiceQuestion = build("那你怎么不会说话", [
@@ -94,7 +96,7 @@ const voiceQuestion = build("那你怎么不会说话", [
   { role: "assistant", content: "我是慢聊小记的 AI 聊天助手。" },
 ]);
 assert.equal(voiceQuestion.dialogueState.answerObligations[0]?.kind, "voice_output");
-assert(voiceQuestion.responsePlan.groundingFacts.some((fact) => fact.includes("文字输出")));
+assert(voiceQuestion.responsePlan.requiredDisclosure.some((fact) => fact.includes("文字输出")));
 
 const definitionQuestion = build("接住是什么意思", [
   { role: "assistant", content: "刚才我说了接住。" },

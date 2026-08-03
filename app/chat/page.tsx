@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { MessageStatus } from "@prisma/client";
 
 import ChatClient, { InitialChatData } from "./chat-client";
 import { hashToken } from "@/lib/auth";
@@ -64,6 +65,7 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
       where: {
         sessionId: chatSession.id,
         userId: session.user.id,
+        status: { not: MessageStatus.BLOCKED },
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 51,

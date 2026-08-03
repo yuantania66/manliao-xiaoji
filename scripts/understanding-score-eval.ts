@@ -140,6 +140,9 @@ const runTurn = async ({
 
   const extractionText = JSON.stringify(extraction);
   const ragText = JSON.stringify(rag);
+  if (reply.outcome !== "committed") {
+    throw new Error(`Chat execution failed: ${reply.systemStatus.code}`);
+  }
   const assistant = reply.assistantMessage.content;
   return {
     user: content,

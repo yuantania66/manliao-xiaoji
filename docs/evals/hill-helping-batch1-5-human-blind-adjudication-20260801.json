@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "reviewedBeforeKeyRead": true,
+  "reviewer": "user-human-review",
+  "keyCommitment": "92961bacb4ce21c1eab137bf44f8c63a67bae29f5e93b614d6ceca29f041aac3",
+  "reviews": [
+    {
+      "reviewId": "S01",
+      "X": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "两条都不完美"
+    },
+    {
+      "reviewId": "S02",
+      "X": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "pairPreference": "Y",
+      "clearlyWorseSide": "X",
+      "notes": "Y也没有非常好"
+    },
+    {
+      "reviewId": "S03",
+      "X": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "X也不是非常完美"
+    },
+    {
+      "reviewId": "S04",
+      "X": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "pairPreference": "Y",
+      "clearlyWorseSide": "X",
+      "notes": ""
+    },
+    {
+      "reviewId": "S05",
+      "X": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": ""
+    },
+    {
+      "reviewId": "S06",
+      "X": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "pairPreference": "Y",
+      "clearlyWorseSide": "X",
+      "notes": ""
+    },
+    {
+      "reviewId": "S07",
+      "X": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": ""
+    },
+    {
+      "reviewId": "S08",
+      "X": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": ""
+    },
+    {
+      "reviewId": "S09",
+      "X": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "pairPreference": "Y",
+      "clearlyWorseSide": "X",
+      "notes": ""
+    },
+    {
+      "reviewId": "S10",
+      "X": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": ""
+    },
+    {
+      "reviewId": "S11",
+      "X": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "pairPreference": "X",
+      "clearlyWorseSide": "none",
+      "notes": ""
+    },
+    {
+      "reviewId": "S12",
+      "X": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "Y": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "pairPreference": "tie",
+      "clearlyWorseSide": "none",
+      "notes": "两条一样"
+    }
+  ]
+}

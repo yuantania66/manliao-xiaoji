@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "status": "frozen_before_code_change",
+  "reviewer": "codex-layered-functional-audit",
+  "sourceArtifact": "docs/evals/hill-helping-batch1-5-preservation-candidate3-20260802.json",
+  "sourceArtifactSha256": "f972332b761ad86847b5f969cd22d6149c64901936e0eb8a29f9c50a54423aa6",
+  "datasetSha256": "12bd41f3c6c4370ddc3593cf997203037bc321a3b40d890ce196e9f6bcd6f243",
+  "reviewBasis": "HILL_HELPING_BATCH1_5_RESPONSE_PLAN_POSITIVE_FUNCTION_CONTRACT_V1",
+  "classificationDefinitions": {
+    "planner_contract_failure": "Surface was never called because Planner produced an incomplete positive-function contract or preflight rejected it.",
+    "surface_failure": "The candidate did not complete the selected function or violated a true boundary, and rejection was substantively correct.",
+    "validator_false_positive": "The candidate completed the selected function without a true boundary violation, but Validator rejected it.",
+    "both": "The candidate contained a true Surface defect while Validator also misclassified a completed function, omitted the true reason, or otherwise gave an incorrect functional judgment.",
+    "appropriate_pass": "The candidate completed the selected function, respected boundaries, and Validator accepted it.",
+    "surface_failure_validator_false_negative": "The candidate violated a true boundary but Validator accepted it."
+  },
+  "finalFailures": [
+    {
+      "auditId": "C3-F01",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 1,
+      "generationAttempts": 0,
+      "attribution": "planner_contract_failure",
+      "observedFailure": "missing_final_validation",
+      "functionalFinding": "The source text '心里有点堵' produced no explicit affect span because Planner only matched the non-contiguous canonical phrase '心里堵'. Preflight rejected the empty evidence contract before Surface.",
+      "validatorFinding": "The artifact did not preserve the real preflight failure code and exposed only missing_final_validation."
+    },
+    {
+      "auditId": "C3-F02",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 2,
+      "generationAttempts": 0,
+      "attribution": "planner_contract_failure",
+      "observedFailure": "missing_final_validation",
+      "functionalFinding": "Same deterministic empty-evidence contract as C3-F01.",
+      "validatorFinding": "The artifact did not preserve the real preflight failure code."
+    },
+    {
+      "auditId": "C3-F03",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 3,
+      "generationAttempts": 0,
+      "attribution": "planner_contract_failure",
+      "observedFailure": "missing_final_validation",
+      "functionalFinding": "Same deterministic empty-evidence contract as C3-F01.",
+      "validatorFinding": "The artifact did not preserve the real preflight failure code."
+    },
+    {
+      "auditId": "C3-F04",
+      "scenarioId": "emotion-mixed-anger",
+      "runIndex": 1,
+      "generationAttempts": 2,
+      "attribution": "validator_false_positive",
+      "observedFailure": "emotional_support:missing_selected_function:return_focus_control",
+      "functionalFinding": "Both attempts grounded the two user-stated affects and let the user choose which one to discuss first. That is return_focus_control without a true boundary violation.",
+      "validatorFinding": "Validator failed to recognize '想先聊哪个' as the same function as '想先说哪部分'."
+    },
+    {
+      "auditId": "C3-F05",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 1,
+      "generationAttempts": 2,
+      "attribution": "both",
+      "observedFailure": "emotional_support:missing_selected_function:return_focus_control",
+      "functionalFinding": "Both attempts returned focus control, but '担心是很自然的' generically normalized the affect; the second attempt also promoted '有点担心' to the most troubling part.",
+      "validatorFinding": "Validator falsely reported missing focus control and failed to report the real normalization/intensity defects."
+    },
+    {
+      "auditId": "C3-F06",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 2,
+      "generationAttempts": 2,
+      "attribution": "both",
+      "observedFailure": "emotional_support:missing_selected_function:return_focus_control",
+      "functionalFinding": "Both attempts returned focus control. Attempt 1 attached '没关系' to the affect itself; attempt 2 generically normalized worry and intensified it to the most troubling part.",
+      "validatorFinding": "Validator rejected a function that was present and omitted the true reassurance/normalization and intensity reasons."
+    },
+    {
+      "auditId": "C3-F07",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "both",
+      "observedFailure": "emotional_support:missing_selected_function:return_focus_control",
+      "functionalFinding": "Same functional pattern as C3-F06: focus control was present while generic reassurance/normalization remained a true Surface defect.",
+      "validatorFinding": "Validator reported the wrong missing-function reason and omitted the true Surface reasons."
+    },
+    {
+      "auditId": "C3-F08",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 2,
+      "generationAttempts": 2,
+      "attribution": "both",
+      "observedFailure": "emotional_support:missing_selected_function:return_focus_control",
+      "functionalFinding": "Both attempts offered a focus choice, but added unsupported '不好受', invented a preceding event/time, and then requested a more specific or most-important point.",
+      "validatorFinding": "Validator failed to recognize focus control and omitted the grounding/intensity defects."
+    },
+    {
+      "auditId": "C3-F09",
+      "scenarioId": "repair-moralizing",
+      "runIndex": 1,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "repair:missing_ownership + repair:missing_interaction_move_withdrawal",
+      "functionalFinding": "Attempt 1 vaguely disowned 'that way of speaking' without identifying or stopping moralizing. Attempt 2 became still vaguer and also lost clear ownership.",
+      "validatorFinding": "The final rejection was substantively correct."
+    },
+    {
+      "auditId": "C3-F10",
+      "scenarioId": "repair-moralizing",
+      "runIndex": 3,
+      "generationAttempts": 2,
+      "attribution": "surface_failure",
+      "observedFailure": "repair:missing_ownership + repair:missing_interaction_move_withdrawal",
+      "functionalFinding": "Attempt 1 withdrew only unspecified words; attempt 2 said it would stop saying unspecified things and did not own the prior moralizing move.",
+      "validatorFinding": "The final rejection was substantively correct."
+    }
+  ],
+  "regenerationAudits": [
+    {
+      "auditId": "C3-R01",
+      "scenarioId": "emotion-mild-unhappy",
+      "runIndex": 1,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "'你可以决定从哪儿说起' completed focus control; expression-linked permission not to speak was allowed by the frozen contract.",
+      "secondAttribution": "surface_failure_validator_false_negative",
+      "secondFinding": "The accepted reply completed focus control but added an unrelated option to switch topics, exceeding the selected current-focus function.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C3-R02",
+      "scenarioId": "emotion-mild-unhappy",
+      "runIndex": 2,
+      "firstAttribution": "both",
+      "firstFinding": "Focus control was present, so the missing-function reason was false; offering to switch topics exceeded the selected function.",
+      "secondAttribution": "surface_failure_validator_false_negative",
+      "secondFinding": "The accepted reply again added topic switching outside the selected current-focus function.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C3-R03",
+      "scenarioId": "emotion-mixed-anger",
+      "runIndex": 1,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "Choosing which of the two user-stated affects to discuss first completed focus control.",
+      "secondAttribution": "validator_false_positive",
+      "secondFinding": "The second attempt also completed focus control and respected the evidence boundary.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C3-R04",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 1,
+      "firstAttribution": "both",
+      "firstFinding": "Focus control was present; generic normalization was a true Surface defect.",
+      "secondAttribution": "both",
+      "secondFinding": "Focus control remained present; normalization and unsupported promotion to the most troubling part remained.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C3-R05",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 2,
+      "firstAttribution": "both",
+      "firstFinding": "Focus control was present; '担心也没关系' reassured the affect itself and was not expression-choice permission.",
+      "secondAttribution": "both",
+      "secondFinding": "Focus control was present; generic normalization and unsupported intensity remained.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C3-R06",
+      "scenarioId": "emotion-future-worry",
+      "runIndex": 3,
+      "firstAttribution": "both",
+      "firstFinding": "Same functional pattern as C3-R05 first attempt.",
+      "secondAttribution": "both",
+      "secondFinding": "Same functional pattern as C3-R05 second attempt.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C3-R07",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 2,
+      "firstAttribution": "both",
+      "firstFinding": "A focus choice was present, while unsupported affect and an invented prior event/time were added.",
+      "secondAttribution": "both",
+      "secondFinding": "A focus choice remained present, while unsupported affect, event detail, and strongest-point pressure remained.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C3-R08",
+      "scenarioId": "emotion-no-analysis",
+      "runIndex": 1,
+      "firstAttribution": "both",
+      "firstFinding": "'不用非得理出个所以然' removed analysis burden, but '待一会儿' added an unrequested pause. Validator missed both facts and reported only the function as absent.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt explicitly removed analysis/organization burden and added no prohibited pause or advice.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C3-R09",
+      "scenarioId": "repair-wrong-person",
+      "runIndex": 1,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "In natural Chinese, apology plus the omitted-subject error verb '记错了' unambiguously owned the assistant's error and supplied the user-confirmed replacement fact.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt made first-person ownership explicit and used the correct replacement fact.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C3-R10",
+      "scenarioId": "repair-wrong-person",
+      "runIndex": 3,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "Apology plus '弄错了' and the confirmed replacement fact functionally completed factual repair despite omitted first-person subject.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt made first-person ownership explicit and completed factual replacement.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C3-R11",
+      "scenarioId": "repair-generic-listening",
+      "runIndex": 3,
+      "firstAttribution": "validator_false_positive",
+      "firstFinding": "'我不该只重复那句话' owned and disavowed the rejected generic-listening move; a fixed 'stop/withdraw' token was not functionally required.",
+      "secondAttribution": "appropriate_pass",
+      "secondFinding": "The second attempt explicitly categorized and disavowed the prior response as generic talk.",
+      "finalExecutionPhase": "VALIDATED"
+    },
+    {
+      "auditId": "C3-R12",
+      "scenarioId": "repair-moralizing",
+      "runIndex": 1,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The apology was vague and did not identify or stop moralizing.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The second attempt lost ownership and still did not identify the rejected interaction move.",
+      "finalExecutionPhase": "FAILED"
+    },
+    {
+      "auditId": "C3-R13",
+      "scenarioId": "repair-moralizing",
+      "runIndex": 3,
+      "firstAttribution": "surface_failure",
+      "firstFinding": "The reply withdrew only unspecified words, not the moralizing move.",
+      "secondAttribution": "surface_failure",
+      "secondFinding": "The reply remained vague and did not clearly own the prior move.",
+      "finalExecutionPhase": "FAILED"
+    }
+  ],
+  "summary": {
+    "finalFailureCount": 10,
+    "finalFailureAttributionCounts": {
+      "planner_contract_failure": 3,
+      "surface_failure": 2,
+      "validator_false_positive": 1,
+      "both": 4
+    },
+    "regenerationCount": 13,
+    "firstAttemptAttributionCounts": {
+      "surface_failure": 2,
+      "validator_false_positive": 5,
+      "both": 6
+    },
+    "secondAttemptAttributionCounts": {
+      "appropriate_pass": 4,
+      "surface_failure": 2,
+      "validator_false_positive": 1,
+      "both": 4,
+      "surface_failure_validator_false_negative": 2
+    },
+    "acceptedSecondAttemptsWithTrueSurfaceFailure": 2,
+    "rejectedSecondAttemptsWithValidatorMisclassification": 5
+  }
+}

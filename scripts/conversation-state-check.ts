@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { determineConversationState } from "../conversation-os/state";
+import {
+  determineConversationState,
+  extractAffectEvidence,
+  projectAffectEvidenceTerms,
+} from "../conversation-os/state";
 import type { ConversationMessage } from "../conversation-os";
 import { createSafetyGeneration } from "../services/ai/chatSafety";
 import { buildAiDebugTrace } from "../services/ai/debugTrace";
@@ -17,6 +21,79 @@ assert(!serviceSource.includes("Timeline"), "Conversation State dry-run must not
 assert(!serviceSource.includes("Relationship"), "Conversation State dry-run must not read Relationship.");
 assert(!serviceSource.includes("Understanding"), "Conversation State dry-run must not read Understanding.");
 assert(!serviceSource.includes("ClinicalPlan"), "Conversation State must not read ClinicalPlan.");
+
+const affectPositiveCounterexamples = [
+  ["今天心里稍微有些发堵", "blocked_affect", "low"],
+  ["我确实特别难受", "distress", "moderate"],
+  ["我有些高兴不起来", "unhappiness", "low"],
+  ["我现在挺孤独的", "loneliness", "moderate"],
+  ["想到那件事就很忧虑", "worry", "moderate"],
+  ["刚刚真的有点恼火", "anger", "low"],
+  ["这会儿有些伤心", "sadness", "low"],
+  ["我感觉非常疲惫", "fatigue", "moderate"],
+  ["我有点不舒服", "distress", "low"],
+  ["我现在很心慌", "panic", "moderate"],
+  ["我已经撑不住了", "overwhelm", "high"],
+  ["我完全崩溃了", "overwhelm", "high"],
+  ["我觉得有些愧疚", "guilt", "low"],
+  ["最近感觉到些压力", "pressure", "low"],
+  ["你根本没有理解我", "relational_impact", "moderate"],
+  ["我刚才被别人忽略了", "relational_impact", "unspecified"],
+  ["我觉得太丢脸了", "embarrassment", "moderate"],
+  ["我今天很生气", "anger", "moderate"],
+  ["这件事让我有点委屈", "grievance", "low"],
+  ["今天实在太累了", "fatigue", "moderate"],
+  ["我有点焦虑", "anxiety", "low"],
+  ["刚刚有点害怕", "fear", "low"],
+] as const;
+
+for (const [message, category, intensity] of affectPositiveCounterexamples) {
+  const spans = extractAffectEvidence(message);
+  const span = spans.find((item) => item.category === category);
+  assert(span, `${message} must retain ${category} evidence.`);
+  assert.equal(span.intensity, intensity, `${message} intensity mismatch.`);
+  assert.equal(message.slice(span.start, span.end), span.text, `${message} span must map to source text.`);
+}
+
+const affectNegativeCounterexamples = [
+  "我没有难受",
+  "我不是很难过",
+  "不用太担心我",
+  "你别焦虑",
+  "我没有撑不住",
+  "我不是内疚",
+  "我没说我害怕被否定",
+  "他说自己很难受",
+  "她觉得有点焦虑",
+  "朋友说他很孤单",
+  "我爸说他很烦",
+  "压力测试已经结束",
+  "累积了很多数据",
+  "累计结果出来了",
+  "烦请回复一下",
+  "这个孩子生气勃勃",
+  "不要不高兴",
+  "并没有不舒服",
+  "我没有被忽略",
+  "别太生气",
+  "我并不焦虑",
+  "我不烦",
+];
+
+for (const message of affectNegativeCounterexamples) {
+  assert.deepEqual(extractAffectEvidence(message), [], `${message} must not become user affect evidence.`);
+}
+
+assert.deepEqual(
+  projectAffectEvidenceTerms(extractAffectEvidence("我今天很难受")),
+  ["很难受", "难受"],
+  "Compatibility terms must be mechanically derived from the source span."
+);
+assert.deepEqual(
+  projectAffectEvidenceTerms(extractAffectEvidence("心里有点堵")),
+  ["心里有点堵"],
+  "An inserted modifier must not be removed from the middle of a source span."
+);
 
 const firstTurn = determineConversationState({
   currentUserMessage: "我不知道想说什么",

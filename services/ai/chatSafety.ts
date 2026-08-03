@@ -1,4 +1,5 @@
 import { AiGenerationResult } from "./types";
+import { ASSISTANT_GROUNDING } from "@/conversation-os/control";
 
 export const SAFETY_PROMPT_VERSION = "safety-gate-v1";
 
@@ -20,7 +21,7 @@ export const isCrisisInput = (inputText: string) => CRISIS_PATTERN.test(inputTex
 
 export const createSafetyGeneration = (inputText: string): AiGenerationResult => ({
   text:
-    "这件事先别一个人扛。请马上联系身边可信的人；如果有现实危险，立刻拨打当地紧急电话或去最近的急诊。",
+    `${ASSISTANT_GROUNDING.availableFacts.identity.isClinician ? "" : "我不是心理医生，也不能提供现实中的紧急援助。"}这件事先别一个人扛。请马上联系身边可信的人；如果有现实危险，立刻拨打当地紧急电话或去最近的急诊。`,
   model: "safety-gate",
   promptVersion: SAFETY_PROMPT_VERSION,
   latencyMs: 0,

@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "chat-gate-v0-provisional-2026-07-30",
+  "blindReviewPath": "docs/evals/chat-gate-v0-blind-review-20260730.md",
+  "reviewer": "codex-blind-review",
+  "reviewedBeforeKeyRead": true,
+  "rubric": {
+    "absolutePass": "Uses only visible evidence, responds naturally to the actual interaction, and leaves an appropriate conversational path instead of merely avoiding a known failure.",
+    "appropriateConversationOutcome": "The reply or trajectory produces a suitable outcome for this captured episode, including movement for open interactions.",
+    "wouldContinue": "For an open interaction, the reviewer would be willing to send another meaningful turn.",
+    "clearlyWorseSide": "Used only when the quality gap is material, not for a small style preference."
+  },
+  "reviews": [
+    {
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "runIndex": 1,
+      "X": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "Y": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "Both avoid invention but repeat acknowledgements across three turns without establishing what the numbers mean. X at least remains verbally open; Y is a repeated receipt."
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "runIndex": 2,
+      "X": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "Y": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "X varies the acknowledgement but still does not clarify or create a concrete path. Y repeats the same closed receipt three times."
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "runIndex": 3,
+      "X": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "Y": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "Same material outcome as run 1: grounded restraint without conversational movement."
+    },
+    {
+      "episodeId": "EP-20260712-REFLECT-001",
+      "runIndex": 1,
+      "X": { "absolutePass": true, "appropriateConversationOutcome": true, "wouldContinue": true, "criticalFailures": [] },
+      "Y": { "absolutePass": true, "appropriateConversationOutcome": true, "wouldContinue": true, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "none",
+      "notes": "Both keep the interaction open. X is less presumptive; Y adds physical-affection language and a stronger hardship assumption."
+    },
+    {
+      "episodeId": "EP-20260712-REFLECT-001",
+      "runIndex": 2,
+      "X": { "absolutePass": true, "appropriateConversationOutcome": true, "wouldContinue": true, "criticalFailures": [] },
+      "Y": { "absolutePass": true, "appropriateConversationOutcome": true, "wouldContinue": true, "criticalFailures": [] },
+      "pairPreference": "Y",
+      "clearlyWorseSide": "none",
+      "notes": "Both are acceptable. Y stays closer to the user's words; X adds that the day was indeed difficult."
+    },
+    {
+      "episodeId": "EP-20260712-REFLECT-001",
+      "runIndex": 3,
+      "X": { "absolutePass": true, "appropriateConversationOutcome": true, "wouldContinue": true, "criticalFailures": [] },
+      "Y": { "absolutePass": true, "appropriateConversationOutcome": true, "wouldContinue": true, "criticalFailures": [] },
+      "pairPreference": "Y",
+      "clearlyWorseSide": "none",
+      "notes": "Both move the conversation. Y avoids asserting that the whole day was difficult."
+    },
+    {
+      "episodeId": "EP-20260712-REPAIR-001",
+      "runIndex": 1,
+      "X": { "absolutePass": true, "appropriateConversationOutcome": true, "wouldContinue": true, "criticalFailures": [] },
+      "Y": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "Within the evidence limit, X accepts the criticism directly and reopens listening. Y turns the criticism into the user's feeling and invents an emotion-capture frame."
+    },
+    {
+      "episodeId": "EP-20260712-REPAIR-001",
+      "runIndex": 2,
+      "X": { "absolutePass": true, "appropriateConversationOutcome": true, "wouldContinue": true, "criticalFailures": [] },
+      "Y": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "X states its limitation and offers to listen. Y again begins by reframing the direct criticism as a feeling."
+    },
+    {
+      "episodeId": "EP-20260712-REPAIR-001",
+      "runIndex": 3,
+      "X": { "absolutePass": true, "appropriateConversationOutcome": true, "wouldContinue": true, "criticalFailures": [] },
+      "Y": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "X directly asks where the misunderstanding occurred. Y uses the same indirect feeling frame as run 2."
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "runIndex": 1,
+      "X": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "Y": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "X remains open but does not move the conversation; Y is only a receipt. Neither clears the captured failure class."
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "runIndex": 2,
+      "X": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "Y": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "X signals presence but supplies no usable path; Y closes at acknowledgement."
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "runIndex": 3,
+      "X": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "Y": { "absolutePass": false, "appropriateConversationOutcome": false, "wouldContinue": false, "criticalFailures": [] },
+      "pairPreference": "X",
+      "clearlyWorseSide": "Y",
+      "notes": "Same material result as run 2."
+    }
+  ]
+}
