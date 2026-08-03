@@ -11,13 +11,13 @@ import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingSe
 import { extractExperienceFromChatMessage } from "@/services/experience/experienceExtractorService";
 import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
 import { maybeMergeMemoryV2ResponseContext } from "@/services/memory/responseContextService";
+import { parseCommittedAssistantMoveMetadata } from "@/services/helping";
 import {
   extractUnderstandingFromMessage,
   writeUnderstandingExtraction,
 } from "@/services/understanding/extractService";
 import { updateUnderstandingHypotheses } from "@/services/understanding/hypothesisService";
 import { buildStructuredRagContext } from "@/services/understanding/retrievalService";
-import type { InteractionState } from "@/conversation-os/control";
 
 const COMMITTED_MESSAGE_STATUSES = [
   MessageStatus.SAVED,
@@ -283,19 +283,21 @@ export async function POST(
     const serializedRecentMessages = recentMessages
       .slice()
       .reverse()
-      .map((item) => ({
-        id: item.id,
-        role: item.role.toLowerCase() as "user" | "assistant" | "system",
-        content: item.content,
-        createdAt: item.createdAt.toISOString(),
-        promptVersion: item.aiGeneration?.promptVersion ?? null,
-        aiGenerationId: item.aiGenerationId,
-        status: item.status.toLowerCase() as "saved" | "rewritten" | "fallback",
-        replyToMessageId: item.replyToMessageId,
-        committedAssistantMove: item.interactionMetadata as
-          | InteractionState["lastCommittedAssistantMove"]
-          | undefined,
-      }));
+      .map((item) => {
+        const parsedMetadata = parseCommittedAssistantMoveMetadata(item.interactionMetadata);
+        return {
+          id: item.id,
+          role: item.role.toLowerCase() as "user" | "assistant" | "system",
+          content: item.content,
+          createdAt: item.createdAt.toISOString(),
+          promptVersion: item.aiGeneration?.promptVersion ?? null,
+          aiGenerationId: item.aiGenerationId,
+          status: item.status.toLowerCase() as "saved" | "rewritten" | "fallback",
+          replyToMessageId: item.replyToMessageId,
+          committedAssistantMove:
+            parsedMetadata.status === "valid" ? parsedMetadata.assistantMove : undefined,
+        };
+      });
 
     let userMessageCreated = false;
     const message = sourceMessageForHistory ?? await prisma.$transaction(async (tx) => {

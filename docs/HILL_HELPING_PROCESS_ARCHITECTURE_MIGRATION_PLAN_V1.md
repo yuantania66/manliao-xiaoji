@@ -1,6 +1,6 @@
 # Hill 助人过程第三阶段架构迁移与分批实施计划 v1
 
-状态：修订计划已获用户批准；早期批次 1.5 人工盲审及候选 1—6 的失败结果保留为历史证据；后续 Batch 1.5-E 完整冻结门已通过并关闭；2026-08-04 批准进入 Batch 2 infrastructure-only，未授权用户可见 Hill 行为
+状态：修订计划已获用户批准；早期批次 1.5 人工盲审及候选 1—6 的失败结果保留为历史证据；后续 Batch 1.5-E 完整冻结门已通过并关闭；2026-08-04 批准进入 Batch 2 infrastructure-only，Batch 2A `B2-Contract` 已冻结，未授权用户可见 Hill 行为
 
 日期：2026-08-01
 
@@ -563,6 +563,10 @@ Hill 技术，不写入 `CommittedHelpingMove`，不增加第二个 `ResponsePla
 Surface 架构并通过冻结门。该历史收敛判断不再是进入 Batch 2 的阻塞项。
 
 ### 批次 2：跨轮关联与提交边界
+
+状态：Batch 2A Contract Gate 已冻结 versioned formal Helping metadata、严格 parser
+和 formal/Shadow 隔离；Batch 2B—2D 尚未实现。详见
+[Batch 2A metadata contract](./HILL_HELPING_BATCH2A_COMMITTED_MOVE_METADATA_CONTRACT_V1.md)。
 
 目标：
 

@@ -6,11 +6,11 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 
 ## Active delivery slice
 
-- Outcome: Seal and push the complete Batch 1.5-E stable baseline, unify its authoritative status, and authorize the next infrastructure-only delivery slice.
-- Acceptance: Every changed path is classified and scanned; canonical status documents agree; the Batch 1.5 frozen gate and full launch gate pass; the baseline commit is pushed to the current feature branch; Batch 2 scope is explicit and excludes user-visible behavior.
-- Allowed scope: Current Conversation OS / Batch 1.5 source and contracts, verification/evaluation evidence, repository governance, authoritative status synchronization, Git commit and push.
-- Non-goals: Implement Batch 2, enable `hill_helping`, change product behavior, deploy, create a PR, or add User Model behavior.
-- Baseline: Branch `codex/semantic-evidence-guard-fix`, pre-seal HEAD `3e34257c392cce79afbd12bfe36a5fbdbe84ab6c`, with 199 changed/untracked paths classified below.
+- Outcome: Freeze the Batch 2A versioned Committed Helping metadata schema, strict parser, and formal/Shadow state-isolation contract without changing user-visible behavior.
+- Acceptance: v1 formal metadata round-trips; legacy ordinary metadata remains readable without acquiring Helping state; unknown versions/fields, bad types, empty identities and Shadow forms fail closed; current runtime projects only the ordinary move; related Hill, Conversation OS, lifecycle and full launch gates pass.
+- Allowed scope: Helping metadata contract module and export, the existing chat-history metadata read boundary, an independent Batch 2A regression, package gate registration, and directly related architecture/product/status documentation.
+- Non-goals: Historical Helping loader, semantic association, reaction candidates, `impactKnown`, formal production Helping writes, DB migration, Planner/Prompt/Surface/Validator/Memory changes, user-visible Hill behavior, deployment, Batch 3, or User Model behavior.
+- Baseline: Branch `codex/semantic-evidence-guard-fix`, HEAD `7a2f3aba7cebad6618ceef0d9ada0eacf896688a`, clean at slice start.
 - Round budget: 1 investigation + 1 implementation + at most 2 repairs per failed gate
 
 ## Team
@@ -38,8 +38,24 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 | Classify and scan the baseline upload | 62 source/contract paths, 136 verification/evidence paths, 1 governance path; no private key/token/real `.env`; largest file about 2.3 MB | pass | Release steward |
 | Re-run frozen and full engineering gates for the seal | Batch 1.5, preservation, Stage 2, post-candidate4 and Conversation OS architecture pass; `check:launch` exit 0 with 12 migrations, 27 Miniapp JS files and 39-page production build | pass | Delivery lead |
 | Authorize commit and push of the stable baseline | User explicitly authorized stage/commit/push; all pre-commit gates passed; the commit containing this ledger is the seal | pass | Delivery lead |
+| Freeze v1 formal Helping metadata schema | `schemaVersion=1`, `state=formal`, strict `CommittedHelpingMove` structural and Hill compatibility validation | pass | Delivery lead |
+| Prove legacy and Shadow isolation | Legacy ordinary projects with `helping=null`; unversioned Helping, unknown version/field, `state=shadow`, `mode=shadow`, nested Shadow markers and complete Shadow trace all fail closed | pass | Delivery lead |
+| Remove the chat-history blind cast without decision-state injection | Session message history uses the strict parser and projects only `assistantMove`; `parsedMetadata.helping` is not consumed | pass | Delivery lead |
+| Pass the Batch 2A contract regression | `npm run check:hill-helping-batch2a` exit 0, including serializer pre-validation counterexample | pass | Delivery lead |
+| Preserve existing architecture and lifecycle | Batch 1, Batch 1.5, Conversation OS control/architecture, AI orchestration and chat execution lifecycle checks exit 0 | pass | Delivery lead |
+| Pass the full engineering gate after Batch 2A | `npm run check:launch` exit 0; 12 Prisma migrations current, 27 Miniapp JS files valid, 39-page production build succeeds | pass | Delivery lead |
 
 ## Change inventory
+
+Batch 2A slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Runtime and contract source | 3 | Helping metadata module/export; chat-history read boundary | Review for fail-closed parsing and zero decision-state injection |
+| Verification wiring | 2 | Batch 2A regression script; package gate registration | Review as executable acceptance evidence; no generated model output |
+| Contract and status docs | 6 | Batch 2A contract plus architecture, PRD, Clinical, migration and project ledger updates | Review for authority/status consistency |
+
+Stable-baseline seal inventory (historical):
 
 | Class | Count | Path rule | Review treatment |
 |---|---:|---|---|
@@ -57,12 +73,14 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 | 2026-08-04 | Mark Batch 1.5-E complete frozen gate as passed and close the repair slice | Batch 1.5-E achieves 60/60 Functional and Machine pass, 0 constraint failures, 8.33% regeneration, and no final Surface drift or Validator FP/FN | Supersede the earlier Candidate 6 external-gate status; stop expanding this repair round |
 | 2026-08-04 | Seal and upload the complete stable baseline | User authorized authoritative status synchronization, baseline sealing and Git upload | Commit only after classification, secret scan and frozen/full gates pass |
 | 2026-08-04 | Approve Batch 2 infrastructure-only | Stable-baseline architecture review is Go for state/association/commit infrastructure | No user-visible Hill behavior, User Model integration, deployment or Batch 3 authorization |
+| 2026-08-04 | Freeze Batch 2A `B2-Contract` | Strict v1 round-trip, fail-closed counterexamples, Shadow isolation, runtime ordinary-only projection and full launch gate pass | Batch 2B may begin only as fixture load/association infrastructure; formal production writes remain unauthorized |
 
 ## Remaining
 
 - No remaining implementation is authorized inside the Batch 1.5-E repair slice.
 - One attempt-level pressure-repair Validator false positive remains recorded as a non-blocking observation; addressing it requires a new independently approved task.
-- Batch 2 implementation has not started; only the infrastructure-only delivery slice is authorized after the baseline seal is pushed.
+- Batch 2A is complete. Batch 2B fixture loading and semantic association, Batch 2C atomic formal-write proof, and Batch 2D Shadow reaction preservation remain unimplemented.
+- Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path is fixture-only until Batch 2C.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
 ## Closure status
@@ -70,7 +88,8 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 - Local containment slice: complete and included in the stable-baseline seal.
 - Batch 1.5-E product-quality gate: passed and formally closed on 2026-08-04; this supersedes the earlier Candidate 6 current-status conclusion without rewriting historical evidence.
 - Stable-baseline Git seal: the commit containing this ledger is the seal; its exact pushed SHA is recorded in the delivery report.
-- Batch 2 infrastructure-only: approved to begin only after the seal is pushed.
+- Batch 2A Contract Gate: complete; v1 formal metadata and formal/Shadow isolation are frozen.
+- Batch 2B—2D: not started and do not inherit authorization for user-visible behavior or formal production writes.
 - Further expansion of the Batch 1.5 repair round: stopped.
 
 ## Loop guards

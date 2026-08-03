@@ -421,6 +421,8 @@ Safety 永远高于 Clinical Logic。
 - CBT / ACT / MI 策略实现。
 - 把 Batch 2 infrastructure-only 授权扩大为用户可见 Hill 行为；Batch 2 只实现
   跨轮关联、序列化/加载、Shadow trace 与提交边界，Batch 3 仍须单独验收和授权。
+- 把已冻结的 Batch 2A metadata/parser 合同解释为正式生产 Helping 写入或跨轮
+  Helping 决策已经启用；这些仍须通过 Batch 2B—2D。
 - Prompt 大改。
 - 旧 Conversation OS 策略扩展。
 

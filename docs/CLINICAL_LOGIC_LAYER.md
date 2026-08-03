@@ -1,6 +1,6 @@
 # Clinical Logic Layer
 
-状态：Hill 目标合同已批准；批次 1 Shadow 于 2026-08-01 技术验收通过
+状态：Hill 目标合同已批准；批次 1 Shadow 于 2026-08-01 技术验收通过；Batch 2A `B2-Contract` 于 2026-08-04 冻结
 
 日期：2026-08-01
 
@@ -662,4 +662,5 @@ Phase 1 的 Clinical Logic Layer 只需要做到：
 边界和 Validator 最小修复已在 Batch 1.5-E 完整冻结门达到 60/60 Functional、60/60
 Machine Validator、0 constraint failure 和 5/60 regeneration，并于 2026-08-04
 标记 `passed_and_closed`。Batch 2 仅获批 infrastructure-only，不启用用户可见 Hill
-行为。
+行为。Batch 2A 只冻结 versioned formal Helping metadata、严格 parser 和
+formal/Shadow 隔离，尚未接入历史 Helping 决策或正式生产写入。
