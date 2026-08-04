@@ -55,9 +55,11 @@ Migration status after the Batch 1.5-E frozen gate closed on 2026-08-04:
 - Batch 2 is approved only as an infrastructure slice for cross-turn association,
   serialization/loading, Shadow reaction trace and atomic commit boundaries;
   Batch 2A has frozen the v1 formal Helping metadata schema, strict parser and
-  formal/Shadow isolation, while formal production writes and cross-turn loading
-  remain unimplemented; user-visible Hill behavior remains reserved for a
-  separately accepted Batch 3.
+  formal/Shadow isolation; Batch 2B has passed fixture-only bounded loading,
+  explicit older-target inclusion and target-bound semantic association without
+  production integration. Formal production writes, DB-backed loading and
+  reaction/impact state remain unimplemented; user-visible Hill behavior remains
+  reserved for a separately accepted Batch 3.
 
 ## 2. Runtime control loop
 

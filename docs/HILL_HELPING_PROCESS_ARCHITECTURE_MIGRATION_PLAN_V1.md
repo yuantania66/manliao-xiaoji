@@ -1,6 +1,6 @@
 # Hill 助人过程第三阶段架构迁移与分批实施计划 v1
 
-状态：修订计划已获用户批准；早期批次 1.5 人工盲审及候选 1—6 的失败结果保留为历史证据；后续 Batch 1.5-E 完整冻结门已通过并关闭；2026-08-04 批准进入 Batch 2 infrastructure-only，Batch 2A `B2-Contract` 已冻结，未授权用户可见 Hill 行为
+状态：修订计划已获用户批准；早期批次 1.5 人工盲审及候选 1—6 的失败结果保留为历史证据；后续 Batch 1.5-E 完整冻结门已通过并关闭；2026-08-04 批准进入 Batch 2 infrastructure-only，Batch 2A `B2-Contract` 与 Batch 2B fixture-only association gate 已通过，未授权用户可见 Hill 行为
 
 日期：2026-08-01
 
@@ -565,8 +565,11 @@ Surface 架构并通过冻结门。该历史收敛判断不再是进入 Batch 2 
 ### 批次 2：跨轮关联与提交边界
 
 状态：Batch 2A Contract Gate 已冻结 versioned formal Helping metadata、严格 parser
-和 formal/Shadow 隔离；Batch 2B—2D 尚未实现。详见
-[Batch 2A metadata contract](./HILL_HELPING_BATCH2A_COMMITTED_MOVE_METADATA_CONTRACT_V1.md)。
+和 formal/Shadow 隔离；Batch 2B 已在 fixture-only 范围通过有界加载、显式较早 target、
+target-bound semantic association 与 Initiative 隔离。Production loader、reaction /
+`impactKnown`、原子写入和 Batch 2C—2D 尚未实现。详见
+[Batch 2A metadata contract](./HILL_HELPING_BATCH2A_COMMITTED_MOVE_METADATA_CONTRACT_V1.md)
+与 [Batch 2B implementation report](./evals/hill-helping-batch2b-implementation-report-20260804.md)。
 
 目标：
 

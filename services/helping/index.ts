@@ -20,4 +20,18 @@ export type {
   CommittedAssistantMoveMetadataParseResult,
   FormalCommittedHelpingMoveMetadataV1,
 } from "./committedHelpingMoveMetadata";
+export {
+  FORMAL_HELPING_MOVE_FIXTURE_WINDOW_LIMIT,
+  loadFormalCommittedHelpingMoveFixtures,
+  lookupAssociatedCommittedHelpingMove,
+} from "./committedHelpingMoveAssociation";
+export type {
+  FormalHelpingMoveFixtureLoadResult,
+  FormalHelpingMoveFixtureRecord,
+  FormalHelpingMoveLoadTraceEntry,
+  HelpingAssociationLookupResult,
+  HelpingAssociationRelation,
+  HelpingAssociationSemanticEvidence,
+  LoadedFormalHelpingMove,
+} from "./committedHelpingMoveAssociation";
 export type * from "./hillHelpingTypes";

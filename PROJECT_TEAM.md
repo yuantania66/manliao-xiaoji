@@ -6,11 +6,11 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 
 ## Active delivery slice
 
-- Outcome: Freeze the Batch 2A versioned Committed Helping metadata schema, strict parser, and formal/Shadow state-isolation contract without changing user-visible behavior.
-- Acceptance: v1 formal metadata round-trips; legacy ordinary metadata remains readable without acquiring Helping state; unknown versions/fields, bad types, empty identities and Shadow forms fail closed; current runtime projects only the ordinary move; related Hill, Conversation OS, lifecycle and full launch gates pass.
-- Allowed scope: Helping metadata contract module and export, the existing chat-history metadata read boundary, an independent Batch 2A regression, package gate registration, and directly related architecture/product/status documentation.
-- Non-goals: Historical Helping loader, semantic association, reaction candidates, `impactKnown`, formal production Helping writes, DB migration, Planner/Prompt/Surface/Validator/Memory changes, user-visible Hill behavior, deployment, Batch 3, or User Model behavior.
-- Baseline: Branch `codex/semantic-evidence-guard-fix`, HEAD `7a2f3aba7cebad6618ceef0d9ada0eacf896688a`, clean at slice start.
+- Outcome: Deliver Batch 2B fixture-only formal Helping move loading and target-bound semantic association without production or user-visible integration.
+- Acceptance: Formal v1 fixtures load reliably in a bounded committed-order window; an explicit older target is retained; only unique target-bound semantic evidence associates; Shadow/invalid/ordinary/legacy records never load as Helping; production orchestration and visible behavior remain unchanged.
+- Allowed scope: An independent Helping fixture loader/association module and export, formal fixture definitions, Batch 2B regression/package gate, and directly related Batch 2B status documentation.
+- Non-goals: Modify the Batch 2A Contract, production/DB loader or writer, reaction candidates, `impactKnown`, LLM extraction, Memory retrieval, Planner/Prompt/Surface/Validator integration, User Model, Initiative behavior, Batch 2C, deployment or user-visible Hill behavior.
+- Baseline: Branch `batch-2a-contract`, HEAD `e0487fcc07505056165acba0f692bb3c64007a14`, clean at slice start.
 - Round budget: 1 investigation + 1 implementation + at most 2 repairs per failed gate
 
 ## Team
@@ -44,6 +44,13 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 | Pass the Batch 2A contract regression | `npm run check:hill-helping-batch2a` exit 0, including serializer pre-validation counterexample | pass | Delivery lead |
 | Preserve existing architecture and lifecycle | Batch 1, Batch 1.5, Conversation OS control/architecture, AI orchestration and chat execution lifecycle checks exit 0 | pass | Delivery lead |
 | Pass the full engineering gate after Batch 2A | `npm run check:launch` exit 0; 12 Prisma migrations current, 27 Miniapp JS files valid, 39-page production build succeeds | pass | Delivery lead |
+| Load formal fixtures in a bounded committed-order window | 10 valid formal fixtures; default latest 8; reversed input still loads in committed order | pass | Delivery lead |
+| Retain an explicit older formal target | Target at order 1 is loaded with latest 7; total remains bounded at 8 | pass | Delivery lead |
+| Require target-bound semantic association | direct response, continuation and correction/rejection pass; missing, stale, ambiguous, conflicting, topic-shift and unclear evidence fail closed | pass | Delivery lead |
+| Preserve formal/Shadow/ordinary isolation in Batch 2B | `state=shadow`, complete Shadow trace, unknown version, legacy ordinary, User role, cross-session and identity mismatch load 0 Helping moves | pass | Delivery lead |
+| Pass `B2-Initiative-Isolation` | No production consumer; no initiative/model/memory inputs in association module; natural-chat and proactive-greeting checks exit 0 | pass | Delivery lead |
+| Preserve Batch 2A and visible behavior | Batch 2A, Batch 1, Batch 1.5, preservation, Conversation OS and AI orchestration checks exit 0 | pass | Delivery lead |
+| Pass the full engineering gate after Batch 2B | `npm run check:launch` exit 0; 12 Prisma migrations current, 27 Miniapp JS files valid, 39-page production build succeeds | pass | Delivery lead |
 
 ## Change inventory
 
@@ -54,6 +61,14 @@ Batch 2A slice:
 | Runtime and contract source | 3 | Helping metadata module/export; chat-history read boundary | Review for fail-closed parsing and zero decision-state injection |
 | Verification wiring | 2 | Batch 2A regression script; package gate registration | Review as executable acceptance evidence; no generated model output |
 | Contract and status docs | 6 | Batch 2A contract plus architecture, PRD, Clinical, migration and project ledger updates | Review for authority/status consistency |
+
+Batch 2B slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Fixture-only infrastructure | 2 | Helping association module/export | Verify no production consumer or decision-state injection |
+| Verification wiring | 3 | Formal fixtures, Batch 2B check, package gate | Executable association/isolation evidence only |
+| Status documentation | 5 | Implementation report, architecture, Clinical, migration and project ledger | Keep Batch 2A frozen and Batch 2C explicitly out of scope |
 
 Stable-baseline seal inventory (historical):
 
@@ -74,12 +89,13 @@ Stable-baseline seal inventory (historical):
 | 2026-08-04 | Seal and upload the complete stable baseline | User authorized authoritative status synchronization, baseline sealing and Git upload | Commit only after classification, secret scan and frozen/full gates pass |
 | 2026-08-04 | Approve Batch 2 infrastructure-only | Stable-baseline architecture review is Go for state/association/commit infrastructure | No user-visible Hill behavior, User Model integration, deployment or Batch 3 authorization |
 | 2026-08-04 | Freeze Batch 2A `B2-Contract` | Strict v1 round-trip, fail-closed counterexamples, Shadow isolation, runtime ordinary-only projection and full launch gate pass | Batch 2B may begin only as fixture load/association infrastructure; formal production writes remain unauthorized |
+| 2026-08-04 | Pass Batch 2B fixture load/association gate | 17 fixture records, bounded chronological load, explicit older target, target-bound semantic association, Shadow/ordinary isolation and visible-behavior preservation | No production loader/writer or reaction state; Batch 2C is not created by this slice |
 
 ## Remaining
 
 - No remaining implementation is authorized inside the Batch 1.5-E repair slice.
 - One attempt-level pressure-repair Validator false positive remains recorded as a non-blocking observation; addressing it requires a new independently approved task.
-- Batch 2A is complete. Batch 2B fixture loading and semantic association, Batch 2C atomic formal-write proof, and Batch 2D Shadow reaction preservation remain unimplemented.
+- Batch 2A and the fixture-only Batch 2B association gate are complete. Production/DB loading, reaction candidates, `impactKnown`, Batch 2C atomic formal-write proof, and Batch 2D Shadow reaction preservation remain unimplemented.
 - Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path is fixture-only until Batch 2C.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
@@ -89,7 +105,8 @@ Stable-baseline seal inventory (historical):
 - Batch 1.5-E product-quality gate: passed and formally closed on 2026-08-04; this supersedes the earlier Candidate 6 current-status conclusion without rewriting historical evidence.
 - Stable-baseline Git seal: the commit containing this ledger is the seal; its exact pushed SHA is recorded in the delivery report.
 - Batch 2A Contract Gate: complete; v1 formal metadata and formal/Shadow isolation are frozen.
-- Batch 2B—2D: not started and do not inherit authorization for user-visible behavior or formal production writes.
+- Batch 2B Fixture Load and Association Gate: complete within fixture-only scope; no production consumer exists.
+- Batch 2C—2D: not started and do not inherit authorization for user-visible behavior or formal production writes.
 - Further expansion of the Batch 1.5 repair round: stopped.
 
 ## Loop guards
