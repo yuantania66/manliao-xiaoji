@@ -73,9 +73,9 @@ Migration status after the Batch 1.5-E frozen gate closed on 2026-08-04:
   committed-event relations, a target-bound User relation, one Planner-selected
   positive function and validated atomic commit. The stable envelope and
   Guest/authenticated round-trip foundation, strict adjacent active target and
-  current-turn User relation projection, Planner handoff tuple and detached
-  preflight authority are implemented; Prompt/Surface realization, completion
-  edges and semantic Validator gates remain pending.
+  current-turn User relation projection, Planner handoff tuple, detached
+  preflight authority, PHM-C Surface projection and same-plan semantic
+  validation are implemented; completion edges remain pending.
 
 ## 2. Runtime control loop
 
@@ -447,8 +447,8 @@ typed fail-closed source/relation pairs, compatible multiple-candidate collapse,
 incompatible-candidate defer and the positive meaning of
 `complete_reciprocal_contact`: accept reciprocal contact as sufficient and
 release the greeting ritual without another greeting, receipt or Assistant
-presence claim. Prompt/Surface realization, positive-function validation and
-committed completion edges remain separate slices.
+presence claim. PHM-C Surface realization and positive-function validation are
+implemented; committed completion edges remain a separate slice.
 
 ## 5. Assistant Grounding
 
@@ -580,10 +580,10 @@ is executable for the Batch 2C-A fixture evaluator, but does not claim a
 production Reaction Assessment runtime or authorize downstream integration.
 Item 17, the Turn Interpretation/relation portion of Item 19, and the
 envelope-and-relation portion of Item 20 now have executable coverage. Planner
-function selection and detached exact-preflight authority now have executable
-coverage. The Prompt/Surface and semantic Validator boundary in Item 19, Item
-18, completion parity in Item 20, and completion semantics in Item 21 remain
-target gates for later Planner Handoff Migration runtime slices.
+function selection, detached exact-preflight authority, Surface projection and
+same-plan semantic validation now have executable coverage. Item 18, completion
+parity in Item 20, and completion semantics in Item 21 remain target gates for
+later Planner Handoff Migration runtime slices.
 
 The primary structural checks are:
 
@@ -609,10 +609,10 @@ npm run check:architecture-v1
   envelopes with Guest/authenticated logical round-trip, strict adjacent active
   target projection, a target-bound current-turn User relation, a PHM-B plan
   projection and detached exact-preflight authority. A separately marked
-  no-envelope legacy `promptVersion` compatibility path remains, while
-  Prompt/Surface realization, `fulfills`, Safety `supersedes` and semantic
-  completion validation are absent; the runtime therefore does not yet claim
-  full v1 conformance.
+  no-envelope legacy `promptVersion` compatibility path remains. PHM-C Surface
+  projection and same-plan semantic validation are implemented, while
+  `fulfills`, Safety `supersedes` and committed completion lookup are absent;
+  the runtime therefore does not yet claim full v1 conformance.
 - Real-model post-migration A/B output comparison requires a separately scoped
   external-prompt authorization; local architecture and regression tests do not
   substitute for that naturalness evidence.

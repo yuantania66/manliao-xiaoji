@@ -54,7 +54,7 @@ const assertSafePrompt = ({
   stage,
   messages,
 }: {
-  stage: "proactive_greeting" | "turn_interpretation" | "surface_realization";
+  stage: "proactive_greeting" | "turn_interpretation" | "surface_realization" | "interaction_move_handoff_validation";
   messages: AiModelMessage[];
 }) => {
   const serialized = JSON.stringify(messages);

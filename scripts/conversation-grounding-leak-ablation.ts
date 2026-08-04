@@ -104,7 +104,7 @@ const assertSafePrompt = ({
 };
 
 type CapturedPrompt = {
-  stage: "turn_interpretation" | "surface_realization" | "ablation";
+  stage: "turn_interpretation" | "surface_realization" | "interaction_move_handoff_validation" | "ablation";
   label: string;
   messages: AiModelMessage[];
   hash: string;

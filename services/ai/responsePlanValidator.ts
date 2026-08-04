@@ -3,6 +3,12 @@ import { extractAffectEvidence } from "@/conversation-os/state";
 import { explicitlyResumesPreGreetingHistory } from "@/lib/proactive-greeting";
 
 import { collectUnsupportedMeaningFailureReasons } from "./semanticEvidenceReplyGuard";
+import {
+  validateInteractionMoveHandoffOutput,
+  type InteractionMoveHandoffSemanticContext,
+  type InteractionMoveHandoffSemanticProvider,
+  type InteractionMoveHandoffValidationPromptInspector,
+} from "./interactionMoveHandoffOutputValidator";
 import type { AiGenerationResult } from "./types";
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
@@ -12,6 +18,17 @@ const normalizeForEcho = (value: string) =>
     .replace(/^(?:嗯|哦|啊|呀|诶|原来是)/u, "")
     .replace(/(?:啊|呀|呢|哦)$/u, "")
     .trim();
+
+const recursivelyFreeze = <T>(value: T, seen = new WeakSet<object>()): T => {
+  if (!value || typeof value !== "object") return value;
+  const object = value as object;
+  if (seen.has(object)) return value;
+  seen.add(object);
+  for (const child of Object.values(value as Record<string, unknown>)) {
+    recursivelyFreeze(child, seen);
+  }
+  return Object.freeze(value);
+};
 
 type RepairSemanticEvidence = {
   moveReference: boolean;
@@ -942,12 +959,39 @@ const constraintFailureGeneration = (
 export const enforceResponsePlan = async ({
   plan,
   generate,
+  handoffSemanticContext,
+  handoffSemanticProvider,
+  inspectHandoffExternalPrompt,
 }: {
   plan: ResponsePlan;
-  generate: (constraint: string | null) => Promise<AiGenerationResult>;
+  generate: (constraint: string | null, executionPlan: ResponsePlan) => Promise<AiGenerationResult>;
+  handoffSemanticContext?: InteractionMoveHandoffSemanticContext;
+  handoffSemanticProvider?: InteractionMoveHandoffSemanticProvider;
+  inspectHandoffExternalPrompt?: InteractionMoveHandoffValidationPromptInspector;
 }) => {
-  const first = await generate(null);
-  const firstValidation = validateResponsePlanOutput({ plan, reply: first.text });
+  const executionPlan = recursivelyFreeze(structuredClone(plan));
+  const validateCandidate = async (reply: string): Promise<ResponseValidationResult> => {
+    const deterministic = validateResponsePlanOutput({ plan: executionPlan, reply });
+    const handoff = await validateInteractionMoveHandoffOutput({
+      plan: executionPlan,
+      reply,
+      semanticContext: handoffSemanticContext,
+      provider: handoffSemanticProvider,
+      inspectExternalPrompt: inspectHandoffExternalPrompt,
+    });
+    const failureReasons = Array.from(new Set([
+      ...deterministic.failureReasons,
+      ...handoff.failureReasons,
+    ]));
+    return {
+      passed: deterministic.passed && handoff.passed,
+      failureReasons,
+      checkedPlanId: executionPlan.planId,
+      planChanged: false,
+    };
+  };
+  const first = await generate(null, executionPlan);
+  const firstValidation = await validateCandidate(first.text);
   if (firstValidation.passed) {
     return {
       outcome: "validated" as const,
@@ -957,8 +1001,11 @@ export const enforceResponsePlan = async ({
       regenerateAttempted: false,
     };
   }
-  const second = await generate(formatResponsePlanRegenerateConstraint(plan, firstValidation.failureReasons));
-  const secondValidation = validateResponsePlanOutput({ plan, reply: second.text });
+  const second = await generate(
+    formatResponsePlanRegenerateConstraint(executionPlan, firstValidation.failureReasons),
+    executionPlan
+  );
+  const secondValidation = await validateCandidate(second.text);
   if (secondValidation.passed) {
     return {
       outcome: "validated" as const,

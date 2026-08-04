@@ -138,6 +138,15 @@ const scopeHistoryForResponsePlan = ({
   recentMessages: AiConversationMessage[];
   responsePlan?: ResponsePlan | null;
 }) => {
+  const v1Handoff = responsePlan?.interactionMoveHandoffPlan;
+  if (v1Handoff) {
+    if (explicitlyResumesPreGreetingHistory(userMessage)) return recentMessages;
+    const sourceIndex = recentMessages.findIndex((message) =>
+      message.role === "assistant" &&
+      message.id === v1Handoff.sourceAssistantMoveId
+    );
+    return sourceIndex >= 0 ? recentMessages.slice(sourceIndex) : [];
+  }
   if (
     !responsePlan?.responseActions.includes("respond_to_proactive_greeting") ||
     explicitlyResumesPreGreetingHistory(userMessage)
@@ -150,6 +159,48 @@ const scopeHistoryForResponsePlan = ({
       isProactiveGreetingPromptVersion(message.promptVersion)
   );
   return greetingIndex >= 0 ? recentMessages.slice(greetingIndex) : recentMessages;
+};
+
+const handoffSurfaceConstraintsFor = (responsePlan: ResponsePlan) => {
+  const handoff = responsePlan.interactionMoveHandoffPlan;
+  if (!handoff) return [];
+  const common = [
+    "Treat interactionMoveHandoffPlan as a required semantic function, not a label to repeat.",
+    "Do not print or self-report planId, relation names, function names, completion intent, evidence offsets, or validation claims.",
+    "The visible reply must address the specified source Assistant move and the current User relation.",
+  ];
+  const requiredFunctionConstraints: Record<typeof handoff.requiredFunction, string[]> = {
+    complete_reciprocal_contact: [
+      "Accept the User's reciprocal contact as sufficient and release the greeting ritual in this reply.",
+      "Do not replace that function with another greeting, receipt, echo, Assistant-presence confirmation, availability statement, or generic open door.",
+    ],
+    continue_from_user_answer: [
+      "Receive and continue from only the answer content supported by the current User relation evidence.",
+      "Do not open a second interview question.",
+    ],
+    continue_user_introduced_content: [
+      "Continue the User-introduced or redirected content rather than returning to the greeting ritual.",
+    ],
+    answer_current_obligation: [
+      "Answer the current scoped obligation before any optional continuation.",
+    ],
+    withdraw_or_repair_targeted_move: [
+      "Withdraw or repair the targeted Assistant interaction move without defending, explaining, or repeating it.",
+    ],
+    respect_user_boundary: [
+      "Respect the current User boundary and add no conversational pressure or continuation request.",
+    ],
+    defer_handoff_completion: [
+      "Preserve uncertainty and provide only ordinary low-burden handling; do not claim or imply handoff completion.",
+    ],
+  };
+  const questionConstraint = handoff.questionPolicy === "none"
+    ? ["Do not semantically ask, request, invite, or otherwise seek another User response, whether or not punctuation is used."]
+    : [
+        "A maximum of one follow-up question is optional only after the required positive function is fully realized.",
+        "That question is allowed only when an independently selected ordinary response action supports it; otherwise ask none.",
+      ];
+  return [...common, ...requiredFunctionConstraints[handoff.requiredFunction], ...questionConstraint];
 };
 
 const compactMemory = (value: string) => value.replace(/\s+/g, " ").trim().slice(0, 160);
@@ -398,7 +449,10 @@ const projectRelevanceProvenanceForSurface = (responsePlan: ResponsePlan) =>
   }));
 
 export const formatResponsePlanForPrompt = (responsePlan: ResponsePlan) => {
-  const surfaceConstraints = surfaceConstraintsFor(responsePlan);
+  const surfaceConstraints = [
+    ...surfaceConstraintsFor(responsePlan),
+    ...handoffSurfaceConstraintsFor(responsePlan),
+  ];
   const common = [
     "【Conversation OS ResponsePlan】",
     "This plan is the single decision authority for this non-safety turn. Surface realization must not re-plan it.",
@@ -409,6 +463,7 @@ export const formatResponsePlanForPrompt = (responsePlan: ResponsePlan) => {
     `groundingFacts: ${responsePlan.groundingFacts.join(" / ") || "none"}`,
     `requiredDisclosure: ${responsePlan.requiredDisclosure.join(" / ") || "none"}`,
     `positiveFunctionContract: ${responsePlan.positiveFunctionContract ? JSON.stringify(responsePlan.positiveFunctionContract) : "none"}`,
+    `interactionMoveHandoffPlan: ${responsePlan.interactionMoveHandoffPlan ? JSON.stringify(responsePlan.interactionMoveHandoffPlan) : "none"}`,
     `questionPolicy: ${responsePlan.questionPolicy.mode}`,
     `closurePolicy: ${responsePlan.closurePolicy.mode}`,
     `tone: ${responsePlan.tone.join(" / ")}`,

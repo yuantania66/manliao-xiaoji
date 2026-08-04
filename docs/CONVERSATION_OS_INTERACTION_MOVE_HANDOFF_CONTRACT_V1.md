@@ -1,6 +1,6 @@
 # Conversation OS Interaction Move Handoff Contract v1
 
-Status: **frozen architecture contract; committed-envelope, PHM-A Context/relation projection and PHM-B Planner transition implemented; Prompt/Surface realization, semantic completion validation and committed completion edges pending**
+Status: **frozen architecture contract; committed-envelope, PHM-A relation, PHM-B Planner and PHM-C Surface/same-plan semantic validation implemented; committed completion edges pending**
 
 Freeze date: 2026-08-04
 
@@ -542,9 +542,9 @@ PHM-A now additionally implements:
 - the same logical projection for equivalent Guest and authenticated inputs,
   without persistent lifecycle state, Memory, Batch 2 or User Model integration.
 
-The current runtime implements the PHM-B Planner transition and its detached
-preflight authority boundary, but has not implemented `fulfills`, Safety
-`supersedes`, positive-function validation or completion lookup. Safety
+The current runtime implements the PHM-B Planner transition, detached preflight
+authority and PHM-C Surface/same-plan semantic validation, but has not
+implemented `fulfills`, Safety `supersedes` or completion lookup. Safety
 responses intentionally emit no handoff envelope because a valid `supersedes`
 edge requires the target selected by the later migration; they are not
 mislabeled as `response_plan`. For a valid PHM-A projection, the Planner maps
@@ -707,3 +707,22 @@ authority from the plan it is validating.
 
 This snapshot is turn-local execution data. It is not persisted lifecycle
 state, Memory, User Model input or Batch 2 metadata.
+
+## 15. PHM-C Surface and same-plan semantic validation implementation
+
+PHM-C projects the complete preflight-valid handoff tuple and its current-turn
+relation evidence into Surface. V1 history is bounded by the committed
+`sourceAssistantMoveId`, except when the existing explicit-resumption boundary
+admits older history; `promptVersion` is not the v1 target authority.
+
+Before first generation, execution deep-clones and recursively freezes one
+ResponsePlan snapshot. Surface, the optional same-plan regeneration and both
+deterministic and semantic validation read that same snapshot. The semantic
+provider is a structured non-writer, binds its verdict to the exact plan tuple,
+uses exact candidate evidence spans and fails closed for provider, parse,
+binding, evidence or uncertainty failures. Its external prompt passes the
+existing inspection boundary. No keyword list, regex completion rule, Surface
+self-report or fixed reply whitelist proves the positive function.
+
+PHM-C accepts or rejects candidates only. It creates no `fulfills` or
+`supersedes` edge, and validation success is not committed completion.

@@ -58,3 +58,14 @@
 | 完整发布门 | `npm run check:launch` | exit 0；Prisma schema/migrations、Miniapp JS 与 Next.js production build 全部通过 | 通过 | 项目经理 |
 
 PHM-B-AUTH 是用户批准的新切片，不是 PHM-B 第三次修复。它关闭了前两轮暴露的信任边界后，PHM-B runtime 与 AUTH 作为同一 checkpoint 封存；历史 NO-GO 记录保留为决策证据。
+
+## PHM-C Surface + Same-Plan Semantic Validation
+
+| 验收项 | 证据 | 状态 |
+|---|---|---|
+| Surface tuple/history projection | 完整 handoff tuple 与 relation evidence 入 Prompt；v1 按 source id 裁剪并保留 explicit resumption | 通过 |
+| 独立语义验收 | 全函数、defer、无问号索取、optional 顺序、self-report、mixed contradiction 与 provider fail-closed 专项 | 通过 |
+| unchanged same plan | execution plan deep-clone + recursive freeze；首次、重试和两类 Validator 使用同一引用；独立 mutation attack 关闭 | 通过 |
+| LLM 治理 | 唯一 structured non-writer call、external inspection、strict full-string JSON、单 Planner architecture gate | 通过 |
+| 独立修复复验 | 原两个 P1 与 P2 parser 观察全部反转；无 P0-P3 | 通过 |
+| 完整发布门 | `check:launch` exit 0；12 migrations、27 Miniapp JS、39-page production build | 通过 |

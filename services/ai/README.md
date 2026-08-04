@@ -56,6 +56,12 @@ The production chat route is controlled by Conversation OS:
   acknowledgement, generic approval, topic-switching for the sake of another
   answer, and closing phrases are rejected. Conventional metaphors remain
   governed by Grounding;
+- PHM-C projects the complete preflight-valid interaction-move handoff tuple to
+  Surface and validates every candidate through an independent structured
+  same-plan semantic provider. One deep-cloned, recursively frozen execution
+  plan is shared by first generation, bounded regeneration and validation;
+  missing, malformed, mismatched or uncertain verdicts fail closed. This layer
+  accepts or rejects candidates but does not write committed completion edges;
 - Prompt History no longer deletes committed events by text, old Prompt
   version, low-information form, or template heuristics. It keeps a bounded
   recent raw window, filters only non-conversation/blocked events, and preserves

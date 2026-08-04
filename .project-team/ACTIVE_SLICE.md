@@ -1,17 +1,17 @@
 # 当前交付切片
 
-- 名称：PHM-B-AUTH — Immutable Detached Preflight Authority。
-- 交付结果：在 `ResponsePlan` 组装前从 Context / Interpretation / DialogueState 生成深拷贝、规范化、深度冻结的 preflight authority snapshot，execution preflight 只用该 snapshot 验证 PHM-B handoff plan 与 answer-obligation provenance。
-- 用户价值：为 PHM-B 提供真正独立的 fail-closed 信任边界，阻止 plan 与其输入/证据通过共享可变引用协同漂移。
-- 验收标准：生产唯一调用在 Planner 前创建 snapshot；snapshot 与 ResponsePlan 零共享可变引用且递归 `Object.isFrozen=true`；preflight 对 nullable handoff plan、answer obligations 和规范化 provenance 执行 exact equality；plan/provenance 协同篡改、alias mutation、缺失 authority、extra/conflicting provenance 均 fail closed；合法 Guest/Auth 等价输入通过；专项、TypeScript、ESLint、相邻门、独立验收与 `check:launch` 通过。
-- 允许范围：一个 Conversation OS 纯 authority/provenance 辅助模块，`conversation-os/control/index.ts`、`responsePlanner.ts`，`services/ai/chatExecutionLifecycle.ts`、`chatOrchestrationService.ts`，PHM-B 专项脚本，以及直接相关文档/项目台账。允许对当前未提交 PHM-B diff 做仅为解决该已命名信任边界所需的重构。
-- 非目标：不改 PHM-B mapping/priority/typed repair/legacy isolation；不改 PHM-A target/relation；不修改 Prompt/Surface、semantic Validator、API/client、Memory、User Model、Batch 2、schema、persistence、committed edges 或部署；不新增决策 owner、持久 lifecycle state、关键词/regex/case patch。
-- 当前基线：分支 `codex/planner-handoff-migration`；HEAD `bb38951`；工作区包含未封存 PHM-B runtime candidate 与项目台账，`git diff --check` 通过；已复现 shared-reference 与 non-exact provenance 阻塞。
-- 依赖项：Interaction Move Handoff Contract v1 §14、当前 PHM-B candidate、唯一 `createResponsePlan`、execution preflight。
-- 主要风险：snapshot 创建时机过晚；浅拷贝或冻结不完整；provenance 生成与验证双实现漂移；nullable expected plan 未被对比；为修复 alias 越界改 Planner 语义。
-- 激活角色：项目经理、技术架构师、开发工程师、测试工程师。
-- 待命角色：产品经理、UX 设计师、UI 设计师、运维工程师。
-- 文件写入负责人：开发工程师独占 runtime/专项脚本；主线程项目经理独占文档与台账；测试工程师只读。
-- 执行顺序：冻结任务卡 → detached authority/provenance 纯合同 → Planner 前 snapshot 组装 → preflight exact compare → alias/adversarial 回归 → 相邻/完整门 → 独立验收 → PHM-B 本地 checkpoint。
-- 修复预算：一次实现；本新切片的同一冻结门最多两次证据驱动修复。
-- 当前状态：已通过专项、相邻、TypeScript、ESLint、独立对抗复核和完整 `check:launch`，与 PHM-B runtime 作为同一可回滚检查点封存；不将本切片计为 PHM-B 第三轮修复。
+- 名称：PHM-C — Surface Handoff Realization and Same-Plan Semantic Validation。
+- 交付结果：将已通过 PHM-B preflight 的 `interactionMoveHandoffPlan` 结构化投影给 Surface，并在每个候选进入既有 bounded same-plan regeneration/acceptance 流程前，用独立语义证据验证同一 target、relation、required function、completion intent 与 question policy。
+- 用户价值：让 Planner 的 reciprocal-contact 决策真正约束生成和验收，拒绝重复 greeting、receipt、echo、presence confirmation 或 generic open door，进入自然交流阶段。
+- 验收标准：Surface 精确接收 handoff tuple 与当前 relation evidence，不读取 `promptVersion` 决定 handoff；v1 history 以 `sourceAssistantMoveId` 为边界；所有正向 required function 有明确实现义务；`defer` 不宣称完成；独立 semantic verdict 严格绑定同一 `planId`/tuple，malformed、missing、mismatched、uncertain verdict fail closed；`questionPolicy=none` 拒绝无问号的语义索取，`optional_after_completion` 只允许在正向函数已完成且 ordinary plan 独立支持时最多一个问题；Surface 自报内部标签不能证明完成；专项、TypeScript、ESLint、相邻门、独立验收与 `check:launch` 通过。
+- 允许范围：`services/ai/promptBuilder.ts`、一个独立 handoff semantic validator adapter、`services/ai/responsePlanValidator.ts`、`services/ai/chatOrchestrationService.ts`、PHM-C 专项脚本、package gate 以及直接相关合同/架构/台账。允许为测试注入 typed semantic provider，但默认生产路径必须 fail closed。完整门证明现有 LLM 调用白名单尚未表达已冻结的 Output Validation provider，因此修复轮 1 额外允许只更新 `scripts/conversation-os-architecture-check.ts` 的该治理断言，并要求 validator 外发 prompt 经过现有 inspection boundary。独立验收同时证明同一可变 plan 引用可在生成后漂移，因此同一修复轮必须在首次 Surface 前建立深拷贝、递归冻结的 execution-plan snapshot，并让两次生成和验证共享该唯一 snapshot。新增 inspection stage 导致三个既有 eval/baseline 脚本的窄类型不再覆盖真实 union，允许仅在 `assistant-grounding-eval.ts`、`conversation-grounding-leak-ablation.ts`、`conversation-os-control-baseline.ts` 做类型扩宽，不改行为。
+- 非目标：不改 PHM-B mapping/priority/preflight authority；不改 PHM-A target/relation；不写 `fulfills`、Safety `supersedes` 或任何 committed envelope edge；不改 API/client、Memory、User Model、Batch 2、schema、persistence 或部署；不新增 persistent lifecycle state、关键词/regex/固定话术 whitelist/trajectory case patch；不把 Validation success 当成 committed completion。
+- 当前基线：分支 `codex/planner-handoff-migration`；HEAD `bc9922a`；工作区仅有用户的独立 `AGENTS.md` 修改，必须保留且不得纳入本切片；已复现 plan 进入 orchestration 但不进入 Surface/Validator 的 NO-OP 边界。
+- 依赖项：Interaction Move Handoff Contract v1 §§7-9、PHM-B/AUTH checkpoint `bc9922a`、唯一 `formatResponsePlanForPrompt`、`enforceResponsePlan` 与 bounded regeneration。
+- 主要风险：把语义验证退化为词表；verdict 未绑定原 plan；model/parser failure 被误接受；Surface 通过自报 function id 欺骗；历史裁剪仍依赖 `promptVersion`；越界实现 committed edge。
+- 激活角色：项目经理、产品/临床合同审查、技术架构师、开发工程师、测试工程师。
+- 待命角色：UX 设计师、UI 设计师、运维工程师。
+- 文件写入负责人：开发工程师独占 runtime/专项脚本；主线程项目经理独占文档与台账；审查与测试角色只读。
+- 执行顺序：冻结任务卡 → typed semantic verdict contract → Surface tuple/history projection → async same-plan semantic gate → bounded regeneration wiring → semantic/adversarial regressions → 相邻/完整门 → 独立验收 → PHM-C 本地 checkpoint。
+- 修复预算：一次实现；同一冻结门最多两次证据驱动修复。
+- 当前状态：PHM-C 与修复轮 1 已通过专项、相邻、TypeScript、ESLint、独立对抗复验和完整 `check:launch`；准备以 `bc9922a` 为回滚锚点封存。

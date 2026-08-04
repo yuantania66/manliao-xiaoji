@@ -32,6 +32,7 @@ import {
 } from "@/conversation-os/control";
 import { enrichTurnInterpretation } from "./turnInterpretationAdapter";
 import { enforceResponsePlan } from "./responsePlanValidator";
+import type { InteractionMoveHandoffSemanticProvider } from "./interactionMoveHandoffOutputValidator";
 import {
   buildAttemptTransitions,
   classifyExecutionError,
@@ -65,12 +66,14 @@ type CreateChatReplyInput = {
   helpingShadowEnabled?: boolean;
   helpingOrdinaryHandoffEnabled?: boolean;
   helpingDecisionProvider?: HillHelpingDecisionProvider;
+  /** Test seam. Production omits this and uses the fail-closed default semantic provider. */
+  interactionMoveHandoffSemanticProvider?: InteractionMoveHandoffSemanticProvider;
   inspectHelpingPrompt?: (input: {
     stage: "helping_shadow";
     messages: AiModelMessage[];
   }) => void | Promise<void>;
   inspectExternalPrompt?: (input: {
-    stage: "turn_interpretation" | "surface_realization";
+    stage: "turn_interpretation" | "surface_realization" | "interaction_move_handoff_validation";
     messages: AiModelMessage[];
   }) => void | Promise<void>;
 };
@@ -172,6 +175,7 @@ export const createChatReply = async ({
   helpingShadowEnabled,
   helpingOrdinaryHandoffEnabled,
   helpingDecisionProvider,
+  interactionMoveHandoffSemanticProvider,
   inspectHelpingPrompt,
   inspectExternalPrompt,
 }: CreateChatReplyInput): Promise<ChatReplyResult> => {
@@ -456,9 +460,23 @@ export const createChatReply = async ({
 
   const attemptIds: string[] = [];
   try {
+    const handoffTargetMessage = responsePlan.interactionMoveHandoffPlan
+      ? recentMessages.find((message) =>
+          message.role === "assistant" &&
+          message.id === responsePlan.interactionMoveHandoffPlan?.sourceAssistantMoveId
+        )
+      : undefined;
     const enforced = await enforceResponsePlan({
       plan: responsePlan,
-      generate: async (constraint) => {
+      handoffSemanticProvider: interactionMoveHandoffSemanticProvider,
+      inspectHandoffExternalPrompt: inspectExternalPrompt,
+      handoffSemanticContext: handoffTargetMessage
+        ? {
+            targetAssistantText: handoffTargetMessage.content,
+            currentUserText: userMessage,
+          }
+        : undefined,
+      generate: async (constraint, executionPlan) => {
         attemptIds.push(createExecutionIdentity({}).requestId);
         return generateChatReply({
           conversationId,
@@ -466,7 +484,7 @@ export const createChatReply = async ({
           recentMessages,
           memoryContext: null,
           understandingContext: null,
-          responsePlan,
+          responsePlan: executionPlan,
           evaluationAdapter,
           responsePlanRegenerateConstraint: constraint,
           inspectExternalPrompt: inspectExternalPrompt
