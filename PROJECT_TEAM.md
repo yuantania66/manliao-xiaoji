@@ -1,17 +1,19 @@
 # Project Team
 
+> 项目专属角色档案、当前交付切片和轻量证据台账位于 [`.project-team/`](./.project-team/PROJECT_TEAM.md)。本文件继续保存既有实现切片的历史交付账本，两者不得相互覆盖。
+
 ## Project outcome
 
 Ship a coherent, clinically safe Conversation OS in reviewable increments without mixing product redesign, implementation, and unbounded evaluation loops.
 
 ## Active delivery slice
 
-- Outcome: Seal the completed PHM-A Context and target-bound User relation projection as one auditable checkpoint after the PHM-A-R type-narrowing repair.
-- Acceptance: PHM-A dedicated and adjacent gates, `npx tsc --noEmit`, independent verification, `git diff --check` and the full `check:launch` gate all pass; the checkpoint contains only the classified 13-path PHM-A inventory.
-- Allowed scope: PHM-A implementation, verification and status paths already present in the 13-path inventory; this governance ledger; local checkpoint commit.
-- Non-goals: Response Planner function selection or `promptVersion` migration, Surface, Validator completion proof, committed `fulfills`, Safety `supersedes`, persistent lifecycle state, Memory, User Model, Batch 2, schema migration, deployment or PHM-B implementation.
-- Baseline: Branch `codex/planner-handoff-migration`, checkpoint `1f1d52e`; PHM-A-R and independent verification pass, and the full `check:launch` gate exits 0.
-- Round budget: seal only; no additional implementation or repair candidate
+- Outcome: Freeze PHM-B as the docs-only Planner Handoff Transition Contract that projects PHM-A's active target and User relation into one Planner-owned function/defer tuple without reopening PHM-A.
+- Acceptance: the authoritative contract exhaustively freezes activation/fail-closed rules, relation-to-function/completion/question-policy tuples, multiple-candidate compatibility, positive reciprocal-contact semantics, v1 `promptVersion` independence and Guest/authenticated parity; Architecture v1, this historical ledger and the project-team current-slice ledger agree that runtime behavior is unchanged.
+- Allowed scope: `docs/CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md`, `docs/ARCHITECTURE_V1_FINAL.md`, `PROJECT_TEAM.md` and `.project-team/{ACTIVE_SLICE,EVIDENCE,DECISIONS,REMAINING}.md` only. The concurrently completed project-team initialization files are preserved as a separate change inventory.
+- Non-goals: runtime, Planner, Prompt, Surface, Validator, commit-path or API/client changes; `fulfills`, Safety `supersedes`, completion lookup, persistent lifecycle state, Memory, User Model, Batch 2, schema migration, deployment or a user-visible fix claim.
+- Baseline: Branch `codex/planner-handoff-migration`, clean checkpoint `a02f0ff`; committed-envelope foundation and PHM-A Context/relation projection are sealed.
+- Round budget: one contract investigation, one docs-only freeze and at most one consistency repair; no runtime candidate
 
 ## Team
 
@@ -69,6 +71,10 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 | Implement PHM-A Context and User relation projection | Strict adjacent committed `opens` target, eight relation kinds, exact current-User spans, ambiguity preservation and Guest/authenticated logical parity pass the dedicated gate | pass | Delivery lead |
 | Pass PHM-A-R independent repair verification | One private proactive-open type guard removes three compile errors without changing target, relation, parser or fail-closed semantics; all frozen narrow gates pass independently | pass | Independent verifier |
 | Pass the full engineering gate before PHM-A seal | `npm run check:launch` exits 0 with 12 current migrations, 27 Miniapp JS files and a successful 39-page production build | pass | Delivery lead |
+| Locate the PHM-B causal boundary | PHM-A reaches `createResponsePlan`, but the Planner ignores `userMoveRelation` and still detects greetings from `promptVersion`; `ResponsePlan` and preflight contain no handoff plan | pass | Architecture investigator |
+| Freeze the complete PHM-B transition tuple | Authoritative contract covers activation, all supported relation/source-function pairs, completion intent, question policy, ordinary-action composition and typed defer | pass | Delivery lead |
+| Freeze ambiguity and reciprocal-contact semantics | Compatible candidate collapse, incompatible defer, trace-only selection on defer and the positive reciprocal-contact postcondition are explicit without wording rules | pass | Product and clinical reviewer |
+| Preserve the PHM-B docs-only boundary | Seven PHM-B documentation/governance paths only; concurrent project-team initialization artifacts remain separately classified; runtime, schema, migration and verification source are unchanged | pass | Independent verifier |
 
 ## Change inventory
 
@@ -128,6 +134,15 @@ PHM-A Context and User relation projection slice:
 | Verification wiring | 2 | PHM-A dedicated check and package gate registration | Verify normal, edge, ambiguous, context-switching and adversarial fail-closed cases |
 | Status documentation | 4 | Interaction Move contract, Architecture v1, Conversation State Design and project ledger | Record PHM-A completion without claiming Planner, Validator or committed-edge completion |
 
+PHM-B Planner Handoff Transition Contract Freeze slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Authoritative contract refinement | 1 | `docs/CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md` | Freeze the executable Planner transition mapping inside the existing single authority; create no parallel contract |
+| Architecture and governance status | 2 | `docs/ARCHITECTURE_V1_FINAL.md`; `PROJECT_TEAM.md` | Record PHM-B as frozen docs-only and runtime/Validator/edges as pending |
+| Project-team current-slice synchronization | 4 | `.project-team/ACTIVE_SLICE.md`; `.project-team/EVIDENCE.md`; `.project-team/DECISIONS.md`; `.project-team/REMAINING.md` | Replace the completed team-initialization slice as current without modifying reusable role profiles |
+| Runtime, schema, migration or verification source | 0 | None | No production behavior or test claim is authorized by the freeze |
+
 Stable-baseline seal inventory (historical):
 
 | Class | Count | Path rule | Review treatment |
@@ -153,6 +168,7 @@ Stable-baseline seal inventory (historical):
 | 2026-08-04 | Freeze Conversation OS Interaction Move Handoff Contract v1 | Architecture review found that proactive greeting provenance did not establish a positive completion postcondition | Handoff completion is now defined by target-bound relation, Planner-selected function, semantic validation and an immutable committed-event edge; runtime implementation remains separately unauthorized |
 | 2026-08-04 | Implement the committed Assistant move envelope foundation | Strict envelope checks, Guest/authenticated projections and database-backed commit/retry/rollback regressions pass | Planner legacy remains; User relation, `fulfills`, Safety `supersedes` and completion validation are deferred to Planner Handoff Migration |
 | 2026-08-04 | Seal PHM-A Context and target-bound User relation projection | Dedicated and adjacent gates, TypeScript, independent PHM-A-R verification and full `check:launch` pass | Planner selection, `promptVersion` migration, Validator proof and committed completion edges remain separate later slices |
+| 2026-08-05 | Freeze PHM-B Planner Handoff Transition Contract | Runtime audit locates the first remaining causal boundary at the sole `createResponsePlan`; contract review identifies and closes tuple, ambiguity and reciprocal-contact gaps | A later Planner-only implementation may consume PHM-A and remove `promptVersion` from the v1 transition path, but this freeze changes no runtime behavior |
 
 ## Remaining
 
@@ -161,7 +177,7 @@ Stable-baseline seal inventory (historical):
 - Batch 2A, Batch 2B association and Batch 2C-A fixture Reaction Assessment gates are complete. No production Reaction Assessment runtime exists.
 - Production/DB loading, Atomic Boundary proof and formal Helping writes remain unimplemented and have no current Batch 2C authorization.
 - Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path remains fixture-only until a separately approved Atomic Boundary gate.
-- Interaction Move Handoff Contract v1 envelope foundation and PHM-A Context/relation projection are implemented; Planner migration, `fulfills`, Safety `supersedes` and semantic completion validation remain pending.
+- Interaction Move Handoff Contract v1 envelope foundation and PHM-A Context/relation projection are implemented; PHM-B Planner transition is frozen docs-only, while its runtime implementation, Prompt/Surface realization, `fulfills`, Safety `supersedes` and semantic completion validation remain pending.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
 ## Closure status
@@ -172,7 +188,7 @@ Stable-baseline seal inventory (historical):
 - Batch 2A Contract Gate: complete; v1 formal metadata and formal/Shadow isolation are frozen.
 - Batch 2B Fixture Load and Association Gate: complete within fixture-only scope; no production consumer exists.
 - Batch 2C Reaction Assessment Contract Gate: frozen under `B2-Reaction-Shadow`; Batch 2C-A fixture-only evaluator and regressions pass, while runtime and downstream integration remain absent.
-- Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; committed-envelope foundation and PHM-A Context/relation projection are implemented without persistent lifecycle state or schema migration, while Planner handoff remains pending.
+- Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; committed-envelope foundation and PHM-A Context/relation projection are implemented without persistent lifecycle state or schema migration; PHM-B Planner transition is now frozen docs-only, while runtime handoff, realization, validation and committed completion remain pending.
 - Atomic Boundary and later Batch 2 work do not inherit authorization for user-visible behavior, formal production writes or downstream integration.
 - Further expansion of the Batch 1.5 repair round: stopped.
 

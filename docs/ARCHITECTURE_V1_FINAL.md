@@ -66,13 +66,16 @@ Migration status after the Batch 1.5-E frozen gate closed on 2026-08-04:
   for a separately accepted Batch 3;
 - Conversation OS Interaction Move Handoff Contract v1 is frozen as the target
   contract, and its committed-envelope foundation plus PHM-A Context/relation
-  projection are implemented. It defines
+  projection are implemented. PHM-B now freezes the Planner transition tuple,
+  fail-closed activation, multiple-candidate compatibility and positive
+  reciprocal-contact postcondition as a docs-only implementation contract. It defines
   proactive greeting completion through immutable
   committed-event relations, a target-bound User relation, one Planner-selected
   positive function and validated atomic commit. The stable envelope and
   Guest/authenticated round-trip foundation, strict adjacent active target and
-  current-turn User relation projection are implemented; completion edges,
-  Planner transition and semantic Validator gates remain pending.
+  current-turn User relation projection are implemented; the PHM-B Planner
+  runtime, Prompt/Surface realization, completion edges and semantic Validator
+  gates remain pending.
 
 ## 2. Runtime control loop
 
@@ -265,6 +268,15 @@ required handoff function, completion intent and question policy. Greeting
 provenance such as `promptVersion` cannot replace the committed move target or
 prove completion.
 
+The PHM-B freeze makes this boundary total and fail closed. A v1 handoff plan is
+created only when the active committed target, current User turn, target
+function and exact PHM-A evidence spans agree. It maps the frozen relation set
+to one required function or `defer`, preserves higher-priority direct
+obligations and boundaries, and resolves multiple candidates only through the
+compatibility rules in the authoritative handoff contract. It performs no text
+matching and does not reconstruct decisions from `promptVersion`. The freeze is
+documentation-only; the current Planner does not yet implement this projection.
+
 No module after this point may reinterpret the user, choose a new response
 goal, or select another strategy.
 
@@ -426,6 +438,15 @@ ambiguity without selecting a reply function. These slices add no persistent
 lifecycle state, schema migration, Memory or User Model input. Planner handoff,
 `fulfills`, Safety `supersedes` and completion semantics remain pending.
 
+PHM-B freezes, but does not yet implement, the Planner transition from that
+projection. The total mapping includes direct-obligation and boundary priority,
+typed fail-closed source/relation pairs, compatible multiple-candidate collapse,
+incompatible-candidate defer and the positive meaning of
+`complete_reciprocal_contact`: accept reciprocal contact as sufficient and
+release the greeting ritual without another greeting, receipt or Assistant
+presence claim. Prompt/Surface realization, positive-function validation and
+committed completion edges remain separate slices.
+
 ## 5. Assistant Grounding
 
 `conversation-os/control/assistantGrounding.ts` is the single source for
@@ -556,9 +577,10 @@ is executable for the Batch 2C-A fixture evaluator, but does not claim a
 production Reaction Assessment runtime or authorize downstream integration.
 Item 17, the Turn Interpretation/relation portion of Item 19, and the
 envelope-and-relation portion of Item 20 now have executable coverage. Planner
-function selection and the Validator boundary in Item 19, Item 18, completion
+function selection now has a frozen PHM-B docs-only contract but no executable
+coverage. The Planner and Validator boundaries in Item 19, Item 18, completion
 parity in Item 20, and completion semantics in Item 21 remain target gates for
-later Planner Handoff Migration slices.
+later Planner Handoff Migration runtime slices.
 
 The primary structural checks are:
 
@@ -582,10 +604,11 @@ npm run check:architecture-v1
   applicability or cross-turn reaction loop.
 - Interaction Move Handoff v1 has stable proactive and ordinary committed-event
   envelopes with Guest/authenticated logical round-trip, strict adjacent active
-  target projection and a target-bound current-turn User relation. The current
-  runtime still uses `promptVersion` greeting provenance compatibility in the
-  Planner and has no `fulfills`, Safety `supersedes` or completion validation;
-  it therefore does not yet claim full v1 conformance.
+  target projection and a target-bound current-turn User relation. PHM-B freezes
+  the Planner transition contract, but the current runtime still uses
+  `promptVersion` greeting provenance compatibility in the Planner and has no
+  PHM-B plan projection, `fulfills`, Safety `supersedes` or completion
+  validation; it therefore does not yet claim full v1 conformance.
 - Real-model post-migration A/B output comparison requires a separately scoped
   external-prompt authorization; local architecture and regression tests do not
   substitute for that naturalness evidence.

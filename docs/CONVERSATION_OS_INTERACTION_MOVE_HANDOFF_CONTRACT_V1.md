@@ -1,8 +1,10 @@
 # Conversation OS Interaction Move Handoff Contract v1
 
-Status: **frozen architecture contract; committed-envelope and PHM-A Context/relation projection implemented; Planner handoff pending**
+Status: **frozen architecture contract; committed-envelope and PHM-A Context/relation projection implemented; PHM-B Planner transition contract frozen docs-only; runtime implementation pending**
 
 Freeze date: 2026-08-04
+
+PHM-B freeze date: 2026-08-05
 
 Authority: Conversation OS
 
@@ -548,3 +550,139 @@ mislabeled as `response_plan`. The existing Planner `promptVersion`
 compatibility path remains temporarily active and is not used to create,
 identify or validate the envelope or PHM-A relation projection. Production
 behavior therefore does not yet claim full v1 conformance.
+
+## 14. PHM-B Planner transition contract freeze
+
+### 14.1 Slice status and boundary
+
+PHM-B freezes the Planner-owned transition from the PHM-A projection to one
+`InteractionMoveHandoffPlan`. This section refines section 7 into an executable
+planning contract without authorizing runtime changes under the freeze itself.
+
+The PHM-B runtime implementation may later change only the plan-time boundary,
+plan preflight and dedicated verification needed to prove this contract. Prompt
+and Surface projection, positive-function Output Validation, committed
+`fulfills`, Safety `supersedes`, completion lookup, API/client changes,
+persistence, schema migration, Memory, User Model and Batch 2 remain separate,
+unauthorized slices.
+
+The docs-only freeze does not claim that production presence-confirmation
+behavior has changed.
+
+### 14.2 Activation and fail-closed input
+
+The v1 Planner branch is active only when all of these values agree:
+
+1. Context contains the strictly adjacent committed proactive `opens` target;
+2. Turn Interpretation contains a non-empty `userMoveRelation`;
+3. the relation source User turn equals the current plan source User turn;
+4. the relation target Assistant id equals the active target Assistant id;
+5. the relation target function equals the active target greeting function;
+6. every evidence span of every surviving relation candidate is an exact span
+   of the current User turn.
+
+If any condition fails, the Planner produces no v1 handoff plan. It must not
+repair identity, target, function or evidence from message text,
+`promptVersion`, punctuation or a second classifier. A separately marked legacy
+no-envelope compatibility path may remain temporarily, but it is not v1 and
+cannot create v1 completion intent or completion edges.
+
+### 14.3 Total transition mapping
+
+Existing Safety routing remains above the ordinary Planner. Within the ordinary
+Planner, an already established current direct-answer obligation and an
+explicit boundary remain higher priority than greeting ritual. The Planner
+projects the following complete tuple without reinterpreting the User text:
+
+| Frozen input | Required function | Completion intent | Handoff question policy | Ordinary-plan composition |
+|---|---|---|---|---|
+| explicit pause, stop or boundary | `respect_user_boundary` | `fulfill` | `none` | require the existing boundary-respecting action; no continuation action |
+| `challenges_move_fit` or `rejects_or_declines_move` | `withdraw_or_repair_targeted_move` | `fulfill` | `none` | require targeted interaction-move repair; do not defend or repeat the greeting |
+| current direct question or answer obligation | `answer_current_obligation` | `fulfill` | `none` | require the existing direct-answer action before any optional continuation |
+| `opens_or_redirects_thread` | `continue_user_introduced_content` | `fulfill` | `optional_after_completion` | preserve the User-selected content action; do not add a greeting-only action |
+| `answers_move` with `ask_one_bounded_low_burden_question` | `continue_from_user_answer` | `fulfill` | `none` | receive and continue from the answer; no second interview question |
+| `continues_from_move` with `ask_one_bounded_low_burden_question` | `continue_from_user_answer` | `fulfill` | `none` | continue only from answer content supported by the current turn |
+| `continues_from_move` with either non-question greeting function | `continue_user_introduced_content` | `fulfill` | `optional_after_completion` | continue only current-turn content supported by the relation evidence |
+| `reciprocates_move` with either non-question greeting function | `complete_reciprocal_contact` | `fulfill` | `optional_after_completion` | the handoff function may stand alone; an ordinary continuation is optional and requires independent current-turn support |
+| `unclear`, or a relation/source-function pair not listed above | `defer_handoff_completion` | `defer` | `none` | preserve ordinary low-burden handling; no action may claim completion |
+
+`reciprocates_move` after a question greeting and `answers_move` after a
+non-question greeting are unsupported pairs and therefore defer. This is a
+typed fail-closed boundary, not a wording rule.
+
+`questionPolicy=optional_after_completion` means that a question is permitted
+only after the selected positive function has been realized and only when an
+existing ordinary-plan action independently supports it. It never requires a
+question and cannot be used to manufacture conversation content.
+
+### 14.4 Multiple-candidate compatibility
+
+PHM-A remains the authority for the full ordered candidate set and ambiguity.
+The Planner does not discard or rewrite that projection.
+
+- An established direct-answer obligation or explicit boundary applies its
+  higher-priority tuple without erasing the underlying relation candidates. For
+  a direct-answer override, `selectedRelation` records the highest-confidence
+  surviving candidate bound to the current User turn; that relation label is
+  trace focus only, while the existing scoped answer obligation and its evidence
+  remain the authority for `answer_current_obligation`. For a boundary override,
+  the highest-confidence `sets_boundary_or_pause` candidate is selected; absence
+  of that candidate is an input inconsistency and fails closed.
+- `challenges_move_fit` and `rejects_or_declines_move` are compatible with each
+  other and collapse to `withdraw_or_repair_targeted_move`.
+- For a question greeting, `answers_move` and `continues_from_move` are
+  compatible and collapse to `continue_from_user_answer`.
+- If `opens_or_redirects_thread` survives with `answers_move`,
+  `continues_from_move` or `reciprocates_move`, current User content wins and the
+  shared function is `continue_user_introduced_content`.
+- Other multi-candidate combinations, and any ambiguous set containing
+  `unclear`, are incompatible and must defer.
+
+Except for the explicit priority-override rule above, a compatible set records
+the highest-confidence candidate that directly supports the selected function
+as `selectedRelation`. For an incompatible set, `selectedRelation` records the
+highest-confidence surviving candidate for traceability only;
+`requiredFunction=defer_handoff_completion` and
+`completionIntent=defer` explicitly prevent that trace focus from becoming an
+intent claim. Ties retain PHM-A candidate order. Planner evidence remains the
+unchanged source spans of the recorded candidate; scoped answer-obligation
+evidence stays in the existing `ResponsePlan.answerObligations` contract and is
+not copied into or invented as relation evidence.
+
+### 14.5 Positive reciprocal-contact postcondition
+
+`complete_reciprocal_contact` positively means that the plan accepts the User's
+reciprocal greeting as sufficient mutual contact, requires no additional proof
+of presence or engagement, and releases the greeting ritual after this reply.
+It does not require the User to introduce a topic, answer a question or continue
+the conversation.
+
+The plan may add an independently grounded ordinary continuation after that
+postcondition, but lack of a new topic is not a planning failure. A second
+greeting-only move, receipt, echo, Assistant availability statement or generic
+open door does not realize this positive function. PHM-B freezes this semantic
+postcondition but leaves its Surface realization and same-plan positive
+validation to separately authorized slices; it freezes no sample wording,
+keyword list or case rule.
+
+### 14.6 PHM-B implementation acceptance
+
+A later PHM-B runtime slice is acceptable only if it proves:
+
+1. the sole Response Planner owns the transition and produces one nullable
+   handoff plan inside the existing `ResponsePlan`;
+2. equivalent Guest and authenticated PHM-A inputs produce the same logical
+   plan tuple;
+3. the v1 branch never uses `promptVersion` or text matching to select target,
+   relation, function, completion intent or question policy;
+4. target, source-turn, greeting-function and exact-span mismatches fail closed;
+5. every single and multiple-candidate mapping in sections 14.3-14.4 is covered;
+6. reciprocal greeting plans select `complete_reciprocal_contact` and never
+   select a presence-confirmation or second-greeting action;
+7. direct obligations, User content, repair and boundaries retain their frozen
+   priority over greeting ritual;
+8. `defer` never produces a completion claim or edge;
+9. no persistent lifecycle state, Memory, User Model, Batch 2 or schema change
+   is introduced;
+10. Prompt/Surface realization, semantic Validator proof and committed event
+    edges are not falsely claimed by the Planner-only slice.
