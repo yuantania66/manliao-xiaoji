@@ -1,6 +1,6 @@
 # Hill 助人过程第三阶段架构迁移与分批实施计划 v1
 
-状态：修订计划已获用户批准；早期批次 1.5 人工盲审及候选 1—6 的失败结果保留为历史证据；后续 Batch 1.5-E 完整冻结门已通过并关闭；2026-08-04 批准进入 Batch 2 infrastructure-only，Batch 2A `B2-Contract` 与 Batch 2B fixture-only association gate 已通过，未授权用户可见 Hill 行为
+状态：修订计划已获用户批准；早期批次 1.5 人工盲审及候选 1—6 的失败结果保留为历史证据；后续 Batch 1.5-E 完整冻结门已通过并关闭；2026-08-04 批准进入 Batch 2 infrastructure-only，Batch 2A `B2-Contract` 与 Batch 2B fixture-only association gate 已通过，Batch 2C `B2-Reaction-Shadow` docs-only 合同已冻结，未授权用户可见 Hill 行为或 downstream integration
 
 日期：2026-08-01
 
@@ -11,6 +11,7 @@
 - [产品需求基准](./PRD_V1.md)
 - [五层架构基准](./ARCHITECTURE_V1_FINAL.md)
 - [Conversation Trajectory Eval Spec](./CONVERSATION_TRAJECTORY_EVAL_SPEC.md)
+- [Batch 2C Reaction Assessment Contract v1](./HILL_HELPING_BATCH2C_REACTION_ASSESSMENT_CONTRACT_V1.md)
 
 验收：
 
@@ -362,6 +363,20 @@ Assistant 消息才能产生 `CommittedHelpingMove`。
 
 不得用“消息紧邻”“回复变长”“继续聊天”替代语义关系判断。
 
+Batch 2C 把该边界冻结为 `B2-Reaction-Shadow`：
+
+- `reactionEvidenceKnown` 只表示当前 user turn 是否有足够明确、可追溯、目标绑定的
+  reaction 分类证据；
+- `impactKnown` 还要求用户明确报告该 move 的适配性、体验、结果、无效果或负面效果；
+- `impactKnown=true` 不证明客观因果或技术成功；
+- Reaction Assessment 只能是 `mode=shadow`、`source=fixture`；
+- 结果不得进入 `HillHelpingPlan`、Response Planner、Initiative、Memory、User Model、
+  `ChatMessage.interactionMetadata` 或 formal persistence；
+- 无合法 formal target、唯一 relation、current-turn evidence 或严格 schema 时统一
+  fail closed，两个 known 均为 `false` 且没有 actionable candidate。
+
+该合同冻结不表示 evaluator、runtime 或 regression 已实现。
+
 ## 8. 失败、重试与回退
 
 ### 8.1 成功判断为不适用
@@ -566,10 +581,16 @@ Surface 架构并通过冻结门。该历史收敛判断不再是进入 Batch 2 
 
 状态：Batch 2A Contract Gate 已冻结 versioned formal Helping metadata、严格 parser
 和 formal/Shadow 隔离；Batch 2B 已在 fixture-only 范围通过有界加载、显式较早 target、
-target-bound semantic association 与 Initiative 隔离。Production loader、reaction /
-`impactKnown`、原子写入和 Batch 2C—2D 尚未实现。详见
+target-bound semantic association 与 Initiative 隔离；Batch 2C 已冻结为
+Reaction Assessment Contract Gate，gate id 为 `B2-Reaction-Shadow`，范围严格是
+reaction-only、Shadow-only、fixture-only 和 zero downstream integration。Batch 2C
+evaluator/runtime、production loader、原子写入和 Atomic Boundary 尚未实现。详见
 [Batch 2A metadata contract](./HILL_HELPING_BATCH2A_COMMITTED_MOVE_METADATA_CONTRACT_V1.md)
-与 [Batch 2B implementation report](./evals/hill-helping-batch2b-implementation-report-20260804.md)。
+、[Batch 2B implementation report](./evals/hill-helping-batch2b-implementation-report-20260804.md)
+与 [Batch 2C Reaction Assessment Contract](./HILL_HELPING_BATCH2C_REACTION_ASSESSMENT_CONTRACT_V1.md)。
+
+当前权威命名中，Batch 2C 不再表示 Atomic Boundary。历史材料中的旧编号保持为历史
+证据；Atomic Boundary 保持未授权、未实现，后续编号由独立决定冻结。
 
 目标：
 
@@ -595,6 +616,16 @@ target-bound semantic association 与 Initiative 隔离。Production loader、re
 - 原子提交与既有会话生命周期测试通过。
 
 失败处理：修正状态与语义关联，不提前启用用户可见 Hill 行为。
+
+Batch 2C Contract Freeze 本身只冻结以下后续 fixture 验收边界，不宣称实现通过：
+
+- Reaction Candidate strict schema 与唯一 formal target binding；
+- `reactionEvidenceKnown` 和 `impactKnown` 分离；
+- 消息相邻、长度、继续聊天、Initiative、topic shift 或 unclear 不形成影响结论；
+- invalid assessment 为零 candidate、两个 known 均为 `false`；
+- Memory、User Model、Planner、Prompt、Surface、Validator、Initiative 和 formal
+  persistence 消费者均为 0；
+- production integration 和用户可见变化均为 0。
 
 ### 批次 3：关系修复与探索能力
 
@@ -962,4 +993,6 @@ Recommended Next Step
 用户可见基线封存。2026-08-04 已批准进入 Batch 2 infrastructure-only：只实现跨轮
 关联、`CommittedHelpingMove` 严格序列化/加载、Shadow reaction trace 与原子提交
 生命周期；用户可见回复必须保持不变。该批准不自动授权 Batch 3、生产 canary、默认
-开启或 User Model 行为接入。
+开启或 User Model 行为接入。Batch 2C 当前只完成 `B2-Reaction-Shadow` docs-only
+合同冻结；Reaction evaluator、runtime、Atomic Boundary、formal reaction state 和全部
+downstream integration 均未获授权或实现。

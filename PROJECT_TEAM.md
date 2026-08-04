@@ -6,11 +6,11 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 
 ## Active delivery slice
 
-- Outcome: Deliver Batch 2B fixture-only formal Helping move loading and target-bound semantic association without production or user-visible integration.
-- Acceptance: Formal v1 fixtures load reliably in a bounded committed-order window; an explicit older target is retained; only unique target-bound semantic evidence associates; Shadow/invalid/ordinary/legacy records never load as Helping; production orchestration and visible behavior remain unchanged.
-- Allowed scope: An independent Helping fixture loader/association module and export, formal fixture definitions, Batch 2B regression/package gate, and directly related Batch 2B status documentation.
-- Non-goals: Modify the Batch 2A Contract, production/DB loader or writer, reaction candidates, `impactKnown`, LLM extraction, Memory retrieval, Planner/Prompt/Surface/Validator integration, User Model, Initiative behavior, Batch 2C, deployment or user-visible Hill behavior.
-- Baseline: Branch `batch-2a-contract`, HEAD `e0487fcc07505056165acba0f692bb3c64007a14`, clean at slice start.
+- Outcome: Freeze Batch 2C as the authoritative Reaction Assessment Contract Gate without implementing reaction evaluation or changing runtime behavior.
+- Acceptance: The new v1 contract and three authority/status documents consistently name `B2-Reaction-Shadow`, freeze the Reaction Candidate and `reactionEvidenceKnown` / `impactKnown` semantics, require fail-closed behavior, and prohibit every downstream integration.
+- Allowed scope: `docs/HILL_HELPING_BATCH2C_REACTION_ASSESSMENT_CONTRACT_V1.md`, this project ledger, Architecture v1 and the Hill migration plan.
+- Non-goals: Runtime, evaluator, fixtures/regression implementation, production/DB loader or writer, Planner, Prompt, Surface, Validator, Memory, User Model, Initiative, formal reaction state, Atomic Boundary, deployment or user-visible Hill behavior.
+- Baseline: Branch `batch-2b-fixture-association`, HEAD `5b20ada64783401e28f9162cefe78e5b41eddc15`, clean at slice start.
 - Round budget: 1 investigation + 1 implementation + at most 2 repairs per failed gate
 
 ## Team
@@ -51,6 +51,9 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 | Pass `B2-Initiative-Isolation` | No production consumer; no initiative/model/memory inputs in association module; natural-chat and proactive-greeting checks exit 0 | pass | Delivery lead |
 | Preserve Batch 2A and visible behavior | Batch 2A, Batch 1, Batch 1.5, preservation, Conversation OS and AI orchestration checks exit 0 | pass | Delivery lead |
 | Pass the full engineering gate after Batch 2B | `npm run check:launch` exit 0; 12 Prisma migrations current, 27 Miniapp JS files valid, 39-page production build succeeds | pass | Delivery lead |
+| Freeze Batch 2C authority and scope | `Batch 2C — Reaction Assessment Contract Gate`, gate id `B2-Reaction-Shadow`, shadow-only and fixture-only | pass | Delivery lead |
+| Freeze reaction epistemic boundaries | Strict Reaction Candidate schema; `reactionEvidenceKnown` separated from `impactKnown`; causality and success are not inferred | pass | Delivery lead |
+| Preserve zero downstream integration | Contract prohibits Memory, User Model, Planner, Prompt, Surface, Validator, Initiative, formal persistence and production consumers | pass | Delivery lead |
 
 ## Change inventory
 
@@ -69,6 +72,14 @@ Batch 2B slice:
 | Fixture-only infrastructure | 2 | Helping association module/export | Verify no production consumer or decision-state injection |
 | Verification wiring | 3 | Formal fixtures, Batch 2B check, package gate | Executable association/isolation evidence only |
 | Status documentation | 5 | Implementation report, architecture, Clinical, migration and project ledger | Keep Batch 2A frozen and Batch 2C explicitly out of scope |
+
+Batch 2C Contract Freeze slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Authoritative contract | 1 | Batch 2C Reaction Assessment Contract v1 | Verify reaction-only, Shadow-only, fixture-only and fail-closed semantics |
+| Authority/status documentation | 3 | Project ledger, Architecture v1 and Hill migration plan | Verify the Batch 2C name and zero downstream integration are consistent |
+| Runtime or verification source | 0 | None | No evaluator, fixture runner, production consumer or formal reaction state is authorized |
 
 Stable-baseline seal inventory (historical):
 
@@ -90,13 +101,15 @@ Stable-baseline seal inventory (historical):
 | 2026-08-04 | Approve Batch 2 infrastructure-only | Stable-baseline architecture review is Go for state/association/commit infrastructure | No user-visible Hill behavior, User Model integration, deployment or Batch 3 authorization |
 | 2026-08-04 | Freeze Batch 2A `B2-Contract` | Strict v1 round-trip, fail-closed counterexamples, Shadow isolation, runtime ordinary-only projection and full launch gate pass | Batch 2B may begin only as fixture load/association infrastructure; formal production writes remain unauthorized |
 | 2026-08-04 | Pass Batch 2B fixture load/association gate | 17 fixture records, bounded chronological load, explicit older target, target-bound semantic association, Shadow/ordinary isolation and visible-behavior preservation | No production loader/writer or reaction state; Batch 2C is not created by this slice |
+| 2026-08-04 | Freeze Batch 2C `B2-Reaction-Shadow` contract | User authorized a docs-only Reaction Assessment Contract Freeze after Batch 2B association | Batch 2C now means reaction-only, Shadow-only and fixture-only; prior Atomic Boundary naming is superseded for the current roadmap, while implementation and downstream integration remain unauthorized |
 
 ## Remaining
 
 - No remaining implementation is authorized inside the Batch 1.5-E repair slice.
 - One attempt-level pressure-repair Validator false positive remains recorded as a non-blocking observation; addressing it requires a new independently approved task.
-- Batch 2A and the fixture-only Batch 2B association gate are complete. Production/DB loading, reaction candidates, `impactKnown`, Batch 2C atomic formal-write proof, and Batch 2D Shadow reaction preservation remain unimplemented.
-- Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path is fixture-only until Batch 2C.
+- Batch 2A and the fixture-only Batch 2B association gate are complete. Batch 2C now has a frozen Reaction Assessment contract, but no evaluator, fixture regression implementation or reaction runtime exists.
+- Production/DB loading, Atomic Boundary proof and formal Helping writes remain unimplemented and have no current Batch 2C authorization.
+- Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path remains fixture-only until a separately approved Atomic Boundary gate.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
 ## Closure status
@@ -106,7 +119,8 @@ Stable-baseline seal inventory (historical):
 - Stable-baseline Git seal: the commit containing this ledger is the seal; its exact pushed SHA is recorded in the delivery report.
 - Batch 2A Contract Gate: complete; v1 formal metadata and formal/Shadow isolation are frozen.
 - Batch 2B Fixture Load and Association Gate: complete within fixture-only scope; no production consumer exists.
-- Batch 2C—2D: not started and do not inherit authorization for user-visible behavior or formal production writes.
+- Batch 2C Reaction Assessment Contract Gate: docs-only freeze complete under `B2-Reaction-Shadow`; evaluator/runtime implementation has not started.
+- Atomic Boundary and later Batch 2 work do not inherit authorization for user-visible behavior, formal production writes or downstream integration.
 - Further expansion of the Batch 1.5 repair round: stopped.
 
 ## Loop guards

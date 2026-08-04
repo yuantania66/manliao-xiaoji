@@ -57,9 +57,12 @@ Migration status after the Batch 1.5-E frozen gate closed on 2026-08-04:
   Batch 2A has frozen the v1 formal Helping metadata schema, strict parser and
   formal/Shadow isolation; Batch 2B has passed fixture-only bounded loading,
   explicit older-target inclusion and target-bound semantic association without
-  production integration. Formal production writes, DB-backed loading and
-  reaction/impact state remain unimplemented; user-visible Hill behavior remains
-  reserved for a separately accepted Batch 3.
+  production integration; Batch 2C is now the authoritative Reaction Assessment
+  Contract Gate under `B2-Reaction-Shadow`, frozen as reaction-only, Shadow-only
+  and fixture-only with zero downstream integration. Its evaluator/runtime,
+  formal production writes, DB-backed loading and Atomic Boundary remain
+  unimplemented; user-visible Hill behavior remains reserved for a separately
+  accepted Batch 3.
 
 ## 2. Runtime control loop
 
@@ -194,6 +197,14 @@ boundary: under its separate default-off flag, the boundary may inform an
 ordinary Planner action, but no Hill goal or skill crosses the boundary and the
 behavior source remains ordinary conversation. A full Shadow result cannot
 affect the `ResponsePlan` or create committed Helping state.
+
+Batch 2C freezes only the contract for a fixture-produced Reaction Assessment
+Shadow trace. `reactionEvidenceKnown` describes whether the current user turn
+contains enough target-bound evidence to classify a reaction; `impactKnown`
+additionally requires explicit user evidence about the move's fit, experience or
+result. Neither value proves objective causality or technique success. No Batch
+2C assessment may enter `HillHelpingPlan`, Response Planner, Initiative, Memory,
+User Model, `ChatMessage.interactionMetadata` or formal persistence.
 
 ### 2.5 Response Planner
 
@@ -450,9 +461,12 @@ The target implementation must continuously verify:
     creates `CommittedHelpingMove`;
 15. formal Helping failure cannot be converted to `not_applicable` or an
     ordinary comfort reply.
+16. Batch 2C Reaction Assessment remains `mode=shadow`, `source=fixture` and has
+    zero consumers in Planner, Prompt, Surface, Validator, Initiative, Memory,
+    User Model or formal persistence.
 
 Batch 0 keeps the existing source assertions as a pre-Hill baseline. Items
-3-4 and 12-15 become executable gates in their assigned migration batches; the
+3-4 and 12-16 become executable gates in their assigned migration batches; the
 documentation change itself does not claim they are already implemented.
 
 The primary structural checks are:
