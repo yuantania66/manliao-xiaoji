@@ -23,10 +23,15 @@ export const assembleConversationControlContext = ({
   recentMessages: AiConversationMessage[];
   conversationState: ConversationStateResult;
 }): ConversationControlContext => {
-  const adjacentTurns = recentMessages
+  const adjacentInputTurns = recentMessages
     .filter((message): message is AiConversationMessage & { role: "user" | "assistant" } => message.role === "user" || message.role === "assistant")
-    .slice(-6)
-    .map((message, index) => {
+    .slice(-6);
+  const immediatelyPrecedingInput = adjacentInputTurns.at(-1);
+  const interactionMoveHandoffEnvelopePresent = Boolean(
+    immediatelyPrecedingInput?.role === "assistant" &&
+    immediatelyPrecedingInput.interactionMoveEnvelope != null
+  );
+  const adjacentTurns = adjacentInputTurns.map((message, index) => {
       const interactionMoveEnvelope = retainCommittedAssistantMoveEnvelope(message);
       return {
         id: message.id ?? (interactionMoveEnvelope?.assistantMoveId || `${conversationId}:adjacent-${index + 1}`),
@@ -49,6 +54,7 @@ export const assembleConversationControlContext = ({
     currentTurnId: currentTurnId ?? `${conversationId}:turn-${recentMessages.length + 1}`,
     currentUserMessage: userMessage,
     adjacentTurns,
+    interactionMoveHandoffEnvelopePresent,
     interactionMoveHandoffTarget: projectActiveInteractionMoveHandoffTarget(adjacentTurns),
     semanticEvidence,
     activeAnswerFrame: {

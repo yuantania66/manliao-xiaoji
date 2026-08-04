@@ -2,6 +2,11 @@ import { randomUUID } from "node:crypto";
 
 import type { CommittedAssistantMoveEnvelopeV1 } from "@/conversation-os";
 import type { ResponsePlan, ResponseValidationResult } from "@/conversation-os/control";
+import { validateInteractionMoveHandoffPlan } from "@/conversation-os/control/interactionMoveHandoffPlanner";
+import {
+  projectCanonicalResponsePlanPreflightProvenance,
+  type ResponsePlanPreflightAuthoritySnapshot,
+} from "@/conversation-os/control/responsePlanPreflightAuthority";
 import { projectAffectEvidenceTerms } from "@/conversation-os/state";
 
 import type { AiGenerationResult } from "./types";
@@ -76,7 +81,13 @@ export const createExecutionIdentity = ({
   turnId: turnId ?? randomUUID(),
 });
 
-export const preflightResponsePlan = (plan: ResponsePlan) => {
+const sameJsonValue = (left: unknown, right: unknown) =>
+  JSON.stringify(left) === JSON.stringify(right);
+
+export const preflightResponsePlan = (
+  plan: ResponsePlan,
+  authority?: ResponsePlanPreflightAuthoritySnapshot
+) => {
   const failureReasons: string[] = [];
   if (!plan.planId.trim()) failureReasons.push("missing_plan_id");
   if (plan.decisionOwner !== "conversation_os.response_planner") {
@@ -101,6 +112,94 @@ export const preflightResponsePlan = (plan: ResponsePlan) => {
   }
   if (!["minimal", "standard", "deep"].includes(plan.planningDepth)) {
     failureReasons.push("invalid_planning_depth");
+  }
+  if (plan.interactionMoveHandoffPlan === undefined) {
+    failureReasons.push("missing_interaction_move_handoff_plan_field");
+  }
+  const handoff = plan.interactionMoveHandoffPlan;
+  const repairContract = plan.positiveFunctionContract?.action === "repair_previous_wording"
+    ? plan.positiveFunctionContract
+    : null;
+  if (authority) {
+    if (!sameJsonValue(handoff, authority.expectedInteractionMoveHandoffPlan)) {
+      failureReasons.push("interaction_move_handoff_authority_mismatch");
+    }
+    if (!sameJsonValue(plan.answerObligations, authority.expectedAnswerObligations)) {
+      failureReasons.push("interaction_move_handoff_answer_obligation_authority_mismatch");
+    }
+    const actualCanonicalProvenance =
+      projectCanonicalResponsePlanPreflightProvenance(plan.relevanceProvenance);
+    if (!sameJsonValue(actualCanonicalProvenance, authority.canonicalProvenance)) {
+      failureReasons.push("response_plan_canonical_provenance_mismatch");
+    }
+  } else if (handoff) {
+    failureReasons.push("interaction_move_handoff_authority_missing");
+  }
+  const typedHandoffRepairProven = Boolean(
+    handoff?.requiredFunction === "withdraw_or_repair_targeted_move" &&
+    repairContract?.repairMode === "interaction_move_withdrawal" &&
+    repairContract.interactionMoveSubtype === null &&
+    repairContract.targetTurnId === handoff.sourceAssistantMoveId &&
+    repairContract.targetText === authority?.targetSource?.assistantText &&
+    repairContract.sourceTurnId === handoff.sourceUserTurnId &&
+    repairContract.replacementFact === null
+  );
+  if (handoff) {
+    failureReasons.push(...validateInteractionMoveHandoffPlan(handoff));
+    if (handoff.sourceUserTurnId !== plan.disclosureScope.turnId) {
+      failureReasons.push("interaction_move_handoff_wrong_plan_turn");
+    }
+    if (
+      handoff.requiredFunction === "complete_reciprocal_contact" &&
+      plan.responseActions.includes("respond_to_proactive_greeting")
+    ) failureReasons.push("reciprocal_handoff_must_not_repeat_proactive_greeting");
+    if (plan.responseActions.includes("respond_to_proactive_greeting")) {
+      failureReasons.push("v1_handoff_must_not_use_legacy_proactive_greeting_action");
+    }
+    if (
+      handoff.questionPolicy === "none" &&
+      plan.questionPolicy.mode !== "none"
+    ) failureReasons.push("interaction_move_handoff_question_policy_mismatch");
+    if (
+      handoff.requiredFunction === "respect_user_boundary" &&
+      !plan.responseActions.includes("respect_pause")
+    ) failureReasons.push("interaction_move_handoff_missing_boundary_action");
+    if (
+      handoff.requiredFunction === "withdraw_or_repair_targeted_move" &&
+      !plan.responseActions.includes("repair_previous_wording")
+    ) failureReasons.push("interaction_move_handoff_missing_repair_action");
+    if (handoff.requiredFunction === "withdraw_or_repair_targeted_move") {
+      if (!typedHandoffRepairProven) {
+        failureReasons.push("interaction_move_handoff_repair_contract_mismatch");
+      }
+    }
+    if (
+      handoff.requiredFunction === "answer_current_obligation" &&
+      !plan.responseActions.includes("answer_directly")
+    ) failureReasons.push("interaction_move_handoff_missing_answer_action");
+    if (handoff.requiredFunction === "answer_current_obligation") {
+      const validQuestionKinds = new Set([
+        "identity", "ai_identity", "clinician_identity", "body_capability",
+        "voice_input", "voice_output", "perception_capability", "time_capability",
+        "memory_capability", "definition", "reason_or_contradiction", "other",
+      ]);
+      const currentOpenObligations = plan.answerObligations.filter((obligation) =>
+        Boolean(obligation.id) &&
+        obligation.status === "open" &&
+        obligation.priority === "must_answer_first" &&
+        obligation.sourceConversationId === plan.disclosureScope.conversationId &&
+        obligation.sourceTurnId === plan.disclosureScope.turnId &&
+        Boolean(obligation.question.trim()) &&
+        Boolean(obligation.targetProposition.trim()) &&
+        validQuestionKinds.has(obligation.kind) &&
+        Array.isArray(obligation.evidence) &&
+        obligation.evidence.length > 0 &&
+        obligation.evidence.every((item) => Boolean(item.trim()))
+      );
+      if (currentOpenObligations.length === 0) {
+        failureReasons.push("interaction_move_handoff_missing_current_answer_obligation");
+      }
+    }
   }
   const positiveAction = plan.responseActions.find((action) =>
     action === "offer_emotional_support" || action === "repair_previous_wording"
@@ -176,7 +275,8 @@ export const preflightResponsePlan = (plan: ResponsePlan) => {
   if (
     plan.positiveFunctionContract?.action === "repair_previous_wording" &&
     plan.positiveFunctionContract.repairMode === "interaction_move_withdrawal" &&
-    !plan.positiveFunctionContract.interactionMoveSubtype
+    !plan.positiveFunctionContract.interactionMoveSubtype &&
+    !typedHandoffRepairProven
   ) {
     failureReasons.push("missing_interaction_move_subtype_in_contract");
   }

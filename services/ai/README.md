@@ -43,8 +43,10 @@ The production chat route is controlled by Conversation OS:
   internal validation evidence for duplicate and topic-reuse detection and are
   not projected into the external Prompt. Only system-defined move/topic labels
   may be projected for first-pass variation. When the next user turn follows a
-  proactive greeting, the ordinary Response Planner uses
-  `respond_to_proactive_greeting`. If the greeting was a question, the user's
+  proactive greeting, the ordinary Response Planner creates a PHM-B
+  `interactionMoveHandoffPlan`. For valid target-bound v1 input, it selects the
+  required function, completion intent and question policy without using
+  `promptVersion` as decision authority. If the greeting was a question, the user's
   immediate response retains the no-second-interview rule. A specific follow-up
   is optional only after a non-question greeting. For this handoff, Surface
   history begins at the latest proactive greeting; earlier committed events

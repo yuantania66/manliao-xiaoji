@@ -2,6 +2,7 @@ import type { AffectEvidenceSpan, ConversationInteractionSignals } from "../stat
 import type { CommittedAssistantMove, ConversationMessage } from "../types";
 import type {
   ProactiveGreetingAssistantMoveEnvelopeV1,
+  ProactiveGreetingHandoffFunction,
   ProactiveGreetingRequiredFunction,
 } from "../interactionMoveEnvelope";
 
@@ -110,6 +111,17 @@ export type ActiveInteractionMoveHandoffTarget = {
   envelope: ProactiveGreetingAssistantMoveEnvelopeV1;
 };
 
+export type InteractionMoveHandoffPlan = {
+  sourceAssistantMoveId: string;
+  sourceGreetingFunction: ProactiveGreetingRequiredFunction;
+  sourceUserTurnId: string;
+  selectedRelation: UserMoveRelationKind;
+  requiredFunction: ProactiveGreetingHandoffFunction | "defer_handoff_completion";
+  completionIntent: "fulfill" | "defer";
+  questionPolicy: "none" | "optional_after_completion";
+  evidence: UserRelationEvidenceSpan[];
+};
+
 export type ContentMeaning = {
   literalText: string;
   semanticEvidence: ConversationControlContext["semanticEvidence"];
@@ -212,6 +224,7 @@ export type ConversationControlContext = {
   currentTurnId: string;
   currentUserMessage: string;
   adjacentTurns: ConversationMessage[];
+  interactionMoveHandoffEnvelopePresent: boolean;
   interactionMoveHandoffTarget: ActiveInteractionMoveHandoffTarget | null;
   semanticEvidence: {
     status: "sufficient" | "insufficient";
@@ -408,6 +421,7 @@ export type ResponsePlan = {
   requiredDisclosure: string[];
   clinicalStrategy: ClinicalStrategyAdvice | null;
   positiveFunctionContract: PositiveFunctionContract | null;
+  interactionMoveHandoffPlan: InteractionMoveHandoffPlan | null;
   questionPolicy: { mode: "none" | "optional_after_answer" | "one_low_pressure_question"; reason: string };
   closurePolicy: { mode: "forbid_closure" | "allow_pause" | "allow_idle" | "end_conversation"; reason: string };
   tone: string[];

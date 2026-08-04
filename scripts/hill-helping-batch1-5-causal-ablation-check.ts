@@ -27,6 +27,7 @@ const createFixturePlan = (planId: string) => ({
   requiredDisclosure: [],
   clinicalStrategy: null,
   positiveFunctionContract: null,
+  interactionMoveHandoffPlan: null,
   questionPolicy: { mode: "none" as const, reason: "offline fixture" },
   closurePolicy: { mode: "forbid_closure" as const, reason: "offline fixture" },
   tone: ["offline fixture"],

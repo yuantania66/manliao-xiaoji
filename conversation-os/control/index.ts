@@ -10,7 +10,17 @@ export {
   projectUserMoveRelation,
   retainCommittedAssistantMoveEnvelope,
 } from "./interactionMoveHandoff";
+export {
+  planInteractionMoveHandoff,
+  validateInteractionMoveHandoffPlan,
+} from "./interactionMoveHandoffPlanner";
 export { selectOrdinaryHandoffAction } from "./ordinaryHandoff";
+export {
+  buildCanonicalResponsePlanPreflightProvenance,
+  createResponsePlanPreflightAuthoritySnapshot,
+  projectCanonicalResponsePlanPreflightProvenance,
+} from "./responsePlanPreflightAuthority";
+export type { ResponsePlanPreflightAuthoritySnapshot } from "./responsePlanPreflightAuthority";
 export { createResponsePlan } from "./responsePlanner";
 export type { ClinicalAdviceProvider } from "./responsePlanner";
 export { interpretTurnDeterministically, mergeModelInterpretation } from "./turnInterpreter";

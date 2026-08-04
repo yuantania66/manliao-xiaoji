@@ -44,6 +44,7 @@ const plan: ResponsePlan = {
   requiredDisclosure: [],
   clinicalStrategy: null,
   positiveFunctionContract: null,
+  interactionMoveHandoffPlan: null,
   questionPolicy: { mode: "none", reason: "deterministic check" },
   closurePolicy: { mode: "forbid_closure", reason: "deterministic check" },
   tone: ["natural"],

@@ -1,6 +1,6 @@
 # Conversation OS Interaction Move Handoff Contract v1
 
-Status: **frozen architecture contract; committed-envelope and PHM-A Context/relation projection implemented; PHM-B Planner transition contract frozen docs-only; runtime implementation pending**
+Status: **frozen architecture contract; committed-envelope, PHM-A Context/relation projection and PHM-B Planner transition implemented; Prompt/Surface realization, semantic completion validation and committed completion edges pending**
 
 Freeze date: 2026-08-04
 
@@ -542,14 +542,16 @@ PHM-A now additionally implements:
 - the same logical projection for equivalent Guest and authenticated inputs,
   without persistent lifecycle state, Memory, Batch 2 or User Model integration.
 
-The current runtime has not implemented Planner handoff transition, `fulfills`,
-Safety `supersedes`, positive-function validation or completion lookup. Safety
+The current runtime implements the PHM-B Planner transition and its detached
+preflight authority boundary, but has not implemented `fulfills`, Safety
+`supersedes`, positive-function validation or completion lookup. Safety
 responses intentionally emit no handoff envelope because a valid `supersedes`
 edge requires the target selected by the later migration; they are not
-mislabeled as `response_plan`. The existing Planner `promptVersion`
-compatibility path remains temporarily active and is not used to create,
-identify or validate the envelope or PHM-A relation projection. Production
-behavior therefore does not yet claim full v1 conformance.
+mislabeled as `response_plan`. For a valid PHM-A projection, the Planner maps
+the target-bound relation to one nullable v1 handoff plan without reading
+`promptVersion` or matching reply text. A separately marked no-envelope legacy
+compatibility path remains temporarily active. Production behavior therefore
+does not yet claim full v1 conformance.
 
 ## 14. PHM-B Planner transition contract freeze
 
@@ -557,17 +559,18 @@ behavior therefore does not yet claim full v1 conformance.
 
 PHM-B freezes the Planner-owned transition from the PHM-A projection to one
 `InteractionMoveHandoffPlan`. This section refines section 7 into an executable
-planning contract without authorizing runtime changes under the freeze itself.
+planning contract. A later, separately authorized runtime slice implemented
+this transition without changing the original docs-only freeze boundary.
 
-The PHM-B runtime implementation may later change only the plan-time boundary,
-plan preflight and dedicated verification needed to prove this contract. Prompt
-and Surface projection, positive-function Output Validation, committed
+The PHM-B runtime implementation changes only the plan-time boundary, detached
+plan preflight authority and dedicated verification needed to prove this
+contract. Prompt and Surface projection, positive-function Output Validation, committed
 `fulfills`, Safety `supersedes`, completion lookup, API/client changes,
 persistence, schema migration, Memory, User Model and Batch 2 remain separate,
 unauthorized slices.
 
-The docs-only freeze does not claim that production presence-confirmation
-behavior has changed.
+The Planner slice alone does not claim that generated production wording or
+committed handoff completion behavior has changed.
 
 ### 14.2 Activation and fail-closed input
 
@@ -667,7 +670,7 @@ keyword list or case rule.
 
 ### 14.6 PHM-B implementation acceptance
 
-A later PHM-B runtime slice is acceptable only if it proves:
+The implemented PHM-B runtime slice proves:
 
 1. the sole Response Planner owns the transition and produces one nullable
    handoff plan inside the existing `ResponsePlan`;
@@ -686,3 +689,21 @@ A later PHM-B runtime slice is acceptable only if it proves:
    is introduced;
 10. Prompt/Surface realization, semantic Validator proof and committed event
     edges are not falsely claimed by the Planner-only slice.
+
+### 14.7 Detached preflight authority
+
+Before `ResponsePlan` assembly, production creates one normalized authority
+snapshot from Context, Turn Interpretation and Dialogue State. The snapshot is
+deep-cloned and recursively frozen, so the plan and its inputs share no mutable
+object or array with the preflight authority.
+
+Execution preflight compares the nullable handoff plan, complete answer
+obligations and projected canonical provenance exactly against that snapshot.
+Missing authority for a non-null handoff, extra or conflicting canonical
+provenance, and coordinated plan/provenance mutation fail closed. The Planner
+and the authority snapshot share the same pure handoff projector and canonical
+provenance builder; preflight does not create a second decision owner or derive
+authority from the plan it is validating.
+
+This snapshot is turn-local execution data. It is not persisted lifecycle
+state, Memory, User Model input or Batch 2 metadata.

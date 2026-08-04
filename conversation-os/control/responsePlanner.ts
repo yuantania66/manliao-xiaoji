@@ -11,7 +11,9 @@ import type {
 } from "./types";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
 import { projectAffectEvidenceTerms } from "../state";
+import { planInteractionMoveHandoff } from "./interactionMoveHandoffPlanner";
 import { selectOrdinaryHandoffAction } from "./ordinaryHandoff";
+import { buildCanonicalResponsePlanPreflightProvenance } from "./responsePlanPreflightAuthority";
 
 export type ClinicalAdviceProvider = (input: {
   need: "emotional_support" | "action_support";
@@ -165,6 +167,33 @@ const positiveFunctionContractFor = ({
   return null;
 };
 
+const typedHandoffRepairContractFor = ({
+  context,
+  sourceAssistantMoveId,
+}: {
+  context: ConversationControlContext;
+  sourceAssistantMoveId: string;
+}): Extract<PositiveFunctionContract, { action: "repair_previous_wording" }> => {
+  const targetTurn = [...context.adjacentTurns]
+    .reverse()
+    .find((turn) => turn.role === "assistant" && turn.id === sourceAssistantMoveId);
+  return {
+    action: "repair_previous_wording",
+    repairMode: "interaction_move_withdrawal",
+    interactionMoveSubtype: null,
+    sourceTurnId: context.currentTurnId,
+    sourceText: context.currentUserMessage,
+    targetTurnId: sourceAssistantMoveId,
+    targetText: targetTurn?.content ?? "",
+    replacementFact: null,
+    evidence: [
+      "repairMode=interaction_move_withdrawal",
+      "repairAuthority=interaction_move_handoff_v1",
+      `targetTurnId=${sourceAssistantMoveId}`,
+    ],
+  };
+};
+
 const actionsForState = ({
   state,
   respondsToProactiveGreeting,
@@ -272,12 +301,29 @@ export const createResponsePlan = ({
   const lastAssistantTurn = [...context.adjacentTurns]
     .reverse()
     .find((turn) => turn.role === "assistant");
-  const respondsToProactiveGreeting = Boolean(
+  const hasAnyV1HandoffInput = Boolean(
+    context.interactionMoveHandoffEnvelopePresent ||
+    context.interactionMoveHandoffTarget ||
+    interpretation.userMoveRelation
+  );
+  const legacyRespondsToProactiveGreeting = !hasAnyV1HandoffInput && Boolean(
     lastAssistantTurn &&
     context.adjacentTurns.at(-1)?.role === "assistant" &&
     isProactiveGreetingPromptVersion(lastAssistantTurn.promptVersion)
   );
-  const preProactiveGreetingUserMessages = respondsToProactiveGreeting
+  const interactionMoveHandoffPlan = context.safety.triggered
+    ? null
+    : planInteractionMoveHandoff({
+        target: context.interactionMoveHandoffTarget,
+        relation: interpretation.userMoveRelation,
+        currentUserTurnId: context.currentTurnId,
+        currentUserText: context.currentUserMessage,
+        hasCurrentAnswerObligation: dialogueState.openObligations.some(
+          (obligation) => obligation.sourceTurnId === context.currentTurnId
+        ),
+        hasExplicitBoundary: hasActivity(dialogueState, "pausing"),
+      });
+  const preProactiveGreetingUserMessages = legacyRespondsToProactiveGreeting
     ? context.adjacentTurns
         .slice(0, -1)
         .filter((turn) => turn.role === "user")
@@ -291,9 +337,30 @@ export const createResponsePlan = ({
   });
   let actions = actionsForState({
     state: dialogueState,
-    respondsToProactiveGreeting,
+    respondsToProactiveGreeting: legacyRespondsToProactiveGreeting,
     ordinaryHandoffAction,
   });
+  if (hasAnyV1HandoffInput) {
+    actions = actions.filter((action) => action !== "respond_to_proactive_greeting");
+    if (interactionMoveHandoffPlan?.requiredFunction === "respect_user_boundary") {
+      actions = ["respect_pause"];
+    } else if (
+      interactionMoveHandoffPlan?.requiredFunction === "withdraw_or_repair_targeted_move"
+    ) {
+      actions = unique([
+        "repair_previous_wording",
+        ...actions.filter((action) =>
+          action !== "acknowledge_without_psychologizing" &&
+          action !== "take_light_topic_initiative"
+        ),
+      ]);
+    } else if (
+      interactionMoveHandoffPlan?.requiredFunction === "answer_current_obligation" &&
+      !actions.includes("answer_directly")
+    ) {
+      actions = unique(["answer_directly", ...actions]);
+    }
+  }
   const repairsAssistant = hasActivity(dialogueState, "repairing_common_ground");
   const clinicalNeed = repairsAssistant
     ? null
@@ -305,12 +372,18 @@ export const createResponsePlan = ({
   const clinicalStrategy = clinicalNeed
     ? clinicalAdviceProvider({ need: clinicalNeed, context, interpretation })
     : null;
-  const positiveFunctionContract = positiveFunctionContractFor({
-    actions,
-    context,
-    interpretation,
-    dialogueState,
-  });
+  const positiveFunctionContract =
+    interactionMoveHandoffPlan?.requiredFunction === "withdraw_or_repair_targeted_move"
+      ? typedHandoffRepairContractFor({
+          context,
+          sourceAssistantMoveId: interactionMoveHandoffPlan.sourceAssistantMoveId,
+        })
+      : positiveFunctionContractFor({
+          actions,
+          context,
+          interpretation,
+          dialogueState,
+        });
   if (
     positiveFunctionContract?.action === "repair_previous_wording" &&
     positiveFunctionContract.interactionMoveSubtype === "pressure_question"
@@ -352,7 +425,11 @@ export const createResponsePlan = ({
     action === "continue_established_thread" ||
     action === "offer_neutral_conversation_entry"
   );
-  const questionMode = hasActivity(dialogueState, "pausing") ||
+  const questionMode = interactionMoveHandoffPlan
+    ? interactionMoveHandoffPlan.questionPolicy === "none"
+      ? "none"
+      : "optional_after_answer"
+    : hasActivity(dialogueState, "pausing") ||
     idle ||
     simpleDirectAnswer ||
     (repairsAssistant && !takesTopicInitiative) ||
@@ -361,7 +438,7 @@ export const createResponsePlan = ({
     ? "none"
     : handoffInvitesCalibration
       ? "one_low_pressure_question"
-    : respondsToProactiveGreeting
+    : legacyRespondsToProactiveGreeting
       ? "optional_after_answer"
       : dialogueState.initiativeOwner === "shared"
         ? "none"
@@ -374,12 +451,6 @@ export const createResponsePlan = ({
       source: "interaction_state" as const,
       sourceTurnId: context.currentTurnId,
       evidence: actionEvidence(action, dialogueState, context, ordinaryHandoffBoundary),
-    })),
-    ...dialogueState.openObligations.map((obligation) => ({
-      planElement: `answerObligation:${obligation.id}`,
-      source: "current_turn" as const,
-      sourceTurnId: obligation.sourceTurnId,
-      evidence: obligation.evidence,
     })),
     ...requiredDisclosure.map((disclosure) => ({
       planElement: `requiredDisclosure:${disclosure}`,
@@ -395,6 +466,17 @@ export const createResponsePlan = ({
       sourceTurnId: dialogueState.commonGround.confirmed.find((item) => item.text === fact)?.sourceTurnId,
       evidence: dialogueState.commonGround.confirmed.find((item) => item.text === fact)?.evidence ?? [],
     })),
+    ...buildCanonicalResponsePlanPreflightProvenance({
+      handoffPlan: interactionMoveHandoffPlan,
+      currentUserText: context.currentUserMessage,
+      targetAssistantText: interactionMoveHandoffPlan
+        ? context.adjacentTurns.find((turn) =>
+            turn.role === "assistant" &&
+            turn.id === interactionMoveHandoffPlan.sourceAssistantMoveId
+          )?.content ?? ""
+        : null,
+      answerObligations: dialogueState.openObligations,
+    }),
   ];
 
   return {
@@ -413,9 +495,14 @@ export const createResponsePlan = ({
     requiredDisclosure,
     clinicalStrategy,
     positiveFunctionContract,
+    interactionMoveHandoffPlan,
     questionPolicy: {
       mode: questionMode,
-      reason: hasActivity(dialogueState, "pausing")
+      reason: interactionMoveHandoffPlan?.questionPolicy === "none"
+        ? "The active interaction-move handoff requires no follow-up question."
+        : interactionMoveHandoffPlan?.questionPolicy === "optional_after_completion"
+          ? "A question is optional only after the handoff function is completed and independently supported by the ordinary plan."
+      : hasActivity(dialogueState, "pausing")
         ? "Interaction State is paused."
         : handoffInvitesCalibration
           ? "Helping applicability is uncertain; ask one low-pressure calibration question without assigning meaning."
@@ -425,7 +512,7 @@ export const createResponsePlan = ({
           ? "The current open obligation must be answered without adding another obligation."
           : answersAssistantQuestion
             ? "The current turn answers the assistant's question, including a question used as a proactive greeting; do not open a second interview question."
-            : respondsToProactiveGreeting
+            : legacyRespondsToProactiveGreeting
               ? "The user responded to a non-question proactive greeting; one specific natural follow-up is optional, but an interview loop is not."
               : repairsAssistant && !takesTopicInitiative
                 ? "Repair the rejected common-ground proposition without opening a new interview loop."

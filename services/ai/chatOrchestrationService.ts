@@ -23,6 +23,7 @@ import { determineConversationState } from "@/conversation-os/state";
 import {
   assembleConversationControlContext,
   buildDialogueState,
+  createResponsePlanPreflightAuthoritySnapshot,
   createResponsePlan,
   interpretTurnDeterministically,
   type ConversationControlTrace,
@@ -343,6 +344,11 @@ export const createChatReply = async ({
     memoryUsed: { understandings: [], relationships: [], timelineEvents: [] },
     memoryExcluded: { rawMemory: "not_allowed", deterministicMemoryCaveat: [] },
   };
+  const responsePlanPreflightAuthority = createResponsePlanPreflightAuthoritySnapshot({
+    context: controlContext,
+    interpretation,
+    dialogueState,
+  });
   const responsePlan = createResponsePlan({
     context: controlContext,
     interpretation,
@@ -369,7 +375,10 @@ export const createChatReply = async ({
     },
   });
   const clinicalTrace = compatibilityClinicalTrace;
-  const planPreflight = preflightResponsePlan(responsePlan);
+  const planPreflight = preflightResponsePlan(
+    responsePlan,
+    responsePlanPreflightAuthority
+  );
   if (!planPreflight.passed) {
     const generation: AiGenerationResult = {
       text: "",
