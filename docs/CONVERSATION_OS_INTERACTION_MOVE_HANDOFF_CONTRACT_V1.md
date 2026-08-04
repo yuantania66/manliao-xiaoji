@@ -1,6 +1,6 @@
 # Conversation OS Interaction Move Handoff Contract v1
 
-Status: **frozen architecture contract; committed-envelope foundation implemented; Planner handoff pending**
+Status: **frozen architecture contract; committed-envelope and PHM-A Context/relation projection implemented; Planner handoff pending**
 
 Freeze date: 2026-08-04
 
@@ -29,9 +29,10 @@ lifecycle state machine.
 ## 2. Frozen scope and prohibitions
 
 The original contract-freeze slice was documentation-only and authorized no
-runtime behavior, storage schema, migration or deployment. A subsequent,
-separately authorized implementation slice has now implemented only the
-committed-envelope foundation described in section 13.
+runtime behavior, storage schema, migration or deployment. Subsequent,
+separately authorized implementation slices have implemented the
+committed-envelope foundation and the PHM-A Context/relation projection
+described in section 13.
 
 The following are explicitly prohibited by this contract:
 
@@ -521,11 +522,29 @@ The committed-envelope foundation now implements:
 - zero envelope for rejected candidates, generation failure, retry losers and
   rolled-back persistence attempts.
 
-The current runtime has not implemented target-bound User relation projection,
-Planner handoff transition, `fulfills`, Safety `supersedes`, positive-function
-validation or completion lookup. Safety responses intentionally emit no
-handoff envelope in this foundation slice because a valid `supersedes` edge
-requires the target selected by the later migration; they are not mislabeled as
-`response_plan`. The existing Planner `promptVersion` compatibility path remains
-temporarily active and is not used to create, identify or validate the new
-envelope. Production behavior therefore does not yet claim full v1 conformance.
+PHM-A now additionally implements:
+
+- retention of a strictly validated committed Assistant envelope in Conversation
+  OS Context;
+- an active target only when the immediately preceding Assistant event is the
+  same committed move and its proactive greeting envelope has `handoff.edge`
+  equal to `opens`;
+- a current-turn, target-bound User relation projection containing the frozen
+  eight candidate kinds, confidence and exact source spans from the current User
+  text;
+- preservation of compatible multiple candidates and ambiguity without Turn
+  Interpretation selecting a reply function;
+- fail-closed handling for malformed, stale, uncommitted or mismatched targets,
+  provenance-only `promptVersion`, and a greeting displaced by a newer Assistant
+  reply;
+- the same logical projection for equivalent Guest and authenticated inputs,
+  without persistent lifecycle state, Memory, Batch 2 or User Model integration.
+
+The current runtime has not implemented Planner handoff transition, `fulfills`,
+Safety `supersedes`, positive-function validation or completion lookup. Safety
+responses intentionally emit no handoff envelope because a valid `supersedes`
+edge requires the target selected by the later migration; they are not
+mislabeled as `response_plan`. The existing Planner `promptVersion`
+compatibility path remains temporarily active and is not used to create,
+identify or validate the envelope or PHM-A relation projection. Production
+behavior therefore does not yet claim full v1 conformance.

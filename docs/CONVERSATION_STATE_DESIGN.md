@@ -54,6 +54,12 @@ User relation, one Planner-selected required function and a validated committed
 Assistant response. That projection is reconstructed for the current turn and
 is not stored in Conversation State or Memory.
 
+PHM-A implements the Context and User-relation portion of that boundary. It
+recognizes only the strictly validated committed `opens` envelope on the
+immediately preceding Assistant event, then projects the current User turn's
+target-bound relation candidates, confidence and exact source spans. It
+preserves compatible ambiguity and does not select the Planner reply function.
+
 No `greeting_pending`, `handoff_active`, `handoff_completed` or equivalent state
 is added to this state machine. See
 `docs/CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md`.
@@ -441,7 +447,10 @@ The 2026-08-04 Interaction Move Handoff Contract freeze does not promote greetin
 lifecycle into the five-state vocabulary. A proactive greeting may coincide with
 the coarse `opening` arc, but `opening` neither opens nor completes a handoff.
 Only the committed-event relation defined by the handoff contract can establish
-completion; this remains outside Memory, Batch 2 and User Model ownership.
+completion; this remains outside Memory, Batch 2 and User Model ownership. PHM-A
+now reconstructs the active adjacent target and current-turn relation in
+Conversation OS Context without adding lifecycle state; Planner selection and
+validated completion remain separate pending slices.
 
 ## 11. Historical Migration Plan
 

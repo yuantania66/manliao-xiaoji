@@ -1,3 +1,5 @@
+import type { CommittedAssistantMoveEnvelopeV1 } from "./interactionMoveEnvelope";
+
 export type CommittedAssistantMove = {
   purpose: string[];
   claims: Array<{
@@ -24,7 +26,9 @@ export type ConversationMessage = {
   createdAt?: string;
   replyToMessageId?: string | null;
   promptVersion?: string | null;
+  status?: "saved" | "rewritten" | "fallback" | "blocked";
   committedAssistantMove?: CommittedAssistantMove | null;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1 | null;
 };
 
 export type UserMessageInput = {

@@ -5,6 +5,11 @@ export {
 } from "./assistantGrounding";
 export { assembleConversationControlContext } from "./contextAssembly";
 export { buildDialogueState } from "./dialogueState";
+export {
+  projectActiveInteractionMoveHandoffTarget,
+  projectUserMoveRelation,
+  retainCommittedAssistantMoveEnvelope,
+} from "./interactionMoveHandoff";
 export { selectOrdinaryHandoffAction } from "./ordinaryHandoff";
 export { createResponsePlan } from "./responsePlanner";
 export type { ClinicalAdviceProvider } from "./responsePlanner";

@@ -6,12 +6,12 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 
 ## Active delivery slice
 
-- Outcome: Seal the current 25-path Batch 2C-A, Interaction Move Handoff Contract and committed-envelope foundation as one auditable checkpoint before Planner Handoff Migration begins.
-- Acceptance: Correct the two known whitespace defects; pass the database lifecycle and full launch gates; keep the change inventory at the same 25 paths; create one checkpoint commit and branch `codex/planner-handoff-migration` from it.
-- Allowed scope: Minimal cleanup inside the existing 25-path inventory, this governance ledger, verification, checkpoint commit and branch creation.
-- Non-goals: Planner, User relation, Validator, `fulfills`, Safety `supersedes`, Memory, User Model, Batch 2 downstream integration, schema migration, deployment or any new user-visible behavior.
-- Baseline: Branch `batch-2c-reaction-contract`, HEAD `88f1504482a70782079ce0e7d09f4c2feb20b578`; 18 tracked changes and 7 untracked paths, all classified by the Release Steward.
-- Round budget: 1 investigation + 1 implementation + at most 2 repairs per failed gate
+- Outcome: Seal the completed PHM-A Context and target-bound User relation projection as one auditable checkpoint after the PHM-A-R type-narrowing repair.
+- Acceptance: PHM-A dedicated and adjacent gates, `npx tsc --noEmit`, independent verification, `git diff --check` and the full `check:launch` gate all pass; the checkpoint contains only the classified 13-path PHM-A inventory.
+- Allowed scope: PHM-A implementation, verification and status paths already present in the 13-path inventory; this governance ledger; local checkpoint commit.
+- Non-goals: Response Planner function selection or `promptVersion` migration, Surface, Validator completion proof, committed `fulfills`, Safety `supersedes`, persistent lifecycle state, Memory, User Model, Batch 2, schema migration, deployment or PHM-B implementation.
+- Baseline: Branch `codex/planner-handoff-migration`, checkpoint `1f1d52e`; PHM-A-R and independent verification pass, and the full `check:launch` gate exits 0.
+- Round budget: seal only; no additional implementation or repair candidate
 
 ## Team
 
@@ -66,6 +66,9 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 | Prove retry-loser and rollback isolation | Two distinct concurrent generation attempts yield one Assistant message and exactly one persisted envelope; invalid commit and transaction rollback yield none | pass | Delivery lead |
 | Preserve Guest/authenticated logical parity | Both proactive and ordinary paths project the same v1 logical shape and round-trip it through history/client cache | pass | Delivery lead |
 | Preserve adjusted slice boundary | Planner legacy `promptVersion` remains; no Planner, Memory, User Model, Batch 2 or schema path is modified | pass | Independent verifier |
+| Implement PHM-A Context and User relation projection | Strict adjacent committed `opens` target, eight relation kinds, exact current-User spans, ambiguity preservation and Guest/authenticated logical parity pass the dedicated gate | pass | Delivery lead |
+| Pass PHM-A-R independent repair verification | One private proactive-open type guard removes three compile errors without changing target, relation, parser or fail-closed semantics; all frozen narrow gates pass independently | pass | Independent verifier |
+| Pass the full engineering gate before PHM-A seal | `npm run check:launch` exits 0 with 12 current migrations, 27 Miniapp JS files and a successful 39-page production build | pass | Delivery lead |
 
 ## Change inventory
 
@@ -117,6 +120,14 @@ Interaction Move Envelope implementation slice:
 | Verification wiring | 4 | Envelope check, lifecycle and proactive checks, package gate | Verify strict parsing, preselected greeting function, retry loser and failure/rollback isolation |
 | Status documentation | 3 | Contract, Architecture v1 and project ledger | Record partial implementation without claiming Planner handoff completion |
 
+PHM-A Context and User relation projection slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Context and relation runtime | 7 | Conversation message/control types, Context Assembly, Turn Interpretation, handoff projection, control export and interpretation adapter | Verify strict adjacent target, exact spans, ambiguity and zero Planner selection |
+| Verification wiring | 2 | PHM-A dedicated check and package gate registration | Verify normal, edge, ambiguous, context-switching and adversarial fail-closed cases |
+| Status documentation | 4 | Interaction Move contract, Architecture v1, Conversation State Design and project ledger | Record PHM-A completion without claiming Planner, Validator or committed-edge completion |
+
 Stable-baseline seal inventory (historical):
 
 | Class | Count | Path rule | Review treatment |
@@ -141,6 +152,7 @@ Stable-baseline seal inventory (historical):
 | 2026-08-04 | Pass Batch 2C-A fixture Reaction Shadow evaluator | 10 semantic fixtures, 24 fail-closed cases, strict parser/typecheck and adjacent architecture gates pass with zero production consumers | Fixture evaluation is now executable evidence only; runtime, formal reaction state, downstream consumers and Batch 2D remain unauthorized |
 | 2026-08-04 | Freeze Conversation OS Interaction Move Handoff Contract v1 | Architecture review found that proactive greeting provenance did not establish a positive completion postcondition | Handoff completion is now defined by target-bound relation, Planner-selected function, semantic validation and an immutable committed-event edge; runtime implementation remains separately unauthorized |
 | 2026-08-04 | Implement the committed Assistant move envelope foundation | Strict envelope checks, Guest/authenticated projections and database-backed commit/retry/rollback regressions pass | Planner legacy remains; User relation, `fulfills`, Safety `supersedes` and completion validation are deferred to Planner Handoff Migration |
+| 2026-08-04 | Seal PHM-A Context and target-bound User relation projection | Dedicated and adjacent gates, TypeScript, independent PHM-A-R verification and full `check:launch` pass | Planner selection, `promptVersion` migration, Validator proof and committed completion edges remain separate later slices |
 
 ## Remaining
 
@@ -149,7 +161,7 @@ Stable-baseline seal inventory (historical):
 - Batch 2A, Batch 2B association and Batch 2C-A fixture Reaction Assessment gates are complete. No production Reaction Assessment runtime exists.
 - Production/DB loading, Atomic Boundary proof and formal Helping writes remain unimplemented and have no current Batch 2C authorization.
 - Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path remains fixture-only until a separately approved Atomic Boundary gate.
-- Interaction Move Handoff Contract v1 envelope foundation and Guest/authenticated round-trip are implemented; relation projection, Planner migration, `fulfills`, Safety `supersedes` and semantic completion validation remain pending.
+- Interaction Move Handoff Contract v1 envelope foundation and PHM-A Context/relation projection are implemented; Planner migration, `fulfills`, Safety `supersedes` and semantic completion validation remain pending.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
 ## Closure status
@@ -160,7 +172,7 @@ Stable-baseline seal inventory (historical):
 - Batch 2A Contract Gate: complete; v1 formal metadata and formal/Shadow isolation are frozen.
 - Batch 2B Fixture Load and Association Gate: complete within fixture-only scope; no production consumer exists.
 - Batch 2C Reaction Assessment Contract Gate: frozen under `B2-Reaction-Shadow`; Batch 2C-A fixture-only evaluator and regressions pass, while runtime and downstream integration remain absent.
-- Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; committed-envelope foundation is implemented without persistent lifecycle state or schema migration, while Planner handoff remains pending.
+- Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; committed-envelope foundation and PHM-A Context/relation projection are implemented without persistent lifecycle state or schema migration, while Planner handoff remains pending.
 - Atomic Boundary and later Batch 2 work do not inherit authorization for user-visible behavior, formal production writes or downstream integration.
 - Further expansion of the Batch 1.5 repair round: stopped.
 

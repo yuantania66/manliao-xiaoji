@@ -65,12 +65,14 @@ Migration status after the Batch 1.5-E frozen gate closed on 2026-08-04:
   Boundary remain unimplemented. User-visible Hill behavior remains reserved
   for a separately accepted Batch 3;
 - Conversation OS Interaction Move Handoff Contract v1 is frozen as the target
-  contract, and its committed-envelope foundation is implemented. It defines
+  contract, and its committed-envelope foundation plus PHM-A Context/relation
+  projection are implemented. It defines
   proactive greeting completion through immutable
   committed-event relations, a target-bound User relation, one Planner-selected
   positive function and validated atomic commit. The stable envelope and
-  Guest/authenticated round-trip foundation are implemented; completion edges,
-  User relation, Planner transition and semantic Validator gates remain pending.
+  Guest/authenticated round-trip foundation, strict adjacent active target and
+  current-turn User relation projection are implemented; completion edges,
+  Planner transition and semantic Validator gates remain pending.
 
 ## 2. Runtime control loop
 
@@ -417,9 +419,12 @@ decides whether targeted interaction-move withdrawal is required.
 The envelope and handoff edges are Conversation OS event metadata, isolated from
 the Batch 2 Helping/Reaction namespace. The implemented foundation serializes
 the logical envelope as a sibling key in the existing authenticated generation
-trace and as client-scoped Guest event metadata; it adds no persistent lifecycle
-state, schema migration, Memory or User Model input. User relation, Planner
-handoff, `fulfills`, Safety `supersedes` and completion semantics remain pending.
+trace and as client-scoped Guest event metadata. PHM-A retains a strictly
+validated adjacent `opens` target in Context and derives the target-bound
+current-turn User relation candidates with exact source spans, preserving
+ambiguity without selecting a reply function. These slices add no persistent
+lifecycle state, schema migration, Memory or User Model input. Planner handoff,
+`fulfills`, Safety `supersedes` and completion semantics remain pending.
 
 ## 5. Assistant Grounding
 
@@ -549,9 +554,11 @@ Batch 0 keeps the existing source assertions as a pre-Hill baseline. Items 3-4
 and 12-15 become executable gates in their assigned migration batches. Item 16
 is executable for the Batch 2C-A fixture evaluator, but does not claim a
 production Reaction Assessment runtime or authorize downstream integration.
-Items 17 and the envelope-only portion of 20 now have executable foundation
-coverage. Items 18-19, full relation/completion parity in 20, and completion
-semantics in 21 remain target gates for Planner Handoff Migration.
+Item 17, the Turn Interpretation/relation portion of Item 19, and the
+envelope-and-relation portion of Item 20 now have executable coverage. Planner
+function selection and the Validator boundary in Item 19, Item 18, completion
+parity in Item 20, and completion semantics in Item 21 remain target gates for
+later Planner Handoff Migration slices.
 
 The primary structural checks are:
 
@@ -574,10 +581,11 @@ npm run check:architecture-v1
   Planner-selected activities; it does not yet implement the target Hill
   applicability or cross-turn reaction loop.
 - Interaction Move Handoff v1 has stable proactive and ordinary committed-event
-  envelopes with Guest/authenticated logical round-trip. The current runtime
-  still uses `promptVersion` greeting provenance compatibility in the Planner
-  and has no User relation, `fulfills`, Safety `supersedes` or completion
-  validation; it therefore does not yet claim full v1 conformance.
+  envelopes with Guest/authenticated logical round-trip, strict adjacent active
+  target projection and a target-bound current-turn User relation. The current
+  runtime still uses `promptVersion` greeting provenance compatibility in the
+  Planner and has no `fulfills`, Safety `supersedes` or completion validation;
+  it therefore does not yet claim full v1 conformance.
 - Real-model post-migration A/B output comparison requires a separately scoped
   external-prompt authorization; local architecture and regression tests do not
   substitute for that naturalness evidence.

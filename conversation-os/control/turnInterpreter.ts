@@ -9,6 +9,7 @@ import type {
   TurnInterpretation,
   TurnStateUpdate,
 } from "./types";
+import { projectUserMoveRelation } from "./interactionMoveHandoff";
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
 
@@ -361,6 +362,13 @@ const buildRelationalInterpretation = (
   return {
     contentMeaning,
     responseRelation: { candidates: sorted, ambiguous },
+    userMoveRelation: projectUserMoveRelation({
+      target: context.interactionMoveHandoffTarget,
+      sourceUserTurnId: context.currentTurnId,
+      currentUserText: context.currentUserMessage,
+      semanticEvidenceStatus: context.semanticEvidence.status,
+      responseRelation: { candidates: sorted, ambiguous },
+    }),
     stateUpdate,
     interpretations: sorted.map((candidate, index) => ({
       id: `${context.currentTurnId}:interpretation-${index + 1}`,
@@ -438,6 +446,8 @@ const isResponseRelationKind = (value: unknown): value is ResponseRelationKind =
     "requests_answer",
     "answers_previous_move",
     "repairs_previous_move",
+    "challenges_move_fit",
+    "rejects_or_declines_move",
     "continues_active_thread",
     "opens_new_thread",
     "yields_initiative",
@@ -568,6 +578,15 @@ export const mergeModelInterpretation = (
     primaryDialogueAct,
     secondarySignals: Array.from(new Set([...deterministic.secondarySignals, ...modelSecondary])),
     responseRelation: { candidates, ambiguous },
+    userMoveRelation: context
+      ? projectUserMoveRelation({
+          target: context.interactionMoveHandoffTarget,
+          sourceUserTurnId: context.currentTurnId,
+          currentUserText: context.currentUserMessage,
+          semanticEvidenceStatus: context.semanticEvidence.status,
+          responseRelation: { candidates, ambiguous },
+        })
+      : deterministic.userMoveRelation,
     stateUpdate,
     interpretations: candidates.map((candidate, index) => ({
       id: `${deterministic.contentMeaning.explicitPropositions[0]?.sourceTurnId ?? "turn"}:interpretation-${index + 1}`,

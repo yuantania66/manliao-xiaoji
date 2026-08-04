@@ -43,6 +43,7 @@
     "check:conversation-os-relational-state": "tsx scripts/conversation-os-relational-state-check.ts",
     "check:chat-execution-lifecycle": "tsx scripts/chat-execution-lifecycle-check.ts",
     "check:interaction-move-envelope": "tsx scripts/interaction-move-envelope-check.ts",
+    "check:interaction-move-handoff": "tsx scripts/interaction-move-handoff-check.ts",
     "check:natural-chat-control": "tsx scripts/natural-chat-control-check.ts",
     "check:proactive-greeting-control": "tsx scripts/proactive-greeting-control-check.ts",
     "check:assistant-grounding": "tsx scripts/assistant-grounding-check.ts",

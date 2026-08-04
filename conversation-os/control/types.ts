@@ -1,5 +1,9 @@
 import type { AffectEvidenceSpan, ConversationInteractionSignals } from "../state";
 import type { CommittedAssistantMove, ConversationMessage } from "../types";
+import type {
+  ProactiveGreetingAssistantMoveEnvelopeV1,
+  ProactiveGreetingRequiredFunction,
+} from "../interactionMoveEnvelope";
 
 export type DialogueAct =
   | "share" | "answer" | "ask_information" | "ask_identity" | "ask_capability"
@@ -50,6 +54,8 @@ export type ResponseRelationKind =
   | "requests_answer"
   | "answers_previous_move"
   | "repairs_previous_move"
+  | "challenges_move_fit"
+  | "rejects_or_declines_move"
   | "continues_active_thread"
   | "opens_new_thread"
   | "yields_initiative"
@@ -64,6 +70,44 @@ export type RelationalInterpretationCandidate = {
   confidence: number;
   targetTurnId?: string;
   evidence: string[];
+};
+
+export type UserMoveRelationKind =
+  | "reciprocates_move"
+  | "answers_move"
+  | "continues_from_move"
+  | "opens_or_redirects_thread"
+  | "challenges_move_fit"
+  | "rejects_or_declines_move"
+  | "sets_boundary_or_pause"
+  | "unclear";
+
+export type UserRelationEvidenceSpan = {
+  source: "current_user_turn";
+  sourceUserTurnId: string;
+  start: number;
+  end: number;
+  text: string;
+};
+
+export type UserMoveRelationCandidate = {
+  kind: UserMoveRelationKind;
+  confidence: number;
+  evidence: UserRelationEvidenceSpan[];
+};
+
+export type UserMoveRelationProjection = {
+  sourceUserTurnId: string;
+  targetAssistantMoveId: string;
+  targetFunction: ProactiveGreetingRequiredFunction;
+  candidates: UserMoveRelationCandidate[];
+  ambiguous: boolean;
+};
+
+export type ActiveInteractionMoveHandoffTarget = {
+  sourceAssistantMoveId: string;
+  sourceGreetingFunction: ProactiveGreetingRequiredFunction;
+  envelope: ProactiveGreetingAssistantMoveEnvelopeV1;
 };
 
 export type ContentMeaning = {
@@ -132,6 +176,7 @@ export type TurnInterpretation = {
     candidates: RelationalInterpretationCandidate[];
     ambiguous: boolean;
   };
+  userMoveRelation: UserMoveRelationProjection | null;
   stateUpdate: TurnStateUpdate;
   interpretations: RelationalTurnInterpretation[];
   /**
@@ -167,6 +212,7 @@ export type ConversationControlContext = {
   currentTurnId: string;
   currentUserMessage: string;
   adjacentTurns: ConversationMessage[];
+  interactionMoveHandoffTarget: ActiveInteractionMoveHandoffTarget | null;
   semanticEvidence: {
     status: "sufficient" | "insufficient";
     source: "current_user_message" | "established_conversation_frame" | "none";

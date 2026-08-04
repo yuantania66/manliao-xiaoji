@@ -3,6 +3,10 @@ import { evaluateSemanticEvidence, inspectActiveAnswerFrame } from "@/services/c
 import type { ConversationStateResult } from "../state";
 
 import { ASSISTANT_GROUNDING } from "./assistantGrounding";
+import {
+  projectActiveInteractionMoveHandoffTarget,
+  retainCommittedAssistantMoveEnvelope,
+} from "./interactionMoveHandoff";
 import { detectAssistantCorrection, isAssistantRepairSignal } from "./repairSignal";
 import type { ConversationControlContext } from "./types";
 
@@ -22,15 +26,20 @@ export const assembleConversationControlContext = ({
   const adjacentTurns = recentMessages
     .filter((message): message is AiConversationMessage & { role: "user" | "assistant" } => message.role === "user" || message.role === "assistant")
     .slice(-6)
-    .map((message, index) => ({
-      id: message.id ?? `${conversationId}:adjacent-${index + 1}`,
-      role: message.role,
-      content: message.content,
-      createdAt: message.createdAt,
-      replyToMessageId: message.replyToMessageId,
-      promptVersion: message.promptVersion,
-      committedAssistantMove: message.committedAssistantMove,
-    }));
+    .map((message, index) => {
+      const interactionMoveEnvelope = retainCommittedAssistantMoveEnvelope(message);
+      return {
+        id: message.id ?? (interactionMoveEnvelope?.assistantMoveId || `${conversationId}:adjacent-${index + 1}`),
+        role: message.role,
+        content: message.content,
+        createdAt: message.createdAt,
+        replyToMessageId: message.replyToMessageId,
+        promptVersion: message.promptVersion,
+        status: message.status,
+        committedAssistantMove: message.committedAssistantMove,
+        ...(interactionMoveEnvelope ? { interactionMoveEnvelope } : {}),
+      };
+    });
   const semanticEvidence = evaluateSemanticEvidence({ userTurn: userMessage, recentMessages });
   const activeFrame = inspectActiveAnswerFrame({ userTurn: userMessage, recentMessages });
   const correction = detectAssistantCorrection({ text: userMessage, adjacentTurns });
@@ -40,6 +49,7 @@ export const assembleConversationControlContext = ({
     currentTurnId: currentTurnId ?? `${conversationId}:turn-${recentMessages.length + 1}`,
     currentUserMessage: userMessage,
     adjacentTurns,
+    interactionMoveHandoffTarget: projectActiveInteractionMoveHandoffTarget(adjacentTurns),
     semanticEvidence,
     activeAnswerFrame: {
       type: activeFrame.frame?.type ?? null,
