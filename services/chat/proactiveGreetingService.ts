@@ -1,9 +1,22 @@
-import { AiGenerationStatus, AiSourceType, MessageRole, MessageStatus } from "@prisma/client";
+import {
+  AiGenerationStatus,
+  AiSourceType,
+  MessageRole,
+  MessageStatus,
+  Prisma,
+} from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
-import { generateProactiveGreeting } from "@/services/ai/proactiveGreeting";
-import { AiConversationMessage, AiGenerationResult } from "@/services/ai/types";
+import {
+  attachCommittedAssistantMoveEnvelope,
+  buildProactiveGreetingAssistantMoveEnvelope,
+} from "@/conversation-os";
+import {
+  generateProactiveGreeting,
+  type ProactiveGreetingGenerationResult,
+} from "@/services/ai/proactiveGreeting";
+import { AiConversationMessage } from "@/services/ai/types";
 import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
 
 const RETURN_GREETING_IDLE_MS = 30 * 60 * 1000;
@@ -17,7 +30,7 @@ const createGreetingMessage = async ({
 }: {
   sessionId: string;
   userId: string;
-  generation: AiGenerationResult;
+  generation: ProactiveGreetingGenerationResult;
   createdAt: Date;
 }) => {
   const savedMessage = await prisma.$transaction(async (tx) => {
@@ -61,6 +74,21 @@ const createGreetingMessage = async ({
         },
       },
     });
+    const interactionMoveEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+      assistantMoveId: message.id,
+      generationId: savedGeneration.id,
+      greetingMove: generation.proactiveGreetingMove,
+    });
+
+    await tx.aiGeneration.update({
+      where: { id: savedGeneration.id },
+      data: {
+        executionTrace: attachCommittedAssistantMoveEnvelope(
+          null,
+          interactionMoveEnvelope
+        ) as unknown as Prisma.InputJsonValue,
+      },
+    });
 
     await tx.chatSession.update({
       where: { id: sessionId },
@@ -70,7 +98,7 @@ const createGreetingMessage = async ({
       },
     });
 
-    return message;
+    return { ...message, interactionMoveEnvelope };
   });
 
   await createRawMemoryFromChatMessage({

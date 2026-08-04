@@ -59,10 +59,18 @@ Migration status after the Batch 1.5-E frozen gate closed on 2026-08-04:
   explicit older-target inclusion and target-bound semantic association without
   production integration; Batch 2C is now the authoritative Reaction Assessment
   Contract Gate under `B2-Reaction-Shadow`, frozen as reaction-only, Shadow-only
-  and fixture-only with zero downstream integration. Its evaluator/runtime,
-  formal production writes, DB-backed loading and Atomic Boundary remain
-  unimplemented; user-visible Hill behavior remains reserved for a separately
-  accepted Batch 3.
+  and fixture-only with zero downstream integration. Batch 2C-A now implements
+  the isolated fixture evaluator and regression gate; production runtime,
+  formal reaction state, formal production writes, DB-backed loading and Atomic
+  Boundary remain unimplemented. User-visible Hill behavior remains reserved
+  for a separately accepted Batch 3;
+- Conversation OS Interaction Move Handoff Contract v1 is frozen as the target
+  contract, and its committed-envelope foundation is implemented. It defines
+  proactive greeting completion through immutable
+  committed-event relations, a target-bound User relation, one Planner-selected
+  positive function and validated atomic commit. The stable envelope and
+  Guest/authenticated round-trip foundation are implemented; completion edges,
+  User relation, Planner transition and semantic Validator gates remain pending.
 
 ## 2. Runtime control loop
 
@@ -156,6 +164,13 @@ This state is derived from committed conversation events and committed Assistant
 move metadata. It is reconstructible and cannot replace the bounded recent raw
 conversation window supplied to planning and Surface Realization.
 
+Interaction Move Handoff v1 uses the same reconstructible event boundary but is
+not a new field in Interaction State. A committed Assistant envelope supplies a
+stable Assistant move id and an immutable `opens`, `fulfills` or Safety
+`supersedes` relation. Whether a greeting is active, fulfilled or superseded is
+derived by querying those committed events; no persistent lifecycle status,
+session aggregate, Memory record or User Model field may mirror that result.
+
 An explicit user question becomes a must-answer obligation. Empathy,
 clarification and Clinical advice cannot remove it.
 
@@ -206,6 +221,14 @@ result. Neither value proves objective causality or technique success. No Batch
 2C assessment may enter `HillHelpingPlan`, Response Planner, Initiative, Memory,
 User Model, `ChatMessage.interactionMetadata` or formal persistence.
 
+Batch 2C-A implements that contract only in
+`services/helping/reactionAssessmentFixture.ts`. The module is not exported from
+the production Helping barrel and is consumed only by frozen fixtures. Its gate
+strictly parses candidate/evidence objects, binds them to one Batch 2B-loaded
+`formal_v1` target and the current user turn, validates evidence provenance,
+derives both known flags, and emits fail-closed Shadow envelopes. It has no
+production writer, persistence or user-visible execution path.
+
 ### 2.5 Response Planner
 
 Response Planner is the only writer of the final ordinary `ResponsePlan`. It
@@ -232,6 +255,13 @@ selection. It does not read `primaryDialogueAct`, `secondarySignals`,
 `activeInteractionNeeds`, `stillOpenUserIntent`, or scenario classifier labels
 as strategy decisions. It may accept or reject a Hill contract but cannot
 invent, replace or silently omit its goal, intention or skill.
+
+For a proactive greeting handoff, the Planner additionally consumes the
+turn-scoped envelope and target-bound User relation projection frozen in
+`CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md`. It alone selects the
+required handoff function, completion intent and question policy. Greeting
+provenance such as `promptVersion` cannot replace the committed move target or
+prove completion.
 
 No module after this point may reinterpret the user, choose a new response
 goal, or select another strategy.
@@ -269,6 +299,13 @@ Output Validation is a constraint provider. It may:
 
 It may not create a ResponsePlan, select a ResponseGoal, choose a Clinical
 strategy, or author an ordinary fallback/comfort reply.
+
+For Interaction Move Handoff v1, validation must positively verify that the
+candidate realizes the Planner-selected function against the same target and
+User relation. Avoiding a list of disallowed phrases, or Surface self-reporting
+a function id, is not completion evidence. Validation failure may only trigger
+the existing bounded same-plan regeneration; only the final committed Assistant
+event may write a `fulfills` edge.
 
 ### 2.8 State Update
 
@@ -357,6 +394,33 @@ stop/reopen language, explicit capability/identity questions, active answer
 frame compatibility and the approved interaction fields. Complex pragmatics
 must remain contextual and may use the structured interpretation adapter.
 
+### 4.4 Interaction Move Handoff v1
+
+`docs/CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md` is the
+authoritative proactive greeting completion contract. It freezes:
+
+- a logical committed Assistant move envelope with a stable Assistant event id;
+- an immutable greeting `opens` edge and validated-commit `fulfills` edge;
+- a current-turn User relation projection bound to that Assistant move;
+- preselected required functions for `simple_greeting`, `open_statement` and
+  `light_question`;
+- completion only when the selected positive function passes same-plan semantic
+  validation and the final Assistant event commits;
+- Planner transition priority and Validator non-planning boundaries;
+- one logical envelope and projection contract for Guest and authenticated chat.
+
+Interaction-move rejection is not limited to rejection of a factual
+proposition. Turn Interpretation may identify a contextual challenge to the fit
+of the immediately preceding Assistant move, while the Response Planner alone
+decides whether targeted interaction-move withdrawal is required.
+
+The envelope and handoff edges are Conversation OS event metadata, isolated from
+the Batch 2 Helping/Reaction namespace. The implemented foundation serializes
+the logical envelope as a sibling key in the existing authenticated generation
+trace and as client-scoped Guest event metadata; it adds no persistent lifecycle
+state, schema migration, Memory or User Model input. User relation, Planner
+handoff, `fulfills`, Safety `supersedes` and completion semantics remain pending.
+
 ## 5. Assistant Grounding
 
 `conversation-os/control/assistantGrounding.ts` is the single source for
@@ -397,23 +461,26 @@ validation evidence; the external model sees only system-defined move/topic
 labels, not their raw text. Validation rejects both lexical near-duplicates
 and reuse of a recent topic category.
 
-The first user turn after a proactive greeting is owned by the ordinary
-Response Planner through `respond_to_proactive_greeting`. When the proactive
-greeting is itself a question, the adjacent user response retains the ordinary
-no-second-interview rule. One specific natural follow-up remains optional only
-after a non-question greeting. Its Surface history begins at the latest
-proactive greeting; pre-greeting committed events remain in internal Context
-but are not projected unless the current user turn explicitly resumes them.
-Explicit resume includes referential turns such as `继续刚才那个`; these restore
-the bounded pre-greeting Surface window without requiring the old topic text to
-be repeated.
-Output Validation rejects empty acknowledgement, bare echo, generic approval,
-unresumed pre-greeting content, topic-switching merely to keep the user
-answering, and `知道了/就好` style closure.
-Ordinary Surface Realization otherwise consumes only the ResponsePlan
-projection. Output Validation verifies the finalized plan, including
-suppression of a rejected Grounding proposition; it cannot create a new plan,
-broaden disclosure or rewrite the reply.
+The first User turn after a proactive greeting is owned by the ordinary
+Response Planner. The current runtime's `respond_to_proactive_greeting` action
+and `promptVersion` provenance are compatibility behavior, not the frozen v1
+completion criterion. Under the v1 target, a committed greeting envelope, a
+current User relation bound to that move and one Planner-selected required
+function replace provenance-only detection.
+
+When the greeting is a question, the adjacent User response retains the
+ordinary no-second-interview rule. Current User content, a direct question,
+redirect, interaction-move challenge or pause takes priority over greeting
+ritual and may fulfill the handoff in the same response. Pre-greeting committed
+events remain internal Context and are not projected to Surface unless the
+current User turn explicitly resumes them.
+
+Output Validation must prove the selected positive function. Pure receipt,
+Assistant presence confirmation, echo, a second greeting-only move, a generic
+open door or an unrelated question does not fulfill the contract merely because
+it avoids a prohibited phrase. The Validator cannot create a plan, change the
+target or relation, broaden disclosure or rewrite the reply. Completion exists
+only after the accepted Assistant message and its `fulfills` edge commit.
 
 ## 6. Legacy migration
 
@@ -464,10 +531,27 @@ The target implementation must continuously verify:
 16. Batch 2C Reaction Assessment remains `mode=shadow`, `source=fixture` and has
     zero consumers in Planner, Prompt, Surface, Validator, Initiative, Memory,
     User Model or formal persistence.
+17. each v1 handoff target uses the stable id of a committed Assistant event;
+    `sourceTurnId`, `planId` and `promptVersion` cannot substitute for it;
+18. a proactive greeting handoff is fulfilled only by a semantically validated
+    final Assistant response whose immutable edge commits against the same
+    source move;
+19. Turn Interpretation supplies target-bound relation evidence, Response
+    Planner alone selects the required function, and Validator cannot change
+    either decision;
+20. Guest and authenticated chat must project the same logical committed
+    envelope, User relation and completion result before v1 can claim runtime
+    conformance;
+21. handoff completion creates no persistent lifecycle state and has zero
+    integration with Memory, Batch 2 or User Model.
 
-Batch 0 keeps the existing source assertions as a pre-Hill baseline. Items
-3-4 and 12-16 become executable gates in their assigned migration batches; the
-documentation change itself does not claim they are already implemented.
+Batch 0 keeps the existing source assertions as a pre-Hill baseline. Items 3-4
+and 12-15 become executable gates in their assigned migration batches. Item 16
+is executable for the Batch 2C-A fixture evaluator, but does not claim a
+production Reaction Assessment runtime or authorize downstream integration.
+Items 17 and the envelope-only portion of 20 now have executable foundation
+coverage. Items 18-19, full relation/completion parity in 20, and completion
+semantics in 21 remain target gates for Planner Handoff Migration.
 
 The primary structural checks are:
 
@@ -489,6 +573,11 @@ npm run check:architecture-v1
 - Batch 0 runtime still invokes optional Rogers advice for a narrow set of
   Planner-selected activities; it does not yet implement the target Hill
   applicability or cross-turn reaction loop.
+- Interaction Move Handoff v1 has stable proactive and ordinary committed-event
+  envelopes with Guest/authenticated logical round-trip. The current runtime
+  still uses `promptVersion` greeting provenance compatibility in the Planner
+  and has no User relation, `fulfills`, Safety `supersedes` or completion
+  validation; it therefore does not yet claim full v1 conformance.
 - Real-model post-migration A/B output comparison requires a separately scoped
   external-prompt authorization; local architecture and regression tests do not
   substitute for that naturalness evidence.

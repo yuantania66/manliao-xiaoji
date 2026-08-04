@@ -6,22 +6,23 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 
 ## Active delivery slice
 
-- Outcome: Freeze Batch 2C as the authoritative Reaction Assessment Contract Gate without implementing reaction evaluation or changing runtime behavior.
-- Acceptance: The new v1 contract and three authority/status documents consistently name `B2-Reaction-Shadow`, freeze the Reaction Candidate and `reactionEvidenceKnown` / `impactKnown` semantics, require fail-closed behavior, and prohibit every downstream integration.
-- Allowed scope: `docs/HILL_HELPING_BATCH2C_REACTION_ASSESSMENT_CONTRACT_V1.md`, this project ledger, Architecture v1 and the Hill migration plan.
-- Non-goals: Runtime, evaluator, fixtures/regression implementation, production/DB loader or writer, Planner, Prompt, Surface, Validator, Memory, User Model, Initiative, formal reaction state, Atomic Boundary, deployment or user-visible Hill behavior.
-- Baseline: Branch `batch-2b-fixture-association`, HEAD `5b20ada64783401e28f9162cefe78e5b41eddc15`, clean at slice start.
+- Outcome: Seal the current 25-path Batch 2C-A, Interaction Move Handoff Contract and committed-envelope foundation as one auditable checkpoint before Planner Handoff Migration begins.
+- Acceptance: Correct the two known whitespace defects; pass the database lifecycle and full launch gates; keep the change inventory at the same 25 paths; create one checkpoint commit and branch `codex/planner-handoff-migration` from it.
+- Allowed scope: Minimal cleanup inside the existing 25-path inventory, this governance ledger, verification, checkpoint commit and branch creation.
+- Non-goals: Planner, User relation, Validator, `fulfills`, Safety `supersedes`, Memory, User Model, Batch 2 downstream integration, schema migration, deployment or any new user-visible behavior.
+- Baseline: Branch `batch-2c-reaction-contract`, HEAD `88f1504482a70782079ce0e7d09f4c2feb20b578`; 18 tracked changes and 7 untracked paths, all classified by the Release Steward.
 - Round budget: 1 investigation + 1 implementation + at most 2 repairs per failed gate
 
 ## Team
 
 | Role | Owner | Permission | Deliverable |
 |---|---|---|---|
-| Delivery lead | Main Codex task | integrate | Freeze the slice, assign work, integrate evidence, declare completion |
-| Product and clinical contract reviewer | Team member when invoked | read-only | Identify the canonical PRD, clinical, and response contracts; flag true conflicts only |
-| Architecture investigator | Team member when invoked | read-only | Classify the worktree and locate the first causal boundary for any failed gate |
-| Builder | Team member when invoked | scoped write | Make the smallest fix inside named files; no cross-layer redesign |
-| Independent verifier | Team member when invoked | read-only | Run frozen gates and report reproducible failures without inventing new requirements |
+| Delivery lead | `PM 总控台｜慢聊小记` | integrate | Freeze each slice, assign work, integrate evidence and declare completion |
+| Product and clinical contract reviewer | `慢聊小记｜产品与临床合同审查` | read-only | Check PRD, clinical, Safety and response contracts; flag true conflicts only |
+| Architecture investigator | `慢聊小记｜架构调查` | read-only | Locate the first causal boundary and smallest valid modification surface |
+| Builder | `慢聊小记｜实现工程师` | scoped write | Own the exclusive implementation file set for one frozen slice |
+| Independent verifier | `慢聊小记｜独立验收` | read-only | Verify frozen gates and reproducible regressions without inventing requirements |
+| Release steward | `慢聊小记｜发布与基线` | read-only until authorized | Classify checkpoints, verify release evidence and prepare rollback boundaries |
 
 ## Evidence ledger
 
@@ -54,6 +55,17 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 | Freeze Batch 2C authority and scope | `Batch 2C — Reaction Assessment Contract Gate`, gate id `B2-Reaction-Shadow`, shadow-only and fixture-only | pass | Delivery lead |
 | Freeze reaction epistemic boundaries | Strict Reaction Candidate schema; `reactionEvidenceKnown` separated from `impactKnown`; causality and success are not inferred | pass | Delivery lead |
 | Preserve zero downstream integration | Contract prohibits Memory, User Model, Planner, Prompt, Surface, Validator, Initiative, formal persistence and production consumers | pass | Delivery lead |
+| Pass Batch 2C-A semantic derivation | 10 reaction fixtures cover acceptance, action result, pressure, correction, no-attribution, awareness, causal counterevidence, topic shift, unclear and complementary reactions | pass | Delivery lead |
+| Pass Batch 2C-A binding and fail-closed gate | 24 counterexamples cover strict keys/types, formal target/session/plan uniqueness, source turn, provenance, relation compatibility and invalid envelopes | pass | Delivery lead |
+| Preserve Shadow and production isolation | Fixture evaluator is absent from the Helping production barrel and has 0 production consumers; user-visible behavior changes = 0 | pass | Delivery lead |
+| Preserve adjacent Batch 2 and Conversation OS gates | Batch 2A, Batch 2B, Conversation OS architecture and natural-chat control checks exit 0 | pass | Delivery lead |
+| Freeze the seven Interaction Move Handoff boundaries | Authoritative v1 contract covers envelope, User relation, greeting function, completion, Planner, Validator and Guest/authenticated parity | pass | Delivery lead |
+| Preserve architecture and domain isolation | Completion is an immutable committed-event edge projection; no persistent lifecycle state, Memory, Batch 2 or User Model integration is authorized | pass | Delivery lead |
+| Preserve the docs-only boundary | Change inventory contains four documentation paths and zero runtime, schema, migration or test paths | pass | Independent verifier |
+| Create the envelope only at the committed boundary | Auth transaction binds envelope identity to the real message id; Guest creates it only after `VALIDATED`; failed and rejected executions return none | pass | Delivery lead |
+| Prove retry-loser and rollback isolation | Two distinct concurrent generation attempts yield one Assistant message and exactly one persisted envelope; invalid commit and transaction rollback yield none | pass | Delivery lead |
+| Preserve Guest/authenticated logical parity | Both proactive and ordinary paths project the same v1 logical shape and round-trip it through history/client cache | pass | Delivery lead |
+| Preserve adjusted slice boundary | Planner legacy `promptVersion` remains; no Planner, Memory, User Model, Batch 2 or schema path is modified | pass | Independent verifier |
 
 ## Change inventory
 
@@ -81,6 +93,30 @@ Batch 2C Contract Freeze slice:
 | Authority/status documentation | 3 | Project ledger, Architecture v1 and Hill migration plan | Verify the Batch 2C name and zero downstream integration are consistent |
 | Runtime or verification source | 0 | None | No evaluator, fixture runner, production consumer or formal reaction state is authorized |
 
+Batch 2C-A fixture implementation slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Fixture-only evaluator | 1 | `services/helping/reactionAssessmentFixture.ts` | Verify strict parsing, bindings, known derivation, fail-closed output and no export to production barrel |
+| Verification wiring | 3 | semantic fixtures, Batch 2C-A check and package gate | Executable fixture evidence only; no generated model output or runtime entry point |
+| Status documentation | 4 | implementation report, architecture, migration plan and project ledger | Record fixture gate completion without claiming runtime/formal state or downstream integration |
+
+Interaction Move Handoff Contract v1 freeze slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Authoritative contract | 1 | `docs/CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md` | Verify all seven boundaries, event-edge completion and explicit implementation status |
+| Authority/status documentation | 3 | Project ledger, Architecture v1 and Conversation State Design v1 | Keep the authoritative contract linked and phase state separate from handoff lifecycle |
+| Runtime, schema, migration or verification source | 0 | None | No implementation or behavior claim is authorized by the freeze |
+
+Interaction Move Envelope implementation slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Envelope and delivery runtime | 12 | Conversation OS envelope/export; AI lifecycle, generation and commit services; Guest/authenticated API and client projections | Verify committed-only identity, logical parity and namespace isolation |
+| Verification wiring | 4 | Envelope check, lifecycle and proactive checks, package gate | Verify strict parsing, preselected greeting function, retry loser and failure/rollback isolation |
+| Status documentation | 3 | Contract, Architecture v1 and project ledger | Record partial implementation without claiming Planner handoff completion |
+
 Stable-baseline seal inventory (historical):
 
 | Class | Count | Path rule | Review treatment |
@@ -102,14 +138,18 @@ Stable-baseline seal inventory (historical):
 | 2026-08-04 | Freeze Batch 2A `B2-Contract` | Strict v1 round-trip, fail-closed counterexamples, Shadow isolation, runtime ordinary-only projection and full launch gate pass | Batch 2B may begin only as fixture load/association infrastructure; formal production writes remain unauthorized |
 | 2026-08-04 | Pass Batch 2B fixture load/association gate | 17 fixture records, bounded chronological load, explicit older target, target-bound semantic association, Shadow/ordinary isolation and visible-behavior preservation | No production loader/writer or reaction state; Batch 2C is not created by this slice |
 | 2026-08-04 | Freeze Batch 2C `B2-Reaction-Shadow` contract | User authorized a docs-only Reaction Assessment Contract Freeze after Batch 2B association | Batch 2C now means reaction-only, Shadow-only and fixture-only; prior Atomic Boundary naming is superseded for the current roadmap, while implementation and downstream integration remain unauthorized |
+| 2026-08-04 | Pass Batch 2C-A fixture Reaction Shadow evaluator | 10 semantic fixtures, 24 fail-closed cases, strict parser/typecheck and adjacent architecture gates pass with zero production consumers | Fixture evaluation is now executable evidence only; runtime, formal reaction state, downstream consumers and Batch 2D remain unauthorized |
+| 2026-08-04 | Freeze Conversation OS Interaction Move Handoff Contract v1 | Architecture review found that proactive greeting provenance did not establish a positive completion postcondition | Handoff completion is now defined by target-bound relation, Planner-selected function, semantic validation and an immutable committed-event edge; runtime implementation remains separately unauthorized |
+| 2026-08-04 | Implement the committed Assistant move envelope foundation | Strict envelope checks, Guest/authenticated projections and database-backed commit/retry/rollback regressions pass | Planner legacy remains; User relation, `fulfills`, Safety `supersedes` and completion validation are deferred to Planner Handoff Migration |
 
 ## Remaining
 
 - No remaining implementation is authorized inside the Batch 1.5-E repair slice.
 - One attempt-level pressure-repair Validator false positive remains recorded as a non-blocking observation; addressing it requires a new independently approved task.
-- Batch 2A and the fixture-only Batch 2B association gate are complete. Batch 2C now has a frozen Reaction Assessment contract, but no evaluator, fixture regression implementation or reaction runtime exists.
+- Batch 2A, Batch 2B association and Batch 2C-A fixture Reaction Assessment gates are complete. No production Reaction Assessment runtime exists.
 - Production/DB loading, Atomic Boundary proof and formal Helping writes remain unimplemented and have no current Batch 2C authorization.
 - Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path remains fixture-only until a separately approved Atomic Boundary gate.
+- Interaction Move Handoff Contract v1 envelope foundation and Guest/authenticated round-trip are implemented; relation projection, Planner migration, `fulfills`, Safety `supersedes` and semantic completion validation remain pending.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
 ## Closure status
@@ -119,7 +159,8 @@ Stable-baseline seal inventory (historical):
 - Stable-baseline Git seal: the commit containing this ledger is the seal; its exact pushed SHA is recorded in the delivery report.
 - Batch 2A Contract Gate: complete; v1 formal metadata and formal/Shadow isolation are frozen.
 - Batch 2B Fixture Load and Association Gate: complete within fixture-only scope; no production consumer exists.
-- Batch 2C Reaction Assessment Contract Gate: docs-only freeze complete under `B2-Reaction-Shadow`; evaluator/runtime implementation has not started.
+- Batch 2C Reaction Assessment Contract Gate: frozen under `B2-Reaction-Shadow`; Batch 2C-A fixture-only evaluator and regressions pass, while runtime and downstream integration remain absent.
+- Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; committed-envelope foundation is implemented without persistent lifecycle state or schema migration, while Planner handoff remains pending.
 - Atomic Boundary and later Batch 2 work do not inherit authorization for user-visible behavior, formal production writes or downstream integration.
 - Further expansion of the Batch 1.5 repair round: stopped.
 

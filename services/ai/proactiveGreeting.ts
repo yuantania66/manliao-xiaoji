@@ -1,16 +1,18 @@
 import { PROACTIVE_GREETING_PROMPT_VERSION } from "@/lib/proactive-greeting";
 import { AppError } from "@/lib/errors";
 import { formatAssistantGroundingForPrompt } from "@/conversation-os/control";
+import type { ProactiveGreetingMove } from "@/conversation-os";
 
 import { callModel, getDefaultAiModel, isAiProviderConfigured } from "./modelProvider";
 import { AiConversationMessage, AiGenerationResult, AiModelMessage } from "./types";
 import { inspectPromptBeforeExternalCall } from "./externalPromptInspection";
 
 type ProactiveGreetingKind = "initial" | "return";
-export type ProactiveGreetingMove =
-  | "simple_greeting"
-  | "open_statement"
-  | "light_question";
+export type { ProactiveGreetingMove } from "@/conversation-os";
+
+export type ProactiveGreetingGenerationResult = AiGenerationResult & {
+  proactiveGreetingMove: ProactiveGreetingMove;
+};
 
 const SAFE_DETERMINISTIC_GREETINGS: Record<ProactiveGreetingMove, string[]> = {
   simple_greeting: ["你好。", "嗨。", "哈喽。"],
@@ -267,7 +269,7 @@ export const generateProactiveGreeting = async ({
     stage: "proactive_greeting";
     messages: AiModelMessage[];
   }) => void | Promise<void>;
-}): Promise<AiGenerationResult> => {
+}): Promise<ProactiveGreetingGenerationResult> => {
   if (!isAiProviderConfigured()) {
     throw new AppError("AI_GENERATION_FAILED", "AI 主动问候模型未配置", 502);
   }
@@ -293,6 +295,7 @@ export const generateProactiveGreeting = async ({
       model: "deterministic",
       promptVersion: PROACTIVE_GREETING_PROMPT_VERSION,
       latencyMs: 0,
+      proactiveGreetingMove: move,
     };
   }
 
@@ -337,5 +340,6 @@ export const generateProactiveGreeting = async ({
     ...response,
     text,
     promptVersion: PROACTIVE_GREETING_PROMPT_VERSION,
+    proactiveGreetingMove: move,
   };
 };

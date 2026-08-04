@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import type { CommittedAssistantMoveEnvelopeV1 } from "@/conversation-os";
 import type { ResponsePlan, ResponseValidationResult } from "@/conversation-os/control";
 import { projectAffectEvidenceTerms } from "@/conversation-os/state";
 
@@ -53,6 +54,7 @@ export type ChatExecutionTrace = {
     retryable: boolean;
   };
   committedMessageId?: string;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1;
 };
 
 export type UserSafeExecutionStatus = {

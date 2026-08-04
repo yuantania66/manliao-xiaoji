@@ -230,12 +230,14 @@ const runAsync = async () => {
   process.env.PROACTIVE_GREETING_MODE = "deterministic";
   try {
     const deterministicGreetings: string[] = [];
+    const selectedMoves: string[] = [];
     const firstDeterministic = await generateProactiveGreeting({
       kind: "initial",
       recentMessages: [],
       recentGreetings: [],
     });
     deterministicGreetings.push(firstDeterministic.text);
+    selectedMoves.push(firstDeterministic.proactiveGreetingMove);
     for (let index = 0; index < 5; index += 1) {
       const generated = await generateProactiveGreeting({
         kind: "return",
@@ -243,18 +245,18 @@ const runAsync = async () => {
         recentGreetings: deterministicGreetings.slice(-3),
       });
       deterministicGreetings.push(generated.text);
+      selectedMoves.push(generated.proactiveGreetingMove);
     }
-    assert.deepEqual(
-      deterministicGreetings.map(proactiveGreetingMove),
-      [
+    const expectedMoves = [
         "simple_greeting",
         "open_statement",
         "light_question",
         "open_statement",
         "simple_greeting",
         "open_statement",
-      ]
-    );
+      ];
+    assert.deepEqual(deterministicGreetings.map(proactiveGreetingMove), expectedMoves);
+    assert.deepEqual(selectedMoves, expectedMoves);
     for (const [index, greeting] of deterministicGreetings.entries()) {
       assert.equal(
         validateProactiveGreeting(greeting, deterministicGreetings.slice(Math.max(0, index - 3), index)),

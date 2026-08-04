@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { MessageStatus } from "@prisma/client";
 
 import ChatClient, { InitialChatData } from "./chat-client";
+import { extractCommittedAssistantMoveEnvelope } from "@/conversation-os";
 import { hashToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
@@ -77,6 +78,7 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
         aiGeneration: {
           select: {
             promptVersion: true,
+            executionTrace: true,
           },
         },
       },
@@ -96,6 +98,9 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
           text: item.content,
           createdAt: item.createdAt.toISOString(),
           promptVersion: item.aiGeneration?.promptVersion ?? null,
+          interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+            item.aiGeneration?.executionTrace
+          ),
         })),
     };
   } catch {

@@ -1,6 +1,6 @@
 # Hill 助人过程第三阶段架构迁移与分批实施计划 v1
 
-状态：修订计划已获用户批准；早期批次 1.5 人工盲审及候选 1—6 的失败结果保留为历史证据；后续 Batch 1.5-E 完整冻结门已通过并关闭；2026-08-04 批准进入 Batch 2 infrastructure-only，Batch 2A `B2-Contract` 与 Batch 2B fixture-only association gate 已通过，Batch 2C `B2-Reaction-Shadow` docs-only 合同已冻结，未授权用户可见 Hill 行为或 downstream integration
+状态：修订计划已获用户批准；早期批次 1.5 人工盲审及候选 1—6 的失败结果保留为历史证据；后续 Batch 1.5-E 完整冻结门已通过并关闭；2026-08-04 批准进入 Batch 2 infrastructure-only，Batch 2A `B2-Contract`、Batch 2B fixture-only association gate 与 Batch 2C-A `B2-Reaction-Shadow` fixture evaluator gate 已通过，未授权用户可见 Hill 行为或 downstream integration
 
 日期：2026-08-01
 
@@ -583,11 +583,13 @@ Surface 架构并通过冻结门。该历史收敛判断不再是进入 Batch 2 
 和 formal/Shadow 隔离；Batch 2B 已在 fixture-only 范围通过有界加载、显式较早 target、
 target-bound semantic association 与 Initiative 隔离；Batch 2C 已冻结为
 Reaction Assessment Contract Gate，gate id 为 `B2-Reaction-Shadow`，范围严格是
-reaction-only、Shadow-only、fixture-only 和 zero downstream integration。Batch 2C
-evaluator/runtime、production loader、原子写入和 Atomic Boundary 尚未实现。详见
+reaction-only、Shadow-only、fixture-only 和 zero downstream integration。Batch 2C-A
+已实现隔离的 fixture evaluator、known 派生和 fail-closed regression gate；production
+runtime、production loader、原子写入、formal reaction state 和 Atomic Boundary 尚未实现。详见
 [Batch 2A metadata contract](./HILL_HELPING_BATCH2A_COMMITTED_MOVE_METADATA_CONTRACT_V1.md)
 、[Batch 2B implementation report](./evals/hill-helping-batch2b-implementation-report-20260804.md)
-与 [Batch 2C Reaction Assessment Contract](./HILL_HELPING_BATCH2C_REACTION_ASSESSMENT_CONTRACT_V1.md)。
+、[Batch 2C Reaction Assessment Contract](./HILL_HELPING_BATCH2C_REACTION_ASSESSMENT_CONTRACT_V1.md)
+与 [Batch 2C-A implementation report](./evals/hill-helping-batch2c-a-implementation-report-20260804.md)。
 
 当前权威命名中，Batch 2C 不再表示 Atomic Boundary。历史材料中的旧编号保持为历史
 证据；Atomic Boundary 保持未授权、未实现，后续编号由独立决定冻结。
@@ -617,7 +619,8 @@ evaluator/runtime、production loader、原子写入和 Atomic Boundary 尚未�
 
 失败处理：修正状态与语义关联，不提前启用用户可见 Hill 行为。
 
-Batch 2C Contract Freeze 本身只冻结以下后续 fixture 验收边界，不宣称实现通过：
+Batch 2C Contract Freeze 冻结了以下 fixture 验收边界；Batch 2C-A 已将这些边界实现为
+隔离 regression gate，但不代表 production runtime 或 downstream integration：
 
 - Reaction Candidate strict schema 与唯一 formal target binding；
 - `reactionEvidenceKnown` 和 `impactKnown` 分离；
@@ -993,6 +996,6 @@ Recommended Next Step
 用户可见基线封存。2026-08-04 已批准进入 Batch 2 infrastructure-only：只实现跨轮
 关联、`CommittedHelpingMove` 严格序列化/加载、Shadow reaction trace 与原子提交
 生命周期；用户可见回复必须保持不变。该批准不自动授权 Batch 3、生产 canary、默认
-开启或 User Model 行为接入。Batch 2C 当前只完成 `B2-Reaction-Shadow` docs-only
-合同冻结；Reaction evaluator、runtime、Atomic Boundary、formal reaction state 和全部
-downstream integration 均未获授权或实现。
+开启或 User Model 行为接入。Batch 2C 当前已完成 `B2-Reaction-Shadow` 合同冻结与
+Batch 2C-A fixture-only evaluator；production Reaction runtime、Atomic Boundary、formal
+reaction state 和全部 downstream integration 均未获授权或实现。

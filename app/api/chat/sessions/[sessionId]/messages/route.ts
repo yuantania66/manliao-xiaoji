@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 import { failFromError, ok } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth";
+import { extractCommittedAssistantMoveEnvelope } from "@/conversation-os";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { parsePagination, requireNonEmptyString } from "@/lib/validation";
@@ -111,6 +112,7 @@ export async function GET(
           aiGeneration: {
             select: {
               promptVersion: true,
+              executionTrace: true,
             },
           },
         },
@@ -134,6 +136,9 @@ export async function GET(
         status: item.status.toLowerCase(),
         createdAt: item.createdAt.toISOString(),
         promptVersion: item.aiGeneration?.promptVersion ?? null,
+        interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+          item.aiGeneration?.executionTrace
+        ),
       })),
       page: pagination.page,
       pageSize: pagination.pageSize,
@@ -220,7 +225,7 @@ export async function POST(
             content: true,
             status: true,
             createdAt: true,
-            aiGeneration: { select: { promptVersion: true } },
+            aiGeneration: { select: { promptVersion: true, executionTrace: true } },
           },
         })
       : null;
@@ -241,6 +246,9 @@ export async function POST(
           status: existingCommittedReply.status.toLowerCase(),
           createdAt: existingCommittedReply.createdAt.toISOString(),
           promptVersion: existingCommittedReply.aiGeneration?.promptVersion ?? null,
+          interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+            existingCommittedReply.aiGeneration?.executionTrace
+          ),
         },
       });
     }
@@ -276,6 +284,7 @@ export async function POST(
         aiGeneration: {
           select: {
             promptVersion: true,
+            executionTrace: true,
           },
         },
       },
@@ -296,6 +305,9 @@ export async function POST(
           replyToMessageId: item.replyToMessageId,
           committedAssistantMove:
             parsedMetadata.status === "valid" ? parsedMetadata.assistantMove : undefined,
+          interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+            item.aiGeneration?.executionTrace
+          ),
         };
       });
 

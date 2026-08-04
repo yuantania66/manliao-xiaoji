@@ -8,6 +8,13 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import {
+  attachCommittedAssistantMoveEnvelope,
+  buildCommittedResponseMove,
+  buildResponsePlanAssistantMoveEnvelope,
+  extractCommittedAssistantMoveEnvelope,
+  type CommittedAssistantMoveEnvelopeV1,
+} from "@/conversation-os";
 
 import { createChatReply } from "./chatOrchestrationService";
 import { createChatMemoryContext, createNoteMemoryContext } from "./dataLayers";
@@ -95,6 +102,7 @@ const serializeMessage = (message: {
   aiGenerationId: string | null;
   aiGeneration?: { promptVersion: string } | null;
   createdAt: Date;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1 | null;
 }) => ({
   id: message.id,
   role: message.role.toLowerCase(),
@@ -103,6 +111,7 @@ const serializeMessage = (message: {
   aiGenerationId: message.aiGenerationId,
   promptVersion: message.aiGeneration?.promptVersion ?? null,
   createdAt: message.createdAt.toISOString(),
+  interactionMoveEnvelope: message.interactionMoveEnvelope ?? null,
 });
 
 const saveGeneration = async ({
@@ -183,6 +192,7 @@ export const commitValidatedAssistantMessage = async ({
   replyToMessageId,
   interactionMetadata,
   execution,
+  envelopeOrigin = "response_plan",
 }: {
   userId: string;
   sessionId: string;
@@ -190,9 +200,13 @@ export const commitValidatedAssistantMessage = async ({
   status: MessageStatus;
   aiGenerationId: string;
   replyToMessageId: string;
-  interactionMetadata: InteractionState["lastCommittedAssistantMove"];
-  execution?: ChatExecutionTrace;
+  interactionMetadata: NonNullable<InteractionState["lastCommittedAssistantMove"]>;
+  execution: ChatExecutionTrace;
+  envelopeOrigin?: "response_plan" | null;
 }) => {
+  if (execution.phase !== "VALIDATED") {
+    throw new Error("Only a validated execution may enter the Assistant commit boundary.");
+  }
   const select = {
     id: true,
     role: true,
@@ -202,8 +216,10 @@ export const commitValidatedAssistantMessage = async ({
     aiGeneration: {
       select: {
         promptVersion: true,
+        executionTrace: true,
       },
     },
+    interactionMetadata: true,
     createdAt: true,
   } satisfies Prisma.ChatMessageSelect;
   let created = false;
@@ -236,27 +252,49 @@ export const commitValidatedAssistantMessage = async ({
         },
       });
     }
-    if (created && execution) {
+    let interactionMoveEnvelope: CommittedAssistantMoveEnvelopeV1 | null = null;
+    if (created) {
+      if (envelopeOrigin === "response_plan") {
+        interactionMoveEnvelope = buildResponsePlanAssistantMoveEnvelope({
+          assistantMoveId: message.id,
+          planId: execution.planId,
+          sourceUserTurnId: replyToMessageId,
+          committedMove: interactionMetadata,
+        });
+      }
+      const committedExecution = {
+        ...execution,
+        phase: "COMMITTED" as const,
+        transitions: [
+          ...execution.transitions,
+          {
+            phase: "COMMITTED" as const,
+            reason: interactionMoveEnvelope
+              ? "Assistant Message, interaction metadata, and move envelope committed atomically."
+              : "Assistant Message and interaction metadata committed atomically; handoff envelope intentionally deferred for this origin.",
+          },
+        ],
+        committedMessageId: message.id,
+        ...(interactionMoveEnvelope ? { interactionMoveEnvelope } : {}),
+      };
       await tx.aiGeneration.update({
         where: { id: aiGenerationId },
         data: {
-          executionTrace: {
-            ...execution,
-            phase: "COMMITTED",
-            transitions: [
-              ...execution.transitions,
-              {
-                phase: "COMMITTED",
-                reason: "Assistant Message and interaction metadata committed atomically.",
-              },
-            ],
-            committedMessageId: message.id,
-          } as unknown as Prisma.InputJsonValue,
+          executionTrace: (interactionMoveEnvelope
+            ? attachCommittedAssistantMoveEnvelope(
+                committedExecution,
+                interactionMoveEnvelope
+              )
+            : committedExecution) as unknown as Prisma.InputJsonValue,
         },
       });
+    } else {
+      interactionMoveEnvelope = extractCommittedAssistantMoveEnvelope(
+        message.aiGeneration?.executionTrace
+      );
     }
 
-    return message;
+    return { ...message, interactionMoveEnvelope };
   });
 
   if (created) {
@@ -273,46 +311,19 @@ export const commitValidatedAssistantMessage = async ({
 
 export const buildCommittedAssistantMove = (
   reply: Awaited<ReturnType<typeof createChatReply>>
-): NonNullable<InteractionState["lastCommittedAssistantMove"]> => {
-  const plan = reply.controlTrace?.responsePlan;
-  const question = Boolean(
-    plan &&
-    plan.questionPolicy.mode !== "none" &&
-    /[？?]/u.test(reply.generation.text)
-  );
-  return {
-    purpose: plan?.responseActions ?? [],
-    claims: [
-      ...(plan?.groundingFacts ?? []),
-      ...(plan?.requiredDisclosure ?? []),
-    ].map((text) => ({
-      text,
-      subject: plan?.requiredDisclosure.includes(text) ? "assistant" as const : "user" as const,
-      source: plan?.relevanceProvenance.find((item) => item.planElement.endsWith(text))?.source,
-      provenance: plan?.relevanceProvenance
-        .filter((item) => item.planElement.endsWith(text))
-        .flatMap((item) => item.evidence) ?? [],
-    })),
-    assumptions: [],
-    questionOrRequest: question ? { kind: "question" } : null,
-    expectedUserContribution: question
-      ? plan?.responseActions.includes("take_light_topic_initiative")
-        ? "share"
-        : "answer"
-      : "none",
-    userBurden: question ? "low" : "none",
-    sourceTurnId: reply.execution.turnId,
-    evidence: [
-      `planId=${reply.execution.planId}`,
-      `requestId=${reply.execution.requestId}`,
-      "Created only after the validated Assistant Message committed.",
-    ],
-  };
-};
+): NonNullable<InteractionState["lastCommittedAssistantMove"]> =>
+  buildCommittedResponseMove({
+    plan: reply.controlTrace?.responsePlan,
+    replyText: reply.generation.text,
+    sourceUserTurnId: reply.execution.turnId,
+    planId: reply.execution.planId,
+    requestId: reply.execution.requestId,
+  });
 
 const markCommitted = (
   execution: ChatExecutionTrace,
-  messageId: string
+  messageId: string,
+  interactionMoveEnvelope: CommittedAssistantMoveEnvelopeV1 | null
 ): ChatExecutionTrace => ({
   ...execution,
   phase: "COMMITTED",
@@ -324,6 +335,7 @@ const markCommitted = (
     },
   ],
   committedMessageId: messageId,
+  ...(interactionMoveEnvelope ? { interactionMoveEnvelope } : {}),
 });
 
 export const createReviewedChatReply = async ({
@@ -426,8 +438,16 @@ export const createReviewedChatReply = async ({
       replyToMessageId: reply.execution.turnId,
       interactionMetadata: buildCommittedAssistantMove(reply),
       execution: reply.execution,
+      envelopeOrigin: reply.finalSource === "safety" ? null : "response_plan",
     });
-    const execution = markCommitted(reply.execution, assistantMessage.id);
+    if (reply.finalSource !== "safety" && !assistantMessage.interactionMoveEnvelope) {
+      throw new Error("Committed Assistant Message is missing its move envelope.");
+    }
+    const execution = markCommitted(
+      reply.execution,
+      assistantMessage.id,
+      assistantMessage.interactionMoveEnvelope ?? null
+    );
     if (reply.controlTrace) {
       const answeredObligations = reply.controlTrace.responsePlan.answerObligations.map((item) => item.id);
       reply.controlTrace.stateUpdate = {

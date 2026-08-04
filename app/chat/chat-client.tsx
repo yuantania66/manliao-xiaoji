@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { CalendarDays, Search } from "lucide-react";
 
+import type { CommittedAssistantMoveEnvelopeV1 } from "@/conversation-os";
 import { apiRequest, ClientApiError } from "@/lib/client-api";
 import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
 import {
@@ -21,6 +22,7 @@ type Message = {
   text: string;
   createdAt: string;
   promptVersion?: string | null;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1 | null;
   debugTrace?: AiDebugTrace;
 };
 
@@ -242,6 +244,7 @@ type ChatMessageResponse = {
   content: string;
   createdAt?: string;
   promptVersion?: string | null;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1 | null;
 };
 
 type ChatMessagesListResponse = {
@@ -426,6 +429,7 @@ const toMessages = (items: ChatMessageResponse[]): Message[] =>
       text: item.content,
       createdAt: item.createdAt ?? new Date().toISOString(),
       promptVersion: item.promptVersion,
+      interactionMoveEnvelope: item.interactionMoveEnvelope,
     }));
 
 const getChatCacheKey = () => {
@@ -523,6 +527,7 @@ const createGuestGreetingMessage = async ({
             role: message.role,
             content: message.text,
             promptVersion: message.promptVersion,
+            interactionMoveEnvelope: message.interactionMoveEnvelope,
           })),
           recentGreetings,
         },
@@ -536,6 +541,7 @@ const createGuestGreetingMessage = async ({
       text: data.assistantMessage.content,
       createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
       promptVersion: data.assistantMessage.promptVersion,
+      interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
     };
   } catch {
     return null;
@@ -1012,6 +1018,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
               content: message.text,
               promptVersion: message.promptVersion,
               createdAt: message.createdAt,
+              interactionMoveEnvelope: message.interactionMoveEnvelope,
             })),
           },
         });
@@ -1036,6 +1043,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           text: data.assistantMessage.content,
           createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
           promptVersion: data.assistantMessage.promptVersion,
+          interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
           debugTrace: data.debugTrace,
         });
       } catch (error) {
@@ -1100,6 +1108,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           text: "",
           createdAt: committedAssistantMessage.createdAt ?? new Date().toISOString(),
           promptVersion: committedAssistantMessage.promptVersion,
+          interactionMoveEnvelope: committedAssistantMessage.interactionMoveEnvelope,
           debugTrace: data.debugTrace,
         },
       ]);
@@ -1152,6 +1161,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
                 content: message.text,
                 promptVersion: message.promptVersion,
                 createdAt: message.createdAt,
+                interactionMoveEnvelope: message.interactionMoveEnvelope,
               })),
           },
         });
@@ -1170,6 +1180,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           text: "",
           createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
           promptVersion: data.assistantMessage.promptVersion,
+          interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
           debugTrace: data.debugTrace,
         };
         setMessages((current) => {
@@ -1208,6 +1219,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         text: "",
         createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
         promptVersion: data.assistantMessage.promptVersion,
+        interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
         debugTrace: data.debugTrace,
       };
       setMessages((current) => [...current, assistant]);

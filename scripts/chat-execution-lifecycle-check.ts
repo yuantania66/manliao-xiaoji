@@ -10,6 +10,7 @@ import {
 } from "@prisma/client";
 
 import type { ResponsePlan } from "../conversation-os/control";
+import { extractCommittedAssistantMoveEnvelope } from "../conversation-os";
 import { prisma } from "../lib/prisma";
 import {
   buildAttemptTransitions,
@@ -22,6 +23,7 @@ import {
   buildCommittedAssistantMove,
   commitValidatedAssistantMessage,
 } from "../services/ai/chatReplyService";
+import { ensureProactiveChatGreeting } from "../services/chat/proactiveGreetingService";
 import {
   CHAT_PROMPT_VERSION,
   sanitizeChatHistory,
@@ -425,6 +427,47 @@ assert(clientSource.includes("重新生成"));
 const fixtureUser = await prisma.user.create({ data: {} });
 try {
   const session = await prisma.chatSession.create({ data: { userId: fixtureUser.id } });
+  const proactiveSession = await prisma.chatSession.create({ data: { userId: fixtureUser.id } });
+  const previousProvider = process.env.AI_PROVIDER;
+  const previousQwenKey = process.env.QWEN_API_KEY;
+  const previousGreetingMode = process.env.PROACTIVE_GREETING_MODE;
+  process.env.AI_PROVIDER = "qwen";
+  process.env.QWEN_API_KEY = "synthetic-test-key";
+  process.env.PROACTIVE_GREETING_MODE = "deterministic";
+  let proactiveMessage: Awaited<ReturnType<typeof ensureProactiveChatGreeting>>;
+  try {
+    proactiveMessage = await ensureProactiveChatGreeting({
+      sessionId: proactiveSession.id,
+      userId: fixtureUser.id,
+      force: true,
+    });
+  } finally {
+    if (previousProvider === undefined) delete process.env.AI_PROVIDER;
+    else process.env.AI_PROVIDER = previousProvider;
+    if (previousQwenKey === undefined) delete process.env.QWEN_API_KEY;
+    else process.env.QWEN_API_KEY = previousQwenKey;
+    if (previousGreetingMode === undefined) delete process.env.PROACTIVE_GREETING_MODE;
+    else process.env.PROACTIVE_GREETING_MODE = previousGreetingMode;
+  }
+  assert(proactiveMessage);
+  const storedProactiveMessage = await prisma.chatMessage.findUniqueOrThrow({
+    where: { id: proactiveMessage.id },
+    select: { id: true, aiGeneration: { select: { executionTrace: true } } },
+  });
+  const proactiveEnvelope = extractCommittedAssistantMoveEnvelope(
+    storedProactiveMessage.aiGeneration?.executionTrace
+  );
+  assert(proactiveEnvelope);
+  assert.equal(proactiveEnvelope.assistantMoveId, storedProactiveMessage.id);
+  if (proactiveEnvelope.origin.kind !== "proactive_greeting") {
+    throw new Error("Expected a proactive greeting envelope.");
+  }
+  assert.equal(proactiveEnvelope.committedMove.sourceTurnId, null);
+  if (!proactiveEnvelope.handoff || proactiveEnvelope.handoff.edge !== "opens") {
+    throw new Error("Expected an opening handoff edge.");
+  }
+  assert.equal(proactiveEnvelope.handoff.edge, "opens");
+
   const userTurn = await prisma.chatMessage.create({
     data: {
       userId: fixtureUser.id,
@@ -434,8 +477,8 @@ try {
       status: MessageStatus.SAVED,
     },
   });
-  const storedGeneration = await prisma.aiGeneration.create({
-    data: {
+  const storedGenerations = await Promise.all([
+    prisma.aiGeneration.create({ data: {
       userId: fixtureUser.id,
       sessionId: session.id,
       sourceType: AiSourceType.CHAT,
@@ -445,8 +488,25 @@ try {
       inputText: userTurn.content,
       outputText: "one committed reply",
       status: AiGenerationStatus.GENERATED,
-    },
-  });
+      requestId: "concurrent-request-a",
+      turnId: userTurn.id,
+      attemptId: "concurrent-attempt-a",
+    } }),
+    prisma.aiGeneration.create({ data: {
+      userId: fixtureUser.id,
+      sessionId: session.id,
+      sourceType: AiSourceType.CHAT,
+      sourceId: userTurn.id,
+      model: "deterministic-test",
+      promptVersion: CHAT_PROMPT_VERSION,
+      inputText: userTurn.content,
+      outputText: "one committed reply",
+      status: AiGenerationStatus.GENERATED,
+      requestId: "concurrent-request-b",
+      turnId: userTurn.id,
+      attemptId: "concurrent-attempt-b",
+    } }),
+  ]);
   const metadata = {
     purpose: ["acknowledge_without_psychologizing"],
     claims: [],
@@ -463,20 +523,40 @@ try {
       sessionId: session.id,
       content: "one committed reply",
       status: MessageStatus.SAVED,
-      aiGenerationId: storedGeneration.id,
+      aiGenerationId: storedGenerations[0].id,
       replyToMessageId: userTurn.id,
       interactionMetadata: metadata,
-      execution: failedExecution,
+      execution: {
+        ...failedExecution,
+        requestId: "concurrent-request-a",
+        turnId: userTurn.id,
+        phase: "VALIDATED",
+        transitions: [
+          { phase: "PLANNED", reason: "deterministic check" },
+          { phase: "VALIDATED", reason: "deterministic check" },
+        ],
+        failure: undefined,
+      },
     }),
     commitValidatedAssistantMessage({
       userId: fixtureUser.id,
       sessionId: session.id,
       content: "one committed reply",
       status: MessageStatus.SAVED,
-      aiGenerationId: storedGeneration.id,
+      aiGenerationId: storedGenerations[1].id,
       replyToMessageId: userTurn.id,
       interactionMetadata: metadata,
-      execution: failedExecution,
+      execution: {
+        ...failedExecution,
+        requestId: "concurrent-request-b",
+        turnId: userTurn.id,
+        phase: "VALIDATED",
+        transitions: [
+          { phase: "PLANNED", reason: "deterministic check" },
+          { phase: "VALIDATED", reason: "deterministic check" },
+        ],
+        failure: undefined,
+      },
     }),
   ]);
   assert.equal(results[0].id, results[1].id);
@@ -489,6 +569,7 @@ try {
   const committed = await prisma.chatMessage.findUniqueOrThrow({
     where: { replyToMessageId: userTurn.id },
     select: {
+      aiGenerationId: true,
       interactionMetadata: true,
       aiGeneration: { select: { executionTrace: true } },
     },
@@ -501,6 +582,194 @@ try {
     (committed.aiGeneration?.executionTrace as { phase?: string } | null)?.phase,
     "COMMITTED"
   );
+  const committedEnvelope = extractCommittedAssistantMoveEnvelope(
+    committed.aiGeneration?.executionTrace
+  );
+  assert(committedEnvelope);
+  assert.equal(committedEnvelope.assistantMoveId, results[0].id);
+  assert.equal(committedEnvelope.origin.kind, "response_plan");
+  assert.equal(committedEnvelope.committedMove.sourceTurnId, userTurn.id);
+  assert.equal(committedEnvelope.handoff, null);
+  const generationTraces = await prisma.aiGeneration.findMany({
+    where: { id: { in: storedGenerations.map((item) => item.id) } },
+    select: { id: true, executionTrace: true },
+  });
+  const envelopedTraces = generationTraces.filter((item) =>
+    extractCommittedAssistantMoveEnvelope(item.executionTrace)
+  );
+  assert.equal(envelopedTraces.length, 1);
+  assert.equal(envelopedTraces[0].id, committed.aiGenerationId);
+
+  const rejectedCommitTurn = await prisma.chatMessage.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: session.id,
+      role: MessageRole.USER,
+      content: "reject commit boundary fixture",
+      status: MessageStatus.SAVED,
+    },
+  });
+  const rejectedCommitGeneration = await prisma.aiGeneration.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: session.id,
+      sourceType: AiSourceType.CHAT,
+      sourceId: rejectedCommitTurn.id,
+      model: "deterministic-test",
+      promptVersion: CHAT_PROMPT_VERSION,
+      inputText: rejectedCommitTurn.content,
+      outputText: "must not commit",
+      status: AiGenerationStatus.FAILED,
+      executionTrace: {
+        ...failedExecution,
+        turnId: rejectedCommitTurn.id,
+      } as unknown as Prisma.InputJsonValue,
+    },
+  });
+  await assert.rejects(
+    commitValidatedAssistantMessage({
+      userId: fixtureUser.id,
+      sessionId: session.id,
+      content: "must not commit",
+      status: MessageStatus.SAVED,
+      aiGenerationId: rejectedCommitGeneration.id,
+      replyToMessageId: rejectedCommitTurn.id,
+      interactionMetadata: {
+        ...metadata,
+        sourceTurnId: rejectedCommitTurn.id,
+      },
+      execution: {
+        ...failedExecution,
+        turnId: rejectedCommitTurn.id,
+      },
+    }),
+    /validated execution/
+  );
+  assert.equal(
+    await prisma.chatMessage.count({
+      where: { replyToMessageId: rejectedCommitTurn.id, role: MessageRole.ASSISTANT },
+    }),
+    0
+  );
+  const rejectedTrace = await prisma.aiGeneration.findUniqueOrThrow({
+    where: { id: rejectedCommitGeneration.id },
+    select: { executionTrace: true },
+  });
+  assert.equal(extractCommittedAssistantMoveEnvelope(rejectedTrace.executionTrace), null);
+
+  const rolledBackTurn = await prisma.chatMessage.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: session.id,
+      role: MessageRole.USER,
+      content: "atomic rollback fixture",
+      status: MessageStatus.SAVED,
+    },
+  });
+  const rolledBackGeneration = await prisma.aiGeneration.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: session.id,
+      sourceType: AiSourceType.CHAT,
+      sourceId: rolledBackTurn.id,
+      model: "deterministic-test",
+      promptVersion: CHAT_PROMPT_VERSION,
+      inputText: rolledBackTurn.content,
+      outputText: "must roll back",
+      status: AiGenerationStatus.GENERATED,
+    },
+  });
+  await assert.rejects(
+    commitValidatedAssistantMessage({
+      userId: fixtureUser.id,
+      sessionId: session.id,
+      content: "must roll back",
+      status: MessageStatus.SAVED,
+      aiGenerationId: rolledBackGeneration.id,
+      replyToMessageId: rolledBackTurn.id,
+      interactionMetadata: {
+        ...metadata,
+        sourceTurnId: "mismatched-source-turn",
+      },
+      execution: {
+        ...failedExecution,
+        requestId: "rollback-request",
+        turnId: rolledBackTurn.id,
+        phase: "VALIDATED",
+        transitions: [
+          { phase: "PLANNED", reason: "atomic rollback fixture" },
+          { phase: "VALIDATED", reason: "atomic rollback fixture" },
+        ],
+        failure: undefined,
+      },
+    }),
+    /Invalid committed Assistant move envelope/
+  );
+  assert.equal(
+    await prisma.chatMessage.count({
+      where: { replyToMessageId: rolledBackTurn.id, role: MessageRole.ASSISTANT },
+    }),
+    0
+  );
+  const rolledBackTrace = await prisma.aiGeneration.findUniqueOrThrow({
+    where: { id: rolledBackGeneration.id },
+    select: { executionTrace: true },
+  });
+  assert.equal(extractCommittedAssistantMoveEnvelope(rolledBackTrace.executionTrace), null);
+
+  const safetyTurn = await prisma.chatMessage.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: session.id,
+      role: MessageRole.USER,
+      content: "safety foundation boundary fixture",
+      status: MessageStatus.SAVED,
+    },
+  });
+  const safetyGeneration = await prisma.aiGeneration.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: session.id,
+      sourceType: AiSourceType.CHAT,
+      sourceId: safetyTurn.id,
+      model: "deterministic-test",
+      promptVersion: CHAT_PROMPT_VERSION,
+      inputText: safetyTurn.content,
+      outputText: "safety response",
+      status: AiGenerationStatus.GENERATED,
+    },
+  });
+  const safetyMessage = await commitValidatedAssistantMessage({
+    userId: fixtureUser.id,
+    sessionId: session.id,
+    content: "safety response",
+    status: MessageStatus.SAVED,
+    aiGenerationId: safetyGeneration.id,
+    replyToMessageId: safetyTurn.id,
+    interactionMetadata: { ...metadata, sourceTurnId: safetyTurn.id },
+    execution: {
+      ...failedExecution,
+      requestId: "safety-request",
+      turnId: safetyTurn.id,
+      phase: "VALIDATED",
+      transitions: [
+        { phase: "PLANNED", reason: "safety foundation fixture" },
+        { phase: "VALIDATED", reason: "safety foundation fixture" },
+      ],
+      failure: undefined,
+    },
+    envelopeOrigin: null,
+  });
+  assert.equal(safetyMessage.interactionMoveEnvelope, null);
+  const safetyTrace = await prisma.aiGeneration.findUniqueOrThrow({
+    where: { id: safetyGeneration.id },
+    select: { executionTrace: true },
+  });
+  assert.equal(
+    (safetyTrace.executionTrace as { phase?: string } | null)?.phase,
+    "COMMITTED"
+  );
+  assert.equal(extractCommittedAssistantMoveEnvelope(safetyTrace.executionTrace), null);
 
   const failedTurn = await prisma.chatMessage.create({
     data: {
@@ -511,7 +780,7 @@ try {
       status: MessageStatus.SAVED,
     },
   });
-  await prisma.aiGeneration.create({
+  const failedGeneration = await prisma.aiGeneration.create({
     data: {
       userId: fixtureUser.id,
       sessionId: session.id,
@@ -536,6 +805,10 @@ try {
       where: { replyToMessageId: failedTurn.id, role: MessageRole.ASSISTANT },
     }),
     0
+  );
+  assert.equal(
+    extractCommittedAssistantMoveEnvelope(failedGeneration.executionTrace),
+    null
   );
 } finally {
   await prisma.user.delete({ where: { id: fixtureUser.id } });

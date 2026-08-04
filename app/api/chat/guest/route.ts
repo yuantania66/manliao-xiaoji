@@ -3,6 +3,11 @@ import { NextRequest } from "next/server";
 import { failFromError, ok } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { requireNonEmptyString } from "@/lib/validation";
+import {
+  buildCommittedResponseMove,
+  buildResponsePlanAssistantMoveEnvelope,
+  parseCommittedAssistantMoveEnvelope,
+} from "@/conversation-os";
 import { createChatReply } from "@/services/ai/chatOrchestrationService";
 import { AiConversationMessage, AiJudgeResult } from "@/services/ai/types";
 
@@ -101,6 +106,9 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
       const aiGenerationId = record.aiGenerationId;
       const createdAt = record.createdAt;
       const status = record.status;
+      const parsedEnvelope = parseCommittedAssistantMoveEnvelope(
+        record.interactionMoveEnvelope
+      );
       if (role !== "user" && role !== "assistant" && role !== "system") return [];
       if (typeof content !== "string" || !content.trim()) return [];
       if (role === "system" || status === "blocked") return [];
@@ -114,6 +122,8 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
           status: status === "saved" || status === "rewritten" || status === "fallback"
             ? status
             : undefined,
+          interactionMoveEnvelope:
+            parsedEnvelope.status === "valid" ? parsedEnvelope.envelope : undefined,
         },
       ];
     });
@@ -179,6 +189,21 @@ export async function POST(request: NextRequest) {
           debugTrace: reply.debugTrace,
         };
       }
+      const assistantMoveId = `guest-ai-${turnId}`;
+      const interactionMoveEnvelope = reply.finalSource === "safety"
+        ? null
+        : buildResponsePlanAssistantMoveEnvelope({
+            assistantMoveId,
+            planId: reply.execution.planId,
+            sourceUserTurnId: turnId,
+            committedMove: buildCommittedResponseMove({
+              plan: reply.controlTrace?.responsePlan,
+              replyText: reply.generation.text,
+              sourceUserTurnId: turnId,
+              planId: reply.execution.planId,
+              requestId: reply.execution.requestId,
+            }),
+          });
       const committedExecution = {
         ...reply.execution,
         phase: "COMMITTED" as const,
@@ -189,17 +214,19 @@ export async function POST(request: NextRequest) {
             reason: "Validated guest reply committed to the client-scoped conversation event stream.",
           },
         ],
-        committedMessageId: `guest-ai-${turnId}`,
+        committedMessageId: assistantMoveId,
+        ...(interactionMoveEnvelope ? { interactionMoveEnvelope } : {}),
       };
       if (reply.debugTrace) reply.debugTrace.execution = committedExecution;
       return {
         status: "committed",
         assistantMessage: {
-          id: `guest-ai-${turnId}`,
+          id: assistantMoveId,
           role: "assistant",
           content: reply.generation.text,
           createdAt,
           promptVersion: reply.generation.promptVersion,
+          interactionMoveEnvelope,
         },
         judge: serializeJudge(reply.judge),
         fallbackUsed: reply.fallbackUsed,

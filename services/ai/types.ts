@@ -1,5 +1,8 @@
 import type { ConversationContext, Orientation, UpdateResult } from "@/conversation-os";
-import type { CommittedAssistantMove } from "@/conversation-os";
+import type {
+  CommittedAssistantMove,
+  CommittedAssistantMoveEnvelopeV1,
+} from "@/conversation-os";
 import type { ClinicalTrace } from "@/services/clinical/clinicalTypes";
 import type { HillHelpingShadowTrace } from "@/services/helping/hillHelpingTypes";
 import type {
@@ -20,6 +23,7 @@ export type AiConversationMessage = {
   status?: "saved" | "rewritten" | "fallback" | "blocked";
   replyToMessageId?: string | null;
   committedAssistantMove?: CommittedAssistantMove | null;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1 | null;
 };
 
 export type AiMemoryContext = {

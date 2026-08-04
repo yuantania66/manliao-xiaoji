@@ -41,6 +41,23 @@ Clinical Logic can consume Conversation State when selecting:
 
 Clinical Logic must not update Conversation State.
 
+### 2.1 Interaction move handoff boundary
+
+Conversation State and proactive greeting handoff describe different things.
+The five-state vocabulary is a coarse conversation-arc projection; it is not an
+interaction-move lifecycle and cannot determine whether a proactive greeting is
+pending or complete.
+
+Interaction Move Handoff Contract v1 defines greeting completion through
+immutable relations between committed Assistant events, a target-bound current
+User relation, one Planner-selected required function and a validated committed
+Assistant response. That projection is reconstructed for the current turn and
+is not stored in Conversation State or Memory.
+
+No `greeting_pending`, `handoff_active`, `handoff_completed` or equivalent state
+is added to this state machine. See
+`docs/CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md`.
+
 ## 3. Minimal State Machine
 
 Conversation State v1 has five states:
@@ -94,7 +111,8 @@ The system should help the user enter the conversation with low pressure.
 
 - First user message in a session.
 - User returns after a long gap and no active topic is clear.
-- Proactive greeting has just happened.
+- Proactive greeting has just happened, as evidence that the coarse conversation
+  arc may still be opening; this does not represent handoff lifecycle status.
 - User gives low-information input before any shared topic exists.
 - Previous conversation ended or was cleared.
 
@@ -418,6 +436,12 @@ The historical phased plan below was superseded for one bounded product repair. 
 - explicit or reliable contextual stop evidence.
 
 Clinical Logic consumes that evidence to select an existing ResponseGoal. It does not create or update it. The bounded ClinicalPlan rendering supplies the same structured evidence to the model for `no_topic` and low-interaction paths; it does not alter legacy Conversation OS strategy fields or create a reply template. See `docs/CONVERSATION_INTERACTION_DECISION.md` for the full contract and regressions.
+
+The 2026-08-04 Interaction Move Handoff Contract freeze does not promote greeting
+lifecycle into the five-state vocabulary. A proactive greeting may coincide with
+the coarse `opening` arc, but `opening` neither opens nor completes a handoff.
+Only the committed-event relation defined by the handoff contract can establish
+completion; this remains outside Memory, Batch 2 and User Model ownership.
 
 ## 11. Historical Migration Plan
 
