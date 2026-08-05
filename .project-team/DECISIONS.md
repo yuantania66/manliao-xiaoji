@@ -15,3 +15,5 @@
 | 2026-08-05 | PHM-C 修复轮 1 同时冻结 execution plan | 独立只读反例在 Surface 读取后原地修改 plan，Validator 按新 tuple 接受并误报 `planChanged=false` | `enforceResponsePlan` 在首次生成前 deep-clone + recursive-freeze，一份 snapshot 同时供 Surface、两次候选和 semantic Validator；不新增 lifecycle state |
 | 2026-08-05 | 冻结并执行 PHM-D ordinary committed completion | 用户明确授权只实现验证成功后的 committed completion edges 与查询，不新增持久 lifecycle state | 只实现 target-bound `fulfills` 与纯 `handoffCompleted`；Safety `supersedes`、resolved/active lookup 后置 |
 | 2026-08-05 | PHM-D 修复轮 1 绑定 PHM-C frozen execution plan | 独立验收复现 outer plan 同 planId 篡改 target/function 与 REJECTED final attempt 可越过首版证据门 | 原样传递既有 frozen snapshot，并强制最终 attempt phase 为 VALIDATED；不改变 Planner/Surface/Validator 决策语义 |
+| 2026-08-05 | 冻结并执行 PHM-E Safety supersession 与纯查询 | 用户明确授权单独实现 Safety supersedes 和 resolved/active 纯查询，并继续禁止持久 lifecycle state | 只从严格有效、相邻 committed events 投影 winner-only `supersedes`；无 active target 保持 null envelope |
+| 2026-08-05 | 封存 PHM-E，待 Git seal | repair pass 1 关闭 execution-turn 错绑与 duplicate-source ambiguity；独立 Reviewer 最终 `PASS`，最终 `npm run check:launch` exit 0 | 当前切片验收关闭；不新增产品决策，不授权持久 lifecycle state 或 Batch 2 实现 |

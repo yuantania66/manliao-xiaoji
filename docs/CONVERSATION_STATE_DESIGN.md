@@ -451,8 +451,8 @@ completion; this remains outside Memory, Batch 2 and User Model ownership. PHM-A
 now reconstructs the active adjacent target and current-turn relation in
 Conversation OS Context without adding lifecycle state. PHM-B Planner, PHM-C
 same-plan validation and PHM-D committed `fulfills` plus pure completion lookup
-are implemented without adding lifecycle state; Safety supersession and
-resolved/active lookup remain separate pending work.
+and PHM-E Safety supersession plus pure resolved/active lookup are implemented
+without adding lifecycle state.
 
 ## 11. Historical Migration Plan
 

@@ -439,8 +439,8 @@ current-turn User relation candidates with exact source spans, preserving
 ambiguity without selecting a reply function. These slices add no persistent
 lifecycle state, schema migration, Memory or User Model input. Planner handoff,
 its detached exact-preflight authority, PHM-C same-plan semantic validation and
-PHM-D ordinary committed `fulfills` plus pure completion lookup are implemented;
-Safety `supersedes` and resolved/active lookup remain pending.
+PHM-D ordinary committed `fulfills` plus pure completion lookup and PHM-E Safety
+`supersedes` plus pure resolved/active lookup are implemented.
 
 PHM-B implements the Planner transition from that projection. The total mapping
 includes direct-obligation and boundary priority,
@@ -613,8 +613,8 @@ npm run check:architecture-v1
   projection and detached exact-preflight authority. A separately marked
   no-envelope legacy `promptVersion` compatibility path remains. PHM-C Surface
   projection and same-plan semantic validation plus PHM-D exact frozen-plan
-  committed `fulfills` and `handoffCompleted` lookup are implemented. Safety
-  `supersedes` and resolved/active lookup are absent, so the runtime does not yet
+  committed `fulfills` and `handoffCompleted` lookup plus PHM-E Safety
+  `supersedes` and resolved/active lookup are implemented, so the runtime now
   claim full v1 conformance.
 - Real-model post-migration A/B output comparison requires a separately scoped
   external-prompt authorization; local architecture and regression tests do not

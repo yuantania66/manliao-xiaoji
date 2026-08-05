@@ -10,8 +10,10 @@ import {
 import { prisma } from "@/lib/prisma";
 import {
   attachCommittedAssistantMoveEnvelope,
+  activeHandoff,
   buildCommittedResponseMove,
   buildResponsePlanAssistantMoveEnvelope,
+  buildSafetyAssistantMoveEnvelope,
   extractCommittedAssistantMoveEnvelope,
   type CommittedAssistantMoveEnvelopeV1,
 } from "@/conversation-os";
@@ -204,10 +206,13 @@ export const commitValidatedAssistantMessage = async ({
   interactionMetadata: NonNullable<InteractionState["lastCommittedAssistantMove"]>;
   execution: ChatExecutionTrace;
   responsePlan?: ResponsePlan | null;
-  envelopeOrigin?: "response_plan" | null;
+  envelopeOrigin?: "response_plan" | "safety_override" | null;
 }) => {
   if (execution.phase !== "VALIDATED") {
     throw new Error("Only a validated execution may enter the Assistant commit boundary.");
+  }
+  if (execution.turnId !== replyToMessageId) {
+    throw new Error("Validated execution turn does not match the Assistant reply target.");
   }
   const select = {
     id: true,
@@ -273,6 +278,41 @@ export const commitValidatedAssistantMessage = async ({
               }
             : null,
         });
+      } else if (envelopeOrigin === "safety_override") {
+        const history = await tx.chatMessage.findMany({
+          where: { sessionId },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: {
+            id: true,
+            role: true,
+            status: true,
+            aiGeneration: { select: { executionTrace: true } },
+          },
+        });
+        const committedEvents = history.map((event) => ({
+          id: event.id,
+          role: event.role.toLowerCase(),
+          status: event.status.toLowerCase(),
+          interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+            event.aiGeneration?.executionTrace
+          ),
+        }));
+        const currentIndex = committedEvents.findIndex((event) => event.id === replyToMessageId);
+        const sourceAssistantMoveId = currentIndex > 0
+          ? committedEvents[currentIndex - 1]?.id
+          : null;
+        if (
+          sourceAssistantMoveId &&
+          activeHandoff(sourceAssistantMoveId, replyToMessageId, committedEvents)
+        ) {
+          interactionMoveEnvelope = buildSafetyAssistantMoveEnvelope({
+            assistantMoveId: message.id,
+            safetyTraceId: execution.requestId,
+            sourceUserTurnId: replyToMessageId,
+            committedMove: interactionMetadata,
+            sourceAssistantMoveId,
+          });
+        }
       }
       const committedExecution = {
         ...execution,
@@ -451,7 +491,7 @@ export const createReviewedChatReply = async ({
       interactionMetadata: buildCommittedAssistantMove(reply),
       execution: reply.execution,
       responsePlan: reply.controlTrace?.responsePlan ?? null,
-      envelopeOrigin: reply.finalSource === "safety" ? null : "response_plan",
+      envelopeOrigin: reply.finalSource === "safety" ? "safety_override" : "response_plan",
     });
     if (reply.finalSource !== "safety" && !assistantMessage.interactionMoveEnvelope) {
       throw new Error("Committed Assistant Message is missing its move envelope.");

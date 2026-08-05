@@ -446,6 +446,35 @@ export const buildResponsePlanAssistantMoveEnvelope = ({
   }),
 }) as ResponsePlanAssistantMoveEnvelopeV1;
 
+export const buildSafetyAssistantMoveEnvelope = ({
+  assistantMoveId,
+  safetyTraceId,
+  sourceUserTurnId,
+  committedMove,
+  sourceAssistantMoveId,
+}: {
+  assistantMoveId: string;
+  safetyTraceId: string;
+  sourceUserTurnId: string;
+  committedMove: CommittedAssistantMove;
+  sourceAssistantMoveId: string;
+}): SafetyAssistantMoveEnvelopeV1 => requireValidEnvelope({
+  schemaVersion: INTERACTION_MOVE_ENVELOPE_SCHEMA_VERSION,
+  assistantMoveId,
+  origin: {
+    kind: "safety_override",
+    safetyTraceId,
+    sourceUserTurnId,
+  },
+  committedMove,
+  handoff: {
+    kind: "proactive_greeting",
+    edge: "supersedes",
+    sourceAssistantMoveId,
+    reason: "safety_override",
+  },
+}) as SafetyAssistantMoveEnvelopeV1;
+
 const buildValidatedHandoffFulfillment = ({
   planId,
   sourceUserTurnId,
@@ -502,6 +531,75 @@ export const handoffCompleted = (
       parsed.envelope.handoff?.edge === "fulfills" &&
       parsed.envelope.handoff.sourceAssistantMoveId === sourceAssistantMoveId;
   });
+};
+
+export const handoffSuperseded = (
+  sourceAssistantMoveId: string,
+  committedEvents: readonly unknown[]
+): boolean => {
+  if (!isNonEmptyString(sourceAssistantMoveId)) return false;
+  return committedEvents.some((event) => {
+    const parsed = parseCommittedAssistantMoveEnvelope(event);
+    return parsed.status === "valid" &&
+      parsed.envelope.handoff?.edge === "supersedes" &&
+      parsed.envelope.handoff.sourceAssistantMoveId === sourceAssistantMoveId;
+  });
+};
+
+export const handoffResolved = (
+  sourceAssistantMoveId: string,
+  committedEvents: readonly unknown[]
+): boolean => handoffCompleted(sourceAssistantMoveId, committedEvents) ||
+  handoffSuperseded(sourceAssistantMoveId, committedEvents);
+
+type CommittedHandoffEvent = {
+  id?: unknown;
+  role?: unknown;
+  status?: unknown;
+  interactionMoveEnvelope?: unknown;
+};
+
+export const activeHandoff = (
+  sourceAssistantMoveId: string,
+  currentUserTurnId: string,
+  committedEvents: readonly unknown[]
+): boolean => {
+  if (!isNonEmptyString(sourceAssistantMoveId) || !isNonEmptyString(currentUserTurnId)) {
+    return false;
+  }
+  const events = committedEvents.filter((event): event is CommittedHandoffEvent =>
+    isRecord(event) && event.status !== "blocked"
+  );
+  const currentIndex = events.findIndex((event) =>
+    event.role === "user" && event.id === currentUserTurnId
+  );
+  if (currentIndex <= 0 || events.some((event, index) =>
+    index !== currentIndex && event.id === currentUserTurnId
+  ) || events.filter((event) => event.id === sourceAssistantMoveId).length !== 1) {
+    return false;
+  }
+  const sourceEvent = events[currentIndex - 1];
+  if (
+    sourceEvent.role !== "assistant" ||
+    sourceEvent.id !== sourceAssistantMoveId
+  ) return false;
+  const parsedSource = parseCommittedAssistantMoveEnvelope(
+    sourceEvent.interactionMoveEnvelope
+  );
+  if (
+    parsedSource.status !== "valid" ||
+    parsedSource.envelope.assistantMoveId !== sourceAssistantMoveId ||
+    parsedSource.envelope.origin.kind !== "proactive_greeting" ||
+    parsedSource.envelope.handoff?.edge !== "opens"
+  ) return false;
+  const envelopes = events.flatMap((event) => {
+    if (event.role !== "assistant" || !isNonEmptyString(event.id)) return [];
+    const parsed = parseCommittedAssistantMoveEnvelope(event.interactionMoveEnvelope);
+    return parsed.status === "valid" && parsed.envelope.assistantMoveId === event.id
+      ? [parsed.envelope]
+      : [];
+  });
+  return !handoffResolved(sourceAssistantMoveId, envelopes);
 };
 
 export const attachCommittedAssistantMoveEnvelope = (

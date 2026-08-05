@@ -10,7 +10,15 @@ import {
 } from "@prisma/client";
 
 import type { ResponsePlan } from "../conversation-os/control";
-import { extractCommittedAssistantMoveEnvelope, handoffCompleted } from "../conversation-os";
+import {
+  activeHandoff,
+  attachCommittedAssistantMoveEnvelope,
+  buildProactiveGreetingAssistantMoveEnvelope,
+  extractCommittedAssistantMoveEnvelope,
+  handoffCompleted,
+  handoffResolved,
+  handoffSuperseded,
+} from "../conversation-os";
 import { prisma } from "../lib/prisma";
 import {
   buildAttemptTransitions,
@@ -901,6 +909,191 @@ try {
   });
   assert.equal(extractCommittedAssistantMoveEnvelope(rolledBackTrace.executionTrace), null);
 
+  const safetyHandoffSession = await prisma.chatSession.create({
+    data: { userId: fixtureUser.id },
+  });
+  const safetyGreetingGeneration = await prisma.aiGeneration.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: safetyHandoffSession.id,
+      sourceType: AiSourceType.CHAT,
+      sourceId: safetyHandoffSession.id,
+      model: "deterministic-test",
+      promptVersion: CHAT_PROMPT_VERSION,
+      inputText: "proactive greeting",
+      outputText: "你好。",
+      status: AiGenerationStatus.GENERATED,
+    },
+  });
+  const safetyGreetingMessage = await prisma.chatMessage.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: safetyHandoffSession.id,
+      role: MessageRole.ASSISTANT,
+      content: "你好。",
+      status: MessageStatus.SAVED,
+      aiGenerationId: safetyGreetingGeneration.id,
+    },
+  });
+  const safetyGreetingEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+    assistantMoveId: safetyGreetingMessage.id,
+    generationId: safetyGreetingGeneration.id,
+    greetingMove: "simple_greeting",
+  });
+  await prisma.aiGeneration.update({
+    where: { id: safetyGreetingGeneration.id },
+    data: {
+      executionTrace: attachCommittedAssistantMoveEnvelope(
+        { phase: "COMMITTED" },
+        safetyGreetingEnvelope
+      ) as unknown as Prisma.InputJsonValue,
+    },
+  });
+  const activeSafetyTurn = await prisma.chatMessage.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: safetyHandoffSession.id,
+      role: MessageRole.USER,
+      content: "active safety supersession fixture",
+      status: MessageStatus.SAVED,
+    },
+  });
+  assert.equal(activeHandoff(safetyGreetingMessage.id, activeSafetyTurn.id, [
+    {
+      id: safetyGreetingMessage.id,
+      role: "assistant",
+      status: "saved",
+      interactionMoveEnvelope: safetyGreetingEnvelope,
+    },
+    { id: activeSafetyTurn.id, role: "user", status: "saved" },
+  ]), true);
+  const activeSafetyGeneration = await prisma.aiGeneration.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: safetyHandoffSession.id,
+      sourceType: AiSourceType.CHAT,
+      sourceId: activeSafetyTurn.id,
+      model: "deterministic-test",
+      promptVersion: CHAT_PROMPT_VERSION,
+      inputText: activeSafetyTurn.content,
+      outputText: "safety response",
+      status: AiGenerationStatus.GENERATED,
+    },
+  });
+  await assert.rejects(
+    commitValidatedAssistantMessage({
+      userId: fixtureUser.id,
+      sessionId: safetyHandoffSession.id,
+      content: "mismatched safety response",
+      status: MessageStatus.SAVED,
+      aiGenerationId: activeSafetyGeneration.id,
+      replyToMessageId: activeSafetyTurn.id,
+      interactionMetadata: { ...metadata, sourceTurnId: activeSafetyTurn.id },
+      execution: {
+        ...failedExecution,
+        requestId: "mismatched-active-safety-request",
+        turnId: "different-user-turn",
+        phase: "VALIDATED",
+        transitions: [{ phase: "VALIDATED", reason: "mismatched safety fixture" }],
+        failure: undefined,
+      },
+      envelopeOrigin: "safety_override",
+    }),
+    /execution turn does not match/
+  );
+  assert.equal(await prisma.chatMessage.count({
+    where: {
+      replyToMessageId: activeSafetyTurn.id,
+      role: MessageRole.ASSISTANT,
+    },
+  }), 0);
+  const mismatchedSafetyTrace = await prisma.aiGeneration.findUniqueOrThrow({
+    where: { id: activeSafetyGeneration.id },
+    select: { executionTrace: true },
+  });
+  assert.equal(extractCommittedAssistantMoveEnvelope(mismatchedSafetyTrace.executionTrace), null);
+  await assert.rejects(
+    commitValidatedAssistantMessage({
+      userId: fixtureUser.id,
+      sessionId: safetyHandoffSession.id,
+      content: "rolled back safety response",
+      status: MessageStatus.SAVED,
+      aiGenerationId: activeSafetyGeneration.id,
+      replyToMessageId: activeSafetyTurn.id,
+      interactionMetadata: { ...metadata, sourceTurnId: activeSafetyTurn.id },
+      execution: {
+        ...failedExecution,
+        requestId: " ",
+        turnId: activeSafetyTurn.id,
+        phase: "VALIDATED",
+        transitions: [{ phase: "VALIDATED", reason: "safety rollback fixture" }],
+        failure: undefined,
+      },
+      envelopeOrigin: "safety_override",
+    }),
+    /missing_safety_trace_id/
+  );
+  assert.equal(await prisma.chatMessage.count({
+    where: {
+      replyToMessageId: activeSafetyTurn.id,
+      role: MessageRole.ASSISTANT,
+    },
+  }), 0);
+  const rolledBackSafetyTrace = await prisma.aiGeneration.findUniqueOrThrow({
+    where: { id: activeSafetyGeneration.id },
+    select: { executionTrace: true },
+  });
+  assert.equal(extractCommittedAssistantMoveEnvelope(rolledBackSafetyTrace.executionTrace), null);
+  const activeSafetyMessage = await commitValidatedAssistantMessage({
+    userId: fixtureUser.id,
+    sessionId: safetyHandoffSession.id,
+    content: "safety response",
+    status: MessageStatus.SAVED,
+    aiGenerationId: activeSafetyGeneration.id,
+    replyToMessageId: activeSafetyTurn.id,
+    interactionMetadata: { ...metadata, sourceTurnId: activeSafetyTurn.id },
+    execution: {
+      ...failedExecution,
+      requestId: "active-safety-request",
+      turnId: activeSafetyTurn.id,
+      phase: "VALIDATED",
+      transitions: [
+        { phase: "GENERATED", attemptId: "safety-loser", reason: "retry loser fixture" },
+        { phase: "REJECTED", attemptId: "safety-loser", reason: "retry loser fixture" },
+        { phase: "RETRYING", reason: "retry winner fixture" },
+        { phase: "GENERATED", attemptId: "safety-winner", reason: "retry winner fixture" },
+        { phase: "VALIDATED", attemptId: "safety-winner", reason: "retry winner fixture" },
+      ],
+      attempts: [
+        {
+          attemptId: "safety-loser",
+          phase: "REJECTED",
+        },
+        {
+          attemptId: "safety-winner",
+          phase: "VALIDATED",
+        },
+      ],
+      failure: undefined,
+    },
+    envelopeOrigin: "safety_override",
+  });
+  assert(activeSafetyMessage.interactionMoveEnvelope);
+  assert.equal(handoffSuperseded(safetyGreetingMessage.id, [
+    activeSafetyMessage.interactionMoveEnvelope,
+  ]), true);
+  assert.equal(handoffResolved(safetyGreetingMessage.id, [
+    activeSafetyMessage.interactionMoveEnvelope,
+  ]), true);
+  const storedActiveSafetyTrace = await prisma.aiGeneration.findUniqueOrThrow({
+    where: { id: activeSafetyGeneration.id },
+    select: { executionTrace: true },
+  });
+  assert.deepEqual(
+    extractCommittedAssistantMoveEnvelope(storedActiveSafetyTrace.executionTrace),
+    activeSafetyMessage.interactionMoveEnvelope
+  );
+
   const safetyTurn = await prisma.chatMessage.create({
     data: {
       userId: fixtureUser.id,
@@ -942,7 +1135,7 @@ try {
       ],
       failure: undefined,
     },
-    envelopeOrigin: null,
+    envelopeOrigin: "safety_override",
   });
   assert.equal(safetyMessage.interactionMoveEnvelope, null);
   const safetyTrace = await prisma.aiGeneration.findUniqueOrThrow({

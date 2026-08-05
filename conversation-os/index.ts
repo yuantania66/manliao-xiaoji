@@ -4,11 +4,15 @@ export { orient } from "./orient";
 export { createEmptyUnderstandingState, runConversationPipeline } from "./pipeline";
 export {
   attachCommittedAssistantMoveEnvelope,
+  activeHandoff,
   buildCommittedResponseMove,
   buildProactiveGreetingAssistantMoveEnvelope,
   buildResponsePlanAssistantMoveEnvelope,
+  buildSafetyAssistantMoveEnvelope,
   extractCommittedAssistantMoveEnvelope,
   handoffCompleted,
+  handoffResolved,
+  handoffSuperseded,
   parseCommittedAssistantMoveEnvelope,
   proactiveGreetingRequiredFunctionFor,
   INTERACTION_MOVE_ENVELOPE_SCHEMA_VERSION,

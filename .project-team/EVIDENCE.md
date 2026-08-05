@@ -81,3 +81,13 @@ PHM-B-AUTH 是用户批准的新切片，不是 PHM-B 第三次修复。它关�
 | pure completion lookup | strict parser、exact source match；opens/null/wrong target/malformed 均为 false | 通过 |
 | 独立修复复验 | 首轮 P1/P2 均反转；无 P0-P3，结论 GO | 通过 |
 | 完整发布门 | `check:launch` exit 0；12 migrations、27 Miniapp JS、39-page production build | 通过 |
+
+## PHM-E Safety Supersession and Pure Queries
+
+- `check:interaction-move-envelope`：通过；覆盖 Safety 精确 shape、superseded/resolved/active 真值表、malformed、错绑、blocked、stale/non-adjacent 与 self-target fail-closed。
+- `check:chat-execution-lifecycle`：通过；覆盖 active target winner-only atomic supersession、无目标 Safety null envelope 与既有 rollback isolation。
+- `check:interaction-move-handoff`、`check:ai-orchestration`、TypeScript no-emit、六文件 focused ESLint：通过。
+- repair pass 1：关闭 execution-turn 错绑与 duplicate-source ambiguity，并补齐 Safety retry-loser 与 transaction rollback 专项反例；冻结门全部反转。
+- 独立 Reviewer 最终结论：`PASS`；原始问题已解决，无回归或不必要变更，PHM-E 可封存。
+- 最终 `npm run check:launch`：exit 0；12 migrations current、27 Miniapp JS files、39-page production build。既有 lint warning 1 条、prelaunch warning 2 条，均非 PHM-E 变更且门返回成功。
+- 变更未触及 schema、migration、Memory、User Model 或 Batch 2；查询结果不持久化。

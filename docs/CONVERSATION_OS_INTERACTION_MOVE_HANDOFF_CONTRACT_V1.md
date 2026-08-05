@@ -1,12 +1,14 @@
 # Conversation OS Interaction Move Handoff Contract v1
 
-Status: **frozen architecture contract; committed-envelope, PHM-A, PHM-B, PHM-C and PHM-D ordinary committed completion implemented; Safety supersession pending**
+Status: **frozen architecture contract; committed-envelope and PHM-A through PHM-E implemented**
 
 Freeze date: 2026-08-04
 
 PHM-B freeze date: 2026-08-05
 
 PHM-D implementation date: 2026-08-05
+
+PHM-E implementation date: 2026-08-05
 
 Authority: Conversation OS
 
@@ -545,17 +547,12 @@ PHM-A now additionally implements:
 - the same logical projection for equivalent Guest and authenticated inputs,
   without persistent lifecycle state, Memory, Batch 2 or User Model integration.
 
-The current runtime implements the PHM-B Planner transition, detached preflight
-authority, PHM-C Surface/same-plan semantic validation and PHM-D ordinary
-committed completion. PHM-D carries the exact frozen execution plan validated
-by PHM-C into the final Auth or Guest commit boundary, writes `fulfills` only
-for a positive `completionIntent=fulfill` winner, and exposes the pure
-`handoffCompleted` query over committed envelopes. Safety responses
-intentionally emit no handoff envelope because a valid `supersedes` edge
-requires the target selected by a later migration; they are not mislabeled as
-`response_plan`. A separately marked no-envelope legacy compatibility path
-remains temporarily active. Production behavior therefore does not yet claim
-full v1 resolved/active-handoff conformance.
+The current runtime implements PHM-B Planner authority, PHM-C Surface/same-plan
+semantic validation, PHM-D ordinary committed completion and PHM-E Safety
+supersession. A Safety winner writes `supersedes` only for the strict adjacent
+active committed `opens` target; Safety without such a target retains a null
+envelope. Completed, superseded, resolved and active answers are reconstructed
+by pure strict-envelope queries.
 
 ## 14. PHM-B Planner transition contract freeze
 
@@ -761,5 +758,19 @@ transactions create no completion edge.
 input precondition is the caller's committed-event projection; each candidate
 envelope is still passed through the strict v1 parser, and only an exact
 `fulfills` target match returns true. The query writes no lifecycle state or
-aggregate. PHM-D does not implement Safety `supersedes`, `handoffSuperseded`,
-`handoffResolved` or `activeHandoff`.
+aggregate. Safety supersession and the remaining pure queries are implemented
+separately by PHM-E.
+
+## 17. PHM-E Safety supersession and pure lifecycle queries
+
+At the authenticated transaction boundary and Guest client-scoped commit
+boundary, a validated Safety winner writes exactly one strict `supersedes` edge
+when the current User event immediately follows an unresolved committed
+proactive `opens` event. The edge binds the committed Assistant id, current User
+turn, validated request trace and exact source Assistant move. With no active
+target, Safety retains a null envelope.
+
+`handoffSuperseded`, `handoffResolved` and `activeHandoff` pass every envelope
+candidate through the strict v1 parser and fail closed for malformed, blocked,
+mismatched, stale, non-adjacent or mistargeted evidence. They write no lifecycle
+state or aggregate; schema, migrations, Memory and User Model remain unchanged.

@@ -8,13 +8,13 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 
 ## Active delivery slice
 
-- Outcome: Write a target-bound `fulfills` edge only when the PHM-C-validated final Assistant response actually commits, and expose a pure committed-envelope completion query.
-- Acceptance: Exact frozen target/function projection for `fulfill`; null/defer/reject/failure/retry-loser/Safety/rollback isolation; Guest/authenticated logical parity; strict query behavior; dedicated, adjacent, TypeScript, ESLint, independent and full launch gates pass.
-- Allowed scope: Conversation OS envelope/query and export, authenticated and Guest commit projections, PHM-D verification wiring, and directly related status documentation. Repair pass 1 may only return and carry PHM-C's existing frozen execution-plan snapshot through `responsePlanValidator.ts` and `chatOrchestrationService.ts`, without changing decision semantics.
-- Non-goals: Safety `supersedes` or resolved/active lookup; Planner, PHM-A/B/C semantic changes; Memory, User Model, Batch 2, schema/migration, deployment, persistent lifecycle state, aggregate or wording-rule expansion.
+- Outcome: Write a target-bound `supersedes` edge only when a validated Safety winner commits against the strict adjacent active proactive target, and expose pure superseded/resolved/active queries.
+- Acceptance: Exact execution-turn/source binding; no-target, mismatch, failure, retry-loser and rollback isolation; Guest/authenticated parity; malformed, mismatched, duplicate-id and non-adjacent query inputs fail closed; dedicated, adjacent, TypeScript, ESLint, independent and full launch gates pass.
+- Allowed scope: PHM-E strict Safety supersession projection, pure resolved/active queries, focused verification and direct status documentation.
+- Non-goals: Planner or PHM-A/B/C/D semantic changes; Memory, User Model, Batch 2, schema/migration, deployment, persistent lifecycle state, aggregate or wording-rule expansion.
 - Baseline: Branch `codex/planner-handoff-migration`, HEAD `ea20480`; the only pre-existing dirty path is the user's unrelated `AGENTS.md` change, which is preserved and excluded.
-- Round budget: one implementation pass and at most two evidence-driven repair passes for the same frozen PHM-D gate.
-- Status: Repair pass 1 closed both independent trust-boundary attacks; focused, adjacent, database, TypeScript, ESLint, independent and full `check:launch` gates pass with no P0-P3; ready to seal against `ea20480`.
+- Round budget: one implementation pass and at most two evidence-driven repair passes for the same frozen PHM-E gate.
+- Status: PHM-E repair pass 1 closed execution-turn binding and duplicate-source ambiguity and added Safety-specific rollback/retry evidence; independent Reviewer returned `PASS`, and focused, TypeScript, ESLint, diff and final `npm run check:launch` (exit 0) gates pass. PHM-E is sealed pending the main-thread Git seal.
 
 ## Team
 
@@ -87,6 +87,9 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 | Close PHM-D independent attacks | Outer same-plan-id target/function mutation and REJECTED-final-attempt attacks reversed; no P0-P3 | pass | Independent verifier |
 | Preserve PHM-D isolation | Pure `handoffCompleted`; no lifecycle persistence, schema, Memory, User Model, Batch 2 or Planner/Surface/Validator semantic change | pass | Delivery lead |
 | Pass PHM-D full engineering gate | `check:launch` exit 0; 12 migrations, 27 Miniapp JS files and 39-page production build pass | pass | Delivery lead |
+| Close PHM-E repair pass 1 | Execution-turn misbinding and duplicate-source ambiguity are fail closed; Safety retry-loser and transaction rollback evidence pass | pass | Builder / Independent verifier |
+| Pass PHM-E independent review | Final independent Reviewer verdict is `PASS`; original Safety supersession and pure-query acceptance is satisfied without unnecessary changes | pass | Independent verifier |
+| Pass PHM-E full engineering gate | Final `npm run check:launch` exits 0; 12 migrations, 27 Miniapp JS files and 39-page production build pass | pass | Delivery lead |
 
 ## Change inventory
 
@@ -202,6 +205,8 @@ Stable-baseline seal inventory (historical):
 | 2026-08-05 | Seal PHM-B runtime with independent PHM-B-AUTH | The user approved a separate authority slice after two PHM-B exact-preflight failures; detached recursive freeze, exact comparison, independent adversarial review and full launch gate now pass | Seal the runtime and trust-boundary changes as one checkpoint against `bb38951`; Surface, semantic Validator and committed edges remain separate |
 | 2026-08-05 | Seal PHM-C Surface and same-plan semantic validation | Full tuple projection, strict independent verdict, frozen execution plan, repair-pass adversarial verification and full launch gate pass | User-visible candidates can no longer pass through legacy presence-confirmation semantics; committed completion edges remain separate |
 | 2026-08-05 | Implement PHM-D ordinary committed completion | User authorized only validated committed completion edges and query; independent repair verifies exact frozen-plan and final-winner binding | Ordinary `fulfills` and pure `handoffCompleted` are implemented without lifecycle state; Safety supersession remains separate |
+| 2026-08-05 | Implement PHM-E Safety supersession and pure resolved/active queries | User authorized this as one isolated slice while continuing to prohibit persistent lifecycle state | Active adjacent Safety winners write immutable `supersedes`; no-target Safety remains envelope-free and all lifecycle answers are reconstructed |
+| 2026-08-05 | Seal PHM-E pending Git seal | Repair pass 1 closes the named adversarial gates; independent Reviewer returns `PASS`; final `npm run check:launch` exits 0 | PHM-E acceptance is closed without persistent lifecycle state; the main thread owns staging and commit |
 
 ## Remaining
 
@@ -210,7 +215,7 @@ Stable-baseline seal inventory (historical):
 - Batch 2A, Batch 2B association and Batch 2C-A fixture Reaction Assessment gates are complete. No production Reaction Assessment runtime exists.
 - Production/DB loading, Atomic Boundary proof and formal Helping writes remain unimplemented and have no current Batch 2C authorization.
 - Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path remains fixture-only until a separately approved Atomic Boundary gate.
-- Interaction Move Handoff Contract v1 envelope foundation, PHM-A relation, PHM-B Planner/AUTH, PHM-C Surface/same-plan semantic validation and PHM-D ordinary committed `fulfills`/`handoffCompleted` are implemented; Safety supersession and resolved/active lookup remain pending.
+- Interaction Move Handoff Contract v1 envelope foundation and PHM-A through PHM-E are implemented without persistent lifecycle state.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
 ## Closure status
@@ -221,7 +226,7 @@ Stable-baseline seal inventory (historical):
 - Batch 2A Contract Gate: complete; v1 formal metadata and formal/Shadow isolation are frozen.
 - Batch 2B Fixture Load and Association Gate: complete within fixture-only scope; no production consumer exists.
 - Batch 2C Reaction Assessment Contract Gate: frozen under `B2-Reaction-Shadow`; Batch 2C-A fixture-only evaluator and regressions pass, while runtime and downstream integration remain absent.
-- Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; envelope, PHM-A relation, PHM-B Planner/AUTH, PHM-C Surface/semantic validation and PHM-D ordinary committed completion are implemented without persistent lifecycle state or schema migration; Safety supersession remains pending.
+- Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; envelope and PHM-A through PHM-E are implemented without persistent lifecycle state or schema migration.
 - Atomic Boundary and later Batch 2 work do not inherit authorization for user-visible behavior, formal production writes or downstream integration.
 - Further expansion of the Batch 1.5 repair round: stopped.
 

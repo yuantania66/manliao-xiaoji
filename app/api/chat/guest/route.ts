@@ -4,8 +4,10 @@ import { failFromError, ok } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { requireNonEmptyString } from "@/lib/validation";
 import {
+  activeHandoff,
   buildCommittedResponseMove,
   buildResponsePlanAssistantMoveEnvelope,
+  buildSafetyAssistantMoveEnvelope,
   parseCommittedAssistantMoveEnvelope,
 } from "@/conversation-os";
 import { createChatReply } from "@/services/ai/chatOrchestrationService";
@@ -101,6 +103,7 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
       if (typeof item !== "object" || item === null) return [];
       const record = item as Record<string, unknown>;
       const role = record.role;
+      const id = record.id;
       const content = record.content;
       const promptVersion = record.promptVersion;
       const aiGenerationId = record.aiGenerationId;
@@ -114,6 +117,7 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
       if (role === "system" || status === "blocked") return [];
       return [
         {
+          id: typeof id === "string" ? id : undefined,
           role,
           content: content.trim().slice(0, 2000),
           promptVersion: typeof promptVersion === "string" ? promptVersion : null,
@@ -190,19 +194,33 @@ export async function POST(request: NextRequest) {
         };
       }
       const assistantMoveId = `guest-ai-${turnId}`;
+      const committedMove = buildCommittedResponseMove({
+        plan: reply.controlTrace?.responsePlan,
+        replyText: reply.generation.text,
+        sourceUserTurnId: turnId,
+        planId: reply.execution.planId,
+        requestId: reply.execution.requestId,
+      });
+      const adjacentAssistantId = recentMessages.at(-1)?.id;
       const interactionMoveEnvelope = reply.finalSource === "safety"
-        ? null
+        ? adjacentAssistantId && activeHandoff(
+            adjacentAssistantId,
+            turnId,
+            [...recentMessages, { id: turnId, role: "user", content }]
+          )
+          ? buildSafetyAssistantMoveEnvelope({
+              assistantMoveId,
+              safetyTraceId: reply.execution.requestId,
+              sourceUserTurnId: turnId,
+              committedMove,
+              sourceAssistantMoveId: adjacentAssistantId,
+            })
+          : null
         : buildResponsePlanAssistantMoveEnvelope({
             assistantMoveId,
             planId: reply.execution.planId,
             sourceUserTurnId: turnId,
-            committedMove: buildCommittedResponseMove({
-              plan: reply.controlTrace?.responsePlan,
-              replyText: reply.generation.text,
-              sourceUserTurnId: turnId,
-              planId: reply.execution.planId,
-              requestId: reply.execution.requestId,
-            }),
+            committedMove,
             handoffCommitEvidence: reply.controlTrace
               ? {
                   executionPhase: "VALIDATED",

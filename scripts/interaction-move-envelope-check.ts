@@ -3,11 +3,15 @@ import { readFile } from "node:fs/promises";
 
 import {
   attachCommittedAssistantMoveEnvelope,
+  activeHandoff,
   buildCommittedResponseMove,
   buildProactiveGreetingAssistantMoveEnvelope,
   buildResponsePlanAssistantMoveEnvelope,
+  buildSafetyAssistantMoveEnvelope,
   extractCommittedAssistantMoveEnvelope,
   handoffCompleted,
+  handoffResolved,
+  handoffSuperseded,
   parseCommittedAssistantMoveEnvelope,
   proactiveGreetingRequiredFunctionFor,
 } from "../conversation-os";
@@ -153,6 +157,97 @@ assert.equal(handoffCompleted("assistant-greeting-source", [{
   handoff: fulfillmentEnvelope.handoff,
 }]), false);
 
+const openEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+  assistantMoveId: "assistant-greeting-source",
+  generationId: "generation-active-source",
+  greetingMove: "simple_greeting",
+});
+const safetyMove = buildCommittedResponseMove({
+  plan: null,
+  replyText: "请先确保自己处在安全的地方。",
+  sourceUserTurnId: "user-turn-safety",
+  planId: "unused-safety-plan",
+  requestId: "safety-request-1",
+});
+const safetyEnvelope = buildSafetyAssistantMoveEnvelope({
+  assistantMoveId: "assistant-safety-1",
+  safetyTraceId: "safety-request-1",
+  sourceUserTurnId: "user-turn-safety",
+  committedMove: safetyMove,
+  sourceAssistantMoveId: openEnvelope.assistantMoveId,
+});
+assert.deepEqual(safetyEnvelope.origin, {
+  kind: "safety_override",
+  safetyTraceId: "safety-request-1",
+  sourceUserTurnId: "user-turn-safety",
+});
+assert.deepEqual(safetyEnvelope.handoff, {
+  kind: "proactive_greeting",
+  edge: "supersedes",
+  sourceAssistantMoveId: openEnvelope.assistantMoveId,
+  reason: "safety_override",
+});
+assert.equal(handoffSuperseded(openEnvelope.assistantMoveId, [safetyEnvelope]), true);
+assert.equal(handoffResolved(openEnvelope.assistantMoveId, [safetyEnvelope]), true);
+assert.equal(handoffResolved(openEnvelope.assistantMoveId, [fulfillmentEnvelope]), true);
+
+const adjacentEvents = [
+  {
+    id: openEnvelope.assistantMoveId,
+    role: "assistant",
+    status: "saved",
+    interactionMoveEnvelope: openEnvelope,
+  },
+  { id: "user-turn-safety", role: "user", status: "saved" },
+];
+assert.equal(activeHandoff(openEnvelope.assistantMoveId, "user-turn-safety", adjacentEvents), true);
+assert.equal(activeHandoff(openEnvelope.assistantMoveId, "user-turn-safety", [
+  adjacentEvents[0],
+  { id: "intervening-user", role: "user", status: "saved" },
+  adjacentEvents[1],
+]), false);
+assert.equal(activeHandoff(openEnvelope.assistantMoveId, "user-turn-safety", [
+  { ...adjacentEvents[0], id: "wrong-message-id" },
+  adjacentEvents[1],
+]), false);
+assert.equal(activeHandoff(openEnvelope.assistantMoveId, "user-turn-safety", [
+  { ...adjacentEvents[0], interactionMoveEnvelope: { ...openEnvelope, unexpected: true } },
+  adjacentEvents[1],
+]), false);
+assert.equal(activeHandoff(openEnvelope.assistantMoveId, "user-turn-safety", [
+  ...adjacentEvents,
+  {
+    id: safetyEnvelope.assistantMoveId,
+    role: "assistant",
+    status: "saved",
+    interactionMoveEnvelope: safetyEnvelope,
+  },
+]), false);
+assert.equal(activeHandoff(openEnvelope.assistantMoveId, "user-turn-safety", [
+  { ...adjacentEvents[0], status: "blocked" },
+  adjacentEvents[1],
+]), false);
+assert.equal(activeHandoff(openEnvelope.assistantMoveId, "user-turn-safety", [
+  { ...adjacentEvents[0] },
+  { ...adjacentEvents[0] },
+  adjacentEvents[1],
+]), false);
+assert.equal(handoffSuperseded(openEnvelope.assistantMoveId, [{
+  ...safetyEnvelope,
+  origin: { kind: "response_plan", planId: "plan-x", sourceUserTurnId: "user-turn-safety" },
+}]), false);
+assert.equal(handoffSuperseded(openEnvelope.assistantMoveId, [{
+  ...safetyEnvelope,
+  handoff: null,
+}]), false);
+assert.throws(() => buildSafetyAssistantMoveEnvelope({
+  assistantMoveId: openEnvelope.assistantMoveId,
+  safetyTraceId: "safety-request-1",
+  sourceUserTurnId: "user-turn-safety",
+  committedMove: safetyMove,
+  sourceAssistantMoveId: openEnvelope.assistantMoveId,
+}), /self_target_forbidden/);
+
 const deferredPlan: ResponsePlan = {
   ...handoffPlan,
   planId: "plan-deferred-1",
@@ -295,8 +390,10 @@ for (const source of [authReplySource, authGreetingSource, guestReplySource, gue
 assert(authReplySource.includes('execution.phase !== "VALIDATED"'));
 assert(guestReplySource.indexOf('reply.execution.phase !== "VALIDATED"') <
   guestReplySource.indexOf("const interactionMoveEnvelope = reply.finalSource"));
-assert(authReplySource.includes('reply.finalSource === "safety" ? null : "response_plan"'));
+assert(authReplySource.includes('reply.finalSource === "safety" ? "safety_override" : "response_plan"'));
+assert(authReplySource.includes("activeHandoff("));
 assert(guestReplySource.includes('reply.finalSource === "safety"'));
+assert(guestReplySource.includes("activeHandoff("));
 
 console.log("interaction move envelope checks passed");
 };

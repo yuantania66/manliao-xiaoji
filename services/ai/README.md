@@ -106,6 +106,9 @@ The production chat route is controlled by Conversation OS:
   carries PHM-C's exact frozen plan and may atomically add a target-bound
   `fulfills` edge; `handoffCompleted` remains a pure committed-envelope query,
   not persisted lifecycle state;
+- a validated Safety winner supersedes only the strict adjacent unresolved
+  proactive `opens` target; superseded/resolved/active checks remain pure
+  committed-event queries, and Safety without a target keeps a null envelope;
 - Output Validation may accept, reject, or request one regeneration against the
   exact same plan. Regeneration preserves the internal failure code but adds a
   human-readable correction instruction for the failed constraint; it cannot
