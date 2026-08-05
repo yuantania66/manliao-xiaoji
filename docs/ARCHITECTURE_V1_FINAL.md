@@ -60,9 +60,12 @@ Migration status after the Batch 1.5-E frozen gate closed on 2026-08-04:
   production integration; Batch 2C is now the authoritative Reaction Assessment
   Contract Gate under `B2-Reaction-Shadow`, frozen as reaction-only, Shadow-only
   and fixture-only with zero downstream integration. Batch 2C-A now implements
-  the isolated fixture evaluator and regression gate; production runtime,
-  formal reaction state, formal production writes, DB-backed loading and Atomic
-  Boundary remain unimplemented. User-visible Hill behavior remains reserved
+  the isolated fixture evaluator and regression gate. Batch 2D now freezes the
+  docs-only Atomic Boundary Contract v1 under `B2-Formal-Atomic-Commit`: future
+  formal writes require detached final validated authority, in-transaction real
+  Assistant id binding and winner-only atomic publication. The writer,
+  production runtime, formal reaction state, formal production writes and
+  DB-backed loading remain unimplemented and unauthorized. User-visible Hill behavior remains reserved
   for a separately accepted Batch 3;
 - Conversation OS Interaction Move Handoff Contract v1 is frozen as the target
   contract, and its committed-envelope foundation, PHM-A Context/relation
@@ -328,7 +331,14 @@ event may write a `fulfills` edge.
 State Update records fulfilled obligations and remaining open loops. Only a
 successfully sent `hill_helping` reply may atomically add its
 `CommittedHelpingMove`; Shadow, legacy, rejected, failed or unsent replies may
-not. State Update does not re-plan the current reply.
+not. Batch 2D freezes this future boundary as one authenticated winner-only
+transaction over the Assistant message, strict formal metadata, committed
+execution and session projection; the real Assistant id is bound inside that
+boundary. Guest requires logically isomorphic client-scoped publication but
+does not claim database or cross-process durability. Loader, association and
+Reaction Assessment are post-commit read-only consumers and remain separately
+unauthorized for production. This is a docs-only target contract, not an
+implemented writer. State Update does not re-plan the current reply.
 
 ## 3. Five-layer responsibilities
 
@@ -562,30 +572,36 @@ The target implementation must continuously verify:
 16. Batch 2C Reaction Assessment remains `mode=shadow`, `source=fixture` and has
     zero consumers in Planner, Prompt, Surface, Validator, Initiative, Memory,
     User Model or formal persistence.
-17. each v1 handoff target uses the stable id of a committed Assistant event;
+17. Batch 2D formal commit accepts only detached final validated authority,
+    binds the real Assistant id inside a winner-only atomic boundary and fails
+    closed on loser, identity, serialization or rollback failure; Guest parity
+    is client-scoped logical publication only.
+18. each v1 handoff target uses the stable id of a committed Assistant event;
     `sourceTurnId`, `planId` and `promptVersion` cannot substitute for it;
-18. a proactive greeting handoff is fulfilled only by a semantically validated
+19. a proactive greeting handoff is fulfilled only by a semantically validated
     final Assistant response whose immutable edge commits against the same
     source move;
-19. Turn Interpretation supplies target-bound relation evidence, Response
+20. Turn Interpretation supplies target-bound relation evidence, Response
     Planner alone selects the required function, and Validator cannot change
     either decision;
-20. Guest and authenticated chat must project the same logical committed
+21. Guest and authenticated chat must project the same logical committed
     envelope, User relation and completion result before v1 can claim runtime
     conformance;
-21. handoff completion creates no persistent lifecycle state and has zero
+22. handoff completion creates no persistent lifecycle state and has zero
     integration with Memory, Batch 2 or User Model.
 
 Batch 0 keeps the existing source assertions as a pre-Hill baseline. Items 3-4
 and 12-15 become executable gates in their assigned migration batches. Item 16
 is executable for the Batch 2C-A fixture evaluator, but does not claim a
 production Reaction Assessment runtime or authorize downstream integration.
-Item 17, the Turn Interpretation/relation portion of Item 19, and the
-envelope-and-relation portion of Item 20 now have executable coverage. Planner
+Item 17 is a docs-only target and does not claim an implemented writer. Item 18,
+the Turn Interpretation/relation portion of Item 20, and the
+envelope-and-relation portion of Item 21 now have executable coverage. Planner
 function selection, detached exact-preflight authority, Surface projection and
-same-plan semantic validation now have executable coverage. Item 18, completion
-parity in Item 20, and completion semantics in Item 21 remain target gates for
-later Planner Handoff Migration runtime slices.
+same-plan semantic validation now have executable coverage. Item 19, completion
+parity in Item 21, and completion semantics plus resolved/active lifecycle pure
+queries in Item 22 now have executable coverage and are sealed through PHM-D
+and PHM-E without persistent lifecycle state.
 
 The primary structural checks are:
 

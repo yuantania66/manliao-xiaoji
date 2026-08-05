@@ -8,13 +8,22 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 
 ## Active delivery slice
 
-- Outcome: Write a target-bound `supersedes` edge only when a validated Safety winner commits against the strict adjacent active proactive target, and expose pure superseded/resolved/active queries.
-- Acceptance: Exact execution-turn/source binding; no-target, mismatch, failure, retry-loser and rollback isolation; Guest/authenticated parity; malformed, mismatched, duplicate-id and non-adjacent query inputs fail closed; dedicated, adjacent, TypeScript, ESLint, independent and full launch gates pass.
-- Allowed scope: PHM-E strict Safety supersession projection, pure resolved/active queries, focused verification and direct status documentation.
-- Non-goals: Planner or PHM-A/B/C/D semantic changes; Memory, User Model, Batch 2, schema/migration, deployment, persistent lifecycle state, aggregate or wording-rule expansion.
-- Baseline: Branch `codex/planner-handoff-migration`, HEAD `ea20480`; the only pre-existing dirty path is the user's unrelated `AGENTS.md` change, which is preserved and excluded.
-- Round budget: one implementation pass and at most two evidence-driven repair passes for the same frozen PHM-E gate.
-- Status: PHM-E repair pass 1 closed execution-turn binding and duplicate-source ambiguity and added Safety-specific rollback/retry evidence; independent Reviewer returned `PASS`, and focused, TypeScript, ESLint, diff and final `npm run check:launch` (exit 0) gates pass. PHM-E is sealed pending the main-thread Git seal.
+- Outcome: Freeze the docs-only **Batch 2D — Atomic Boundary Contract v1** under gate
+  `B2-Formal-Atomic-Commit`.
+- Acceptance: Detached final validated authority; commit-boundary real Assistant id binding;
+  Auth winner-only transaction, exact replay/loser isolation and rollback; Guest client-scoped
+  logical parity; post-commit read-only association/reaction; fail-closed matrix; static contract
+  consistency and `git diff --check` pass.
+- Allowed scope: One authoritative Batch 2D contract and minimal Project Team, Architecture v1 and
+  Hill migration-plan status synchronization.
+- Non-goals: Runtime, tests, schema/migration, eval artifacts, production writer/loader/reaction,
+  downstream consumers, user-visible Hill behavior, Batch 3, deployment or persistent lifecycle state.
+- Baseline: Branch `codex/planner-handoff-migration`, HEAD `9be7d46`; the user's unrelated
+  `AGENTS.md` change is preserved and excluded, and the architecture analysis is the read-only input.
+- Round budget: one docs-only implementation pass and at most two evidence-driven repair passes for
+  the same frozen contract gate.
+- Status: Contract and three direct ledgers are drafted; writer and all production integrations remain
+  explicitly unimplemented and unauthorized pending independent static review.
 
 ## Team
 
@@ -125,6 +134,14 @@ Batch 2C-A fixture implementation slice:
 | Verification wiring | 3 | semantic fixtures, Batch 2C-A check and package gate | Executable fixture evidence only; no generated model output or runtime entry point |
 | Status documentation | 4 | implementation report, architecture, migration plan and project ledger | Record fixture gate completion without claiming runtime/formal state or downstream integration |
 
+Batch 2D Atomic Boundary Contract v1 freeze slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Authoritative contract | 1 | `docs/HILL_HELPING_BATCH2D_ATOMIC_BOUNDARY_CONTRACT_V1.md` | Verify detached final authority, winner-only atomicity, exact idempotency, Guest logical parity and fail-closed matrix |
+| Authority/status documentation | 3 | Project ledger, Architecture v1 and Hill migration plan | Record docs-only freeze without claiming implementation or write authorization |
+| Runtime, schema, migration or verification source | 0 | None | No formal writer, production loader, reaction runtime, downstream integration or user-visible behavior is authorized |
+
 Interaction Move Handoff Contract v1 freeze slice:
 
 | Class | Count | Paths | Review treatment |
@@ -207,14 +224,17 @@ Stable-baseline seal inventory (historical):
 | 2026-08-05 | Implement PHM-D ordinary committed completion | User authorized only validated committed completion edges and query; independent repair verifies exact frozen-plan and final-winner binding | Ordinary `fulfills` and pure `handoffCompleted` are implemented without lifecycle state; Safety supersession remains separate |
 | 2026-08-05 | Implement PHM-E Safety supersession and pure resolved/active queries | User authorized this as one isolated slice while continuing to prohibit persistent lifecycle state | Active adjacent Safety winners write immutable `supersedes`; no-target Safety remains envelope-free and all lifecycle answers are reconstructed |
 | 2026-08-05 | Seal PHM-E pending Git seal | Repair pass 1 closes the named adversarial gates; independent Reviewer returns `PASS`; final `npm run check:launch` exits 0 | PHM-E acceptance is closed without persistent lifecycle state; the main thread owns staging and commit |
+| 2026-08-05 | Freeze Batch 2D Atomic Boundary Contract v1 under `B2-Formal-Atomic-Commit` | User authorized a separate docs-only contract freeze after PHM-E sealing; the contract fixes detached final authority, in-boundary real Assistant id binding, Auth winner-only transaction, Guest client-scoped parity and post-commit read-only boundaries | Atomic writer, formal production write, production/DB loader, reaction runtime/persistence and downstream integration remain unimplemented and unauthorized |
 
 ## Remaining
 
 - No remaining implementation is authorized inside the Batch 1.5-E repair slice.
 - One attempt-level pressure-repair Validator false positive remains recorded as a non-blocking observation; addressing it requires a new independently approved task.
 - Batch 2A, Batch 2B association and Batch 2C-A fixture Reaction Assessment gates are complete. No production Reaction Assessment runtime exists.
-- Production/DB loading, Atomic Boundary proof and formal Helping writes remain unimplemented and have no current Batch 2C authorization.
-- Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path remains fixture-only until a separately approved Atomic Boundary gate.
+- Batch 2D `B2-Formal-Atomic-Commit` is frozen docs-only; Atomic Boundary implementation,
+  production/DB loading and formal Helping writes remain unimplemented and unauthorized.
+- Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer
+  path remains fixture-only until a separately approved implementation gate.
 - Interaction Move Handoff Contract v1 envelope foundation and PHM-A through PHM-E are implemented without persistent lifecycle state.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
@@ -226,8 +246,11 @@ Stable-baseline seal inventory (historical):
 - Batch 2A Contract Gate: complete; v1 formal metadata and formal/Shadow isolation are frozen.
 - Batch 2B Fixture Load and Association Gate: complete within fixture-only scope; no production consumer exists.
 - Batch 2C Reaction Assessment Contract Gate: frozen under `B2-Reaction-Shadow`; Batch 2C-A fixture-only evaluator and regressions pass, while runtime and downstream integration remain absent.
+- Batch 2D Atomic Boundary Contract v1: frozen docs-only under `B2-Formal-Atomic-Commit`; no writer,
+  runtime, schema, migration, production loader or formal production write is implemented or authorized.
 - Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; envelope and PHM-A through PHM-E are implemented without persistent lifecycle state or schema migration.
-- Atomic Boundary and later Batch 2 work do not inherit authorization for user-visible behavior, formal production writes or downstream integration.
+- Batch 2D implementation and later Batch 2 work do not inherit authorization for user-visible
+  behavior, formal production writes or downstream integration.
 - Further expansion of the Batch 1.5 repair round: stopped.
 
 ## Loop guards
