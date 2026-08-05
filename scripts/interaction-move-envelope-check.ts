@@ -7,9 +7,12 @@ import {
   buildProactiveGreetingAssistantMoveEnvelope,
   buildResponsePlanAssistantMoveEnvelope,
   extractCommittedAssistantMoveEnvelope,
+  handoffCompleted,
   parseCommittedAssistantMoveEnvelope,
   proactiveGreetingRequiredFunctionFor,
 } from "../conversation-os";
+import type { InteractionMoveHandoffCommitEvidence } from "../conversation-os";
+import type { ResponsePlan } from "../conversation-os/control";
 
 const main = async () => {
 const greetingCases = [
@@ -74,6 +77,141 @@ const responseEnvelope = buildResponsePlanAssistantMoveEnvelope({
 assert.equal(responseEnvelope.assistantMoveId, "assistant-response-1");
 assert.equal(responseEnvelope.committedMove.sourceTurnId, "user-turn-1");
 assert.equal(responseEnvelope.handoff, null);
+
+const handoffPlan: ResponsePlan = {
+  planId: "plan-fulfills-1",
+  decisionOwner: "conversation_os.response_planner",
+  behaviorSource: "ordinary_conversation",
+  planningDepth: "minimal",
+  answerObligations: [],
+  disclosureScope: { conversationId: "conversation-1", turnId: "user-turn-1" },
+  correction: null,
+  responseActions: ["continue_established_thread"],
+  groundingFacts: [],
+  requiredDisclosure: [],
+  clinicalStrategy: null,
+  positiveFunctionContract: null,
+  interactionMoveHandoffPlan: {
+    sourceAssistantMoveId: "assistant-greeting-source",
+    sourceGreetingFunction: "initiate_reciprocal_contact",
+    sourceUserTurnId: "user-turn-1",
+    selectedRelation: "reciprocates_move",
+    requiredFunction: "complete_reciprocal_contact",
+    completionIntent: "fulfill",
+    questionPolicy: "none",
+    evidence: [{
+      source: "current_user_turn",
+      sourceUserTurnId: "user-turn-1",
+      text: "你好",
+      start: 0,
+      end: 2,
+    }],
+  },
+  questionPolicy: { mode: "none", reason: "handoff completion fixture" },
+  closurePolicy: { mode: "forbid_closure", reason: "handoff completion fixture" },
+  tone: ["natural"],
+  stance: ["direct"],
+  lengthGuidance: "short",
+  prohibitedClaims: [],
+  safetyConstraints: [],
+  relevanceProvenance: [],
+  evidence: ["handoff completion fixture"],
+};
+const fulfillmentEnvelope = buildResponsePlanAssistantMoveEnvelope({
+  assistantMoveId: "assistant-response-fulfills-1",
+  planId: handoffPlan.planId,
+  sourceUserTurnId: "user-turn-1",
+  committedMove,
+  handoffCommitEvidence: {
+    executionPhase: "VALIDATED",
+    finalAttemptPhase: "VALIDATED",
+    executionPlanId: handoffPlan.planId,
+    executionTurnId: "user-turn-1",
+    responsePlan: handoffPlan,
+    finalValidation: {
+      passed: true,
+      failureReasons: [],
+      checkedPlanId: handoffPlan.planId,
+      planChanged: false,
+    },
+  },
+});
+assert.deepEqual(fulfillmentEnvelope.handoff, {
+  kind: "proactive_greeting",
+  edge: "fulfills",
+  sourceAssistantMoveId: "assistant-greeting-source",
+  realizedFunction: "complete_reciprocal_contact",
+});
+assert.equal(handoffCompleted("assistant-greeting-source", [fulfillmentEnvelope]), true);
+assert.equal(handoffCompleted("different-greeting", [fulfillmentEnvelope]), false);
+assert.equal(handoffCompleted("assistant-greeting-source", [responseEnvelope]), false);
+assert.equal(handoffCompleted("assistant-greeting-source", [{
+  ...fulfillmentEnvelope,
+  unexpected: true,
+}]), false);
+assert.equal(handoffCompleted("assistant-greeting-source", [{
+  handoff: fulfillmentEnvelope.handoff,
+}]), false);
+
+const deferredPlan: ResponsePlan = {
+  ...handoffPlan,
+  planId: "plan-deferred-1",
+  interactionMoveHandoffPlan: {
+    ...handoffPlan.interactionMoveHandoffPlan!,
+    requiredFunction: "defer_handoff_completion",
+    completionIntent: "defer",
+  },
+};
+const deferredEnvelope = buildResponsePlanAssistantMoveEnvelope({
+  assistantMoveId: "assistant-response-deferred-1",
+  planId: deferredPlan.planId,
+  sourceUserTurnId: "user-turn-1",
+  committedMove,
+  handoffCommitEvidence: {
+    executionPhase: "VALIDATED",
+    finalAttemptPhase: "VALIDATED",
+    executionPlanId: deferredPlan.planId,
+    executionTurnId: "user-turn-1",
+    responsePlan: deferredPlan,
+    finalValidation: {
+      passed: true,
+      failureReasons: [],
+      checkedPlanId: deferredPlan.planId,
+      planChanged: false,
+    },
+  },
+});
+assert.equal(deferredEnvelope.handoff, null);
+
+const invalidEvidenceCases: Array<Partial<InteractionMoveHandoffCommitEvidence>> = [
+  { executionPlanId: "wrong-plan" },
+  { executionTurnId: "wrong-turn" },
+  { finalAttemptPhase: "REJECTED" },
+  { finalValidation: { passed: false, failureReasons: ["rejected"], checkedPlanId: handoffPlan.planId, planChanged: false } },
+  { finalValidation: { passed: true, failureReasons: [], checkedPlanId: "wrong-plan", planChanged: false } },
+];
+for (const invalidEvidence of invalidEvidenceCases) {
+  assert.throws(() => buildResponsePlanAssistantMoveEnvelope({
+    assistantMoveId: `assistant-invalid-${Object.keys(invalidEvidence)[0]}`,
+    planId: handoffPlan.planId,
+    sourceUserTurnId: "user-turn-1",
+    committedMove,
+    handoffCommitEvidence: {
+      executionPhase: "VALIDATED",
+      finalAttemptPhase: "VALIDATED",
+      executionPlanId: handoffPlan.planId,
+      executionTurnId: "user-turn-1",
+      responsePlan: handoffPlan,
+      finalValidation: {
+        passed: true,
+        failureReasons: [],
+        checkedPlanId: handoffPlan.planId,
+        planChanged: false,
+      },
+      ...invalidEvidence,
+    },
+  }), /Invalid validated interaction move handoff commit evidence/);
+}
 
 const trace = attachCommittedAssistantMoveEnvelope(
   { phase: "COMMITTED", promptVersion: "generation-provenance-only" },

@@ -8,13 +8,13 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 
 ## Active delivery slice
 
-- Outcome: Project the preflight-valid PHM-B handoff tuple into Surface and require an independent same-plan semantic verdict before accepting each handoff candidate.
-- Acceptance: Surface receives the exact target/relation/function/completion/question tuple and current evidence; v1 history uses the committed target id rather than `promptVersion`; strict typed verdicts bind the same plan and fail closed when missing, malformed, mismatched or uncertain; positive functions, defer and semantic question policy pass normal, edge, paraphrase and adversarial cases without new keyword/regex/case rules; dedicated, adjacent, TypeScript, ESLint, independent and full launch gates pass.
-- Allowed scope: `services/ai/promptBuilder.ts`, one handoff semantic-validator adapter, `services/ai/responsePlanValidator.ts`, `services/ai/chatOrchestrationService.ts`, a dedicated PHM-C regression, package wiring and directly related status documentation.
-- Non-goals: Planner/PHM-A/PHM-B changes; `fulfills` or Safety `supersedes` committed edges; API/client/persistence, Memory, User Model, Batch 2, schema, deployment, persistent lifecycle state or wording-rule expansion.
-- Baseline: Branch `codex/planner-handoff-migration`, HEAD `bc9922a`; the only pre-existing dirty path is the user's unrelated `AGENTS.md` change, which is preserved and excluded.
-- Round budget: one implementation pass and at most two evidence-driven repair passes for the same frozen PHM-C gate.
-- Status: implementation and repair pass 1 passed dedicated, adjacent, TypeScript, ESLint, independent adversarial and full launch gates; ready to seal against `bc9922a`.
+- Outcome: Write a target-bound `fulfills` edge only when the PHM-C-validated final Assistant response actually commits, and expose a pure committed-envelope completion query.
+- Acceptance: Exact frozen target/function projection for `fulfill`; null/defer/reject/failure/retry-loser/Safety/rollback isolation; Guest/authenticated logical parity; strict query behavior; dedicated, adjacent, TypeScript, ESLint, independent and full launch gates pass.
+- Allowed scope: Conversation OS envelope/query and export, authenticated and Guest commit projections, PHM-D verification wiring, and directly related status documentation. Repair pass 1 may only return and carry PHM-C's existing frozen execution-plan snapshot through `responsePlanValidator.ts` and `chatOrchestrationService.ts`, without changing decision semantics.
+- Non-goals: Safety `supersedes` or resolved/active lookup; Planner, PHM-A/B/C semantic changes; Memory, User Model, Batch 2, schema/migration, deployment, persistent lifecycle state, aggregate or wording-rule expansion.
+- Baseline: Branch `codex/planner-handoff-migration`, HEAD `ea20480`; the only pre-existing dirty path is the user's unrelated `AGENTS.md` change, which is preserved and excluded.
+- Round budget: one implementation pass and at most two evidence-driven repair passes for the same frozen PHM-D gate.
+- Status: Repair pass 1 closed both independent trust-boundary attacks; focused, adjacent, database, TypeScript, ESLint, independent and full `check:launch` gates pass with no P0-P3; ready to seal against `ea20480`.
 
 ## Team
 
@@ -83,6 +83,10 @@ Ship a coherent, clinically safe Conversation OS in reviewable increments withou
 | Implement PHM-C Surface and semantic validation | Exact tuple/history projection, strict semantic verdict, frozen execution plan, bounded same-plan retry and external prompt inspection pass | pass | Builder |
 | Close PHM-C independent attacks | Mutable-plan drift, architecture whitelist and loose JSON parser attacks are independently reversed with no P0-P3 | pass | Independent verifier |
 | Pass PHM-C full engineering gate | Dedicated/adjacent/TypeScript/ESLint plus `check:launch`; 12 migrations, 27 Miniapp JS files and 39-page production build pass | pass | Delivery lead |
+| Implement PHM-D validated committed completion | Exact frozen target/function, final-attempt and plan/turn bindings produce winner-only `fulfills`; defer/null/reject/failure/Safety/rollback produce none | pass | Builder |
+| Close PHM-D independent attacks | Outer same-plan-id target/function mutation and REJECTED-final-attempt attacks reversed; no P0-P3 | pass | Independent verifier |
+| Preserve PHM-D isolation | Pure `handoffCompleted`; no lifecycle persistence, schema, Memory, User Model, Batch 2 or Planner/Surface/Validator semantic change | pass | Delivery lead |
+| Pass PHM-D full engineering gate | `check:launch` exit 0; 12 migrations, 27 Miniapp JS files and 39-page production build pass | pass | Delivery lead |
 
 ## Change inventory
 
@@ -160,6 +164,15 @@ PHM-B Planner runtime plus PHM-B-AUTH seal:
 | Authority/status documentation | 8 | Contract, Architecture v1, AI service README, root ledger and four `.project-team` ledgers | Record PHM-B/AUTH completion without claiming Surface, semantic Validator or committed completion |
 | Out-of-scope runtime/schema | 0 | None | No Prompt/Surface, semantic Validator, edges, persistence, Memory, User Model or Batch 2 changes |
 
+PHM-D validated committed completion slice:
+
+| Class | Count | Paths | Review treatment |
+|---|---:|---|---|
+| Conversation OS / delivery runtime | 6 | Envelope/query/export; Auth and Guest commit projection; frozen execution-plan pass-through | Verify exact validated-plan/final-winner binding without decision-semantic changes |
+| Verification wiring | 2 | Envelope and database lifecycle regressions | Verify fulfill/defer/query, outer-plan mutation, retry loser, rollback and final-attempt fail-closed cases |
+| Authority/status documentation | 9 | Contract, Architecture, State Design, AI README, root ledger and four `.project-team` ledgers | Record ordinary completion without claiming Safety supersession or persistent lifecycle state |
+| Out-of-scope schema/domain | 0 | None | No schema/migration, Memory, User Model, Batch 2, Safety edge or Planner/Surface/Validator semantic change |
+
 Stable-baseline seal inventory (historical):
 
 | Class | Count | Path rule | Review treatment |
@@ -188,6 +201,7 @@ Stable-baseline seal inventory (historical):
 | 2026-08-05 | Freeze PHM-B Planner Handoff Transition Contract | Runtime audit locates the first remaining causal boundary at the sole `createResponsePlan`; contract review identifies and closes tuple, ambiguity and reciprocal-contact gaps | A later Planner-only implementation may consume PHM-A and remove `promptVersion` from the v1 transition path, but this freeze changes no runtime behavior |
 | 2026-08-05 | Seal PHM-B runtime with independent PHM-B-AUTH | The user approved a separate authority slice after two PHM-B exact-preflight failures; detached recursive freeze, exact comparison, independent adversarial review and full launch gate now pass | Seal the runtime and trust-boundary changes as one checkpoint against `bb38951`; Surface, semantic Validator and committed edges remain separate |
 | 2026-08-05 | Seal PHM-C Surface and same-plan semantic validation | Full tuple projection, strict independent verdict, frozen execution plan, repair-pass adversarial verification and full launch gate pass | User-visible candidates can no longer pass through legacy presence-confirmation semantics; committed completion edges remain separate |
+| 2026-08-05 | Implement PHM-D ordinary committed completion | User authorized only validated committed completion edges and query; independent repair verifies exact frozen-plan and final-winner binding | Ordinary `fulfills` and pure `handoffCompleted` are implemented without lifecycle state; Safety supersession remains separate |
 
 ## Remaining
 
@@ -196,7 +210,7 @@ Stable-baseline seal inventory (historical):
 - Batch 2A, Batch 2B association and Batch 2C-A fixture Reaction Assessment gates are complete. No production Reaction Assessment runtime exists.
 - Production/DB loading, Atomic Boundary proof and formal Helping writes remain unimplemented and have no current Batch 2C authorization.
 - Production ordinary flow still writes no `CommittedHelpingMove`; the positive formal serializer path remains fixture-only until a separately approved Atomic Boundary gate.
-- Interaction Move Handoff Contract v1 envelope foundation, PHM-A relation, PHM-B Planner/AUTH and PHM-C Surface/same-plan semantic validation are implemented; `fulfills`, Safety `supersedes` and completion lookup remain pending.
+- Interaction Move Handoff Contract v1 envelope foundation, PHM-A relation, PHM-B Planner/AUTH, PHM-C Surface/same-plan semantic validation and PHM-D ordinary committed `fulfills`/`handoffCompleted` are implemented; Safety supersession and resolved/active lookup remain pending.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
 ## Closure status
@@ -207,7 +221,7 @@ Stable-baseline seal inventory (historical):
 - Batch 2A Contract Gate: complete; v1 formal metadata and formal/Shadow isolation are frozen.
 - Batch 2B Fixture Load and Association Gate: complete within fixture-only scope; no production consumer exists.
 - Batch 2C Reaction Assessment Contract Gate: frozen under `B2-Reaction-Shadow`; Batch 2C-A fixture-only evaluator and regressions pass, while runtime and downstream integration remain absent.
-- Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; envelope, PHM-A relation, PHM-B Planner/AUTH and PHM-C Surface/semantic validation are implemented without persistent lifecycle state or schema migration; committed completion edges remain pending.
+- Interaction Move Handoff Contract v1: frozen as the authoritative Conversation OS target; envelope, PHM-A relation, PHM-B Planner/AUTH, PHM-C Surface/semantic validation and PHM-D ordinary committed completion are implemented without persistent lifecycle state or schema migration; Safety supersession remains pending.
 - Atomic Boundary and later Batch 2 work do not inherit authorization for user-visible behavior, formal production writes or downstream integration.
 - Further expansion of the Batch 1.5 repair round: stopped.
 

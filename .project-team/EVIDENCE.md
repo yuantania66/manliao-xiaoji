@@ -69,3 +69,15 @@ PHM-B-AUTH 是用户批准的新切片，不是 PHM-B 第三次修复。它关�
 | LLM 治理 | 唯一 structured non-writer call、external inspection、strict full-string JSON、单 Planner architecture gate | 通过 |
 | 独立修复复验 | 原两个 P1 与 P2 parser 观察全部反转；无 P0-P3 | 通过 |
 | 完整发布门 | `check:launch` exit 0；12 migrations、27 Miniapp JS、39-page production build | 通过 |
+
+## PHM-D Validated Committed Completion
+
+| 验收项 | 证据 | 状态 |
+|---|---|---|
+| 定位提交断点 | PHM-C 已验证最终候选，但 response envelope builder 固定写 `handoff=null` | 通过 |
+| validated commit only | execution/final-attempt phase、final validation、planId 与 User turn 全部 exact binding | 通过 |
+| exact frozen plan | `enforceResponsePlan` 返回实际验证的递归冻结 snapshot；outer-plan target/function mutation 攻击反转 | 通过 |
+| Auth/Guest 与失败隔离 | Auth transaction winner、Guest validated boundary、retry loser、reject、Safety 与 rollback 回归 | 通过 |
+| pure completion lookup | strict parser、exact source match；opens/null/wrong target/malformed 均为 false | 通过 |
+| 独立修复复验 | 首轮 P1/P2 均反转；无 P0-P3，结论 GO | 通过 |
+| 完整发布门 | `check:launch` exit 0；12 migrations、27 Miniapp JS、39-page production build | 通过 |

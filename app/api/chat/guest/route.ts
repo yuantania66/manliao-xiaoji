@@ -203,6 +203,16 @@ export async function POST(request: NextRequest) {
               planId: reply.execution.planId,
               requestId: reply.execution.requestId,
             }),
+            handoffCommitEvidence: reply.controlTrace
+              ? {
+                  executionPhase: "VALIDATED",
+                  finalAttemptPhase: reply.execution.attempts.at(-1)?.phase ?? null,
+                  executionPlanId: reply.execution.planId,
+                  executionTurnId: reply.execution.turnId,
+                  responsePlan: reply.controlTrace.responsePlan,
+                  finalValidation: reply.execution.attempts.at(-1)?.validation ?? null,
+                }
+              : null,
           });
       const committedExecution = {
         ...reply.execution,

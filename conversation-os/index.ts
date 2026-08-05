@@ -8,6 +8,7 @@ export {
   buildProactiveGreetingAssistantMoveEnvelope,
   buildResponsePlanAssistantMoveEnvelope,
   extractCommittedAssistantMoveEnvelope,
+  handoffCompleted,
   parseCommittedAssistantMoveEnvelope,
   proactiveGreetingRequiredFunctionFor,
   INTERACTION_MOVE_ENVELOPE_SCHEMA_VERSION,
@@ -16,6 +17,7 @@ export {
 export type {
   CommittedAssistantMoveEnvelopeParseResult,
   CommittedAssistantMoveEnvelopeV1,
+  InteractionMoveHandoffCommitEvidence,
   ProactiveGreetingAssistantMoveEnvelopeV1,
   ProactiveGreetingCommittedMove,
   ProactiveGreetingHandoffFunction,

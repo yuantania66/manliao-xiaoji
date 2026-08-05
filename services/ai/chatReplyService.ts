@@ -33,7 +33,7 @@ import {
   type ChatExecutionTrace,
   type UserSafeExecutionStatus,
 } from "./chatExecutionLifecycle";
-import type { InteractionState } from "@/conversation-os/control";
+import type { InteractionState, ResponsePlan } from "@/conversation-os/control";
 
 const mapRiskLevel = (riskLevel: AiRiskLevel) => {
   const value = riskLevel.toUpperCase();
@@ -192,6 +192,7 @@ export const commitValidatedAssistantMessage = async ({
   replyToMessageId,
   interactionMetadata,
   execution,
+  responsePlan,
   envelopeOrigin = "response_plan",
 }: {
   userId: string;
@@ -202,6 +203,7 @@ export const commitValidatedAssistantMessage = async ({
   replyToMessageId: string;
   interactionMetadata: NonNullable<InteractionState["lastCommittedAssistantMove"]>;
   execution: ChatExecutionTrace;
+  responsePlan?: ResponsePlan | null;
   envelopeOrigin?: "response_plan" | null;
 }) => {
   if (execution.phase !== "VALIDATED") {
@@ -260,6 +262,16 @@ export const commitValidatedAssistantMessage = async ({
           planId: execution.planId,
           sourceUserTurnId: replyToMessageId,
           committedMove: interactionMetadata,
+          handoffCommitEvidence: responsePlan
+            ? {
+                executionPhase: "VALIDATED",
+                finalAttemptPhase: execution.attempts.at(-1)?.phase ?? null,
+                executionPlanId: execution.planId,
+                executionTurnId: execution.turnId,
+                responsePlan,
+                finalValidation: execution.attempts.at(-1)?.validation ?? null,
+              }
+            : null,
         });
       }
       const committedExecution = {
@@ -438,6 +450,7 @@ export const createReviewedChatReply = async ({
       replyToMessageId: reply.execution.turnId,
       interactionMetadata: buildCommittedAssistantMove(reply),
       execution: reply.execution,
+      responsePlan: reply.controlTrace?.responsePlan ?? null,
       envelopeOrigin: reply.finalSource === "safety" ? null : "response_plan",
     });
     if (reply.finalSource !== "safety" && !assistantMessage.interactionMoveEnvelope) {

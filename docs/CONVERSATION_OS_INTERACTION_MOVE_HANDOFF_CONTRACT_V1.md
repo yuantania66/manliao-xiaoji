@@ -1,10 +1,12 @@
 # Conversation OS Interaction Move Handoff Contract v1
 
-Status: **frozen architecture contract; committed-envelope, PHM-A relation, PHM-B Planner and PHM-C Surface/same-plan semantic validation implemented; committed completion edges pending**
+Status: **frozen architecture contract; committed-envelope, PHM-A, PHM-B, PHM-C and PHM-D ordinary committed completion implemented; Safety supersession pending**
 
 Freeze date: 2026-08-04
 
 PHM-B freeze date: 2026-08-05
+
+PHM-D implementation date: 2026-08-05
 
 Authority: Conversation OS
 
@@ -517,7 +519,8 @@ The committed-envelope foundation now implements:
   namespace;
 - proactive greeting `opens` envelopes derived from the move selected before
   generation;
-- ordinary validated response-plan envelopes with `handoff=null`;
+- ordinary validated response-plan envelopes with `handoff=null` or a
+  target-bound committed `fulfills` edge;
 - atomic authenticated message/envelope commit through the existing generation
   trace, with no schema migration;
 - Guest return, cache and next-request round-trip of the same logical envelope;
@@ -543,15 +546,16 @@ PHM-A now additionally implements:
   without persistent lifecycle state, Memory, Batch 2 or User Model integration.
 
 The current runtime implements the PHM-B Planner transition, detached preflight
-authority and PHM-C Surface/same-plan semantic validation, but has not
-implemented `fulfills`, Safety `supersedes` or completion lookup. Safety
-responses intentionally emit no handoff envelope because a valid `supersedes`
-edge requires the target selected by the later migration; they are not
-mislabeled as `response_plan`. For a valid PHM-A projection, the Planner maps
-the target-bound relation to one nullable v1 handoff plan without reading
-`promptVersion` or matching reply text. A separately marked no-envelope legacy
-compatibility path remains temporarily active. Production behavior therefore
-does not yet claim full v1 conformance.
+authority, PHM-C Surface/same-plan semantic validation and PHM-D ordinary
+committed completion. PHM-D carries the exact frozen execution plan validated
+by PHM-C into the final Auth or Guest commit boundary, writes `fulfills` only
+for a positive `completionIntent=fulfill` winner, and exposes the pure
+`handoffCompleted` query over committed envelopes. Safety responses
+intentionally emit no handoff envelope because a valid `supersedes` edge
+requires the target selected by a later migration; they are not mislabeled as
+`response_plan`. A separately marked no-envelope legacy compatibility path
+remains temporarily active. Production behavior therefore does not yet claim
+full v1 resolved/active-handoff conformance.
 
 ## 14. PHM-B Planner transition contract freeze
 
@@ -726,3 +730,36 @@ self-report or fixed reply whitelist proves the positive function.
 
 PHM-C accepts or rejects candidates only. It creates no `fulfills` or
 `supersedes` edge, and validation success is not committed completion.
+
+## 16. PHM-D validated committed completion implementation
+
+PHM-D preserves the PHM-C separation between validation and commit. The
+existing recursively frozen execution-plan snapshot is returned from output
+enforcement and carried unchanged to the delivery boundary. A response-plan
+envelope may write `handoff.edge=fulfills` only when all of these commit-time
+bindings agree:
+
+- execution phase and final attempt phase are both `VALIDATED`;
+- final validation passed, reports `planChanged=false` and names the same
+  `checkedPlanId` as the execution, response plan and envelope origin;
+- execution turn, disclosure turn, handoff source User turn and envelope source
+  User turn are identical;
+- the frozen handoff plan has `completionIntent=fulfill` and a positive required
+  function.
+
+The edge copies the frozen `sourceAssistantMoveId` and maps the already
+validated positive `requiredFunction` to `realizedFunction`; it does not infer
+either value from reply text. A null plan and a valid
+`defer_handoff_completion/defer` tuple keep `handoff=null`. Mismatch fails
+closed. Auth constructs the envelope only inside the existing successful
+message transaction for the created winner; Guest constructs the same logical
+envelope only after successful validation and returns it with the accepted
+client-scoped event. Retry losers, rejected candidates, failures and rolled-back
+transactions create no completion edge.
+
+`handoffCompleted(sourceAssistantMoveId, committedEvents)` is a pure query. Its
+input precondition is the caller's committed-event projection; each candidate
+envelope is still passed through the strict v1 parser, and only an exact
+`fulfills` target match returns true. The query writes no lifecycle state or
+aggregate. PHM-D does not implement Safety `supersedes`, `handoffSuperseded`,
+`handoffResolved` or `activeHandoff`.

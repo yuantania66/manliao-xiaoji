@@ -437,9 +437,10 @@ trace and as client-scoped Guest event metadata. PHM-A retains a strictly
 validated adjacent `opens` target in Context and derives the target-bound
 current-turn User relation candidates with exact source spans, preserving
 ambiguity without selecting a reply function. These slices add no persistent
-lifecycle state, schema migration, Memory or User Model input. Planner handoff
-and its detached exact-preflight authority are implemented; `fulfills`, Safety
-`supersedes` and completion semantics remain pending.
+lifecycle state, schema migration, Memory or User Model input. Planner handoff,
+its detached exact-preflight authority, PHM-C same-plan semantic validation and
+PHM-D ordinary committed `fulfills` plus pure completion lookup are implemented;
+Safety `supersedes` and resolved/active lookup remain pending.
 
 PHM-B implements the Planner transition from that projection. The total mapping
 includes direct-obligation and boundary priority,
@@ -448,7 +449,8 @@ incompatible-candidate defer and the positive meaning of
 `complete_reciprocal_contact`: accept reciprocal contact as sufficient and
 release the greeting ritual without another greeting, receipt or Assistant
 presence claim. PHM-C Surface realization and positive-function validation are
-implemented; committed completion edges remain a separate slice.
+implemented; PHM-D owns the separate validated commit-edge projection and pure
+completion lookup.
 
 ## 5. Assistant Grounding
 
@@ -610,9 +612,10 @@ npm run check:architecture-v1
   target projection, a target-bound current-turn User relation, a PHM-B plan
   projection and detached exact-preflight authority. A separately marked
   no-envelope legacy `promptVersion` compatibility path remains. PHM-C Surface
-  projection and same-plan semantic validation are implemented, while
-  `fulfills`, Safety `supersedes` and committed completion lookup are absent;
-  the runtime therefore does not yet claim full v1 conformance.
+  projection and same-plan semantic validation plus PHM-D exact frozen-plan
+  committed `fulfills` and `handoffCompleted` lookup are implemented. Safety
+  `supersedes` and resolved/active lookup are absent, so the runtime does not yet
+  claim full v1 conformance.
 - Real-model post-migration A/B output comparison requires a separately scoped
   external-prompt authorization; local architecture and regression tests do not
   substitute for that naturalness evidence.

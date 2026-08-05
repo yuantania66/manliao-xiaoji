@@ -504,6 +504,7 @@ export const createChatReply = async ({
     const fallbackUsed = false;
     const finalValidation = enforced.validations.at(-1);
     const validated = enforced.outcome === "validated" && Boolean(finalValidation?.passed);
+    const executionPlan = enforced.executionPlan;
     const controlTrace: ConversationControlTrace = {
       context: controlContext,
       interpretation: {
@@ -516,12 +517,12 @@ export const createChatReply = async ({
       },
       interpretationModel: interpreted.modelTrace,
       dialogueState,
-      responsePlan,
-      clinicalInvoked: Boolean(responsePlan.clinicalStrategy),
+      responsePlan: executionPlan,
+      clinicalInvoked: Boolean(executionPlan.clinicalStrategy),
       validation: enforced.validations,
       stateUpdate: {
         answeredObligations: [],
-        remainingOpenLoops: responsePlan.answerObligations.map((item) => item.id),
+        remainingOpenLoops: executionPlan.answerObligations.map((item) => item.id),
         obligationTransitions: [],
         notes: [
           validated
@@ -540,7 +541,7 @@ export const createChatReply = async ({
       requestId: executionIdentity.requestId,
       conversationId,
       turnId: resolvedTurnId,
-      planId: responsePlan.planId,
+      planId: executionPlan.planId,
       phase: validated ? "VALIDATED" : "FAILED",
       planPreflight,
       transitions: [

@@ -10,7 +10,7 @@ import {
 } from "@prisma/client";
 
 import type { ResponsePlan } from "../conversation-os/control";
-import { extractCommittedAssistantMoveEnvelope } from "../conversation-os";
+import { extractCommittedAssistantMoveEnvelope, handoffCompleted } from "../conversation-os";
 import { prisma } from "../lib/prisma";
 import {
   buildAttemptTransitions,
@@ -469,6 +469,186 @@ try {
   }
   assert.equal(proactiveEnvelope.handoff.edge, "opens");
 
+  const handoffTurn = await prisma.chatMessage.create({
+    data: {
+      userId: fixtureUser.id,
+      sessionId: proactiveSession.id,
+      role: MessageRole.USER,
+      content: "你好",
+      status: MessageStatus.SAVED,
+    },
+  });
+  const handoffPlan: ResponsePlan = {
+    ...plan,
+    planId: "handoff-commit-plan",
+    disclosureScope: { conversationId: proactiveSession.id, turnId: handoffTurn.id },
+    interactionMoveHandoffPlan: {
+      sourceAssistantMoveId: proactiveEnvelope.assistantMoveId,
+      sourceGreetingFunction: proactiveEnvelope.handoff.greetingFunction,
+      sourceUserTurnId: handoffTurn.id,
+      selectedRelation: "reciprocates_move",
+      requiredFunction: "complete_reciprocal_contact",
+      completionIntent: "fulfill",
+      questionPolicy: "none",
+      evidence: [{
+        source: "current_user_turn",
+        sourceUserTurnId: handoffTurn.id,
+        start: 0,
+        end: 2,
+        text: "你好",
+      }],
+    },
+  };
+  const validatedSourceAssistantMoveId = handoffPlan.interactionMoveHandoffPlan!.sourceAssistantMoveId;
+  const validatedRequiredFunction = handoffPlan.interactionMoveHandoffPlan!.requiredFunction;
+  const handoffReplyText = "很高兴见到你。";
+  const enforcedHandoff = await enforceResponsePlan({
+    plan: handoffPlan,
+    handoffSemanticContext: {
+      targetAssistantText: proactiveMessage.content,
+      currentUserText: handoffTurn.content,
+    },
+    generate: async () => {
+      handoffPlan.interactionMoveHandoffPlan!.sourceAssistantMoveId = "mutated-outer-target";
+      handoffPlan.interactionMoveHandoffPlan!.requiredFunction = "respect_user_boundary";
+      return generation(handoffReplyText);
+    },
+    handoffSemanticProvider: async (input) => ({
+      schemaVersion: 1,
+      planId: input.planId,
+      sourceAssistantMoveId: input.planBinding.sourceAssistantMoveId,
+      sourceUserTurnId: input.planBinding.sourceUserTurnId,
+      selectedRelation: input.planBinding.selectedRelation,
+      requiredFunction: input.planBinding.requiredFunction,
+      completionIntent: input.planBinding.completionIntent,
+      questionPolicy: input.planBinding.questionPolicy,
+      status: "satisfied",
+      realizedFunction: input.planBinding.requiredFunction === "defer_handoff_completion"
+        ? null
+        : input.planBinding.requiredFunction,
+      targetAddressed: true,
+      relationAddressed: true,
+      positiveFunctionRealized: true,
+      containsContradictoryMove: false,
+      handoffCompletionClaimed: false,
+      semanticQuestionCount: 0,
+      ordinaryQuestionIndependentlySupported: input.ordinaryQuestionIndependentlySupported,
+      optionalQuestionAfterPositiveFunction: false,
+      evidence: [{
+        start: 0,
+        end: input.candidateReply.length,
+        text: input.candidateReply,
+        reason: "validated frozen execution plan fixture",
+      }],
+    }),
+  });
+  assert.equal(enforcedHandoff.outcome, "validated");
+  assert(Object.isFrozen(enforcedHandoff.executionPlan));
+  assert(Object.isFrozen(enforcedHandoff.executionPlan.interactionMoveHandoffPlan));
+  assert.equal(
+    enforcedHandoff.executionPlan.interactionMoveHandoffPlan?.sourceAssistantMoveId,
+    validatedSourceAssistantMoveId
+  );
+  assert.equal(
+    enforcedHandoff.executionPlan.interactionMoveHandoffPlan?.requiredFunction,
+    validatedRequiredFunction
+  );
+  assert.equal(handoffPlan.interactionMoveHandoffPlan!.sourceAssistantMoveId, "mutated-outer-target");
+  assert.equal(handoffPlan.interactionMoveHandoffPlan!.requiredFunction, "respect_user_boundary");
+  const committedHandoffPlan = enforcedHandoff.executionPlan;
+  const handoffGeneration = await prisma.aiGeneration.create({ data: {
+    userId: fixtureUser.id,
+    sessionId: proactiveSession.id,
+    sourceType: AiSourceType.CHAT,
+    sourceId: handoffTurn.id,
+    model: "deterministic-test",
+    promptVersion: CHAT_PROMPT_VERSION,
+    inputText: handoffTurn.content,
+    outputText: handoffReplyText,
+    status: AiGenerationStatus.GENERATED,
+    requestId: "handoff-commit-request",
+    turnId: handoffTurn.id,
+    attemptId: "handoff-winner",
+  } });
+  const handoffExecution: ChatExecutionTrace = {
+    ...failedExecution,
+    requestId: "handoff-commit-request",
+    conversationId: proactiveSession.id,
+    turnId: handoffTurn.id,
+    planId: committedHandoffPlan.planId,
+    phase: "VALIDATED",
+    transitions: [
+      { phase: "PLANNED", reason: "handoff commit fixture" },
+      { phase: "GENERATED", attemptId: "handoff-loser", reason: "retry loser fixture" },
+      { phase: "REJECTED", attemptId: "handoff-loser", reason: "retry loser fixture" },
+      { phase: "RETRYING", reason: "retry winner fixture" },
+      { phase: "GENERATED", attemptId: "handoff-winner", reason: "retry winner fixture" },
+      { phase: "VALIDATED", attemptId: "handoff-winner", reason: "retry winner fixture" },
+    ],
+    attempts: [
+      {
+        attemptId: "handoff-loser",
+        phase: "REJECTED",
+        validation: {
+          passed: false,
+          failureReasons: ["retry_loser"],
+          checkedPlanId: committedHandoffPlan.planId,
+          planChanged: false,
+        },
+      },
+      {
+        attemptId: "handoff-winner",
+        phase: "VALIDATED",
+        validation: {
+          passed: true,
+          failureReasons: [],
+          checkedPlanId: committedHandoffPlan.planId,
+          planChanged: false,
+        },
+      },
+    ],
+    failure: undefined,
+  };
+  const handoffMessage = await commitValidatedAssistantMessage({
+    userId: fixtureUser.id,
+    sessionId: proactiveSession.id,
+    content: handoffReplyText,
+    status: MessageStatus.SAVED,
+    aiGenerationId: handoffGeneration.id,
+    replyToMessageId: handoffTurn.id,
+    interactionMetadata: {
+      purpose: ["continue_established_thread"],
+      claims: [],
+      assumptions: [],
+      questionOrRequest: null,
+      expectedUserContribution: "none",
+      userBurden: "none",
+      sourceTurnId: handoffTurn.id,
+      evidence: ["handoff commit fixture"],
+    },
+    execution: handoffExecution,
+    responsePlan: committedHandoffPlan,
+  });
+  assert(handoffMessage.interactionMoveEnvelope);
+  assert.deepEqual(handoffMessage.interactionMoveEnvelope.handoff, {
+    kind: "proactive_greeting",
+    edge: "fulfills",
+    sourceAssistantMoveId: proactiveEnvelope.assistantMoveId,
+    realizedFunction: "complete_reciprocal_contact",
+  });
+  assert.equal(handoffCompleted(proactiveEnvelope.assistantMoveId, [
+    proactiveEnvelope,
+    handoffMessage.interactionMoveEnvelope,
+  ]), true);
+  const storedHandoffTrace = await prisma.aiGeneration.findUniqueOrThrow({
+    where: { id: handoffGeneration.id },
+    select: { executionTrace: true },
+  });
+  assert.deepEqual(
+    extractCommittedAssistantMoveEnvelope(storedHandoffTrace.executionTrace),
+    handoffMessage.interactionMoveEnvelope
+  );
+
   const userTurn = await prisma.chatMessage.create({
     data: {
       userId: fixtureUser.id,
@@ -690,21 +870,24 @@ try {
       replyToMessageId: rolledBackTurn.id,
       interactionMetadata: {
         ...metadata,
-        sourceTurnId: "mismatched-source-turn",
+        sourceTurnId: rolledBackTurn.id,
       },
       execution: {
         ...failedExecution,
         requestId: "rollback-request",
         turnId: rolledBackTurn.id,
+        planId: committedHandoffPlan.planId,
         phase: "VALIDATED",
         transitions: [
           { phase: "PLANNED", reason: "atomic rollback fixture" },
           { phase: "VALIDATED", reason: "atomic rollback fixture" },
         ],
+        attempts: handoffExecution.attempts,
         failure: undefined,
       },
+      responsePlan: committedHandoffPlan,
     }),
-    /Invalid committed Assistant move envelope/
+    /Invalid validated interaction move handoff commit evidence/
   );
   assert.equal(
     await prisma.chatMessage.count({

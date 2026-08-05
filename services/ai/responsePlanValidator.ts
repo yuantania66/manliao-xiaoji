@@ -995,6 +995,7 @@ export const enforceResponsePlan = async ({
   if (firstValidation.passed) {
     return {
       outcome: "validated" as const,
+      executionPlan,
       generation: first,
       attempts: [first],
       validations: [firstValidation],
@@ -1009,6 +1010,7 @@ export const enforceResponsePlan = async ({
   if (secondValidation.passed) {
     return {
       outcome: "validated" as const,
+      executionPlan,
       generation: {
         ...second,
         finalReplySource: "llm_regenerate" as const,
@@ -1030,6 +1032,7 @@ export const enforceResponsePlan = async ({
   }
   return {
     outcome: "failed" as const,
+    executionPlan,
     generation: constraintFailureGeneration(first, second, [...firstValidation.failureReasons, ...secondValidation.failureReasons]),
     attempts: [first, second],
     validations: [firstValidation, secondValidation],

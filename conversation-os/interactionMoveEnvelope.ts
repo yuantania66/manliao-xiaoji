@@ -1,4 +1,4 @@
-import type { ResponsePlan } from "./control";
+import type { ResponsePlan, ResponseValidationResult } from "./control";
 import type { CommittedAssistantMove } from "./types";
 
 export const INTERACTION_MOVE_ENVELOPE_SCHEMA_VERSION = 1 as const;
@@ -89,6 +89,15 @@ export type CommittedAssistantMoveEnvelopeParseResult =
   | { status: "absent" }
   | { status: "invalid"; reasons: string[] }
   | { status: "valid"; envelope: CommittedAssistantMoveEnvelopeV1 };
+
+export type InteractionMoveHandoffCommitEvidence = {
+  executionPhase: "VALIDATED";
+  finalAttemptPhase: "GENERATED" | "VALIDATED" | "REJECTED" | "FAILED" | null;
+  executionPlanId: string;
+  executionTurnId: string;
+  responsePlan: ResponsePlan;
+  finalValidation: ResponseValidationResult | null;
+};
 
 const ENVELOPE_KEYS = new Set(["schemaVersion", "assistantMoveId", "origin", "committedMove", "handoff"]);
 const PROACTIVE_ORIGIN_KEYS = new Set(["kind", "generationId"]);
@@ -414,11 +423,13 @@ export const buildResponsePlanAssistantMoveEnvelope = ({
   planId,
   sourceUserTurnId,
   committedMove,
+  handoffCommitEvidence,
 }: {
   assistantMoveId: string;
   planId: string;
   sourceUserTurnId: string;
   committedMove: CommittedAssistantMove;
+  handoffCommitEvidence?: InteractionMoveHandoffCommitEvidence | null;
 }): ResponsePlanAssistantMoveEnvelopeV1 => requireValidEnvelope({
   schemaVersion: INTERACTION_MOVE_ENVELOPE_SCHEMA_VERSION,
   assistantMoveId,
@@ -428,8 +439,70 @@ export const buildResponsePlanAssistantMoveEnvelope = ({
     sourceUserTurnId,
   },
   committedMove,
-  handoff: null,
+  handoff: buildValidatedHandoffFulfillment({
+    planId,
+    sourceUserTurnId,
+    evidence: handoffCommitEvidence ?? null,
+  }),
 }) as ResponsePlanAssistantMoveEnvelopeV1;
+
+const buildValidatedHandoffFulfillment = ({
+  planId,
+  sourceUserTurnId,
+  evidence,
+}: {
+  planId: string;
+  sourceUserTurnId: string;
+  evidence: InteractionMoveHandoffCommitEvidence | null;
+}): ProactiveGreetingFulfillmentMetadata | null => {
+  if (!evidence) return null;
+  const { responsePlan, finalValidation } = evidence;
+  const handoff = responsePlan.interactionMoveHandoffPlan;
+  if (!handoff) return null;
+  if (
+    evidence.executionPhase !== "VALIDATED" ||
+    evidence.finalAttemptPhase !== "VALIDATED" ||
+    evidence.executionPlanId !== planId ||
+    responsePlan.planId !== planId ||
+    evidence.executionTurnId !== sourceUserTurnId ||
+    responsePlan.disclosureScope.turnId !== sourceUserTurnId ||
+    handoff.sourceUserTurnId !== sourceUserTurnId ||
+    !finalValidation?.passed ||
+    finalValidation.planChanged !== false ||
+    finalValidation.checkedPlanId !== planId
+  ) {
+    throw new Error("Invalid validated interaction move handoff commit evidence.");
+  }
+  if (
+    handoff.completionIntent === "defer" &&
+    handoff.requiredFunction === "defer_handoff_completion"
+  ) return null;
+  if (
+    handoff.completionIntent !== "fulfill" ||
+    handoff.requiredFunction === "defer_handoff_completion"
+  ) {
+    throw new Error("Invalid interaction move handoff completion intent.");
+  }
+  return {
+    kind: "proactive_greeting",
+    edge: "fulfills",
+    sourceAssistantMoveId: handoff.sourceAssistantMoveId,
+    realizedFunction: handoff.requiredFunction,
+  };
+};
+
+export const handoffCompleted = (
+  sourceAssistantMoveId: string,
+  committedEvents: readonly unknown[]
+): boolean => {
+  if (!isNonEmptyString(sourceAssistantMoveId)) return false;
+  return committedEvents.some((event) => {
+    const parsed = parseCommittedAssistantMoveEnvelope(event);
+    return parsed.status === "valid" &&
+      parsed.envelope.handoff?.edge === "fulfills" &&
+      parsed.envelope.handoff.sourceAssistantMoveId === sourceAssistantMoveId;
+  });
+};
 
 export const attachCommittedAssistantMoveEnvelope = (
   trace: unknown,

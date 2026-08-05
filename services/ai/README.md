@@ -102,6 +102,10 @@ The production chat route is controlled by Conversation OS:
   `RETRYING`, `COMMITTED`, and `FAILED`. Only the `VALIDATED → COMMITTED`
   transition creates an Assistant `ChatMessage`, conversational raw memory,
   obligation closure, or `lastCommittedAssistantMove`;
+- for an ordinary Interaction Move Handoff, that same final commit boundary
+  carries PHM-C's exact frozen plan and may atomically add a target-bound
+  `fulfills` edge; `handoffCompleted` remains a pure committed-envelope query,
+  not persisted lifecycle state;
 - Output Validation may accept, reject, or request one regeneration against the
   exact same plan. Regeneration preserves the internal failure code but adds a
   human-readable correction instruction for the failed constraint; it cannot

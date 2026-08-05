@@ -449,8 +449,10 @@ the coarse `opening` arc, but `opening` neither opens nor completes a handoff.
 Only the committed-event relation defined by the handoff contract can establish
 completion; this remains outside Memory, Batch 2 and User Model ownership. PHM-A
 now reconstructs the active adjacent target and current-turn relation in
-Conversation OS Context without adding lifecycle state; Planner selection and
-validated completion remain separate pending slices.
+Conversation OS Context without adding lifecycle state. PHM-B Planner, PHM-C
+same-plan validation and PHM-D committed `fulfills` plus pure completion lookup
+are implemented without adding lifecycle state; Safety supersession and
+resolved/active lookup remain separate pending work.
 
 ## 11. Historical Migration Plan
 
