@@ -227,6 +227,7 @@ Stable-baseline seal inventory (historical):
 | 2026-08-05 | Freeze Batch 2D Atomic Boundary Contract v1 under `B2-Formal-Atomic-Commit` | User authorized a separate docs-only contract freeze after PHM-E sealing; the contract fixes detached final authority, in-boundary real Assistant id binding, Auth winner-only transaction, Guest client-scoped parity and post-commit read-only boundaries | Atomic writer, formal production write, production/DB loader, reaction runtime/persistence and downstream integration remain unimplemented and unauthorized |
 | 2026-08-07 | Seal PHM-C Validator Structured Output Reliability | User approved a syntax-only real-Qwen gate; four adversarial fixtures return strict exact-schema JSON, local fail-closed gates remain unchanged, independent review and full launch pass | Qwen PHM-C uses native JSON-object output; semantic calibration remains a separate unauthorized slice |
 | 2026-08-08 | Seal PHM-C Reciprocal-Contact Semantic Calibration | Frozen §14.5 keeps repeated greeting negative; real Qwen accepts contract-aligned transition positives and rejects five semantic/policy counterexamples after strict schema/binding/evidence | Validator Prompt is calibrated without parser, local gate, Planner/Surface/Safety, schema or lifecycle-state changes |
+| 2026-08-08 | Seal PHM-A reciprocal/unclear candidate reconciliation | A committed trace proved that a valid same-target reciprocal relation was merged with a synthetic adjacency fallback and projected to `unclear`; exact-target reconciliation, adversarial regressions, independent review and full launch now pass | Only the synthetic merge fallback is retired; genuine ambiguity and invalid, low-confidence, missing-target or wrong-target model output still defer |
 
 ## Remaining
 
@@ -239,6 +240,7 @@ Stable-baseline seal inventory (historical):
   path remains fixture-only until a separately approved implementation gate.
 - Interaction Move Handoff Contract v1 envelope foundation and PHM-A through PHM-E are implemented without persistent lifecycle state.
 - PHM-C structured-output reliability and reciprocal-contact semantic calibration are sealed; other handoff-function calibration remains separate and unimplemented.
+- PHM-A reciprocal/unclear reconciliation is sealed; the reported proactive-greeting reply no longer defers because of a synthetic adjacency fallback, while genuine ambiguity remains fail closed.
 - Deployment, default-on, Batch 3 and User Model behavior remain unauthorized.
 
 ## Closure status

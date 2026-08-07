@@ -129,6 +129,9 @@ const uniqueRelationCandidates = (candidates: RelationalInterpretationCandidate[
   return [...selected.values()];
 };
 
+const ADJACENCY_FALLBACK_EVIDENCE =
+  "Current user turn follows an adjacent assistant turn.";
+
 const buildContentMeaning = (
   context: ConversationControlContext,
   text: string,
@@ -249,7 +252,7 @@ const buildResponseRelations = ({
           relation: "continues_active_thread",
           confidence: 0.68,
           ...(targetTurnId ? { targetTurnId } : {}),
-          evidence: ["Current user turn follows an adjacent assistant turn."],
+          evidence: [ADJACENCY_FALLBACK_EVIDENCE],
         }
       : {
           relation: "opens_new_thread",
@@ -510,9 +513,26 @@ export const mergeModelInterpretation = (
     : isDialogueAct(model.primaryDialogueAct) && modelCorrectionIsHighConfidence
       ? model.primaryDialogueAct
       : deterministic.primaryDialogueAct;
+  const acceptedModelCandidates = modelRelationCandidates(model);
+  const activeHandoffTargetId = context?.interactionMoveHandoffTarget?.sourceAssistantMoveId;
+  const modelSupersedesAdjacencyFallback = Boolean(
+    activeHandoffTargetId &&
+    acceptedModelCandidates.some((candidate) =>
+      candidate.relation !== "continues_active_thread" &&
+      candidate.targetTurnId === activeHandoffTargetId
+    )
+  );
+  const deterministicCandidates = modelSupersedesAdjacencyFallback
+    ? deterministic.responseRelation.candidates.filter((candidate) => !(
+        candidate.relation === "continues_active_thread" &&
+        candidate.confidence === 0.68 &&
+        candidate.evidence.length === 1 &&
+        candidate.evidence[0] === ADJACENCY_FALLBACK_EVIDENCE
+      ))
+    : deterministic.responseRelation.candidates;
   const candidates = uniqueRelationCandidates([
-    ...deterministic.responseRelation.candidates,
-    ...modelRelationCandidates(model),
+    ...deterministicCandidates,
+    ...acceptedModelCandidates,
   ]).sort((left, right) => right.confidence - left.confidence);
   const modelRepair = candidates.find((candidate) =>
     candidate.relation === "repairs_previous_move" && candidate.confidence >= 0.93

@@ -109,3 +109,12 @@ PHM-B-AUTH 是用户批准的新切片，不是 PHM-B 第三次修复。它关�
 - 真实服务门在受限环境外 exit 0，host `dashscope.aliyuncs.com`；仅基础设施 timeout/429/5xx 保留一次重试，2.5 秒 pacing/backoff 不改变语义与重试次数。
 - 专项、Conversation OS control、AI orchestration、TypeScript、focused ESLint、`git diff --check`：全部通过；独立 Reviewer 最终 `PASS`。
 - 最终 `npm run check:launch`：exit 0；12 migrations current、27 Miniapp JS files、39-page production build；既有 1 条 lint warning 与 2 条 prelaunch warning 未新增。
+
+## PHM-A Reciprocal/Unclear Candidate Reconciliation
+
+- 真实截图会话只读 trace：用户 `嗨` 被模型投影为 `reciprocates_move`，但 merge 同时注入 adjacency-only `continues_active_thread`；在 insufficient evidence 下其 Planner projection 成为 `unclear`，最终按 §14.4 defer 并生成错误回复“嗨，在呢。”。
+- 修复只识别合并器自产、精确 evidence/confidence 的 adjacency fallback；只有有效、精确同 target、非 `continues_active_thread` 的模型候选存在时才淘汰该 fallback。
+- 正向回归得到单一 reciprocal 并进入 `complete_reciprocal_contact/fulfill/optional_after_completion`；provider unavailable、低置信、错 target、缺 target、模型 continues-only、模型真实多候选歧义继续保留 fallback/`unclear` 并 defer。
+- topic redirect、question greeting、direct answer、exact UTF-16 spans 与无文本特判反例通过；独立 Reviewer 首轮发现 targetless fail-open 后，修复与复验结论为 `PASS`。
+- `check:interaction-move-handoff`、`check:interaction-move-handoff-planner`、`check:conversation-os-control`、TypeScript no-emit、focused ESLint、`git diff --check`：全部通过。
+- 最终 `npm run check:launch`：exit 0；Prisma 12 migrations current、27 Miniapp JS files、39-page production build；并发 dev/build 引起的首次 `.next` 冲突在停止 3103 服务后消失，不属于运行时回归。

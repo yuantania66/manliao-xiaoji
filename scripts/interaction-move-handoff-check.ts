@@ -188,6 +188,136 @@ assert(modelMerged.userMoveRelation?.candidates.some(
 ));
 assert(!JSON.stringify(modelMerged.userMoveRelation).includes("model free explanation"));
 
+const reciprocalEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+  assistantMoveId: "assistant-reciprocal-greeting",
+  generationId: "generation-reciprocal-greeting",
+  greetingMove: "simple_greeting",
+});
+const reciprocalText = "嗨";
+const reciprocalContext = {
+  ...buildContext({
+    userMessage: reciprocalText,
+    currentTurnId: "user-turn-reciprocal",
+    recentMessages: [{
+      id: reciprocalEnvelope.assistantMoveId,
+      role: "assistant",
+      content: "嗨，又见面了。",
+      status: "saved",
+      interactionMoveEnvelope: reciprocalEnvelope,
+    }],
+  }),
+  semanticEvidence: {
+    status: "insufficient" as const,
+    source: "none" as const,
+    reason: "Reproduces the persisted low-information reciprocal trace.",
+  },
+};
+const reciprocalDeterministic = interpretTurnDeterministically(reciprocalContext);
+const mergeReciprocalCandidates = (
+  candidates: RelationalInterpretationCandidate[]
+) => mergeModelInterpretation(
+  reciprocalDeterministic,
+  {
+    responseRelation: {
+      candidates,
+      ambiguous: candidates.length > 1,
+    },
+    confidence: 0.91,
+  },
+  reciprocalContext
+);
+const modelCandidate = (
+  relation: RelationalInterpretationCandidate["relation"],
+  confidence = 0.91,
+  targetTurnId = reciprocalEnvelope.assistantMoveId
+): RelationalInterpretationCandidate => ({
+  relation,
+  confidence,
+  targetTurnId,
+  evidence: [`model ${relation} relation`],
+});
+const reciprocalMerged = mergeReciprocalCandidates([
+  modelCandidate("acknowledges_previous_move"),
+]);
+assert.deepEqual(
+  reciprocalMerged.userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["reciprocates_move"]
+);
+assert.deepEqual(
+  reciprocalMerged.responseRelation.candidates.map((candidate) => candidate.relation),
+  ["acknowledges_previous_move", "shares_initiative"]
+);
+assert(!reciprocalMerged.responseRelation.candidates.some((candidate) =>
+  candidate.relation === "continues_active_thread"
+));
+assert.deepEqual(reciprocalMerged.userMoveRelation?.candidates[0]?.evidence, [{
+  source: "current_user_turn",
+  sourceUserTurnId: "user-turn-reciprocal",
+  start: 0,
+  end: reciprocalText.length,
+  text: reciprocalText,
+}]);
+
+assert.deepEqual(
+  mergeModelInterpretation(
+    reciprocalDeterministic,
+    null,
+    reciprocalContext
+  ).userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["reciprocates_move", "unclear"]
+);
+assert.deepEqual(
+  mergeReciprocalCandidates([
+    modelCandidate("acknowledges_previous_move", 0.54),
+  ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["reciprocates_move", "unclear"]
+);
+assert.deepEqual(
+  mergeReciprocalCandidates([
+    modelCandidate("acknowledges_previous_move", 0.91, "wrong-assistant-target"),
+  ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["reciprocates_move", "unclear"]
+);
+const targetlessReciprocalMerged = mergeReciprocalCandidates([{
+  relation: "acknowledges_previous_move",
+  confidence: 0.91,
+  evidence: ["model targetless reciprocal relation"],
+}]);
+assert.deepEqual(
+  targetlessReciprocalMerged.userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["reciprocates_move", "unclear"]
+);
+assert(targetlessReciprocalMerged.responseRelation.candidates.some((candidate) =>
+  candidate.relation === "continues_active_thread" &&
+  candidate.confidence === 0.68
+));
+assert.deepEqual(
+  mergeReciprocalCandidates([
+    modelCandidate("continues_active_thread"),
+  ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["unclear", "reciprocates_move"]
+);
+assert.deepEqual(
+  mergeReciprocalCandidates([
+    modelCandidate("acknowledges_previous_move"),
+    modelCandidate("continues_active_thread", 0.87),
+  ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["reciprocates_move", "unclear"]
+);
+assert.deepEqual(
+  mergeReciprocalCandidates([
+    modelCandidate("opens_new_thread"),
+  ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["opens_or_redirects_thread", "reciprocates_move"]
+);
+assert.deepEqual(
+  mergeReciprocalCandidates([
+    modelCandidate("opens_new_thread", 0.93),
+    modelCandidate("acknowledges_previous_move", 0.88),
+  ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["opens_or_redirects_thread", "reciprocates_move"]
+);
+
 const mismatchProjection = projectUserMoveRelation({
   target,
   sourceUserTurnId: "user-turn-mismatch",
@@ -296,6 +426,7 @@ assert(!handoffSource.includes(".test("));
 assert(!handoffSource.includes("promptVersion"));
 assert(!interpreterSource.includes("requiredFunction"));
 assert(!interpreterSource.includes("completionIntent"));
+assert(!interpreterSource.includes(`"${reciprocalText}"`));
 
 console.log(JSON.stringify({
   activeTarget: "strict adjacent opens envelope",
@@ -303,6 +434,7 @@ console.log(JSON.stringify({
   failClosedCases: failClosedCases.map(([name]) => name),
   exactSpan: true,
   multipleCandidatesPreserved: true,
+  adjacencyFallbackReconciled: true,
   guestAuthenticatedParity: true,
   plannerSelection: false,
 }, null, 2));

@@ -8,6 +8,7 @@ import {
   createResponsePlanPreflightAuthoritySnapshot,
   createResponsePlan,
   interpretTurnDeterministically,
+  mergeModelInterpretation,
   planInteractionMoveHandoff,
   type ActiveInteractionMoveHandoffTarget,
   type InteractionMoveHandoffPlan,
@@ -287,6 +288,255 @@ const context = assembleConversationControlContext({
 });
 const deterministic = interpretTurnDeterministically(context);
 assert(context.interactionMoveHandoffTarget);
+
+const reproducedReciprocalText = "嗨";
+const reproducedReciprocalContext = {
+  ...assembleConversationControlContext({
+    conversationId: "phm-a-reciprocal-reproduction",
+    currentTurnId: "phm-a-reciprocal-user-turn",
+    userMessage: reproducedReciprocalText,
+    recentMessages,
+    conversationState: determineConversationState({
+      currentUserMessage: reproducedReciprocalText,
+      recentMessages,
+    }),
+  }),
+  semanticEvidence: {
+    status: "insufficient" as const,
+    source: "none" as const,
+    reason: "Reproduces the persisted low-information reciprocal trace.",
+  },
+};
+const reproducedReciprocalDeterministic = interpretTurnDeterministically(
+  reproducedReciprocalContext
+);
+const reproducedReciprocalInterpretation = mergeModelInterpretation(
+  reproducedReciprocalDeterministic,
+  {
+    responseRelation: {
+      candidates: [{
+        relation: "acknowledges_previous_move",
+        confidence: 0.91,
+        targetTurnId: reciprocalEnvelope.assistantMoveId,
+        evidence: ["model reciprocal relation"],
+      }],
+      ambiguous: false,
+    },
+    confidence: 0.91,
+  },
+  reproducedReciprocalContext
+);
+const createPlanForInterpretation = (
+  currentContext: Parameters<typeof buildDialogueState>[0],
+  currentInterpretation: Parameters<typeof buildDialogueState>[1]
+) => createResponsePlan({
+  context: currentContext,
+  interpretation: currentInterpretation,
+  dialogueState: buildDialogueState(currentContext, currentInterpretation),
+  clinicalAdviceProvider: () => null,
+});
+const reproducedReciprocalPlan = createPlanForInterpretation(
+  reproducedReciprocalContext,
+  reproducedReciprocalInterpretation
+);
+assert.deepEqual(
+  reproducedReciprocalInterpretation.userMoveRelation?.candidates.map(
+    (item) => item.kind
+  ),
+  ["reciprocates_move"]
+);
+assert.deepEqual(tuple(reproducedReciprocalPlan.interactionMoveHandoffPlan), {
+  selectedRelation: "reciprocates_move",
+  requiredFunction: "complete_reciprocal_contact",
+  completionIntent: "fulfill",
+  questionPolicy: "optional_after_completion",
+});
+
+const unavailableModelPlan = createPlanForInterpretation(
+  reproducedReciprocalContext,
+  reproducedReciprocalDeterministic
+);
+assert.equal(
+  unavailableModelPlan.interactionMoveHandoffPlan?.requiredFunction,
+  "defer_handoff_completion"
+);
+
+const targetlessReciprocalInterpretation = mergeModelInterpretation(
+  reproducedReciprocalDeterministic,
+  {
+    responseRelation: {
+      candidates: [{
+        relation: "acknowledges_previous_move",
+        confidence: 0.91,
+        evidence: ["model targetless reciprocal relation"],
+      }],
+      ambiguous: false,
+    },
+    confidence: 0.91,
+  },
+  reproducedReciprocalContext
+);
+assert.deepEqual(
+  targetlessReciprocalInterpretation.userMoveRelation?.candidates.map(
+    (candidate) => candidate.kind
+  ),
+  ["reciprocates_move", "unclear"]
+);
+assert.equal(
+  createPlanForInterpretation(
+    reproducedReciprocalContext,
+    targetlessReciprocalInterpretation
+  ).interactionMoveHandoffPlan?.requiredFunction,
+  "defer_handoff_completion"
+);
+
+const genuineUnclearInterpretation = mergeModelInterpretation(
+  reproducedReciprocalDeterministic,
+  {
+    responseRelation: {
+      candidates: [
+        {
+          relation: "acknowledges_previous_move",
+          confidence: 0.91,
+          targetTurnId: reciprocalEnvelope.assistantMoveId,
+          evidence: ["model reciprocal relation"],
+        },
+        {
+          relation: "continues_active_thread",
+          confidence: 0.87,
+          targetTurnId: reciprocalEnvelope.assistantMoveId,
+          evidence: ["model unclear relation"],
+        },
+      ],
+      ambiguous: true,
+    },
+    confidence: 0.91,
+  },
+  reproducedReciprocalContext
+);
+assert.equal(
+  createPlanForInterpretation(
+    reproducedReciprocalContext,
+    genuineUnclearInterpretation
+  ).interactionMoveHandoffPlan?.requiredFunction,
+  "defer_handoff_completion"
+);
+
+const topicRedirectInterpretation = mergeModelInterpretation(
+  reproducedReciprocalDeterministic,
+  {
+    responseRelation: {
+      candidates: [{
+        relation: "opens_new_thread",
+        confidence: 0.91,
+        targetTurnId: reciprocalEnvelope.assistantMoveId,
+        evidence: ["model topic redirect relation"],
+      }],
+      ambiguous: false,
+    },
+    confidence: 0.91,
+  },
+  reproducedReciprocalContext
+);
+assert.equal(
+  createPlanForInterpretation(
+    reproducedReciprocalContext,
+    topicRedirectInterpretation
+  ).interactionMoveHandoffPlan?.requiredFunction,
+  "continue_user_introduced_content"
+);
+
+const questionEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+  assistantMoveId: "assistant-question-greeting",
+  generationId: "generation-question-greeting",
+  greetingMove: "light_question",
+});
+const questionMessages: AiConversationMessage[] = [{
+  id: questionEnvelope.assistantMoveId,
+  role: "assistant",
+  content: "今天有没有吃到什么还不错的东西？",
+  status: "saved",
+  interactionMoveEnvelope: questionEnvelope,
+}];
+const questionReciprocalContext = {
+  ...assembleConversationControlContext({
+    conversationId: "phm-a-question-reciprocal",
+    currentTurnId: "phm-a-question-reciprocal-turn",
+    userMessage: reproducedReciprocalText,
+    recentMessages: questionMessages,
+    conversationState: determineConversationState({
+      currentUserMessage: reproducedReciprocalText,
+      recentMessages: questionMessages,
+    }),
+  }),
+  semanticEvidence: {
+    status: "insufficient" as const,
+    source: "none" as const,
+    reason: "Exercises the typed question-greeting relation contract.",
+  },
+};
+const questionReciprocalDeterministic = interpretTurnDeterministically(
+  questionReciprocalContext
+);
+const questionReciprocalInterpretation = mergeModelInterpretation(
+  questionReciprocalDeterministic,
+  {
+    responseRelation: {
+      candidates: [{
+        relation: "acknowledges_previous_move",
+        confidence: 0.91,
+        targetTurnId: questionEnvelope.assistantMoveId,
+        evidence: ["model reciprocal relation"],
+      }],
+      ambiguous: false,
+    },
+    confidence: 0.91,
+  },
+  questionReciprocalContext
+);
+assert.equal(
+  createPlanForInterpretation(
+    questionReciprocalContext,
+    questionReciprocalInterpretation
+  ).interactionMoveHandoffPlan?.requiredFunction,
+  "defer_handoff_completion"
+);
+
+const answerText = "吃了个炒饭";
+const questionAnswerContext = assembleConversationControlContext({
+  conversationId: "phm-a-question-answer",
+  currentTurnId: "phm-a-question-answer-turn",
+  userMessage: answerText,
+  recentMessages: questionMessages,
+  conversationState: determineConversationState({
+    currentUserMessage: answerText,
+    recentMessages: questionMessages,
+  }),
+});
+const questionAnswerDeterministic = interpretTurnDeterministically(questionAnswerContext);
+const questionAnswerInterpretation = mergeModelInterpretation(
+  questionAnswerDeterministic,
+  {
+    responseRelation: {
+      candidates: [{
+        relation: "answers_previous_move",
+        confidence: 0.91,
+        targetTurnId: questionEnvelope.assistantMoveId,
+        evidence: ["model answer relation"],
+      }],
+      ambiguous: false,
+    },
+    confidence: 0.91,
+  },
+  questionAnswerContext
+);
+assert.equal(
+  createPlanForInterpretation(
+    questionAnswerContext,
+    questionAnswerInterpretation
+  ).interactionMoveHandoffPlan?.requiredFunction,
+  "continue_from_user_answer"
+);
 const reciprocalRelation = relationFor(
   context.interactionMoveHandoffTarget,
   [candidate("reciprocates_move")]
