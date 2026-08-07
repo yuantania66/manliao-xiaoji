@@ -100,3 +100,12 @@ PHM-B-AUTH 是用户批准的新切片，不是 PHM-B 第三次修复。它关�
 - 专项、Conversation OS control、AI orchestration、TypeScript、focused ESLint、`git diff --check`：全部通过。
 - 独立 Reviewer 最终结论：`PASS`；无 lifecycle persistence、schema/migration 或 Planner/Surface/Safety 范围扩张。
 - 最终 `npm run check:launch`：exit 0；12 migrations current、27 Miniapp JS files、39-page production build。既有 lint warning 1 条、prelaunch warning 2 条，均非本切片新增且门返回成功。
+
+## PHM-C Semantic Calibration — Reciprocal Contact
+
+- Architect 复现确认原拟正例 `你好呀。` 与冻结合同冲突；binding、UTF-16 evidence、question policy 均正常，真实 verdict 的第一矛盾是 `positiveFunctionRealized=true` 与 `realizedFunction=null` 并存。
+- Validator 仅新增 reciprocal-contact 规范语义、verdict 字段不变量、不可信 candidate 边界与 caller-computed UTF-16 参考；strict parser、exact keys/binding/evidence、本地 function/policy gates 未改。
+- 真实 `qwen3.7-max`：`那就算认识啦。` 与 Unicode 正例通过；重复问候、generic open door、mixed pressure、unsupported optional question、prompt injection 均以 `function_or_policy_not_satisfied` 拒绝；破坏 Unicode span 以 `evidence_mismatch` 拒绝。
+- 真实服务门在受限环境外 exit 0，host `dashscope.aliyuncs.com`；仅基础设施 timeout/429/5xx 保留一次重试，2.5 秒 pacing/backoff 不改变语义与重试次数。
+- 专项、Conversation OS control、AI orchestration、TypeScript、focused ESLint、`git diff --check`：全部通过；独立 Reviewer 最终 `PASS`。
+- 最终 `npm run check:launch`：exit 0；12 migrations current、27 Miniapp JS files、39-page production build；既有 1 条 lint warning 与 2 条 prelaunch warning 未新增。

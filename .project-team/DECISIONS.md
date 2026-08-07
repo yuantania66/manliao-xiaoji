@@ -18,3 +18,4 @@
 | 2026-08-05 | 冻结并执行 PHM-E Safety supersession 与纯查询 | 用户明确授权单独实现 Safety supersedes 和 resolved/active 纯查询，并继续禁止持久 lifecycle state | 只从严格有效、相邻 committed events 投影 winner-only `supersedes`；无 active target 保持 null envelope |
 | 2026-08-05 | 封存 PHM-E，待 Git seal | repair pass 1 关闭 execution-turn 错绑与 duplicate-source ambiguity；独立 Reviewer 最终 `PASS`，最终 `npm run check:launch` exit 0 | 当前切片验收关闭；不新增产品决策，不授权持久 lifecycle state 或 Batch 2 实现 |
 | 2026-08-07 | 封存 PHM-C Validator Structured Output Reliability | 用户批准将真实门限定为 strict exact-schema JSON；四类真实 Qwen fixtures、专项/相邻门、完整 launch 与独立 Reviewer 均通过 | Qwen PHM-C 单点启用 `json_object`；语义拒绝继续 fail closed，Semantic Calibration 保持独立未授权切片 |
+| 2026-08-08 | 封存 PHM-C Semantic Calibration — Reciprocal Contact | 冻结合同拒绝第二次纯问候；真实 Qwen 证明合同一致释放/过渡正例通过，五类反例在 strict schema/binding/evidence 后安全拒绝 | 仅校准 Validator Prompt；不改 §14.5、parser、本地 gates、Planner/Surface/Safety 或 lifecycle state |
