@@ -198,6 +198,7 @@ export const defaultInteractionMoveHandoffSemanticProvider = async (
     model: process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
     messages,
     temperature: 0,
+    responseFormat: "json_object",
   });
   return parseInteractionMoveHandoffSemanticProviderOutput(response.text);
 };

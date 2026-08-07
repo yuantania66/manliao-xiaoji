@@ -91,3 +91,12 @@ PHM-B-AUTH 是用户批准的新切片，不是 PHM-B 第三次修复。它关�
 - 独立 Reviewer 最终结论：`PASS`；原始问题已解决，无回归或不必要变更，PHM-E 可封存。
 - 最终 `npm run check:launch`：exit 0；12 migrations current、27 Miniapp JS files、39-page production build。既有 lint warning 1 条、prelaunch warning 2 条，均非 PHM-E 变更且门返回成功。
 - 变更未触及 schema、migration、Memory、User Model 或 Batch 2；查询结果不持久化。
+
+## PHM-C Validator Structured Output Reliability
+
+- Qwen request-shape 专项：PHM-C 单点携带 `response_format.type=json_object` 与 `enable_thinking=false`；普通 Qwen 与 Mock 不变；unsupported provider 在 fetch 前 fail closed 且不泄露 Prompt。
+- strict full-string parser、exact keys/binding、UTF-16 evidence、uncertain/malformed/semantic fail-closed 保持不变；旧 semantic-repair Prompt/interface 扩张已移除。
+- 真实 `qwen3.7-max` 四类 fixtures：全部返回 strict exact-schema JSON；语义或 evidence 拒绝均安全记录为低基数类别；gate exit 0。
+- 专项、Conversation OS control、AI orchestration、TypeScript、focused ESLint、`git diff --check`：全部通过。
+- 独立 Reviewer 最终结论：`PASS`；无 lifecycle persistence、schema/migration 或 Planner/Surface/Safety 范围扩张。
+- 最终 `npm run check:launch`：exit 0；12 migrations current、27 Miniapp JS files、39-page production build。既有 lint warning 1 条、prelaunch warning 2 条，均非本切片新增且门返回成功。

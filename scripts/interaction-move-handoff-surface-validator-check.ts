@@ -7,12 +7,14 @@ import type {
 } from "../conversation-os/control";
 import type { ProactiveGreetingHandoffFunction } from "../conversation-os/interactionMoveEnvelope";
 import {
+  defaultInteractionMoveHandoffSemanticProvider,
   type InteractionMoveHandoffSemanticProvider,
   type InteractionMoveHandoffSemanticProviderInput,
   type InteractionMoveHandoffSemanticVerdict,
   parseInteractionMoveHandoffSemanticProviderOutput,
   validateInteractionMoveHandoffOutput,
 } from "../services/ai/interactionMoveHandoffOutputValidator";
+import { callModel } from "../services/ai/modelProvider";
 import { buildChatPrompt } from "../services/ai/promptBuilder";
 import { enforceResponsePlan } from "../services/ai/responsePlanValidator";
 import type { AiGenerationResult } from "../services/ai/types";
@@ -194,6 +196,109 @@ for (const malformedOutput of [
 }
 
 const fullTuplePlan = responsePlanFor({ requiredFunction: "complete_reciprocal_contact" });
+
+const providerEnvNames = [
+  "AI_PROVIDER",
+  "AI_MAIN_MODEL",
+  "OPENAI_API_KEY",
+  "DEEPSEEK_API_KEY",
+  "QWEN_API_KEY",
+  "DASHSCOPE_API_KEY",
+  "ZHIPU_API_KEY",
+] as const;
+const previousProviderEnv = Object.fromEntries(
+  providerEnvNames.map((name) => [name, process.env[name]])
+);
+const originalFetch = globalThis.fetch;
+const outboundBodies: Array<Record<string, unknown>> = [];
+let fetchCalls = 0;
+try {
+  process.env.AI_PROVIDER = "qwen";
+  process.env.AI_MAIN_MODEL = "qwen3.7-max";
+  process.env.QWEN_API_KEY = "request-shape-test-key";
+  globalThis.fetch = async (_input, init) => {
+    fetchCalls += 1;
+    const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    outboundBodies.push(body);
+    const input = {
+      planId: fullTuplePlan.planId,
+      planBinding: fullTuplePlan.interactionMoveHandoffPlan!,
+      targetAssistantText,
+      currentUserText,
+      candidateReply: "你好呀。",
+      ordinaryQuestionIndependentlySupported: false,
+    } satisfies InteractionMoveHandoffSemanticProviderInput;
+    return new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify(verdictFor({ input })) } }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+
+  const structuredVerdict = await defaultInteractionMoveHandoffSemanticProvider({
+    planId: fullTuplePlan.planId,
+    planBinding: fullTuplePlan.interactionMoveHandoffPlan!,
+    targetAssistantText,
+    currentUserText,
+    candidateReply: "你好呀。",
+    ordinaryQuestionIndependentlySupported: false,
+  });
+  assert.equal((structuredVerdict as InteractionMoveHandoffSemanticVerdict).status, "satisfied");
+  assert.equal(outboundBodies[0].enable_thinking, false);
+  assert.deepEqual(outboundBodies[0].response_format, { type: "json_object" });
+  assert.equal(outboundBodies[0].temperature, 0);
+  const structuredPromptText = (outboundBodies[0].messages as Array<{ content: string }>)
+    .map((message) => message.content)
+    .join("\n");
+  assert(
+    structuredPromptText.includes("JSON"),
+    "Qwen JSON mode requires JSON to appear in the prompt"
+  );
+
+  await callModel({
+    model: "qwen3.7-max",
+    messages: [{ role: "user", content: "ordinary request" }],
+    temperature: 0,
+  });
+  assert.equal("response_format" in outboundBodies[1], false);
+  assert.equal(outboundBodies[1].enable_thinking, false);
+
+  const secretPrompt = "MUST_NOT_LEAK_PROMPT";
+  for (const provider of ["openai", "deepseek", "zhipu"] as const) {
+    process.env.AI_PROVIDER = provider;
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.DEEPSEEK_API_KEY = "test-key";
+    process.env.ZHIPU_API_KEY = "test-key";
+    const callsBefore = fetchCalls;
+    let serializedError = "";
+    try {
+      await callModel({
+        model: "unsupported-model",
+        messages: [{ role: "user", content: secretPrompt }],
+        responseFormat: "json_object",
+      });
+      assert.fail(`${provider} must fail closed for json_object`);
+    } catch (error) {
+      serializedError = `${String(error)} ${JSON.stringify(error)}`;
+    }
+    assert.equal(fetchCalls, callsBefore, `${provider} must fail before fetch`);
+    assert(!serializedError.includes(secretPrompt), `${provider} error leaked prompt`);
+  }
+
+  process.env.AI_PROVIDER = "mock";
+  const mock = await callModel({
+    model: "mock-model",
+    messages: [{ role: "user", content: "普通消息" }],
+    responseFormat: "json_object",
+  });
+  assert.equal(mock.model, "mock:mock-model");
+  assert.equal(fetchCalls, 2);
+} finally {
+  globalThis.fetch = originalFetch;
+  for (const name of providerEnvNames) {
+    const value = previousProviderEnv[name];
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+}
 const prompt = buildChatPrompt({
   userMessage: currentUserText,
   recentMessages: [

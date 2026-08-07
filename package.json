@@ -46,6 +46,7 @@
     "check:interaction-move-handoff": "tsx scripts/interaction-move-handoff-check.ts",
     "check:interaction-move-handoff-planner": "tsx scripts/interaction-move-handoff-planner-check.ts",
     "check:interaction-move-handoff-surface-validator": "tsx scripts/interaction-move-handoff-surface-validator-check.ts",
+    "check:interaction-move-handoff-qwen-real": "node --env-file=.env --import tsx scripts/interaction-move-handoff-qwen-structured-output-eval.ts",
     "check:natural-chat-control": "tsx scripts/natural-chat-control-check.ts",
     "check:proactive-greeting-control": "tsx scripts/proactive-greeting-control-check.ts",
     "check:assistant-grounding": "tsx scripts/assistant-grounding-check.ts",
