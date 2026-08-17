@@ -142,14 +142,16 @@ export async function POST(
       const contentForP2 = requireNonEmptyString(body.content, "content", 2000);
       const workerId = `messages-${user.id.slice(0, 8)}`;
       const created = await createPublicationStore();
-      if (created.mode === "prisma") {
-        const { PrismaPublicationStore } = await import(
-          "@/services/chat/assistantPublication/prismaStore"
-        );
-        const prismaStore = created.store as InstanceType<
-          typeof PrismaPublicationStore
-        >;
-        await prismaStore.hydrate(sessionId, clientTurnId);
+      if (
+        created.mode === "prisma" &&
+        "hydrate" in created.store &&
+        typeof (created.store as { hydrate?: unknown }).hydrate === "function"
+      ) {
+        await (
+          created.store as {
+            hydrate: (sessionId: string, clientTurnId: string) => Promise<void>;
+          }
+        ).hydrate(sessionId, clientTurnId);
       }
       const result = ingress(created.store, {
         sessionId,

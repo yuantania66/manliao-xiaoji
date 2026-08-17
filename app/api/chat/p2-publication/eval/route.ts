@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
       });
       await persist?.();
       if (result.kind !== "ok") {
-        return ok({ success: false, ...result, storeMode: created.mode });
+        return ok({ ...result, success: false, storeMode: created.mode });
       }
       return ok({
         success: result.success,
