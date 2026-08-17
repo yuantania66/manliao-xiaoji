@@ -3,6 +3,8 @@
  * Production V1 writer remains the default path until PM authorizes a controlled trial.
  */
 
+export type EnvBag = Record<string, string | undefined>;
+
 export const P2_PUBLICATION_FLAG_ENV = "P2_PUBLICATION_ENABLED";
 export const P2_PUBLICATION_COHORT_ENV = "P2_PUBLICATION_COHORT";
 export const P2_PUBLICATION_COHORT_ALLOWLIST_ENV =
@@ -10,7 +12,7 @@ export const P2_PUBLICATION_COHORT_ALLOWLIST_ENV =
 
 /** True only when env is exactly "1" or "true" (case-insensitive). Default: false. */
 export function isP2PublicationEnabled(
-  env: NodeJS.ProcessEnv = process.env,
+  env: EnvBag = process.env,
 ): boolean {
   const raw = (env[P2_PUBLICATION_FLAG_ENV] ?? "").trim().toLowerCase();
   return raw === "1" || raw === "true";
@@ -21,7 +23,7 @@ export function isP2PublicationEnabled(
  * Default OFF. Does not flip site-wide writer.
  */
 export function isP2PublicationCohortEnabled(
-  env: NodeJS.ProcessEnv = process.env,
+  env: EnvBag = process.env,
 ): boolean {
   if (!isP2PublicationEnabled(env)) return false;
   const raw = (env[P2_PUBLICATION_COHORT_ENV] ?? "").trim().toLowerCase();
@@ -30,7 +32,7 @@ export function isP2PublicationCohortEnabled(
 
 /** Allowlist of user ids (comma/space separated). Empty = no cohort members. */
 export function getP2PublicationCohortAllowlist(
-  env: NodeJS.ProcessEnv = process.env,
+  env: EnvBag = process.env,
 ): string[] {
   const raw = env[P2_PUBLICATION_COHORT_ALLOWLIST_ENV] ?? "";
   return raw
@@ -41,7 +43,7 @@ export function getP2PublicationCohortAllowlist(
 
 export function isP2PublicationCohortMember(
   userId: string | null | undefined,
-  env: NodeJS.ProcessEnv = process.env,
+  env: EnvBag = process.env,
 ): boolean {
   if (!isP2PublicationCohortEnabled(env)) return false;
   const id = userId?.trim();
@@ -57,7 +59,7 @@ export function isP2PublicationCohortMember(
 export function canUseP2PublicationPath(args: {
   previewOptIn?: boolean;
   userId?: string | null;
-  env?: NodeJS.ProcessEnv;
+  env?: EnvBag;
 }): boolean {
   const env = args.env ?? process.env;
   if (!isP2PublicationEnabled(env)) return false;
@@ -72,7 +74,7 @@ export type P2PublicationStoreMode = "memory" | "file" | "prisma";
  * Default "file" for eval without requiring a migrated DB; "prisma" for real table.
  */
 export function getP2PublicationStoreMode(
-  env: NodeJS.ProcessEnv = process.env,
+  env: EnvBag = process.env,
 ): P2PublicationStoreMode {
   const raw = (env.P2_PUBLICATION_STORE ?? "file").trim().toLowerCase();
   if (raw === "memory" || raw === "prisma" || raw === "file") return raw;

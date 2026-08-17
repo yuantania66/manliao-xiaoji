@@ -7,6 +7,7 @@ import {
   DEFAULT_ASSISTANT_DISPLAY_NAME,
   buildP2PreviewSystemPrompt,
 } from "./assistantIdentity";
+import type { EnvBag } from "@/lib/p2-publication-flag";
 
 export type P2QwenStreamConfig = {
   configured: boolean;
@@ -18,7 +19,7 @@ export type P2QwenStreamConfig = {
 };
 
 export function resolveP2QwenStreamConfig(
-  env: NodeJS.ProcessEnv = process.env,
+  env: EnvBag = process.env,
 ): P2QwenStreamConfig {
   const apiKey =
     env.QWEN_API_KEY?.trim() ||

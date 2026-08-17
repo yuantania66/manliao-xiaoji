@@ -83,7 +83,7 @@ export type StreamDeltaSource = (args: {
   messages: AiModelMessage[];
   model: string;
   signal?: AbortSignal;
-}) => AsyncIterable<string>;
+}) => AsyncIterable<string> | Promise<AsyncIterable<string>>;
 
 export type RunP2StreamPipelineArgs = {
   store: PublicationStore;
@@ -110,7 +110,7 @@ function buildMessages(args: {
   intentPosturePrompt: string;
 }): AiModelMessage[] {
   const messages: AiModelMessage[] = [
-    { role: "system", content: args.intentPosturePrompt },
+    { role: "developer", content: args.intentPosturePrompt },
   ];
   const recent = (args.recentMessages ?? []).slice(-12);
   for (const turn of recent) {
