@@ -1,18 +1,7 @@
 /**
  * P2 preview turn intent — discourse-structure understanding, not reply micro-rules.
- * Reuses Conversation OS deterministic interpret when useful; adds relation-to-prior for soft ack.
+ * Self-contained for mainline merge (does not require conversation-os/control).
  */
-
-import {
-  assembleConversationControlContext,
-  buildDialogueState,
-  createResponsePlan,
-  interpretTurnDeterministically,
-  type ResponsePlan,
-  type TurnInterpretation,
-} from "@/conversation-os/control";
-import { determineConversationState } from "@/conversation-os/state";
-import type { AiConversationMessage } from "@/services/ai/types";
 
 import type { ChatTurnSnippet } from "./assistantIdentity";
 
@@ -40,12 +29,11 @@ const SHORT_ACK =
 const PRIOR_CLOSING_OR_AVAILABILITY =
   /安静|待着|随时|需要我|叫我|不说也|没什么.*也|先这样|我在这/u;
 
-function toAiMessages(recent: ChatTurnSnippet[]): AiConversationMessage[] {
-  return recent
-    .filter((m) => m.role === "user" || m.role === "assistant")
-    .map((m) => ({ role: m.role, content: m.content.trim() }))
-    .filter((m) => m.content);
-}
+const YIELD_OR_NO_TOPIC =
+  /没什么想说|不知道说什么|随便|都行|先这样|不想聊了|没话题/u;
+
+const REQUEST_ANSWER =
+  /[？?]|怎么|为什么|什么意思|怎么办|是不是|能不能|可以吗/u;
 
 function priorAssistant(recent: ChatTurnSnippet[]): string {
   for (let i = recent.length - 1; i >= 0; i--) {
@@ -120,88 +108,44 @@ export function resolveP2TurnIntent(args: {
     };
   }
 
-  // Conversation OS deterministic layer (when it adds signal).
-  let interpretation: TurnInterpretation | null = null;
-  let plan: ResponsePlan | null = null;
-  try {
-    const recentAi = toAiMessages(recent);
-    const conversationState = determineConversationState({
-      currentUserMessage: userText,
-      recentMessages: recentAi,
-    });
-    const context = assembleConversationControlContext({
-      conversationId: "p2-preview",
-      userMessage: userText,
-      recentMessages: recentAi,
-      conversationState,
-    });
-    interpretation = interpretTurnDeterministically(context);
-    const dialogueState = buildDialogueState(context, interpretation);
-    plan = createResponsePlan({
-      context,
-      interpretation,
-      dialogueState,
-      clinicalAdviceProvider: () => ({
-        strategy: "none",
-        intent: "none",
-        questionFunction: "none",
-        toneConstraints: [],
-        interventionBoundaries: ["no diagnosis"],
-        evidence: ["p2-preview-disabled-clinical"],
-      }),
-    });
-    evidence.push(`os_act=${interpretation.primaryDialogueAct}`);
-  } catch (error) {
-    evidence.push(
-      `os_unavailable:${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
-
-  const act = interpretation?.primaryDialogueAct ?? null;
-  const actions = plan?.responseActions ?? [];
-
-  if (act === "yield_initiative" || actions.includes("take_light_topic_initiative")) {
+  if (YIELD_OR_NO_TOPIC.test(userText)) {
     return {
       kind: "yield_or_no_topic",
       posture:
         "用户暂无明确话题或在让出主动：轻量陪伴即可，不要审讯式追问。",
-      evidence,
-      primaryDialogueAct: act,
-      responseActions: actions,
+      evidence: ["yield_or_no_topic_form"],
+      primaryDialogueAct: "yield_initiative",
+      responseActions: ["take_light_topic_initiative"],
     };
   }
 
-  if (
-    interpretation?.responseRelation?.candidates?.some(
-      (c) => c.relation === "requests_answer",
-    )
-  ) {
+  if (REQUEST_ANSWER.test(userText) && userText.length <= 40) {
     return {
       kind: "request_answer",
       posture: "用户在请求回答：先直接回应所问，再决定是否轻轻延展。",
-      evidence,
-      primaryDialogueAct: act,
-      responseActions: actions,
+      evidence: ["request_answer_form"],
+      primaryDialogueAct: "request_answer",
+      responseActions: ["answer_directly"],
     };
   }
 
-  if (act === "share" || actions.includes("acknowledge_without_psychologizing")) {
+  if (userText.length >= 4) {
     return {
       kind: "share",
       posture:
         "用户在分享或表达：先理解这句话在对话中的用意，再自然简短回应。",
-      evidence,
-      primaryDialogueAct: act,
-      responseActions: actions,
+      evidence: ["share_length_heuristic"],
+      primaryDialogueAct: "share",
+      responseActions: ["acknowledge_without_psychologizing"],
     };
   }
 
   return {
     kind: "other",
     posture: "先理解用户这句话在对话里的意图，再自然简短回应。",
-    evidence,
-    primaryDialogueAct: act,
-    responseActions: actions,
+    evidence: ["fallback"],
+    primaryDialogueAct: null,
+    responseActions: [],
   };
 }
 

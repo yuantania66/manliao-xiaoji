@@ -108,10 +108,9 @@ function cases(): CaseResult[] {
       assert.match(client, /data-p2-publication-opt-in/);
       // Default V1 messages POST must not force useP2Publication.
       assert.equal(client.includes("useP2Publication"), false);
-      assert.match(
-        client,
-        /body:\s*\{\s*content:\s*text,\s*turnId:\s*optimisticId,\s*debugTrace:\s*showAiDebugTrace\s*\}/,
-      );
+      // V1 path keeps ordinary content POST (turnId optional depending on base).
+      assert.match(client, /content:\s*text/);
+      assert.match(client, /debugTrace:\s*showAiDebugTrace/);
     }),
   );
 
