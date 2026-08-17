@@ -9,6 +9,16 @@ import { CalendarDays, Search } from "lucide-react";
 import { apiRequest, ClientApiError } from "@/lib/client-api";
 import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
+import {
+  isP2PublicationClientOptIn,
+  publicationMarkerLabel,
+  resolvePublicationUiState,
+  type PublicationUiFields,
+} from "@/lib/p2-publication-ui";
+
+type MessagePublication = PublicationUiFields & {
+  status?: string | null;
+};
 
 type Message = {
   id: string;
@@ -17,6 +27,8 @@ type Message = {
   createdAt: string;
   promptVersion?: string | null;
   debugTrace?: AiDebugTrace;
+  /** Present only on P2 / eval responses — never invent for V1. */
+  publication?: MessagePublication | null;
 };
 
 type AiDebugTrace = {
@@ -512,13 +524,22 @@ const incrementGuestAiUsage = () => {
   return Math.max(GUEST_AI_DAILY_LIMIT - next.count, 0);
 };
 
-function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
+function ChatContent({
+  initialChat,
+  forceP2PublicationOptIn = false,
+}: {
+  initialChat: InitialChatData;
+  forceP2PublicationOptIn?: boolean;
+}) {
   const searchParams = useSearchParams();
   const date = searchParams.get("date");
   const requestedSessionId = searchParams.get("sessionId");
   const targetMessageId = searchParams.get("messageId");
   const showAiDebugTrace =
     searchParams.get("debugAi") === "1" || process.env.NEXT_PUBLIC_AI_DEBUG_TRACE === "true";
+  /** Opt-in only: ?p2Publication=1 or /chat/p2-preview — does not enable site-wide P2. */
+  const p2PublicationOptIn =
+    forceP2PublicationOptIn || isP2PublicationClientOptIn(searchParams);
   const [input, setInput] = useState("");
   const canUseInitialChat =
     !requestedSessionId || requestedSessionId === initialChat?.sessionId;
@@ -731,6 +752,197 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     setInput("");
     setErrorMessage("");
 
+    // P2 provisional UI opt-in only (?p2Publication=1 / /chat/p2-preview).
+    // Real Qwen streaming → provisional (临时) → commit (已确认). Default chat stays V1.
+    if (p2PublicationOptIn) {
+      const p2SessionId = sessionId ?? "p2-eval-local";
+      const clientTurnId = optimisticId;
+      const workerId = `ui-${clientTurnId.slice(0, 24)}`;
+      const authUserId = getStoredAuth()?.user?.id ?? null;
+      const recentMessages = messages
+        .filter((message) => message.role === "user" || message.role === "assistant")
+        .slice(-12)
+        .map((message) => ({
+          role: message.role as "user" | "assistant",
+          content: message.text,
+        }));
+
+      try {
+        const response = await fetch("/api/chat/p2-publication/eval", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            op: "generate_stream",
+            sessionId: p2SessionId,
+            clientTurnId,
+            workerId,
+            content: text,
+            userId: authUserId,
+            recentMessages,
+          }),
+        });
+
+        if (response.status === 404) {
+          throw new ClientApiError(
+            "P2 publication 未开启（服务端 flag 默认 off）。请在受控环境设置 P2_PUBLICATION_ENABLED=1 后再用 /chat/p2-preview 预览。",
+            404,
+            "NOT_FOUND",
+          );
+        }
+
+        if (!response.ok || !response.body) {
+          let message = "P2 流式请求失败";
+          try {
+            const payload = (await response.json()) as {
+              ok?: boolean;
+              error?: { message?: string };
+            };
+            if (payload?.error?.message) message = payload.error.message;
+          } catch {
+            /* ignore */
+          }
+          throw new ClientApiError(message, response.status, "P2_STREAM_FAILED");
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        let assistantId = pendingAssistantId;
+        let sawCommitted = false;
+
+        const applyAssistant = (next: {
+          id?: string;
+          text: string;
+          publication: MessagePublication;
+        }) => {
+          const id = next.id ?? assistantId;
+          setTypingMessageIds((current) =>
+            current.filter((item) => item !== pendingAssistantId && item !== assistantId).concat(id),
+          );
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === pendingAssistantId || message.id === assistantId
+                ? {
+                    id,
+                    role: "assistant",
+                    text: next.text,
+                    createdAt: now,
+                    publication: next.publication,
+                  }
+                : message,
+            ),
+          );
+          assistantId = id;
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            let event: {
+              type?: string;
+              body?: string;
+              finalContent?: string;
+              provisional?: boolean;
+              provisionalMarkedTemporary?: boolean;
+              provisionalMarker?: string;
+              message?: string;
+              code?: string;
+              missingEnv?: string[];
+              publication?: { status?: string; id?: string };
+            };
+            try {
+              event = JSON.parse(trimmed) as typeof event;
+            } catch {
+              continue;
+            }
+
+            if (event.type === "provisional") {
+              applyAssistant({
+                id: event.publication?.id ?? assistantId,
+                text: event.body || "",
+                publication: {
+                  provisional: true,
+                  provisionalMarkedTemporary: true,
+                  provisionalMarker: event.provisionalMarker ?? null,
+                  status: event.publication?.status ?? "streaming",
+                  publicationStatus: event.publication?.status ?? "streaming",
+                },
+              });
+            } else if (event.type === "committed") {
+              sawCommitted = true;
+              applyAssistant({
+                id: event.publication?.id ?? assistantId,
+                text: event.finalContent || "",
+                publication: {
+                  provisional: false,
+                  provisionalMarkedTemporary:
+                    event.provisionalMarkedTemporary ?? false,
+                  status: event.publication?.status ?? "committed",
+                  publicationStatus: event.publication?.status ?? "committed",
+                },
+              });
+              setTypingMessageIds((current) =>
+                current.filter((item) => item !== assistantId && item !== pendingAssistantId),
+              );
+            } else if (event.type === "error") {
+              const missing =
+                Array.isArray(event.missingEnv) && event.missingEnv.length > 0
+                  ? ` 缺少：${event.missingEnv.join(", ")}`
+                  : "";
+              setTypingMessageIds((current) =>
+                current.filter((item) => item !== assistantId && item !== pendingAssistantId),
+              );
+              if (event.code === "stream_in_progress") {
+                setErrorMessage(event.message || "连接恢复中，正在同步未确认回复…");
+              } else if (!sawCommitted) {
+                setMessages((current) =>
+                  current.map((message) =>
+                    message.id === assistantId || message.id === pendingAssistantId
+                      ? {
+                          ...message,
+                          publication: {
+                            provisional: false,
+                            provisionalMarkedTemporary: false,
+                            status: event.publication?.status ?? "failed_retryable",
+                            publicationStatus:
+                              event.publication?.status ?? "failed_retryable",
+                          },
+                        }
+                      : message,
+                  ),
+                );
+                setErrorMessage((event.message || "这次回复没能完成") + missing);
+              }
+            }
+          }
+        }
+
+        setTypingMessageIds((current) =>
+          current.filter((item) => item !== assistantId && item !== pendingAssistantId),
+        );
+      } catch (error) {
+        setMessages((current) =>
+          current.filter(
+            (message) => message.id !== pendingAssistantId && message.id !== optimisticId,
+          ),
+        );
+        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+        if (error instanceof ClientApiError && error.status === 404) {
+          setErrorMessage(error.message);
+        } else {
+          setErrorMessage(getErrorMessage(error));
+        }
+      }
+      return;
+    }
+
     if (isGuestMode) {
       const replacePendingAssistant = async (assistantMessage: Message) => {
         setTypingMessageIds((current) =>
@@ -907,6 +1119,15 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           </button>
         ) : null}
 
+        {p2PublicationOptIn ? (
+          <div
+            data-p2-publication-opt-in="1"
+            className="absolute left-[18px] right-[18px] top-[108px] z-20 rounded-md border border-[var(--sage)] bg-[#e7f0ea] px-3 py-2 text-[12px] font-semibold leading-4 text-[var(--sage)]"
+          >
+            P2 预览模式（非正式产品）· 真模型流式：先「临时内容…」再「已确认」· flag 须显式 ENABLE
+          </div>
+        ) : null}
+
         <button
           type="button"
           aria-label="打开聊天菜单"
@@ -988,6 +1209,39 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
                 >
                   {message.text}
                 </div>
+                {message.role === "assistant"
+                  ? (() => {
+                      const pubFields: PublicationUiFields | null = message.publication
+                        ? {
+                            provisional: message.publication.provisional,
+                            provisionalMarkedTemporary:
+                              message.publication.provisionalMarkedTemporary,
+                            provisionalMarker: message.publication.provisionalMarker,
+                            publicationStatus:
+                              message.publication.publicationStatus ??
+                              message.publication.status ??
+                              null,
+                          }
+                        : null;
+                      const pubState = resolvePublicationUiState(pubFields);
+                      const marker = publicationMarkerLabel(pubState, pubFields);
+                      if (!marker) return null;
+                      return (
+                        <div
+                          data-publication-state={pubState}
+                          className={
+                            pubState === "provisional"
+                              ? "mr-auto mt-1 max-w-[306px] text-[10px] leading-4 text-[var(--muted)]"
+                              : pubState === "failed"
+                                ? "mr-auto mt-1 max-w-[306px] text-[10px] leading-4 text-[var(--muted)]"
+                                : "mr-auto mt-1 max-w-[306px] text-[10px] leading-4 text-[var(--sage)]"
+                          }
+                        >
+                          {marker}
+                        </div>
+                      );
+                    })()
+                  : null}
                 {showAiDebugTrace && message.role === "assistant" && message.debugTrace ? (
                   <details className="mr-auto mt-1 max-w-[306px] rounded-[10px] border border-[var(--line)] bg-white/55 px-3 py-2 text-[11px] leading-[18px] text-[var(--soft-copy)]">
                     <summary className="cursor-pointer select-none font-semibold text-[var(--sage)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--sage)]">
@@ -1042,10 +1296,19 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   );
 }
 
-export default function ChatClient({ initialChat }: { initialChat: InitialChatData }) {
+export default function ChatClient({
+  initialChat,
+  forceP2PublicationOptIn = false,
+}: {
+  initialChat: InitialChatData;
+  forceP2PublicationOptIn?: boolean;
+}) {
   return (
     <Suspense fallback={null}>
-      <ChatContent initialChat={initialChat} />
+      <ChatContent
+        initialChat={initialChat}
+        forceP2PublicationOptIn={forceP2PublicationOptIn}
+      />
     </Suspense>
   );
 }

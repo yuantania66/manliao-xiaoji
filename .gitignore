@@ -1,3 +1,4 @@
+node_modules
 node_modules/
 .next/
 out/
@@ -16,3 +17,4 @@ pnpm-debug.log*
 
 # Real-model trajectory experiment reports are local review evidence, not deterministic fixtures.
 docs/evals/*.local.md
+.data/

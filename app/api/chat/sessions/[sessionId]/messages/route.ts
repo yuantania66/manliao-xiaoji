@@ -17,6 +17,15 @@ import {
 } from "@/services/understanding/extractService";
 import { updateUnderstandingHypotheses } from "@/services/understanding/hypothesisService";
 import { buildStructuredRagContext } from "@/services/understanding/retrievalService";
+import {
+  getP2PublicationStoreMode,
+  isP2PublicationEnabled,
+} from "@/lib/p2-publication-flag";
+import {
+  USER_COPY,
+  createPublicationStore,
+  ingress,
+} from "@/services/chat/assistantPublication";
 
 const readJson = async (request: Request) => {
   try {
@@ -118,6 +127,68 @@ export async function POST(
     await assertSessionOwner(sessionId, user.id);
 
     const body = await readJson(request);
+
+    // P2 publication path: ONLY when feature flag is on AND client opts in.
+    // Default production path remains the V1 writer below.
+    if (isP2PublicationEnabled() && body.useP2Publication === true) {
+      const suppliedTurnId =
+        typeof body.turnId === "string" ? body.turnId.trim() : "";
+      if (suppliedTurnId && !/^[a-zA-Z0-9:_-]{8,160}$/.test(suppliedTurnId)) {
+        throw new AppError("VALIDATION_ERROR", "turnId 格式无效", 400, {
+          field: "turnId",
+        });
+      }
+      const clientTurnId = suppliedTurnId || `turn-${crypto.randomUUID()}`;
+      const contentForP2 = requireNonEmptyString(body.content, "content", 2000);
+      const workerId = `messages-${user.id.slice(0, 8)}`;
+      const created = await createPublicationStore();
+      if (created.mode === "prisma") {
+        const { PrismaPublicationStore } = await import(
+          "@/services/chat/assistantPublication/prismaStore"
+        );
+        const prismaStore = created.store as InstanceType<
+          typeof PrismaPublicationStore
+        >;
+        await prismaStore.hydrate(sessionId, clientTurnId);
+      }
+      const result = ingress(created.store, {
+        sessionId,
+        clientTurnId,
+        userText: contentForP2,
+        workerId,
+      });
+      await created.persist?.();
+      if (result.kind !== "ok") {
+        return ok({
+          status: "failed",
+          success: false,
+          code: result.code,
+          p2: true,
+          storeMode: getP2PublicationStoreMode(),
+        });
+      }
+      return ok({
+        status: result.action,
+        success: result.success,
+        p2: true,
+        regenerated: result.regenerated,
+        provisional: result.provisional,
+        provisionalMarkedTemporary: result.provisionalMarkedTemporary,
+        provisionalMarker: USER_COPY.provisional,
+        body: result.body,
+        failureCode: result.failureCode ?? null,
+        publication: result.publication,
+        userMessage: {
+          id: result.user.id,
+          role: "user",
+          content: result.user.content,
+          clientTurnId,
+        },
+        storeMode: created.mode,
+        note: "P2 publication ingress only; stream generation uses /api/chat/p2-publication/eval",
+      });
+    }
+
     const content = requireNonEmptyString(body.content, "content", 2000);
     const includeDebugTrace = shouldIncludeDebugTrace(request, body);
     const now = new Date();
