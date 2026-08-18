@@ -43,7 +43,12 @@
     "check:prisma": "prisma validate && prisma generate && prisma migrate status",
     "check:launch": "npm run lint && npm run audit:prelaunch && npm run check:ai-base && npm run check:ai-orchestration && npm run check:architecture-v1 && npm run check:clinical-logic && npm run check:conversation-state && npm run check:conversation-trajectories && npm run check:conversation-os-architecture && npm run check:memory-v2 && npm run check:understanding && npm run check:ai-system && npm run check:prisma && npm run check:miniapp-js && npm run build",
     "smoke:local-api": "node scripts/local-api-smoke.mjs",
-    "smoke:prod": "node scripts/production-smoke.mjs"
+    "smoke:prod": "node scripts/production-smoke.mjs",
+    "check:p2-publication": "tsx scripts/p2-publication-impl-check.ts",
+    "check:p2-publication-trial": "tsx scripts/p2-publication-trial-dry-check.ts",
+    "check:p2-publication-client-ui": "tsx scripts/p2-publication-client-ui-check.ts",
+    "check:p2-publication-stream": "tsx scripts/p2-publication-stream-check.ts",
+    "check:p2-publication-p3": "tsx scripts/p2-publication-p3-check.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

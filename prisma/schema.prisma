@@ -31,6 +31,15 @@ enum MessageStatus {
   REWRITTEN
 }
 
+
+enum AssistantPublicationStatus {
+  reserved
+  streaming
+  committed
+  failed_retryable
+  failed_terminal
+}
+
 enum AiSourceType {
   CHAT
   NOTE_SLIP
@@ -1089,3 +1098,31 @@ model RefinementJob {
   @@index([status, createdAt])
   @@index([step, status, createdAt])
 }
+
+/// P2 Assistant Publication — transport/commit authority for one client turn.
+/// Not conversational lifecycle state. Feature-flagged; production default remains V1 writer.
+model AssistantPublication {
+  id                          String                      @id @default(cuid())
+  sessionId                   String
+  clientTurnId                String
+  /// Fixed to "assistant" for the single-winner row; compound unique with session+turn.
+  role                        String                      @default("assistant")
+  status                      AssistantPublicationStatus
+  attempt                     Int                         @default(1)
+  leaseOwner                  String?
+  leaseExpiresAt              DateTime?
+  draftContent                String                      @default("")
+  finalContent                String?
+  failureCode                 String?
+  linkedConversationMessageId String?
+  provisionalMarkedTemporary  Boolean                     @default(true)
+  tombstoneUntil              DateTime?
+  createdAt                   DateTime                    @default(now())
+  updatedAt                   DateTime                    @updatedAt
+
+  @@unique([sessionId, clientTurnId, role])
+  @@index([sessionId, status])
+  @@index([leaseExpiresAt])
+  @@index([tombstoneUntil])
+}
+
