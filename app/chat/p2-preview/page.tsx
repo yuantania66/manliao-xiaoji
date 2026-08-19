@@ -7,5 +7,11 @@ import ChatClient, { InitialChatData } from "../chat-client";
  */
 export default function P2PublicationPreviewPage() {
   const initialChat: InitialChatData = null;
-  return <ChatClient initialChat={initialChat} forceP2PublicationOptIn />;
+  return (
+    <ChatClient
+      initialChat={initialChat}
+      forceP2PublicationOptIn
+      p2PreviewTransport="qwen"
+    />
+  );
 }
