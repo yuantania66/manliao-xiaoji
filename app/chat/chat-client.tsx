@@ -20,6 +20,8 @@ type MessagePublication = PublicationUiFields & {
   status?: string | null;
 };
 
+type P2PreviewTransport = "qwen" | "fixture";
+
 type Message = {
   id: string;
   role: "user" | "assistant";
@@ -527,9 +529,11 @@ const incrementGuestAiUsage = () => {
 function ChatContent({
   initialChat,
   forceP2PublicationOptIn = false,
+  p2PreviewTransport = "qwen",
 }: {
   initialChat: InitialChatData;
   forceP2PublicationOptIn?: boolean;
+  p2PreviewTransport?: P2PreviewTransport;
 }) {
   const searchParams = useSearchParams();
   const date = searchParams.get("date");
@@ -540,6 +544,10 @@ function ChatContent({
   /** Opt-in only: ?p2Publication=1 or /chat/p2-preview — does not enable site-wide P2. */
   const p2PublicationOptIn =
     forceP2PublicationOptIn || isP2PublicationClientOptIn(searchParams);
+  const activeP2PreviewTransport = p2PublicationOptIn
+    ? p2PreviewTransport
+    : null;
+  const isModelFreeFixture = activeP2PreviewTransport === "fixture";
   const [input, setInput] = useState("");
   const canUseInitialChat =
     !requestedSessionId || requestedSessionId === initialChat?.sessionId;
@@ -547,10 +555,14 @@ function ChatContent({
     canUseInitialChat ? (initialChat?.messages ?? []) : []
   );
   const [sessionId, setSessionId] = useState<string | null>(
-    requestedSessionId ?? initialChat?.sessionId ?? null
+    isModelFreeFixture
+      ? "p2-fixture-local"
+      : (requestedSessionId ?? initialChat?.sessionId ?? null),
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(!canUseInitialChat || !initialChat);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(
+    isModelFreeFixture ? false : !canUseInitialChat || !initialChat,
+  );
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [typingMessageIds, setTypingMessageIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -570,6 +582,16 @@ function ChatContent({
     let cancelled = false;
 
     const loadChat = async () => {
+      // The model-free fixture must not read auth, sessions, cached messages,
+      // or any production/V1 chat authority, even when this browser is logged in.
+      if (isModelFreeFixture) {
+        setIsGuestMode(true);
+        setSessionId("p2-fixture-local");
+        setMessages([]);
+        setIsLoadingMessages(false);
+        return;
+      }
+
       const storedAuth = getStoredAuth();
       const currentGuestMode = getInitialGuestMode();
       const isLocalDemoAuth = storedAuth?.token?.startsWith(LOCAL_DEMO_TOKEN_PREFIX);
@@ -656,7 +678,7 @@ function ChatContent({
     return () => {
       cancelled = true;
     };
-  }, [canUseInitialChat, initialChat, requestedSessionId]);
+  }, [canUseInitialChat, initialChat, isModelFreeFixture, requestedSessionId]);
 
   useEffect(() => {
     return () => {
@@ -758,7 +780,9 @@ function ChatContent({
       const p2SessionId = sessionId ?? "p2-eval-local";
       const clientTurnId = optimisticId;
       const workerId = `ui-${clientTurnId.slice(0, 24)}`;
-      const authUserId = getStoredAuth()?.user?.id ?? null;
+      const authUserId = isModelFreeFixture
+        ? null
+        : (getStoredAuth()?.user?.id ?? null);
       const recentMessages = messages
         .filter((message) => message.role === "user" || message.role === "assistant")
         .slice(-12)
@@ -768,23 +792,46 @@ function ChatContent({
         }));
 
       try {
-        const response = await fetch("/api/chat/p2-publication/eval", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            op: "generate_stream",
-            sessionId: p2SessionId,
-            clientTurnId,
-            workerId,
-            content: text,
-            userId: authUserId,
-            recentMessages,
-          }),
-        });
+        const fixtureScenario = searchParams.get("fixtureScenario");
+        const response = await fetch(
+          activeP2PreviewTransport === "fixture"
+            ? "/api/chat/p2-publication/fixture"
+            : "/api/chat/p2-publication/eval",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+              activeP2PreviewTransport === "fixture"
+                ? {
+                    sessionId: p2SessionId,
+                    clientTurnId,
+                    workerId,
+                    content: text,
+                    fixtureScenario:
+                      fixtureScenario === "reattach" ||
+                      fixtureScenario === "commit_failure" ||
+                      fixtureScenario === "output_reject"
+                        ? fixtureScenario
+                        : "success",
+                  }
+                : {
+                    op: "generate_stream",
+                    sessionId: p2SessionId,
+                    clientTurnId,
+                    workerId,
+                    content: text,
+                    userId: authUserId,
+                    recentMessages,
+                  },
+            ),
+          },
+        );
 
         if (response.status === 404) {
           throw new ClientApiError(
-            "P2 publication 未开启（服务端 flag 默认 off）。请在受控环境设置 P2_PUBLICATION_ENABLED=1 后再用 /chat/p2-preview 预览。",
+            activeP2PreviewTransport === "fixture"
+              ? "模型无关评测夹具未开启。它只允许在非生产评测环境显式启用。"
+              : "P2 publication 未开启（服务端 flag 默认 off）。请在受控环境设置 P2_PUBLICATION_ENABLED=1 后再用 /chat/p2-preview 预览。",
             404,
             "NOT_FOUND",
           );
@@ -900,23 +947,52 @@ function ChatContent({
                 current.filter((item) => item !== assistantId && item !== pendingAssistantId),
               );
               if (event.code === "stream_in_progress") {
-                setErrorMessage(event.message || "连接恢复中，正在同步未确认回复…");
-              } else if (!sawCommitted) {
+                const reconnectCopy = "连接恢复中，正在同步未确认回复…";
                 setMessages((current) =>
                   current.map((message) =>
-                    message.id === assistantId || message.id === pendingAssistantId
+                    (message.id === assistantId || message.id === pendingAssistantId) &&
+                    message.text === "..."
                       ? {
                           ...message,
+                          text: reconnectCopy,
                           publication: {
-                            provisional: false,
-                            provisionalMarkedTemporary: false,
-                            status: event.publication?.status ?? "failed_retryable",
+                            provisional: true,
+                            provisionalMarkedTemporary: true,
+                            status: event.publication?.status ?? "streaming",
                             publicationStatus:
-                              event.publication?.status ?? "failed_retryable",
+                              event.publication?.status ?? "streaming",
                           },
                         }
                       : message,
                   ),
+                );
+                setErrorMessage(reconnectCopy);
+              } else if (!sawCommitted) {
+                setMessages((current) =>
+                  current.flatMap((message) => {
+                    if (
+                      message.id !== assistantId &&
+                      message.id !== pendingAssistantId
+                    ) {
+                      return [message];
+                    }
+                    return [
+                      {
+                        ...message,
+                        // A rejected output has no safe text to show. Clear only
+                        // the untouched typing placeholder; keep the publication
+                        // record so the user still sees the explicit failed state.
+                        text: message.text === "..." ? "" : message.text,
+                        publication: {
+                          provisional: false,
+                          provisionalMarkedTemporary: false,
+                          status: event.publication?.status ?? "failed_retryable",
+                          publicationStatus:
+                            event.publication?.status ?? "failed_retryable",
+                        },
+                      },
+                    ];
+                  }),
                 );
                 setErrorMessage((event.message || "这次回复没能完成") + missing);
               }
@@ -1122,9 +1198,16 @@ function ChatContent({
         {p2PublicationOptIn ? (
           <div
             data-p2-publication-opt-in="1"
-            className="absolute left-[18px] right-[18px] top-[108px] z-20 rounded-md border border-[var(--sage)] bg-[#e7f0ea] px-3 py-2 text-[12px] font-semibold leading-4 text-[var(--sage)]"
+            data-p2-preview-transport={activeP2PreviewTransport}
+            className={
+              activeP2PreviewTransport === "fixture"
+                ? "absolute left-[18px] right-[18px] top-[108px] z-20 rounded-md border border-[#a66c25] bg-[#fff1d8] px-3 py-2 text-[12px] font-semibold leading-4 text-[#7b4a12]"
+                : "absolute left-[18px] right-[18px] top-[108px] z-20 rounded-md border border-[var(--sage)] bg-[#e7f0ea] px-3 py-2 text-[12px] font-semibold leading-4 text-[var(--sage)]"
+            }
           >
-            P2 预览模式（非正式产品）· 真模型流式：先「临时内容…」再「已确认」· flag 须显式 ENABLE
+            {activeP2PreviewTransport === "fixture"
+              ? "模拟评测流（非真实 Qwen）· 仅验证临时→已确认状态机 · 零模型调用"
+              : "P2 预览模式（非正式产品）· 真 Qwen 流式 · 先临时再已确认"}
           </div>
         ) : null}
 
@@ -1200,15 +1283,17 @@ function ChatContent({
                     {formatMessageTime(message.createdAt)}
                   </div>
                 ) : null}
-                <div
-                  className={
-                    message.role === "user"
-                      ? "ml-auto max-w-[274px] rounded-[18px] bg-[var(--sage)] px-3.5 py-3 text-[13px] leading-[22px] text-[var(--card-warm)]"
-                      : "mr-auto max-w-[306px] rounded-[18px] bg-[var(--card-warm)] px-3.5 py-3 text-[13px] leading-[22px] text-[var(--body)]"
-                  }
-                >
-                  {message.text}
-                </div>
+                {message.role === "user" || message.text ? (
+                  <div
+                    className={
+                      message.role === "user"
+                        ? "ml-auto max-w-[274px] rounded-[18px] bg-[var(--sage)] px-3.5 py-3 text-[13px] leading-[22px] text-[var(--card-warm)]"
+                        : "mr-auto max-w-[306px] rounded-[18px] bg-[var(--card-warm)] px-3.5 py-3 text-[13px] leading-[22px] text-[var(--body)]"
+                    }
+                  >
+                    {message.text}
+                  </div>
+                ) : null}
                 {message.role === "assistant"
                   ? (() => {
                       const pubFields: PublicationUiFields | null = message.publication
@@ -1299,15 +1384,18 @@ function ChatContent({
 export default function ChatClient({
   initialChat,
   forceP2PublicationOptIn = false,
+  p2PreviewTransport = "qwen",
 }: {
   initialChat: InitialChatData;
   forceP2PublicationOptIn?: boolean;
+  p2PreviewTransport?: P2PreviewTransport;
 }) {
   return (
     <Suspense fallback={null}>
       <ChatContent
         initialChat={initialChat}
         forceP2PublicationOptIn={forceP2PublicationOptIn}
+        p2PreviewTransport={p2PreviewTransport}
       />
     </Suspense>
   );
