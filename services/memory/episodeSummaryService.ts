@@ -394,9 +394,20 @@ const normalizedTerms = (values: string[]) => new Set(
   values.map((value) => value.replace(/\s+/g, "").toLocaleLowerCase()).filter(Boolean)
 );
 
-const overlapCount = (left: string[], right: string[]) => {
+const exactOverlapCount = (left: string[], right: string[]) => {
   const rightTerms = normalizedTerms(right);
   return [...normalizedTerms(left)].filter((item) => rightTerms.has(item)).length;
+};
+
+export const countTopicTermOverlap = (left: string[], right: string[]) => {
+  const rightTerms = normalizedTerms(right);
+  return [...normalizedTerms(left)].filter((item) =>
+    [...rightTerms].some((candidate) =>
+      item === candidate ||
+      Math.min(item.length, candidate.length) >= 2 &&
+        (item.includes(candidate) || candidate.includes(item))
+    )
+  ).length;
 };
 
 const textUnits = (value: string) => {
@@ -448,9 +459,9 @@ export const retrieveRelevantEpisodeMemories = async ({
     const snapshot = snapshotFromJson(memory.currentVersionRecord?.snapshot);
     const sessionId = sessionIdFromSource(memory.source);
     if (!snapshot || !sessionId || sessionId === currentSessionId) return [];
-    const peopleOverlap = overlapCount(extraction.people, snapshot.people);
-    const topicOverlap = overlapCount(extraction.topics, snapshot.topics);
-    const emotionOverlap = overlapCount(currentEmotions, snapshot.emotions);
+    const peopleOverlap = exactOverlapCount(extraction.people, snapshot.people);
+    const topicOverlap = countTopicTermOverlap(extraction.topics, snapshot.topics);
+    const emotionOverlap = exactOverlapCount(currentEmotions, snapshot.emotions);
     const compactSearchText = [
       snapshot.naturalSummary,
       ...snapshot.people,

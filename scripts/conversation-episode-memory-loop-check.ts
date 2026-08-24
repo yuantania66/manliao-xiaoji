@@ -19,6 +19,7 @@ import {
   preflightResponsePlan,
 } from "../services/ai/chatExecutionLifecycle";
 import {
+  countTopicTermOverlap,
   parseEpisodeSummaryProviderOutput,
   refreshEpisodeSummaryForSession,
   retrieveRelevantEpisodeMemories,
@@ -32,7 +33,7 @@ const workExtraction: UnderstandingExtraction = {
   experiences: [{ emotion: "疲惫" }],
   interpretations: [],
   people: [],
-  topics: ["工作"],
+  topics: ["工作压力"],
   occurredAt: null,
 };
 
@@ -116,6 +117,10 @@ const planFor = (
 };
 
 const main = async () => {
+  assert.equal(countTopicTermOverlap(["工作"], ["工作压力"]), 1);
+  assert.equal(countTopicTermOverlap(["工作压力"], ["工作"]), 1);
+  assert.equal(countTopicTermOverlap(["电影"], ["工作压力"]), 0);
+  assert.equal(countTopicTermOverlap(["工"], ["工作压力"]), 0);
   assert.equal(parseEpisodeSummaryProviderOutput("```json\n{}\n```"), null);
   assert.equal(parseEpisodeSummaryProviderOutput({
     naturalSummary: "x",
