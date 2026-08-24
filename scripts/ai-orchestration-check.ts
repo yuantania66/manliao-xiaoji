@@ -25,9 +25,28 @@ assert(
   "Unified AI orchestration must export createChatReply()."
 );
 assert(
-  orchestration.includes("isCrisisInput(userMessage)") &&
-    orchestration.indexOf("isCrisisInput(userMessage)") < orchestration.indexOf("generateChatReply({"),
+  orchestration.includes("await triageSafety({") &&
+    orchestration.indexOf("await triageSafety({") < orchestration.indexOf("generateChatReply({"),
   "createChatReply() must run Safety before normal generation."
+);
+assert(
+  orchestration.includes('code: "SAFETY_BLOCKED"') &&
+    orchestration.indexOf('code: "SAFETY_BLOCKED"') < orchestration.indexOf("enforceResponsePlan({"),
+  "Malformed or unavailable semantic Safety triage must fail closed before ordinary planning."
+);
+assert(
+  chatSafety.includes('getAiProvider() === "qwen"') &&
+    chatSafety.includes("isAiProviderConfigured()") &&
+    chatSafety.includes('channel: "local_fixture_only"') &&
+    chatSafety.includes('failureType: "provider_unconfigured"'),
+  "Configured production Qwen must run semantic Safety while only explicitly named local fixtures may omit it."
+);
+assert(
+  chatSafety.includes("process.env.AI_SAFETY_MODEL?.trim()") &&
+    chatSafety.includes("process.env.AI_MAIN_MODEL?.trim()") &&
+    chatSafety.includes("getDefaultAiModel()") &&
+    !chatSafety.includes('"qwen-plus"'),
+  "Safety semantic triage must inherit configured project model selection without hardcoding qwen-plus."
 );
 assert(
   orchestration.includes("loadMemoryContext") &&
@@ -50,11 +69,26 @@ assert(
     orchestration.includes("interpretTurnDeterministically") &&
     orchestration.includes("buildDialogueState") &&
     (orchestration.match(/createResponsePlan\(/g) ?? []).length === 1,
-  "createChatReply() must assemble, interpret, build state, and create exactly one ResponsePlan."
+  "createChatReply() must assemble, interpret, build state, and use exactly one Response Planner callsite."
 );
 assert(
   orchestration.indexOf("createResponsePlan({") < orchestration.indexOf("generateChatReply({"),
-  "The single ResponsePlan must be finalized before Surface Realization."
+  "The final preflight-valid ResponsePlan must be finalized before Surface Realization."
+);
+assert(
+  orchestration.includes("createPlanPreflightRecoveryDirective(") &&
+    orchestration.includes("if (recoveryDirective) {") &&
+    orchestration.includes("createPlanAttempt(recoveryDirective)") &&
+    orchestration.includes("planPreflightAttempts.push({") &&
+    orchestration.includes("attempt: 1") &&
+    orchestration.indexOf("createPlanPreflightRecoveryDirective(") <
+      orchestration.indexOf("enforceResponsePlan({"),
+  "Orchestration must permit one bounded pre-Surface recovery through the same Planner."
+);
+assert(
+  !orchestration.includes("responsePlan.responseActions.filter") &&
+    !orchestration.includes("responsePlan.positiveFunctionContract ="),
+  "Orchestration must not patch a rejected plan or become a second Planner."
 );
 assert(
   orchestration.includes("createClinicalStrategyAdvice") && !orchestration.includes("createClinicalPlan("),
@@ -110,7 +144,7 @@ assert(
   "finalReplySource must include llm_regenerate and constraint_failure while retaining guard_rewrite for compatibility reads."
 );
 assert(
-  orchestration.indexOf("isCrisisInput(userMessage)") <
+  orchestration.indexOf("await triageSafety({") <
     orchestration.indexOf("enforceResponsePlan({"),
   "Safety must retain priority and return before ordinary planning validation."
 );
@@ -175,6 +209,11 @@ assert(aiService.includes("responsePlan"), "Surface Realization must require the
 assert(
   packageJson.includes('"check:ai-orchestration"'),
   "package.json must expose check:ai-orchestration."
+);
+assert(
+  packageJson.includes('"check:chat-safety-semantic"') &&
+    packageJson.includes('"check:safety-semantic-qwen-real"'),
+  "package.json must expose deterministic and real-Qwen Safety semantic checks."
 );
 assert(
   packageJson.includes('"check:clinical-logic-skeleton"'),

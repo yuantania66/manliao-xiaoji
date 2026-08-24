@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createServer, type IncomingMessage, type Server } from "node:http";
 
 import {
   AiGenerationStatus,
@@ -23,6 +24,7 @@ import { prisma } from "../lib/prisma";
 import {
   buildAttemptTransitions,
   classifyExecutionError,
+  createPlanPreflightRecoveryDirective,
   preflightResponsePlan,
   toUserSafeExecutionStatus,
   type ChatExecutionTrace,
@@ -79,6 +81,30 @@ const generation = (text: string): AiGenerationResult => ({
   finalReplySource: "llm",
 });
 
+const consumeRequest = (request: IncomingMessage) =>
+  new Promise<void>((resolve, reject) => {
+    request.on("data", () => undefined);
+    request.on("end", resolve);
+    request.on("error", reject);
+  });
+
+const listenOnLoopback = (server: Server) => new Promise<number>((resolve, reject) => {
+  server.once("error", reject);
+  server.listen(0, "127.0.0.1", () => {
+    server.off("error", reject);
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      reject(new Error("Lifecycle Qwen stub did not expose an OS-assigned port"));
+      return;
+    }
+    resolve(address.port);
+  });
+});
+
+const closeServer = (server: Server) => new Promise<void>((resolve, reject) => {
+  server.close((error) => error ? reject(error) : resolve());
+});
+
 const main = async () => {
 assert.deepEqual(preflightResponsePlan(plan), { passed: true, failureReasons: [] });
 assert.equal(
@@ -125,21 +151,69 @@ assert.deepEqual(
   preflightResponsePlan(contractWithoutMatchingAction).failureReasons,
   ["positive_function_contract_without_matching_action"]
 );
+const emotionalPlanWithoutEvidence: ResponsePlan = {
+  ...emotionalActionWithoutContract,
+  positiveFunctionContract: {
+    action: "offer_emotional_support",
+    supportFunction: "return_focus_control",
+    sourceTurnId: "turn-1",
+    sourceText: "我很疲惫",
+    affectEvidenceSpans: [],
+    explicitAffectOrImpactTerms: [],
+    intensityCeiling: "current_user_expression",
+    evidence: ["empty evidence fixture"],
+  },
+};
+const emotionalPlanWithoutEvidencePreflight = preflightResponsePlan(
+  emotionalPlanWithoutEvidence
+);
 assert.deepEqual(
-  preflightResponsePlan({
-    ...emotionalActionWithoutContract,
-    positiveFunctionContract: {
-      action: "offer_emotional_support",
-      supportFunction: "return_focus_control",
-      sourceTurnId: "turn-1",
-      sourceText: "我很疲惫",
-      affectEvidenceSpans: [],
-      explicitAffectOrImpactTerms: [],
-      intensityCeiling: "current_user_expression",
-      evidence: ["empty evidence fixture"],
-    },
-}).failureReasons,
+  emotionalPlanWithoutEvidencePreflight.failureReasons,
   ["missing_emotional_support_evidence_spans"]
+);
+assert.deepEqual(
+  createPlanPreflightRecoveryDirective(
+    emotionalPlanWithoutEvidence,
+    emotionalPlanWithoutEvidencePreflight
+  ),
+  {
+    attempt: 1,
+    rejectedPlanId: emotionalPlanWithoutEvidence.planId,
+    failureReason: "missing_emotional_support_evidence_spans",
+    unavailableActions: ["offer_emotional_support"],
+  },
+  "Only the exact empty-span local failure may create a turn-local recovery directive."
+);
+assert.equal(
+  createPlanPreflightRecoveryDirective(emotionalPlanWithoutEvidence, {
+    passed: false,
+    failureReasons: [
+      "missing_emotional_support_evidence_spans",
+      "invalid_decision_owner",
+    ],
+  }),
+  null,
+  "A mixed local and authority failure must remain fail-closed."
+);
+assert.equal(
+  createPlanPreflightRecoveryDirective(emotionalPlanWithoutEvidence, {
+    passed: false,
+    failureReasons: ["emotional_support_evidence_wrong_turn"],
+  }),
+  null,
+  "Evidence-integrity failures must remain fail-closed."
+);
+const recoveredOrdinaryPlan: ResponsePlan = {
+  ...plan,
+  planId: `${plan.planId}:recovery-1`,
+};
+assert.equal(
+  createPlanPreflightRecoveryDirective(
+    recoveredOrdinaryPlan,
+    preflightResponsePlan(recoveredOrdinaryPlan)
+  ),
+  null,
+  "A recovered plan cannot request another recovery."
 );
 
 const emotionalPlanWithEvidence: ResponsePlan = {
@@ -233,8 +307,62 @@ const doubleFailure = await enforceResponsePlan({
 assert.equal(doubleFailureCalls, 2);
 assert.equal(doubleFailure.outcome, "failed");
 assert.equal(doubleFailure.generation.finalReplySource, "constraint_failure");
-assert.equal(doubleFailure.generation.text, "那你呢？");
-assert(!doubleFailure.generation.text.includes("本轮回复未通过"));
+assert.equal(doubleFailure.validations.at(-1)?.passed, false);
+assert((doubleFailure.validations.at(-1)?.hardFailureReasons?.length ?? 0) > 0);
+assert.equal(doubleFailure.validations.at(-1)?.advisoryFailureReasons?.length, 0);
+
+const positiveOnlyPlan: ResponsePlan = {
+  ...plan,
+  planId: "execution-check:positive-only-semantic-failure",
+  responseActions: ["establish_assistant_identity"],
+  positiveFunctionContract: {
+    action: "establish_assistant_identity",
+    mode: "first_contact",
+    displayName: "小慢",
+    sourceTurnId: plan.disclosureScope.turnId,
+    targetProposition: null,
+    evidence: ["authority=first_contact_no_topic_structure"],
+  },
+};
+let positiveSemanticCalls = 0;
+const positiveSemanticDoubleFailure = await enforceResponsePlan({
+  plan: positiveOnlyPlan,
+  plannedFunctionSemanticContext: {
+    currentUserText: "你好",
+    handoffTargetAssistantText: null,
+  },
+  generate: async () => generation("我是小慢。"),
+  plannedFunctionSemanticProvider: async (input) => {
+    positiveSemanticCalls += 1;
+    assert.equal(input.handoffBinding, null);
+    assert.equal(input.positiveFunctionBinding?.action, "establish_assistant_identity");
+    return {
+      schemaVersion: 1,
+      planId: input.planId,
+      handoff: null,
+      positiveFunction: {
+        binding: {
+          action: "establish_assistant_identity",
+          mode: "first_contact",
+          sourceTurnId: plan.disclosureScope.turnId,
+          targetProposition: null,
+        },
+        status: "not_satisfied",
+        realizedAction: null,
+        targetAddressed: false,
+        contractRealized: false,
+        containsContradictoryMove: false,
+        evidence: [],
+      },
+      semanticQuestionCount: 0,
+    };
+  },
+});
+assert.equal(positiveSemanticCalls, 2);
+assert.equal(positiveSemanticDoubleFailure.outcome, "failed");
+assert.equal(positiveSemanticDoubleFailure.generation.finalReplySource, "constraint_failure");
+assert.equal(positiveSemanticDoubleFailure.validations.length, 2);
+assert(positiveSemanticDoubleFailure.validations.every((validation) => !validation.passed));
 
 let retryCalls = 0;
 const retrySuccess = await enforceResponsePlan({
@@ -272,12 +400,15 @@ assert(idleAnswerRetryConstraint.includes("不要换一个话题继续采访用�
 assert(!idleAnswerRetryConstraint.includes("原来是发呆。"));
 
 const retryTransitions = buildAttemptTransitions({
-  attempts: retrySuccess.attempts.map((attempt, index) => ({
-    attemptId: `attempt-${index + 1}`,
-    phase: retrySuccess.validations[index].passed ? "VALIDATED" : "REJECTED",
-    generation: attempt,
-    validation: retrySuccess.validations[index],
-  })),
+  attempts: retrySuccess.attempts.map((attempt, index) => {
+    const validation = retrySuccess.validations[index];
+    return {
+      attemptId: `attempt-${index + 1}`,
+      phase: validation.passed ? "VALIDATED" : "REJECTED",
+      generation: attempt,
+      validation,
+    };
+  }),
   validated: true,
 });
 assert.deepEqual(
@@ -300,13 +431,15 @@ const failedExecution: ChatExecutionTrace = {
   failure: {
     code: "GENERATION_NONCONFORMANT",
     reason: "internal validator detail",
-    retryable: true,
+    retryable: false,
   },
 };
 const publicStatus = toUserSafeExecutionStatus(failedExecution);
 assert.equal(publicStatus.type, "system_status");
 assert(!publicStatus.message.includes("validator"));
 assert(!publicStatus.message.includes("ResponsePlan"));
+assert.equal(publicStatus.retryable, false);
+assert(publicStatus.message.includes("已经尝试修正"));
 assert.equal(classifyExecutionError(new Error("provider unavailable")).code, "PROVIDER_ERROR");
 const timeoutError = new Error("request timed out");
 timeoutError.name = "AbortError";
@@ -321,10 +454,18 @@ for (const code of [
 ] as const) {
   const status = toUserSafeExecutionStatus({
     ...failedExecution,
-    failure: { code, reason: `private:${code}`, retryable: code !== "SAFETY_BLOCKED" },
+    failure: {
+      code,
+      reason: `private:${code}`,
+      retryable: code === "PROVIDER_ERROR" || code === "TIMEOUT" || code === "PERSISTENCE_ERROR",
+    },
   });
   assert.equal(status.code, code);
   assert(!status.message.includes("private:"));
+  assert.equal(
+    status.retryable,
+    code === "PROVIDER_ERROR" || code === "TIMEOUT" || code === "PERSISTENCE_ERROR"
+  );
 }
 
 const history = Array.from({ length: 20 }, (_, index) => {
@@ -437,28 +578,113 @@ const fixtureUser = await prisma.user.create({ data: {} });
 try {
   const session = await prisma.chatSession.create({ data: { userId: fixtureUser.id } });
   const proactiveSession = await prisma.chatSession.create({ data: { userId: fixtureUser.id } });
-  const previousProvider = process.env.AI_PROVIDER;
-  const previousQwenKey = process.env.QWEN_API_KEY;
-  const previousGreetingMode = process.env.PROACTIVE_GREETING_MODE;
-  process.env.AI_PROVIDER = "qwen";
-  process.env.QWEN_API_KEY = "synthetic-test-key";
-  process.env.PROACTIVE_GREETING_MODE = "deterministic";
-  let proactiveMessage: Awaited<ReturnType<typeof ensureProactiveChatGreeting>>;
+  const failedProactiveSession = await prisma.chatSession.create({ data: { userId: fixtureUser.id } });
+  const proactiveSurface = "你好，我是小慢，一个AI聊天助手。你可以在这里随便聊，也可以和我一起慢慢理清一些事情；不用先想好完整话题，想到什么就从什么开始。";
+  const proactiveIntent = {
+    move: "open_statement" as const,
+    requiredFunction: "offer_self_contained_conversation_entry" as const,
+    realization: {
+      kind: "self_contained_entry" as const,
+      topic: "assistant first-contact identity and low-pressure entry",
+      proposition: proactiveSurface,
+    },
+    expectedUserContribution: "none" as const,
+    userBurden: "none" as const,
+  };
+  const successfulProactiveVerdict = JSON.stringify({
+      intent: proactiveIntent,
+      candidate: proactiveSurface,
+      evidenceSpan: proactiveSurface,
+      verdict: "accept",
+      intentFaithfullyRealized: true,
+      propositionDelivered: true,
+      semanticClarity: true,
+      anchoredCommunicativePoint: true,
+      selfContained: true,
+      requiresSecondAssistantReveal: false,
+      createsUserObligation: false,
+      groundingObeyed: true,
+      contradictoryMove: false,
+      topicDistinct: null,
+    });
+  const qwenResponses = ["第一候选", "第二候选", "第三候选", "第四候选"];
+  const qwenServer = createServer(async (request, response) => {
+    await consumeRequest(request);
+    if (request.method !== "POST" || request.url !== "/compatible-mode/v1/chat/completions") {
+      response.writeHead(404, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({ error: "unexpected lifecycle fixture request" }));
+      return;
+    }
+    const content = qwenResponses.shift();
+    if (!content) {
+      response.writeHead(500, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({ error: "lifecycle fixture response queue exhausted" }));
+      return;
+    }
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({
+      model: "qwen-lifecycle-stub",
+      choices: [{ message: { role: "assistant", content } }],
+      usage: { prompt_tokens: 1, completion_tokens: 1 },
+    }));
+  });
+  const qwenPort = await listenOnLoopback(qwenServer);
+  const environmentKeys = [
+    "AI_PROVIDER",
+    "QWEN_API_KEY",
+    "QWEN_BASE_URL",
+    "AI_MAIN_MODEL",
+    "AI_PROACTIVE_GREETING_MODEL",
+    "AI_TIMEOUT_MS",
+  ] as const;
+  const previousEnvironment = Object.fromEntries(
+    environmentKeys.map((key) => [key, process.env[key]])
+  ) as Record<(typeof environmentKeys)[number], string | undefined>;
+  let proactiveResult: Awaited<ReturnType<typeof ensureProactiveChatGreeting>>;
   try {
-    proactiveMessage = await ensureProactiveChatGreeting({
+    process.env.AI_PROVIDER = "qwen";
+    process.env.QWEN_API_KEY = "synthetic-lifecycle-test-key";
+    process.env.QWEN_BASE_URL = `http://127.0.0.1:${qwenPort}/compatible-mode/v1`;
+    process.env.AI_MAIN_MODEL = "qwen-lifecycle-stub";
+    process.env.AI_PROACTIVE_GREETING_MODEL = "qwen-lifecycle-stub";
+    process.env.AI_TIMEOUT_MS = "5000";
+    const failedGreeting = await ensureProactiveChatGreeting({
+      sessionId: failedProactiveSession.id,
+      userId: fixtureUser.id,
+      force: true,
+    });
+    assert.equal(failedGreeting.status, "retryable_failure");
+    if (failedGreeting.status !== "retryable_failure") {
+      throw new Error("Expected visible retryable proactive greeting failure.");
+    }
+    assert.equal(failedGreeting.systemStatus.retryable, true);
+    assert.equal(qwenResponses.length, 0, "Lifecycle proactive failure fixture must consume both bounded attempts");
+    assert.equal(await prisma.chatMessage.count({
+      where: { sessionId: failedProactiveSession.id },
+    }), 0);
+    assert.equal(await prisma.aiGeneration.count({
+      where: { sessionId: failedProactiveSession.id },
+    }), 0);
+    qwenResponses.push(proactiveSurface, successfulProactiveVerdict);
+    proactiveResult = await ensureProactiveChatGreeting({
       sessionId: proactiveSession.id,
       userId: fixtureUser.id,
       force: true,
     });
+    assert.equal(qwenResponses.length, 0, "Lifecycle proactive fixture must consume two Qwen calls");
   } finally {
-    if (previousProvider === undefined) delete process.env.AI_PROVIDER;
-    else process.env.AI_PROVIDER = previousProvider;
-    if (previousQwenKey === undefined) delete process.env.QWEN_API_KEY;
-    else process.env.QWEN_API_KEY = previousQwenKey;
-    if (previousGreetingMode === undefined) delete process.env.PROACTIVE_GREETING_MODE;
-    else process.env.PROACTIVE_GREETING_MODE = previousGreetingMode;
+    for (const key of environmentKeys) {
+      const value = previousEnvironment[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    await closeServer(qwenServer);
   }
-  assert(proactiveMessage);
+  assert.equal(proactiveResult.status, "committed");
+  if (proactiveResult.status !== "committed") {
+    throw new Error("Expected committed proactive greeting.");
+  }
+  const proactiveMessage = proactiveResult.message;
   const storedProactiveMessage = await prisma.chatMessage.findUniqueOrThrow({
     where: { id: proactiveMessage.id },
     select: { id: true, aiGeneration: { select: { executionTrace: true } } },
@@ -938,7 +1164,13 @@ try {
   const safetyGreetingEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
     assistantMoveId: safetyGreetingMessage.id,
     generationId: safetyGreetingGeneration.id,
-    greetingMove: "simple_greeting",
+    intent: {
+      move: "simple_greeting",
+      requiredFunction: "initiate_reciprocal_contact",
+      realization: { kind: "reciprocal_contact" },
+      expectedUserContribution: "none",
+      userBurden: "none",
+    },
   });
   await prisma.aiGeneration.update({
     where: { id: safetyGreetingGeneration.id },

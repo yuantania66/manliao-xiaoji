@@ -1,5 +1,13 @@
 # Hill 助人过程第三阶段架构迁移与分批实施计划 v1
 
+## Deterministic Fast-Boundary Preservation Contract（2026-08-24）
+
+- Version: `hill_helping_fast_boundary_preservation_v1`
+- SHA-256: `179982abcdfe97480f763b9754397798d4217e9fe1260468197c7dc171532691`
+- Canonical definition: `deterministic fast-boundary completion requires zero Helping provider calls; only a turn not completed by the fast boundary and still requiring Helping may call the provider, exactly once; Safety and hard validation remain unchanged`
+
+当 deterministic fast boundary 已对当前回合给出完整 `uncertain` 或 `not_applicable` 判断时，Helping provider 调用数必须为 0，且不得构造外部 Helping Prompt。只有未被 fast boundary 完成、同时仍满足 Helping 调用合同的回合才允许调用 provider，并且每回合恰好一次。该合同不授予普通质量 advisory winner 权限，不改变 Safety 优先级、Planned Function、Natural Chat、Planner/Surface/Validator ownership 或任何生产写入。
+
 状态：修订计划已获用户批准；早期批次 1.5 人工盲审及候选 1—6 的失败结果保留为历史证据；后续 Batch 1.5-E 完整冻结门已通过并关闭；2026-08-04 批准进入 Batch 2 infrastructure-only，Batch 2A `B2-Contract`、Batch 2B fixture-only association gate 与 Batch 2C-A `B2-Reaction-Shadow` fixture evaluator gate 已通过；Batch 2D `B2-Formal-Atomic-Commit` 已完成 docs-only 合同冻结但未实现，未授权 formal production write、用户可见 Hill 行为或 downstream integration
 
 日期：2026-08-01

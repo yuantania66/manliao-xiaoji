@@ -1,9 +1,10 @@
-export const PROACTIVE_GREETING_PROMPT_VERSION = "chat-proactive-greeting-v4";
+export const PROACTIVE_GREETING_PROMPT_VERSION = "chat-proactive-greeting-v5";
 
 export const isProactiveGreetingPromptVersion = (promptVersion?: string | null) =>
   promptVersion === "chat-proactive-greeting-v1" ||
   promptVersion === "chat-proactive-greeting-v2" ||
   promptVersion === "chat-proactive-greeting-v3" ||
+  promptVersion === "chat-proactive-greeting-v4" ||
   promptVersion === PROACTIVE_GREETING_PROMPT_VERSION;
 
 export const explicitlyResumesPreGreetingHistory = (message: string) =>

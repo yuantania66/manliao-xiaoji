@@ -298,7 +298,7 @@ export const callModel = async ({
                 "https://dashscope.aliyuncs.com/compatible-mode/v1",
               extraBody: {
                 enable_thinking: false,
-                ...(responseFormat === "json_object"
+                ...(responseFormat === "json_object" && !model.startsWith("qwen3.7-")
                   ? { response_format: { type: "json_object" } }
                   : {}),
               },

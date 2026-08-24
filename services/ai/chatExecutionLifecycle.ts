@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { CommittedAssistantMoveEnvelopeV1 } from "@/conversation-os";
 import type { ResponsePlan, ResponseValidationResult } from "@/conversation-os/control";
+import type { ResponsePlanRecoveryDirective } from "@/conversation-os/control/responsePlanner";
 import { validateInteractionMoveHandoffPlan } from "@/conversation-os/control/interactionMoveHandoffPlanner";
 import {
   projectCanonicalResponsePlanPreflightProvenance,
@@ -51,6 +52,12 @@ export type ChatExecutionTrace = {
     passed: boolean;
     failureReasons: string[];
   };
+  planPreflightAttempts?: Array<{
+    attempt: 0 | 1;
+    planId: string;
+    passed: boolean;
+    failureReasons: string[];
+  }>;
   transitions: ChatExecutionTransition[];
   attempts: ChatExecutionAttempt[];
   failure?: {
@@ -179,7 +186,7 @@ export const preflightResponsePlan = (
     ) failureReasons.push("interaction_move_handoff_missing_answer_action");
     if (handoff.requiredFunction === "answer_current_obligation") {
       const validQuestionKinds = new Set([
-        "identity", "ai_identity", "clinician_identity", "body_capability",
+        "assistant_name", "identity", "ai_identity", "clinician_identity", "body_capability",
         "voice_input", "voice_output", "perception_capability", "time_capability",
         "memory_capability", "definition", "reason_or_contradiction", "other",
       ]);
@@ -201,9 +208,15 @@ export const preflightResponsePlan = (
       }
     }
   }
-  const positiveAction = plan.responseActions.find((action) =>
-    action === "offer_emotional_support" || action === "repair_previous_wording"
+  const positiveActions = plan.responseActions.filter((action) =>
+    action === "establish_assistant_identity" ||
+    action === "offer_emotional_support" ||
+    action === "repair_previous_wording"
   );
+  const positiveAction = positiveActions[0];
+  if (positiveActions.length > 1) {
+    failureReasons.push("multiple_positive_function_actions_not_supported");
+  }
   if (positiveAction && plan.positiveFunctionContract?.action !== positiveAction) {
     failureReasons.push(`missing_or_mismatched_positive_function_contract:${positiveAction}`);
   }
@@ -217,6 +230,9 @@ export const preflightResponsePlan = (
     }
     if (contract.sourceTurnId !== plan.disclosureScope.turnId) {
       failureReasons.push("emotional_support_evidence_wrong_turn");
+    }
+    if (!contract.sourceText.trim() || contract.evidence.length === 0) {
+      failureReasons.push("incomplete_emotional_support_positive_function_contract");
     }
     const validCategories = new Set([
       "unhappiness", "blocked_affect", "sadness", "grievance", "anger", "worry",
@@ -259,11 +275,33 @@ export const preflightResponsePlan = (
       failureReasons.push("emotional_support_evidence_projection_mismatch");
     }
   }
+  if (plan.positiveFunctionContract?.action === "establish_assistant_identity") {
+    const contract = plan.positiveFunctionContract;
+    if (
+      contract.displayName !== "小慢" ||
+      contract.sourceTurnId !== plan.disclosureScope.turnId ||
+      contract.evidence.length === 0
+    ) {
+      failureReasons.push("invalid_assistant_identity_positive_function_contract");
+    }
+    if (
+      contract.mode === "identity_continuation" &&
+      (!contract.targetProposition?.trim() || !contract.evidence.some((item) => item === "targetOperation=affirm"))
+    ) {
+      failureReasons.push("missing_identity_continuation_claim_authority");
+    }
+  }
   if (
     plan.positiveFunctionContract?.action === "repair_previous_wording" &&
-    (!plan.positiveFunctionContract.targetTurnId || !plan.positiveFunctionContract.targetText.trim())
+    (
+      plan.positiveFunctionContract.sourceTurnId !== plan.disclosureScope.turnId ||
+      !plan.positiveFunctionContract.sourceText.trim() ||
+      !plan.positiveFunctionContract.targetTurnId ||
+      !plan.positiveFunctionContract.targetText.trim() ||
+      plan.positiveFunctionContract.evidence.length === 0
+    )
   ) {
-    failureReasons.push("missing_repair_target");
+    failureReasons.push("missing_or_mismatched_repair_target");
   }
   if (
     plan.positiveFunctionContract?.action === "repair_previous_wording" &&
@@ -298,6 +336,27 @@ export const preflightResponsePlan = (
   return {
     passed: failureReasons.length === 0,
     failureReasons: Array.from(new Set(failureReasons)),
+  };
+};
+
+export const createPlanPreflightRecoveryDirective = (
+  plan: ResponsePlan,
+  preflight: ReturnType<typeof preflightResponsePlan>
+): ResponsePlanRecoveryDirective | null => {
+  if (
+    preflight.passed ||
+    preflight.failureReasons.length !== 1 ||
+    preflight.failureReasons[0] !== "missing_emotional_support_evidence_spans" ||
+    !plan.responseActions.includes("offer_emotional_support") ||
+    plan.positiveFunctionContract?.action !== "offer_emotional_support"
+  ) {
+    return null;
+  }
+  return {
+    attempt: 1,
+    rejectedPlanId: plan.planId,
+    failureReason: "missing_emotional_support_evidence_spans",
+    unavailableActions: ["offer_emotional_support"],
   };
 };
 
@@ -356,9 +415,9 @@ export const classifyExecutionError = (error: unknown): {
 };
 
 const USER_SAFE_FAILURE_MESSAGES: Record<ChatExecutionFailureCode, string> = {
-  PLAN_INVALID: "这次回复没能准备好，请重试。",
-  GENERATION_NONCONFORMANT: "这次回复没能生成，请重试。",
-  SAFETY_BLOCKED: "这次请求暂时无法继续。",
+  PLAN_INVALID: "系统这次形成的回复方案内部不一致，所以没有发送不可靠的回复。这不是你说错了。",
+  GENERATION_NONCONFORMANT: "系统已经尝试修正这次回复，但仍没能可靠完成这一轮需要回应的内容，所以没有发送。这不是你的问题。",
+  SAFETY_BLOCKED: "当前无法可靠完成安全判断，所以没有继续普通聊天。如果你在中国大陆且有现实危险，请立即拨打 120（医疗急救）或 110（人身安全/报警）；也可以拨打 12356（心理援助）。",
   PROVIDER_ERROR: "回复服务暂时不可用，请重试。",
   TIMEOUT: "回复超时了，请重试。",
   PERSISTENCE_ERROR: "回复未能保存，请重试。",
@@ -375,7 +434,11 @@ export const toUserSafeExecutionStatus = (
     type: "system_status",
     code: failure.code,
     message: USER_SAFE_FAILURE_MESSAGES[failure.code],
-    retryable: failure.retryable,
+    retryable: failure.code === "PLAN_INVALID" ||
+      failure.code === "GENERATION_NONCONFORMANT" ||
+      failure.code === "SAFETY_BLOCKED"
+      ? false
+      : failure.retryable,
     turnId: execution.turnId,
   };
 };

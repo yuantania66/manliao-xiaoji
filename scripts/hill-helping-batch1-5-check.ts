@@ -13,6 +13,11 @@ import {
 import { determineConversationState } from "../conversation-os/state";
 import type { CommittedAssistantMove, ConversationMessage } from "../conversation-os/types";
 import { createChatReply } from "../services/ai/chatOrchestrationService";
+import type { SafetySemanticProvider } from "../services/ai/chatSafety";
+import {
+  validatePlannedFunctionSemanticOutput,
+  type PositiveFunctionVerdictBinding,
+} from "../services/ai/plannedFunctionSemanticValidator";
 import { formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
 import { validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
 
@@ -24,6 +29,80 @@ const uncertainBoundary = (
   userBoundaries,
   evidence: ["The Hill decision has insufficient evidence to select a helping goal or technique."],
 });
+
+const noRiskSafetyProvider: SafetySemanticProvider = async () => JSON.stringify({
+  schemaVersion: 1,
+  riskLevel: "none",
+  categories: [],
+  currentness: "current",
+  evidence: [],
+  requiresSafetyResponse: false,
+});
+
+const positiveBindingFor = (
+  contract: NonNullable<ResponsePlan["positiveFunctionContract"]>
+): PositiveFunctionVerdictBinding => {
+  if (contract.action === "establish_assistant_identity") {
+    return {
+      action: contract.action,
+      mode: contract.mode,
+      sourceTurnId: contract.sourceTurnId,
+      targetProposition: contract.targetProposition,
+    };
+  }
+  if (contract.action === "offer_emotional_support") {
+    return {
+      action: contract.action,
+      supportFunction: contract.supportFunction,
+      sourceTurnId: contract.sourceTurnId,
+    };
+  }
+  return {
+    action: contract.action,
+    repairMode: contract.repairMode,
+    sourceTurnId: contract.sourceTurnId,
+    targetTurnId: contract.targetTurnId,
+  };
+};
+
+const validatePositiveSemanticFixture = async ({
+  plan,
+  reply,
+  shouldPass,
+}: {
+  plan: ResponsePlan;
+  reply: string;
+  shouldPass: boolean;
+}) => {
+  const contract = plan.positiveFunctionContract;
+  assert(contract, "Positive-function fixture requires a frozen contract.");
+  assert.equal(plan.interactionMoveHandoffPlan, null);
+  return validatePlannedFunctionSemanticOutput({
+    plan,
+    reply,
+    semanticContext: {
+      currentUserText: "sourceText" in contract ? contract.sourceText : "identity fixture",
+      handoffTargetAssistantText: null,
+    },
+    provider: async (input) => ({
+      schemaVersion: 1,
+      planId: input.planId,
+      handoff: null,
+      positiveFunction: {
+        binding: positiveBindingFor(contract),
+        status: shouldPass ? "satisfied" : "not_satisfied",
+        realizedAction: shouldPass ? contract.action : null,
+        targetAddressed: shouldPass,
+        contractRealized: shouldPass,
+        containsContradictoryMove: false,
+        evidence: shouldPass
+          ? [{ start: 0, end: reply.length, text: reply, reason: "Frozen contract fixture." }]
+          : [],
+      },
+      semanticQuestionCount: (reply.match(/[？?]/gu) ?? []).length,
+    }),
+  });
+};
 
 const build = ({
   userMessage,
@@ -295,10 +374,14 @@ const run = async () => {
     "委屈和生气搅在一起特别难受。",
   ];
   for (const reply of emotionalQualityFailures) {
-    const validation = validateResponsePlanOutput({ plan: emotion, reply });
+    const validation = await validatePositiveSemanticFixture({
+      plan: emotion,
+      reply,
+      shouldPass: false,
+    });
     assert.equal(validation.passed, false, `Emotional quality failure must be rejected: ${reply}`);
     assert(
-      validation.failureReasons.some((failure) => failure.startsWith("emotional_support:")),
+      validation.failureReasons.some((failure) => failure === "planned_function_semantic:positive_function_not_satisfied"),
       `Emotional failure must use the emotional-support contract: ${reply}`
     );
   }
@@ -314,7 +397,11 @@ const run = async () => {
     "难受这件事不替你解释原因；你可以先说最在意的部分。",
   ];
   for (const reply of emotionalQualityPasses) {
-    const validation = validateResponsePlanOutput({ plan: focusValidationEmotion, reply });
+    const validation = await validatePositiveSemanticFixture({
+      plan: focusValidationEmotion,
+      reply,
+      shouldPass: true,
+    });
     assert.equal(
       validation.passed,
       true,
@@ -337,10 +424,14 @@ const run = async () => {
     "可能是你没表达清楚。",
   ];
   for (const reply of repairQualityFailures) {
-    const validation = validateResponsePlanOutput({ plan: repair, reply });
+    const validation = await validatePositiveSemanticFixture({
+      plan: repair,
+      reply,
+      shouldPass: false,
+    });
     assert.equal(validation.passed, false, `Repair quality failure must be rejected: ${reply}`);
     assert(
-      validation.failureReasons.some((failure) => failure.startsWith("repair:")),
+      validation.failureReasons.some((failure) => failure === "planned_function_semantic:positive_function_not_satisfied"),
       `Repair failure must use the repair contract: ${reply}`
     );
   }
@@ -356,8 +447,13 @@ const run = async () => {
     "是我没有跟上你，刚才的说法不再作为前提。",
   ];
   for (const reply of repairQualityPasses) {
+    const validation = await validatePositiveSemanticFixture({
+      plan: repair,
+      reply,
+      shouldPass: true,
+    });
     assert.equal(
-      validateResponsePlanOutput({ plan: repair, reply }).passed,
+      validation.passed,
       true,
       `Ownership-based repair must remain allowed: ${reply}`
     );
@@ -444,7 +540,11 @@ const run = async () => {
   ];
   for (const testCase of candidate6FailureReplays) {
     const replayPlan = build({ userMessage: testCase.userMessage }).responsePlan;
-    const validation = validateResponsePlanOutput({ plan: replayPlan, reply: testCase.reply });
+    const validation = await validatePositiveSemanticFixture({
+      plan: replayPlan,
+      reply: testCase.reply,
+      shouldPass: false,
+    });
     assert.equal(
       validation.passed,
       false,
@@ -559,7 +659,11 @@ const run = async () => {
     { id: "R-HO-12", plan: interactionRepairPlan, reply: "我会认真听，不再问了。", shouldPass: false },
   ];
   for (const testCase of independentPositiveFunctionCases) {
-    const validation = validateResponsePlanOutput({ plan: testCase.plan, reply: testCase.reply });
+    const validation = await validatePositiveSemanticFixture({
+      plan: testCase.plan,
+      reply: testCase.reply,
+      shouldPass: testCase.shouldPass,
+    });
     assert.equal(
       validation.passed,
       testCase.shouldPass,
@@ -592,7 +696,9 @@ const run = async () => {
       recentMessages: [],
       helpingShadowEnabled: true,
       helpingOrdinaryHandoffEnabled: false,
+      safetySemanticProvider: noRiskSafetyProvider,
     });
+    assert.notEqual(disabled.execution.planId, "safety-pre-gate");
     assert(disabled.controlTrace?.responsePlan.responseActions.includes("acknowledge_without_psychologizing"));
     const enabled = await createChatReply({
       conversationId: "batch1-5-enabled",
@@ -601,7 +707,9 @@ const run = async () => {
       recentMessages: [],
       helpingShadowEnabled: true,
       helpingOrdinaryHandoffEnabled: true,
+      safetySemanticProvider: noRiskSafetyProvider,
     });
+    assert.notEqual(enabled.execution.planId, "safety-pre-gate");
     assert(enabled.controlTrace?.responsePlan.responseActions.includes("invite_low_pressure_calibration"));
     assert.equal(enabled.controlTrace?.responsePlan.behaviorSource, "ordinary_conversation");
     assert.equal(JSON.stringify(enabled.controlTrace?.responsePlan).includes("primarySkill"), false);
@@ -615,11 +723,13 @@ const run = async () => {
       recentMessages: [],
       helpingShadowEnabled: false,
       helpingOrdinaryHandoffEnabled: true,
+      safetySemanticProvider: noRiskSafetyProvider,
       helpingDecisionProvider: async () => {
         nonFragmentHelpingProviderCalls += 1;
         throw new Error("Batch 1.5 must not enable the full Hill provider for a non-fast turn.");
       },
     });
+    assert.notEqual(nonFragment.execution.planId, "safety-pre-gate");
     assert.equal(nonFragmentHelpingProviderCalls, 0);
     assert.equal(nonFragment.helpingTrace.skippedReason, "ordinary_handoff_no_fast_boundary");
     assert(nonFragment.controlTrace?.responsePlan.responseActions.includes("offer_emotional_support"));
@@ -628,7 +738,7 @@ const run = async () => {
     const safety = await createChatReply({
       conversationId: "batch1-5-safety",
       currentTurnId: "batch1-5-safety-turn",
-      userMessage: "我现在想伤害自己",
+      userMessage: "我正在伤害自己",
       recentMessages: [],
       helpingOrdinaryHandoffEnabled: true,
       helpingDecisionProvider: async () => {

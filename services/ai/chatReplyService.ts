@@ -36,6 +36,7 @@ import {
   type UserSafeExecutionStatus,
 } from "./chatExecutionLifecycle";
 import type { InteractionState, ResponsePlan } from "@/conversation-os/control";
+import type { EpisodeMemoryCandidate } from "@/conversation-os/control";
 
 const mapRiskLevel = (riskLevel: AiRiskLevel) => {
   const value = riskLevel.toUpperCase();
@@ -398,6 +399,7 @@ export const createReviewedChatReply = async ({
   userMessage,
   recentMessages,
   understandingContext,
+  episodeMemoryCandidates = [],
   includeDebugTrace = false,
 }: {
   userId: string;
@@ -407,6 +409,7 @@ export const createReviewedChatReply = async ({
   userMessage: string;
   recentMessages: AiConversationMessage[];
   understandingContext?: StructuredRagContext | null;
+  episodeMemoryCandidates?: EpisodeMemoryCandidate[];
   includeDebugTrace?: boolean;
 }): Promise<
   | {
@@ -434,6 +437,7 @@ export const createReviewedChatReply = async ({
     recentMessages,
     loadMemoryContext: () => loadMemoryContext({ userId, sessionId }),
     understandingContext,
+    episodeMemoryCandidates,
     includeDebugTrace,
   });
   try {

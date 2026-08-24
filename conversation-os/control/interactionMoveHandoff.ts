@@ -1,12 +1,10 @@
 import { parseCommittedAssistantMoveEnvelope } from "../interactionMoveEnvelope";
-import type {
-  CommittedAssistantMoveEnvelopeV1,
-  ProactiveGreetingAssistantMoveEnvelopeV1,
-} from "../interactionMoveEnvelope";
+import type { CommittedAssistantMoveEnvelopeV1 } from "../interactionMoveEnvelope";
 import type { ConversationMessage } from "../types";
 
 import type {
   ActiveInteractionMoveHandoffTarget,
+  ProactiveGreetingOpenEnvelope,
   RelationalInterpretationCandidate,
   UserMoveRelationCandidate,
   UserMoveRelationKind,
@@ -25,7 +23,7 @@ export const retainCommittedAssistantMoveEnvelope = (
 
 const isProactiveGreetingOpenEnvelope = (
   envelope: CommittedAssistantMoveEnvelopeV1
-): envelope is ProactiveGreetingAssistantMoveEnvelopeV1 =>
+): envelope is ProactiveGreetingOpenEnvelope =>
   envelope.origin.kind === "proactive_greeting" && envelope.handoff?.edge === "opens";
 
 export const projectActiveInteractionMoveHandoffTarget = (

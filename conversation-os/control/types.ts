@@ -1,7 +1,7 @@
 import type { AffectEvidenceSpan, ConversationInteractionSignals } from "../state";
 import type { CommittedAssistantMove, ConversationMessage } from "../types";
 import type {
-  ProactiveGreetingAssistantMoveEnvelopeV1,
+  CommittedAssistantMoveEnvelopeV1,
   ProactiveGreetingHandoffFunction,
   ProactiveGreetingRequiredFunction,
 } from "../interactionMoveEnvelope";
@@ -12,13 +12,13 @@ export type DialogueAct =
   | "request_pause" | "end_conversation" | "seek_emotional_support" | "request_action_support" | "acknowledge";
 
 export type GroundingReference =
-  | "identity" | "ai_identity" | "clinician_identity" | "body" | "body_metaphor"
+  | "assistant_name" | "identity" | "ai_identity" | "clinician_identity" | "body" | "body_metaphor"
   | "physical_presence" | "physical_presence_metaphor"
   | "voice_input" | "voice_output" | "vision" | "hearing"
   | "time" | "memory" | "previous_wording" | "none";
 
 export type DirectQuestionKind =
-  | "identity" | "ai_identity" | "clinician_identity"
+  | "assistant_name" | "identity" | "ai_identity" | "clinician_identity"
   | "body_capability" | "voice_input" | "voice_output" | "perception_capability"
   | "time_capability" | "memory_capability" | "definition" | "reason_or_contradiction" | "other";
 
@@ -26,8 +26,16 @@ export type DirectQuestion = {
   text: string;
   kind: DirectQuestionKind;
   subject?: string;
+  targetTurnId?: string;
+  targetProposition?: string;
   evidence: string[];
 };
+
+export type TargetPropositionOperation =
+  | "explain"
+  | "answer"
+  | "affirm"
+  | "repair_or_withdraw";
 
 export type ChallengedProposition = {
   id: string;
@@ -70,6 +78,8 @@ export type RelationalInterpretationCandidate = {
   relation: ResponseRelationKind;
   confidence: number;
   targetTurnId?: string;
+  targetProposition?: string;
+  targetOperation?: TargetPropositionOperation;
   evidence: string[];
 };
 
@@ -105,10 +115,18 @@ export type UserMoveRelationProjection = {
   ambiguous: boolean;
 };
 
+export type ProactiveGreetingOpenEnvelope = Extract<
+  CommittedAssistantMoveEnvelopeV1,
+  {
+    origin: { kind: "proactive_greeting" };
+    handoff: { edge: "opens" };
+  }
+>;
+
 export type ActiveInteractionMoveHandoffTarget = {
   sourceAssistantMoveId: string;
   sourceGreetingFunction: ProactiveGreetingRequiredFunction;
-  envelope: ProactiveGreetingAssistantMoveEnvelopeV1;
+  envelope: ProactiveGreetingOpenEnvelope;
 };
 
 export type InteractionMoveHandoffPlan = {
@@ -209,14 +227,31 @@ export type TurnInterpretation = {
 };
 
 export type AssistantGrounding = {
-  source: "assistant_grounding_v2";
+  source: "assistant_grounding_v3";
   availableFacts: {
-    identity: { name: "慢聊小记"; kind: "AI聊天助手"; isAi: true; isClinician: false; roleBoundary: string };
+    product: { name: "慢聊小记" };
+    assistant: { displayName: "小慢"; kind: "AI聊天助手"; isAi: true; isClinician: false; roleBoundary: string };
     modalities: { textInput: true; textOutput: true; voiceInput: false; voiceOutput: false; vision: false; hearing: false };
     embodiment: { hasBody: false; canSit: false; canSleep: false; canHug: false; canTouch: false; boundary: string };
     capabilities: { currentTimeWithoutContext: false; memory: string };
   };
   prohibitedClaims: string[];
+};
+
+export type EpisodeMemoryCandidate = {
+  semanticMemoryId: string;
+  sessionId: string;
+  summary: string;
+  people: string[];
+  topics: string[];
+  emotions: string[];
+  openThreads: string[];
+  confirmedFacts: string[];
+  hypotheses: string[];
+  sourceMessageIds: string[];
+  occurredAt: string;
+  relevanceScore: number;
+  matchedDimensions: Array<"people" | "topics" | "emotions" | "text">;
 };
 
 export type ConversationControlContext = {
@@ -239,6 +274,7 @@ export type ConversationControlContext = {
   repairSignal: boolean;
   correction: CorrectionSignal | null;
   grounding: AssistantGrounding;
+  episodeMemoryCandidates: EpisodeMemoryCandidate[];
   confirmedFacts: string[];
   unconfirmedHypotheses: string[];
   safety: { level: "low" | "crisis"; triggered: boolean; reason?: string };
@@ -349,6 +385,7 @@ export type ClinicalStrategyAdvice = {
 
 export type ResponseAction =
   | "answer_directly" | "explain_plainly" | "repair_previous_wording"
+  | "establish_assistant_identity"
   | "acknowledge_without_psychologizing" | "respond_to_proactive_greeting"
   | "take_light_topic_initiative"
   | "invite_low_pressure_calibration" | "continue_established_frame"
@@ -385,6 +422,14 @@ export type TurnAffectEvidenceSpan = AffectEvidenceSpan & {
 };
 
 export type PositiveFunctionContract =
+  | {
+      action: "establish_assistant_identity";
+      mode: "first_contact" | "identity_continuation" | "identity_repair";
+      displayName: "小慢";
+      sourceTurnId: string;
+      targetProposition: string | null;
+      evidence: string[];
+    }
   | {
       action: "offer_emotional_support";
       supportFunction: EmotionalSupportFunction;
@@ -429,6 +474,7 @@ export type ResponsePlan = {
   lengthGuidance: string;
   prohibitedClaims: string[];
   safetyConstraints: string[];
+  selectedEpisodeMemory?: EpisodeMemoryCandidate | null;
   relevanceProvenance: Array<{
     planElement: string;
     source: "current_turn" | "adjacent_turn" | "interaction_state" | "system_truth" | "safety";
@@ -438,7 +484,18 @@ export type ResponsePlan = {
   evidence: string[];
 };
 
-export type ResponseValidationResult = { passed: boolean; failureReasons: string[]; checkedPlanId: string; planChanged: false };
+export type ResponseValidationResult = {
+  /** Hard-gate eligibility. Advisory-only findings do not make this false. */
+  passed: boolean;
+  /** Backward-compatible union of hard and advisory findings. */
+  failureReasons: string[];
+  hardFailureReasons?: string[];
+  advisoryFailureReasons?: string[];
+  /** The candidate is commit-eligible but receives the one internal quality rewrite. */
+  rewriteRequired?: boolean;
+  checkedPlanId: string;
+  planChanged: false;
+};
 
 export type ConversationControlTrace = {
   context: ConversationControlContext;

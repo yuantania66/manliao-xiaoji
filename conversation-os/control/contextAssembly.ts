@@ -8,7 +8,7 @@ import {
   retainCommittedAssistantMoveEnvelope,
 } from "./interactionMoveHandoff";
 import { detectAssistantCorrection, isAssistantRepairSignal } from "./repairSignal";
-import type { ConversationControlContext } from "./types";
+import type { ConversationControlContext, EpisodeMemoryCandidate } from "./types";
 
 export const assembleConversationControlContext = ({
   conversationId,
@@ -16,12 +16,14 @@ export const assembleConversationControlContext = ({
   userMessage,
   recentMessages,
   conversationState,
+  episodeMemoryCandidates = [],
 }: {
   conversationId: string;
   currentTurnId?: string;
   userMessage: string;
   recentMessages: AiConversationMessage[];
   conversationState: ConversationStateResult;
+  episodeMemoryCandidates?: EpisodeMemoryCandidate[];
 }): ConversationControlContext => {
   const adjacentInputTurns = recentMessages
     .filter((message): message is AiConversationMessage & { role: "user" | "assistant" } => message.role === "user" || message.role === "assistant")
@@ -69,6 +71,7 @@ export const assembleConversationControlContext = ({
     repairSignal: Boolean(correction) || isAssistantRepairSignal(userMessage, adjacentTurns),
     correction,
     grounding: ASSISTANT_GROUNDING,
+    episodeMemoryCandidates,
     confirmedFacts: [`Current user message: ${userMessage}`],
     unconfirmedHypotheses: [],
     safety: { level: "low", triggered: false },

@@ -60,6 +60,7 @@ const cases = [
   { id: "sit_independent", input: "你会坐吗", kind: "body_capability", reference: "body" },
   { id: "joking_body", input: "哈哈，你还会睡觉吗", kind: "body_capability", reference: "body" },
   { id: "serious_vision", input: "你真的能看见我吗", kind: "perception_capability", reference: "vision" },
+  { id: "assistant_name", input: "你叫什么名字", kind: "assistant_name", reference: "assistant_name" },
 ] as const;
 
 const results = cases.map((item) => {
@@ -73,13 +74,14 @@ const results = cases.map((item) => {
 });
 
 const identity = results[0];
-assert.equal(identity.context.grounding.source, "assistant_grounding_v2");
-assert.equal(identity.context.grounding.availableFacts.identity.name, "慢聊小记");
-assert.equal(identity.context.grounding.availableFacts.identity.isAi, true);
-assert.equal(identity.context.grounding.availableFacts.identity.isClinician, false);
+assert.equal(identity.context.grounding.source, "assistant_grounding_v3");
+assert.equal(identity.context.grounding.availableFacts.product.name, "慢聊小记");
+assert.equal(identity.context.grounding.availableFacts.assistant.displayName, "小慢");
+assert.equal(identity.context.grounding.availableFacts.assistant.isAi, true);
+assert.equal(identity.context.grounding.availableFacts.assistant.isClinician, false);
 assert(identity.context.grounding.prohibitedClaims.some((claim) => claim.includes("心理医生")));
 assert(identity.context.grounding.prohibitedClaims.some((claim) => claim.includes("真实身体")));
-assert(identity.responsePlan.requiredDisclosure.some((fact) => fact.includes("慢聊小记")));
+assert(identity.responsePlan.requiredDisclosure.some((fact) => fact.includes("小慢")));
 assert(identity.responsePlan.requiredDisclosure.some((fact) => fact.includes("AI聊天助手")));
 assert(!identity.responsePlan.requiredDisclosure.some((fact) => fact.includes("心理医生")));
 assert(!identity.responsePlan.requiredDisclosure.some((fact) => fact.includes("没有真实身体")));
@@ -114,7 +116,7 @@ assert(validateResponsePlanOutput({
 
 assert(validateResponsePlanOutput({
   plan: identity.responsePlan,
-  reply: "我是慢聊小记的 AI 聊天助手。",
+  reply: "我是小慢，一个 AI 聊天助手。",
 }).passed);
 assert(validateResponsePlanOutput({
   plan: clinician.responsePlan,
@@ -134,14 +136,14 @@ const promptText = identityPrompt.messages.map((message) => message.content).joi
 assert(!promptText.includes("availableFacts"));
 assert(promptText.includes("只说 groundingFacts 和 requiredDisclosure"));
 assert(promptText.includes("prohibitedClaims:"));
-assert(promptText.includes("requiredDisclosure: 助手名称是慢聊小记。 / 助手是AI聊天助手。"));
+assert(promptText.includes("requiredDisclosure: 助手称呼是小慢。 / 助手是AI聊天助手。"));
 
 const sameConversation = [
   build("你是谁", welcomeWithSit),
   build("你会坐吗", welcomeWithSit),
   build("你能发语音吗", welcomeWithSit),
 ];
-assert(sameConversation.every((result) => result.context.grounding.source === "assistant_grounding_v2"));
+assert(sameConversation.every((result) => result.context.grounding.source === "assistant_grounding_v3"));
 assert(sameConversation.every((result) => result.responsePlan.decisionOwner === "conversation_os.response_planner"));
 assert(sameConversation.every((result) => result.clinicalCalls === 0));
 
@@ -162,11 +164,21 @@ const runAsync = async () => {
     recentMessages: [],
     memoryContext: null,
     includeDebugTrace: true,
+    safetySemanticProvider: async () => JSON.stringify({
+      schemaVersion: 1,
+      riskLevel: "concern",
+      categories: ["suicide", "self_harm"],
+      currentness: "current",
+      evidence: [{ text: "我不想活了" }],
+      requiresSafetyResponse: true,
+    }),
   });
   assert.equal(safety.finalSource, "safety");
   assert.equal(safety.controlTrace, undefined);
-  assert(safety.generation.text.includes("不是心理医生"));
-  assert(safety.generation.text.includes("紧急"));
+  assert(safety.generation.text.startsWith("我很担心你现在的安全"));
+  assert(safety.generation.text.includes("12356（心理援助）"));
+  assert(safety.generation.text.includes("120（医疗急救）"));
+  assert(safety.generation.text.includes("110（人身安全/报警）"));
 
   console.log(JSON.stringify({
     scenarios: 20,

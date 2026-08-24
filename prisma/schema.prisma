@@ -193,6 +193,7 @@ enum EvidenceRole {
 
 enum SemanticMemoryKind {
   RAW_SEGMENT
+  EPISODE_SUMMARY
   TOPIC
   INTEREST
   PREFERENCE

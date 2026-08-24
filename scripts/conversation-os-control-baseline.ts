@@ -51,7 +51,7 @@ const assertAuthorizedPrompt = ({
   messages,
   approvedConversationTexts,
 }: {
-  stage: "turn_interpretation" | "surface_realization" | "interaction_move_handoff_validation";
+  stage: "turn_interpretation" | "surface_realization" | "interaction_move_handoff_validation" | "planned_function_semantic_validation";
   messages: AiModelMessage[];
   approvedConversationTexts: Set<string>;
 }) => {
@@ -139,7 +139,7 @@ const run = async () => {
         userMessage,
       ]);
       const inspectedPrompts: Array<{
-        stage: "turn_interpretation" | "surface_realization" | "interaction_move_handoff_validation";
+        stage: "turn_interpretation" | "surface_realization" | "interaction_move_handoff_validation" | "planned_function_semantic_validation";
         messages: AiModelMessage[];
       }> = [];
       const activeAnswerFrame = inspectActiveAnswerFrame({ userTurn: userMessage, recentMessages: inputContext });

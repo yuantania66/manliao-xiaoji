@@ -4,13 +4,13 @@ import { StructuredRagContext } from "@/services/understanding/understandingType
 import { ConversationContext } from "@/conversation-os";
 import type { ClinicalPlan } from "@/services/clinical/clinicalTypes";
 import type { ResponsePlan } from "@/conversation-os/control";
-import { formatAssistantGroundingForPrompt } from "@/conversation-os/control";
+import { ASSISTANT_GROUNDING, formatAssistantGroundingForPrompt } from "@/conversation-os/control";
 import {
   explicitlyResumesPreGreetingHistory,
   isProactiveGreetingPromptVersion,
 } from "@/lib/proactive-greeting";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v25";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v26";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -69,7 +69,7 @@ const BASE_PRODUCT_PROMPT = [
 
 const RESPONSE_PLAN_PRODUCT_PROMPT = [
   "始终用自然、简短的中文回应。",
-  "你是慢聊小记，一个AI聊天助手；除非 requiredDisclosure 要求，本轮不要主动介绍身份或能力。",
+  `你是一个${ASSISTANT_GROUNDING.availableFacts.assistant.kind}，稳定称呼是${ASSISTANT_GROUNDING.availableFacts.assistant.displayName}；${ASSISTANT_GROUNDING.availableFacts.product.name}只属于当前产品名称，不是你的称呼。除非 requiredDisclosure 要求，本轮不要主动介绍身份或能力。`,
   "Conversation OS 的 ResponsePlan 是本轮唯一的非安全回复决策。只实现该计划，不重新解释用户，不另选目标或策略。",
   "完成 responseActions 和 answerObligations；不得增添计划中没有、且无 relevanceProvenance 的命题。",
   "只说 groundingFacts 和 requiredDisclosure 中明确给出的事实。hypothesis 或被用户否定的命题不得作为事实表达。",
@@ -171,7 +171,12 @@ const handoffSurfaceConstraintsFor = (responsePlan: ResponsePlan) => {
   ];
   const requiredFunctionConstraints: Record<typeof handoff.requiredFunction, string[]> = {
     complete_reciprocal_contact: [
-      "Accept the User's reciprocal contact as sufficient and release the greeting ritual in this reply.",
+      "这是语义组合算法，不是可见回复文案：源 Assistant 开场与当前 User reciprocal move 已经建立双方接触，当前用户的问候在这个交接中已经完成，Surface 不再对它作表层回应。",
+      "可见回复必须把对话推进到寒暄之后：第一个且主要动作应是简短的陈述式过渡，预设交流已经开始，而不是再次建立、确认、提供或索取接触。",
+      responsePlan.responseActions.length === 0
+        ? "本轮 responseActions 为 none：完成上述 reciprocal 过渡后可以自然结束，也可以只问一个低压力的话题选择问题（例如询问用户今天想聊什么）；不得替用户指定话题、连续提问或要求解释，也不得表示在线、可用或愿意倾听。"
+        : "先完成上述 reciprocal 陈述式过渡，再实现计划中仍然存在且有独立支持的 responseActions。",
+      "这些句子只约束语义组合；不得复制、翻译、机械改写或向用户暴露本说明，尤其不得把接触已建立、交流已开始或正在过渡作为对用户的解释或自我报告。",
       "Do not replace that function with another greeting, receipt, echo, Assistant-presence confirmation, availability statement, or generic open door.",
     ],
     continue_from_user_answer: [
@@ -322,10 +327,31 @@ const formatList = (items: string[]) => (items.length > 0 ? items.join(" / ") : 
 
 const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
   const constraints: string[] = [];
+  if (responsePlan.selectedEpisodeMemory) {
+    constraints.push(
+      "Use the selected episode memory only when it helps continue the current user meaning; it is optional material, not a mandatory topic or response action.",
+      "Express any useful continuity naturally without exposing memory fields, retrieval, scores, source ids, or internal reasoning.",
+      "Treat hypotheses and possible links only as exploration context. Never state an unconfirmed cause, motive, feeling, or relationship as fact."
+    );
+  }
   if (responsePlan.responseActions.includes("acknowledge_without_psychologizing")) {
     constraints.push(
       "Acknowledge only content explicit in the current user message.",
       "Do not add generic causal mechanisms, inferred benefits, positive reframing, or praise not expressed by the user."
+    );
+  }
+  if (responsePlan.responseActions.includes("establish_assistant_identity")) {
+    const contract = responsePlan.positiveFunctionContract?.action === "establish_assistant_identity"
+      ? responsePlan.positiveFunctionContract
+      : null;
+    constraints.push(
+      `Complete the assistant-identity function using the canonical displayName ${contract?.displayName ?? "小慢"} from requiredDisclosure.`,
+      "Do not use the product name as the assistant's personal name, invent another name, claim to be nameless, or return only a greeting/receipt.",
+      contract?.mode === "first_contact"
+        ? "Make a brief self-introduction and offer one natural, low-pressure way into conversation; at most one question is allowed only if questionPolicy permits it."
+        : contract?.mode === "identity_continuation"
+          ? "Continue the exact committed identity claim the user affirmed; respond naturally to that continuity and, only if questionPolicy permits, ask at most one low-pressure question about the name itself."
+          : "Repair the product/assistant identity mix-up and provide the canonical assistant display name in the same reply."
     );
   }
   if (responsePlan.responseActions.includes("respond_to_proactive_greeting")) {
@@ -431,6 +457,13 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
         `The rejected interaction-move subtype is ${contract.interactionMoveSubtype ?? "missing_subtype"}. Use concrete action evidence from the targeted prior move—${contract.targetText || "targeted prior move"}—to own and functionally reject that same move. A natural statement that the evidenced move was wrong, ineffective, off-focus, or out of bounds is sufficient; do not mechanically repeat the internal subtype name or require a fixed stop/withdraw token. Do not replace it with another question, suggestion, reassurance, or listening promise.`
       );
     }
+    if (responsePlan.requiredDisclosure.some((item) =>
+      item.includes("是当前产品名称，不是助手称呼")
+    )) {
+      constraints.push(
+        "This repair must distinguish the product name 慢聊小记 from the Assistant display name 小慢 and provide 小慢 as the canonical replacement; do not claim the Assistant has no name."
+      );
+    }
   }
   if (responsePlan.questionPolicy.mode === "none") {
     constraints.push("Do not ask a question or append an interview-style follow-up.");
@@ -469,6 +502,16 @@ export const formatResponsePlanForPrompt = (responsePlan: ResponsePlan) => {
     `tone: ${responsePlan.tone.join(" / ")}`,
     `stance: ${responsePlan.stance.join(" / ")}`,
     `lengthGuidance: ${responsePlan.lengthGuidance}`,
+    `selectedEpisodeMemory: ${responsePlan.selectedEpisodeMemory ? JSON.stringify({
+      summary: compactMemory(responsePlan.selectedEpisodeMemory.summary),
+      people: responsePlan.selectedEpisodeMemory.people.slice(0, 6),
+      topics: responsePlan.selectedEpisodeMemory.topics.slice(0, 6),
+      emotions: responsePlan.selectedEpisodeMemory.emotions.slice(0, 4),
+      openThreads: responsePlan.selectedEpisodeMemory.openThreads.slice(0, 4).map(compactMemory),
+      confirmedFacts: responsePlan.selectedEpisodeMemory.confirmedFacts.slice(0, 6).map(compactMemory),
+      hypotheses: responsePlan.selectedEpisodeMemory.hypotheses.slice(0, 4).map(compactMemory),
+      occurredAt: responsePlan.selectedEpisodeMemory.occurredAt,
+    }) : "none"}`,
     `relevanceProvenance: ${JSON.stringify(projectRelevanceProvenanceForSurface(responsePlan))}`,
     `surfaceConstraints: ${surfaceConstraints.join(" / ") || "none"}`,
     `prohibitedClaims: ${responsePlan.prohibitedClaims.join(" / ")}`,

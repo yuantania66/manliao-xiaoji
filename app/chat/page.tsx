@@ -56,7 +56,7 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
 
     if (!chatSession) return null;
 
-    await ensureProactiveChatGreeting({
+    const greetingResult = await ensureProactiveChatGreeting({
       sessionId: chatSession.id,
       userId: session.user.id,
       force: true,
@@ -90,6 +90,9 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
       sessionId: chatSession.id,
       hasMore,
       nextCursor: hasMore ? items[0]?.id ?? null : null,
+      greetingStatus: greetingResult.status === "retryable_failure"
+        ? greetingResult.systemStatus
+        : null,
       messages: items
         .filter((item) => item.role === "USER" || item.role === "ASSISTANT")
         .map((item) => ({

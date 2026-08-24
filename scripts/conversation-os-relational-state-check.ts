@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
+  buildProactiveGreetingAssistantMoveEnvelope,
+} from "../conversation-os";
+import {
   assembleConversationControlContext,
   buildDialogueState,
   createResponsePlan,
@@ -12,6 +15,7 @@ import {
 } from "../conversation-os/control";
 import { determineConversationState } from "../conversation-os/state";
 import { formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
+import { validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
 import type { AiConversationMessage } from "../services/ai/types";
 
 const clinicalAdvice: ClinicalStrategyAdvice = {
@@ -54,7 +58,7 @@ const build = ({
           ambiguous: modelCandidates.length > 1,
         },
         confidence: Math.max(...modelCandidates.map((item) => item.confidence)),
-      })
+      }, context)
     : deterministic;
   const dialogueState = buildDialogueState(context, interpretation);
   let clinicalCalls = 0;
@@ -318,6 +322,843 @@ assert.equal(naturalIdle.dialogueState.currentActivity.primary, "idle");
 assert.equal(naturalIdle.dialogueState.activeThread?.status, "closed");
 assert.equal(naturalIdle.responsePlan.closurePolicy.mode, "allow_idle");
 assert.equal(naturalIdle.responsePlan.questionPolicy.mode, "none");
+assert(!naturalIdle.responsePlan.responseActions.includes("take_light_topic_initiative"));
+assert(naturalIdle.responsePlan.responseActions.includes("acknowledge_without_psychologizing"));
+assert.equal(validateResponsePlanOutput({
+  plan: naturalIdle.responsePlan,
+  reply: "嗯，好。",
+}).passed, true);
+
+// A completed acknowledgement may carry a generic initiative hedge from the
+// interpreter, but allow_idle arbitrates it away before Surface.
+const idleWithInitiativeHedge = build({
+  userMessage: "好的吧",
+  recentMessages: naturalIdle.context.adjacentTurns.map((turn) => ({
+    ...turn,
+    role: turn.role,
+  })),
+  modelCandidates: [
+    {
+      relation: "acknowledges_previous_move",
+      confidence: 0.96,
+      targetTurnId: "assistant-complete",
+      evidence: ["The User only acknowledges the completed move."],
+    },
+    {
+      relation: "yields_initiative",
+      confidence: 0.88,
+      targetTurnId: "assistant-complete",
+      evidence: ["A lower-confidence initiative hedge."],
+    },
+  ],
+});
+assert.equal(idleWithInitiativeHedge.responsePlan.closurePolicy.mode, "allow_idle");
+assert(!idleWithInitiativeHedge.responsePlan.responseActions.includes("take_light_topic_initiative"));
+assert.equal(validateResponsePlanOutput({
+  plan: idleWithInitiativeHedge.responsePlan,
+  reply: "嗯，好。",
+}).passed, true);
+
+const committedClaim = "雨点落在窗上，像把匆忙的一天调成了慢速播放。";
+const committedClaimEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+  assistantMoveId: "assistant-committed-claim",
+  generationId: "generation-committed-claim",
+  intent: {
+    move: "open_statement",
+    requiredFunction: "offer_self_contained_conversation_entry",
+    realization: {
+      kind: "self_contained_entry",
+      topic: "雨声带来的节奏变化",
+      proposition: committedClaim,
+    },
+    expectedUserContribution: "none",
+    userBurden: "none",
+  },
+});
+const committedClaimHistory: AiConversationMessage[] = [{
+  id: committedClaimEnvelope.assistantMoveId,
+  role: "assistant",
+  content: committedClaim,
+  status: "saved",
+  interactionMoveEnvelope: committedClaimEnvelope,
+}];
+const activeHandoffAcknowledgement = build({
+  userMessage: "好的吧",
+  recentMessages: committedClaimHistory,
+  modelCandidates: [{
+    relation: "acknowledges_previous_move",
+    confidence: 0.96,
+    targetTurnId: committedClaimEnvelope.assistantMoveId,
+    evidence: ["The User acknowledges an active proactive move."],
+  }],
+});
+assert(activeHandoffAcknowledgement.responsePlan.interactionMoveHandoffPlan);
+assert.equal(activeHandoffAcknowledgement.responsePlan.closurePolicy.mode, "forbid_closure");
+
+const clarification = build({
+  userMessage: "你是想表达什么吗？",
+  recentMessages: committedClaimHistory,
+  modelCandidates: [{
+    relation: "requests_answer",
+    confidence: 0.97,
+    targetTurnId: committedClaimEnvelope.assistantMoveId,
+    targetProposition: committedClaim,
+    targetOperation: "explain",
+    evidence: ["The User asks for the meaning of the exact committed claim."],
+  }],
+});
+assert.equal(clarification.responsePlan.answerObligations.length, 1);
+assert.equal(
+  clarification.responsePlan.answerObligations[0]?.targetProposition,
+  committedClaim
+);
+assert.notEqual(
+  clarification.responsePlan.answerObligations[0]?.targetProposition,
+  clarification.responsePlan.answerObligations[0]?.question
+);
+assert(clarification.responsePlan.responseActions.includes("answer_directly"));
+assert(clarification.responsePlan.responseActions.includes("explain_plainly"));
+assert.equal(
+  clarification.responsePlan.interactionMoveHandoffPlan?.requiredFunction,
+  "answer_current_obligation"
+);
+assert.equal(validateResponsePlanOutput({
+  plan: clarification.responsePlan,
+  reply: "我刚才的意思是，雨声会让忙乱的节奏显得慢下来。",
+}).passed, true);
+
+const challengedClaim = build({
+  userMessage: "这个说法没有明确意思，请撤回。",
+  recentMessages: committedClaimHistory,
+  modelCandidates: [{
+    relation: "repairs_previous_move",
+    confidence: 0.97,
+    targetTurnId: committedClaimEnvelope.assistantMoveId,
+    targetProposition: committedClaim,
+    targetOperation: "repair_or_withdraw",
+    evidence: ["The User disputes and asks to withdraw the exact committed claim."],
+  }],
+});
+assert.equal(challengedClaim.dialogueState.repairState.status, "active");
+assert.equal(
+  challengedClaim.responsePlan.positiveFunctionContract?.action === "repair_previous_wording"
+    ? challengedClaim.responsePlan.positiveFunctionContract.targetText
+    : null,
+  committedClaim
+);
+
+const mismatchedClaimBinding = build({
+  userMessage: "你是想表达什么吗？",
+  recentMessages: committedClaimHistory,
+  modelCandidates: [{
+    relation: "requests_answer",
+    confidence: 0.97,
+    targetTurnId: committedClaimEnvelope.assistantMoveId,
+    targetProposition: "并未提交的另一条主张",
+    targetOperation: "explain",
+    evidence: ["An invalid model-supplied target."],
+  }],
+});
+assert(!mismatchedClaimBinding.interpretation.responseRelation.candidates.some((candidate) =>
+  candidate.targetProposition === "并未提交的另一条主张"
+));
+assert.equal(mismatchedClaimBinding.responsePlan.answerObligations.length, 0);
+assert(!mismatchedClaimBinding.interpretation.responseRelation.candidates.some((candidate) =>
+  candidate.relation === "requests_answer"
+));
+assert.notEqual(
+  mismatchedClaimBinding.responsePlan.interactionMoveHandoffPlan?.requiredFunction,
+  "answer_current_obligation"
+);
+
+const missingActiveHandoffClaimBinding = build({
+  userMessage: "你是想表达什么吗？",
+  recentMessages: committedClaimHistory,
+  modelCandidates: [{
+    relation: "requests_answer",
+    confidence: 0.97,
+    targetTurnId: committedClaimEnvelope.assistantMoveId,
+    evidence: ["The model omitted the required committed-claim binding."],
+  }],
+});
+assert.equal(missingActiveHandoffClaimBinding.responsePlan.answerObligations.length, 0);
+assert(!missingActiveHandoffClaimBinding.interpretation.directQuestions.some((question) =>
+  question.targetProposition === question.text
+));
+
+const ordinaryCommittedClaimTurnId = "assistant-ordinary-committed-claim";
+const missingOrdinaryClaimBinding = build({
+  userMessage: "你是想表达什么吗？",
+  recentMessages: [{
+    id: ordinaryCommittedClaimTurnId,
+    role: "assistant",
+    content: committedClaim,
+    status: "saved",
+    committedAssistantMove: {
+      purpose: ["offer_self_contained_conversation_entry"],
+      claims: [{
+        text: committedClaim,
+        subject: "conversation",
+        source: "adjacent_turn",
+        provenance: ["ordinary committed claim fixture"],
+      }],
+      assumptions: [],
+      questionOrRequest: null,
+      expectedUserContribution: "none",
+      userBurden: "none",
+      sourceTurnId: "user-before-ordinary-claim",
+      evidence: ["ordinary committed claim fixture"],
+    },
+  }],
+  modelCandidates: [{
+    relation: "requests_answer",
+    confidence: 0.97,
+    targetTurnId: ordinaryCommittedClaimTurnId,
+    evidence: ["The model omitted the required ordinary committed-claim binding."],
+  }],
+});
+assert.equal(missingOrdinaryClaimBinding.context.interactionMoveHandoffTarget, null);
+assert.equal(missingOrdinaryClaimBinding.responsePlan.answerObligations.length, 0);
+assert(!missingOrdinaryClaimBinding.interpretation.responseRelation.candidates.some((candidate) =>
+  candidate.relation === "requests_answer"
+));
+
+for (const [label, targetTurnId] of [
+  ["wrong target", "wrong-assistant-target"],
+  ["targetless", undefined],
+] as const) {
+  const ordinaryClaimTargetFailure = build({
+    userMessage: "你是想表达什么吗？",
+    recentMessages: missingOrdinaryClaimBinding.context.adjacentTurns.map((turn) => ({
+      id: turn.id,
+      role: turn.role,
+      content: turn.content,
+      committedAssistantMove: turn.committedAssistantMove,
+    })),
+    modelCandidates: [{
+      relation: "requests_answer",
+      confidence: 0.97,
+      ...(targetTurnId ? { targetTurnId } : {}),
+      targetProposition: committedClaim,
+      targetOperation: "explain",
+      evidence: [`The model supplied an ordinary committed-claim ${label}.`],
+    }],
+  });
+  assert.equal(ordinaryClaimTargetFailure.responsePlan.answerObligations.length, 0, label);
+  assert(!ordinaryClaimTargetFailure.interpretation.responseRelation.candidates.some((candidate) =>
+    candidate.relation === "requests_answer"
+  ), label);
+}
+
+const staleCommittedClaim = "旧主张";
+const currentCommittedClaim = "最新主张";
+const committedClaimMove = (text: string, sourceTurnId: string) => ({
+  purpose: ["offer_self_contained_conversation_entry"],
+  claims: [{
+    text,
+    subject: "conversation" as const,
+    source: "adjacent_turn" as const,
+    provenance: [`committed claim fixture=${text}`],
+  }],
+  assumptions: [],
+  questionOrRequest: null,
+  expectedUserContribution: "none" as const,
+  userBurden: "none" as const,
+  sourceTurnId,
+  evidence: [`committed claim fixture=${text}`],
+});
+const multipleCommittedClaimHistory: AiConversationMessage[] = [
+  {
+    id: "assistant-old-claim",
+    role: "assistant",
+    content: staleCommittedClaim,
+    status: "saved",
+    committedAssistantMove: committedClaimMove(staleCommittedClaim, "user-before-old-claim"),
+  },
+  { id: "user-between-claims", role: "user", content: "继续", status: "saved" },
+  {
+    id: "assistant-current-claim",
+    role: "assistant",
+    content: currentCommittedClaim,
+    status: "saved",
+    committedAssistantMove: committedClaimMove(currentCommittedClaim, "user-between-claims"),
+  },
+];
+const staleExactClaimBinding = build({
+  userMessage: "你是想表达什么吗？",
+  recentMessages: multipleCommittedClaimHistory,
+  modelCandidates: [{
+    relation: "requests_answer",
+    confidence: 0.97,
+    targetTurnId: "assistant-old-claim",
+    targetProposition: staleCommittedClaim,
+    targetOperation: "explain",
+    evidence: ["The model selected a stale but internally exact claim."],
+  }],
+});
+assert.equal(staleExactClaimBinding.responsePlan.answerObligations.length, 0);
+assert(!staleExactClaimBinding.interpretation.responseRelation.candidates.some((candidate) =>
+  candidate.targetTurnId === "assistant-old-claim" &&
+  candidate.targetProposition === staleCommittedClaim
+));
+
+const currentExactClaimBinding = build({
+  userMessage: "你是想表达什么吗？",
+  recentMessages: multipleCommittedClaimHistory,
+  modelCandidates: [{
+    relation: "requests_answer",
+    confidence: 0.97,
+    targetTurnId: "assistant-current-claim",
+    targetProposition: currentCommittedClaim,
+    targetOperation: "explain",
+    evidence: ["The model selected the current adjacent committed claim."],
+  }],
+});
+assert.equal(
+  currentExactClaimBinding.responsePlan.answerObligations[0]?.targetProposition,
+  currentCommittedClaim
+);
+
+// Explicit new content and direct questions still prevent idle arbitration.
+const acknowledgementWithNewContent = build({
+  userMessage: "好，我其实想聊聊最近的工作变化。",
+  recentMessages: naturalIdle.context.adjacentTurns.map((turn) => ({ ...turn, role: turn.role })),
+  modelCandidates: [
+    {
+      relation: "acknowledges_previous_move",
+      confidence: 0.96,
+      targetTurnId: "assistant-complete",
+      evidence: ["The first clause acknowledges the completed move."],
+    },
+    {
+      relation: "opens_new_thread",
+      confidence: 0.94,
+      targetTurnId: "assistant-complete",
+      evidence: ["The second clause introduces concrete new content."],
+    },
+  ],
+});
+assert.equal(acknowledgementWithNewContent.responsePlan.closurePolicy.mode, "forbid_closure");
+
+const acknowledgementWithQuestion = build({
+  userMessage: "好，那这个词是什么意思？",
+  recentMessages: naturalIdle.context.adjacentTurns.map((turn) => ({ ...turn, role: turn.role })),
+  modelCandidates: [{
+    relation: "acknowledges_previous_move",
+    confidence: 0.96,
+    targetTurnId: "assistant-complete",
+    evidence: ["The turn includes an acknowledgement."],
+  }],
+});
+assert(acknowledgementWithQuestion.responsePlan.responseActions.includes("answer_directly"));
+assert.equal(acknowledgementWithQuestion.responsePlan.closurePolicy.mode, "forbid_closure");
+
+// First-contact identity and product identity remain separate authorities.
+const assistantNameQuestion = build({ userMessage: "你叫什么名字？" });
+assert.equal(assistantNameQuestion.deterministic.directQuestions[0]?.kind, "assistant_name");
+assert.deepEqual(assistantNameQuestion.responsePlan.requiredDisclosure, ["助手称呼是小慢。"]);
+assert.equal(assistantNameQuestion.responsePlan.questionPolicy.mode, "none");
+assert.equal(
+  validateResponsePlanOutput({ plan: assistantNameQuestion.responsePlan, reply: "我叫小慢。" }).passed,
+  true
+);
+assert.equal(
+  validateResponsePlanOutput({ plan: assistantNameQuestion.responsePlan, reply: "我叫慢聊小记。" }).passed,
+  false
+);
+
+const assistantIdentityQuestion = build({ userMessage: "你是谁？" });
+assert(assistantIdentityQuestion.responsePlan.requiredDisclosure.includes("助手称呼是小慢。"));
+assert(assistantIdentityQuestion.responsePlan.requiredDisclosure.includes("助手是AI聊天助手。"));
+assert.equal(
+  validateResponsePlanOutput({
+    plan: assistantIdentityQuestion.responsePlan,
+    reply: "我是小慢，一个AI聊天助手。",
+  }).passed,
+  true
+);
+
+const firstGreetingText = "你好，我是小慢，一个AI聊天助手。你可以在这里随便聊，也可以和我一起慢慢理清一些事情；不用先想好完整话题，想到什么就从什么开始。";
+const firstGreetingEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+  assistantMoveId: "first-contact-greeting",
+  generationId: "first-contact-generation",
+  intent: {
+    move: "open_statement",
+    requiredFunction: "offer_self_contained_conversation_entry",
+    realization: {
+      kind: "self_contained_entry",
+      topic: "assistant first-contact identity and low-pressure entry",
+      proposition: firstGreetingText,
+    },
+    expectedUserContribution: "none",
+    userBurden: "none",
+  },
+});
+const firstGreetingReply = build({
+  userMessage: "你好",
+  recentMessages: [{
+    id: "first-contact-greeting",
+    role: "assistant",
+    content: firstGreetingText,
+    interactionMoveEnvelope: firstGreetingEnvelope,
+  }],
+  modelCandidates: [{
+    relation: "acknowledges_previous_move",
+    confidence: 0.98,
+    targetTurnId: "first-contact-greeting",
+    evidence: ["The user reciprocates the targeted first-contact greeting."],
+  }],
+});
+const assertNoFirstContactIdentityAuthority = (
+  plan: ReturnType<typeof build>["responsePlan"]
+) => {
+  assert(!plan.responseActions.includes("establish_assistant_identity"));
+  assert.notEqual(
+    plan.positiveFunctionContract?.action === "establish_assistant_identity"
+      ? plan.positiveFunctionContract.mode
+      : null,
+    "first_contact"
+  );
+  assert(!plan.requiredDisclosure.includes("助手称呼是小慢。"));
+  assert(!plan.requiredDisclosure.includes("助手是AI聊天助手。"));
+  assert(!plan.relevanceProvenance.some((item) =>
+    item.planElement === "responseAction:establish_assistant_identity" ||
+    item.evidence.some((evidence) =>
+      evidence.includes("authority=first_contact") ||
+      evidence.includes("firstContactIntent=")
+    )
+  ));
+};
+
+assert.equal(
+  firstGreetingReply.responsePlan.interactionMoveHandoffPlan?.requiredFunction,
+  "complete_reciprocal_contact"
+);
+assertNoFirstContactIdentityAuthority(firstGreetingReply.responsePlan);
+assert.deepEqual(firstGreetingReply.responsePlan.responseActions, []);
+assert.equal(firstGreetingReply.responsePlan.questionPolicy.mode, "optional_after_answer");
+assert.equal(
+  validateResponsePlanOutput({
+    plan: firstGreetingReply.responsePlan,
+    reply: "那我们就随意一点。今天想聊点什么？",
+  }).passed,
+  true,
+  "A reciprocal continuation can let the user choose a topic without reopening identity."
+);
+
+const firstContactOrdinaryReply = build({
+  userMessage: "我今天吃了碗面",
+  recentMessages: [{
+    id: firstGreetingEnvelope.assistantMoveId,
+    role: "assistant",
+    content: firstGreetingText,
+    interactionMoveEnvelope: firstGreetingEnvelope,
+  }],
+  modelCandidates: [{
+    relation: "opens_new_thread",
+    confidence: 0.98,
+    targetTurnId: firstGreetingEnvelope.assistantMoveId,
+    evidence: ["The user starts an ordinary concrete topic after first contact."],
+  }],
+});
+assertNoFirstContactIdentityAuthority(firstContactOrdinaryReply.responsePlan);
+assert(firstContactOrdinaryReply.interpretation.responseRelation.candidates.some((candidate) =>
+  candidate.relation === "opens_new_thread"
+));
+
+const identityClaim = "助手称呼是小慢。";
+const identityContinuation = build({
+  userMessage: "你可以有自己的名字的",
+  recentMessages: [{
+    id: "assistant-identity-claim",
+    role: "assistant",
+    content: "我叫小慢。",
+    committedAssistantMove: {
+      purpose: ["answer_directly"],
+      claims: [{
+        text: identityClaim,
+        subject: "assistant",
+        source: "system_truth",
+        provenance: ["requiredDisclosure:assistant_name"],
+      }],
+      assumptions: [],
+      questionOrRequest: null,
+      expectedUserContribution: "none",
+      userBurden: "none",
+      sourceTurnId: "user-name-question",
+      evidence: ["committed identity fixture"],
+    },
+  }],
+  modelCandidates: [{
+    relation: "continues_active_thread",
+    confidence: 0.97,
+    targetTurnId: "assistant-identity-claim",
+    targetProposition: identityClaim,
+    targetOperation: "affirm",
+    evidence: ["The user explicitly permits and continues the exact committed name claim."],
+  }],
+});
+assert(identityContinuation.responsePlan.responseActions.includes("establish_assistant_identity"));
+assert.equal(
+  identityContinuation.responsePlan.positiveFunctionContract?.action,
+  "establish_assistant_identity"
+);
+assert.equal(
+  validateResponsePlanOutput({
+    plan: identityContinuation.responsePlan,
+    reply: "那就叫我小慢吧。你觉得这个称呼怎么样？",
+  }).passed,
+  true
+);
+assert.equal(
+  validateResponsePlanOutput({
+    plan: identityContinuation.responsePlan,
+    reply: "这个称呼听起来顺口吗？",
+  }).passed,
+  false,
+  "Identity continuation keeps canonical display-name grounding without a text phrase classifier."
+);
+
+const replanFirstContactProbe = ({
+  result,
+  relation,
+  preserveResponseRelation = false,
+}: {
+  result: ReturnType<typeof build>;
+  relation: ReturnType<typeof build>["interpretation"]["userMoveRelation"];
+  preserveResponseRelation?: boolean;
+}) => {
+  const interpretation = {
+    ...result.interpretation,
+    responseRelation: preserveResponseRelation
+      ? result.interpretation.responseRelation
+      : { candidates: [], ambiguous: false },
+    userMoveRelation: relation,
+  };
+  const dialogueState = buildDialogueState(result.context, interpretation);
+  return createResponsePlan({
+    context: result.context,
+    interpretation,
+    dialogueState,
+    clinicalAdviceProvider: () => null,
+  });
+};
+
+assert.equal(firstGreetingReply.context.interaction.contentAvailability, "fragmentary");
+const firstContactNoModelPlan = replanFirstContactProbe({
+  result: firstGreetingReply,
+  relation: null,
+});
+assert.equal(firstContactNoModelPlan.interactionMoveHandoffPlan, null);
+assertNoFirstContactIdentityAuthority(firstContactNoModelPlan);
+
+const firstContactUnclearPlan = replanFirstContactProbe({
+  result: firstGreetingReply,
+  relation: {
+    sourceUserTurnId: firstGreetingReply.context.currentTurnId,
+    targetAssistantMoveId: firstGreetingEnvelope.assistantMoveId,
+    targetFunction: firstGreetingEnvelope.handoff.greetingFunction,
+    candidates: [{
+      kind: "unclear",
+      confidence: 1,
+      evidence: [{
+        source: "current_user_turn",
+        sourceUserTurnId: firstGreetingReply.context.currentTurnId,
+        start: 0,
+        end: 2,
+        text: "你好",
+      }],
+    }],
+    ambiguous: false,
+  },
+});
+assert.equal(firstContactUnclearPlan.interactionMoveHandoffPlan?.requiredFunction,
+  "defer_handoff_completion");
+assertNoFirstContactIdentityAuthority(firstContactUnclearPlan);
+assert.equal(firstContactUnclearPlan.questionPolicy.mode, "none");
+
+const firstContactNoTopic = build({
+  userMessage: "没话题",
+  recentMessages: [{
+    id: firstGreetingEnvelope.assistantMoveId,
+    role: "assistant",
+    content: firstGreetingText,
+    interactionMoveEnvelope: firstGreetingEnvelope,
+  }],
+});
+assert.equal(firstContactNoTopic.context.interaction.contentAvailability, "no_topic");
+const firstContactNoTopicPlan = replanFirstContactProbe({
+  result: firstContactNoTopic,
+  relation: null,
+});
+assertNoFirstContactIdentityAuthority(firstContactNoTopicPlan);
+
+const returnGreetingEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+  assistantMoveId: "return-greeting",
+  generationId: "return-generation",
+  intent: {
+    move: "open_statement",
+    requiredFunction: "offer_self_contained_conversation_entry",
+    realization: {
+      kind: "self_contained_entry",
+      topic: "a return-only neutral observation",
+      proposition: "窗边的光线每天都有一点不同。",
+    },
+    expectedUserContribution: "none",
+    userBurden: "none",
+  },
+});
+const returnNoTopic = build({
+  userMessage: "没话题",
+  recentMessages: [{
+    id: returnGreetingEnvelope.assistantMoveId,
+    role: "assistant",
+    content: "窗边的光线每天都有一点不同。",
+    interactionMoveEnvelope: returnGreetingEnvelope,
+  }],
+});
+assert(!replanFirstContactProbe({
+  result: returnNoTopic,
+  relation: null,
+}).responseActions.includes("establish_assistant_identity"));
+
+const firstContactPause = build({
+  userMessage: "先别问了",
+  recentMessages: [{
+    id: firstGreetingEnvelope.assistantMoveId,
+    role: "assistant",
+    content: firstGreetingText,
+    interactionMoveEnvelope: firstGreetingEnvelope,
+  }],
+});
+const firstContactPausePlan = replanFirstContactProbe({
+  result: firstContactPause,
+  relation: null,
+  preserveResponseRelation: true,
+});
+assert.deepEqual(firstContactPausePlan.responseActions, ["respect_pause"]);
+assert.equal(firstContactPausePlan.questionPolicy.mode, "none");
+
+const identityWithoutExactAffirm = build({
+  userMessage: "我想说另一件事",
+  recentMessages: identityContinuation.context.adjacentTurns.map((turn) => ({
+    ...turn,
+    role: turn.role,
+  })),
+  modelCandidates: [{
+    relation: "opens_new_thread",
+    confidence: 0.96,
+    targetTurnId: "assistant-identity-claim",
+    evidence: ["The user introduces unrelated content without affirming the identity claim."],
+  }],
+});
+assert(!identityWithoutExactAffirm.responsePlan.responseActions.includes("establish_assistant_identity"));
+
+const identityThenPause = build({
+  userMessage: "先别问了",
+  recentMessages: identityContinuation.context.adjacentTurns.map((turn) => ({
+    ...turn,
+    role: turn.role,
+  })),
+});
+assert.deepEqual(identityThenPause.responsePlan.responseActions, ["respect_pause"]);
+assert.equal(identityThenPause.responsePlan.questionPolicy.mode, "none");
+
+const productNameCorrection = build({
+  userMessage: "慢聊小记是产品名字",
+  recentMessages: [{
+    id: "assistant-wrong-product-name",
+    role: "assistant",
+    content: "我叫慢聊小记。",
+    committedAssistantMove: {
+      purpose: ["answer_directly"],
+      claims: [{
+        text: "助手称呼是慢聊小记。",
+        subject: "assistant",
+        source: "system_truth",
+        provenance: ["legacy requiredDisclosure:identity"],
+      }],
+      assumptions: [],
+      questionOrRequest: null,
+      expectedUserContribution: "none",
+      userBurden: "none",
+      sourceTurnId: "legacy-name-question",
+      evidence: ["legacy committed identity fixture"],
+    },
+  }],
+  modelCandidates: [{
+    relation: "repairs_previous_move",
+    confidence: 0.98,
+    targetTurnId: "assistant-wrong-product-name",
+    targetProposition: "助手称呼是慢聊小记。",
+    targetOperation: "repair_or_withdraw",
+    evidence: ["The user corrects the exact committed assistant-name claim."],
+  }],
+});
+assert(productNameCorrection.responsePlan.responseActions.includes("repair_previous_wording"));
+assert(!productNameCorrection.responsePlan.responseActions.includes("establish_assistant_identity"));
+assert(productNameCorrection.responsePlan.requiredDisclosure.includes("助手称呼是小慢。"));
+assert.equal(productNameCorrection.responsePlan.questionPolicy.mode, "none");
+assert.equal(
+  validateResponsePlanOutput({
+    plan: productNameCorrection.responsePlan,
+    reply: "是我刚才说错了：慢聊小记是产品名，不是我的名字；我叫小慢。",
+  }).passed,
+  true
+);
+
+const replanIdentityAuthorityProbe = ({
+  result,
+  candidate,
+}: {
+  result: ReturnType<typeof build>;
+  candidate: RelationalInterpretationCandidate;
+}) => {
+  const interpretation = {
+    ...result.interpretation,
+    responseRelation: { candidates: [candidate], ambiguous: false },
+    userMoveRelation: null,
+  };
+  const dialogueState = buildDialogueState(result.context, interpretation);
+  return createResponsePlan({
+    context: result.context,
+    interpretation,
+    dialogueState,
+    clinicalAdviceProvider: () => null,
+  });
+};
+
+const fakeIdentityTarget = build({ userMessage: "嗯" });
+const nonAdjacentIdentityTarget = build({
+  userMessage: "嗯",
+  recentMessages: [
+    {
+      id: "assistant-outside-adjacent-context",
+      role: "assistant",
+      content: "我叫小慢。",
+      committedAssistantMove: {
+        purpose: ["answer_directly"],
+        claims: [{
+          text: identityClaim,
+          subject: "assistant",
+          source: "system_truth",
+          provenance: ["outside adjacent context fixture"],
+        }],
+        assumptions: [],
+        questionOrRequest: null,
+        expectedUserContribution: "none",
+        userBurden: "none",
+        sourceTurnId: "outside-adjacent-user",
+        evidence: ["outside adjacent context fixture"],
+      },
+    },
+    { id: "user-adjacent-1", role: "user", content: "一" },
+    { id: "assistant-adjacent-1", role: "assistant", content: "一。" },
+    { id: "user-adjacent-2", role: "user", content: "二" },
+    { id: "assistant-adjacent-2", role: "assistant", content: "二。" },
+    { id: "user-adjacent-3", role: "user", content: "三" },
+    { id: "assistant-adjacent-3", role: "assistant", content: "三。" },
+  ],
+});
+assert(!nonAdjacentIdentityTarget.context.adjacentTurns.some((turn) =>
+  turn.id === "assistant-outside-adjacent-context"
+));
+const uncommittedIdentityTarget = build({
+  userMessage: "嗯",
+  recentMessages: [{
+    id: "assistant-without-committed-claim",
+    role: "assistant",
+    content: "我叫慢聊小记。",
+  }],
+});
+const mismatchedIdentityTarget = build({
+  userMessage: "嗯",
+  recentMessages: [{
+    id: "assistant-with-different-committed-claim",
+    role: "assistant",
+    content: "我叫小慢。",
+    committedAssistantMove: {
+      purpose: ["answer_directly"],
+      claims: [{
+        text: identityClaim,
+        subject: "assistant",
+        source: "system_truth",
+        provenance: ["different exact claim fixture"],
+      }],
+      assumptions: [],
+      questionOrRequest: null,
+      expectedUserContribution: "none",
+      userBurden: "none",
+      sourceTurnId: "different-claim-user",
+      evidence: ["different exact claim fixture"],
+    },
+  }],
+});
+
+const invalidIdentityAuthorityCases = [
+  {
+    label: "forged target id",
+    result: fakeIdentityTarget,
+    targetTurnId: "assistant-forged-target",
+  },
+  {
+    label: "non-adjacent target",
+    result: nonAdjacentIdentityTarget,
+    targetTurnId: "assistant-outside-adjacent-context",
+  },
+  {
+    label: "target without committed claim",
+    result: uncommittedIdentityTarget,
+    targetTurnId: "assistant-without-committed-claim",
+  },
+  {
+    label: "mismatched proposition",
+    result: mismatchedIdentityTarget,
+    targetTurnId: "assistant-with-different-committed-claim",
+  },
+] as const;
+
+for (const { label, result, targetTurnId } of invalidIdentityAuthorityCases) {
+  const continuationProposition = label === "mismatched proposition"
+    ? "助手是AI聊天助手。"
+    : identityClaim;
+  const continuationPlan = replanIdentityAuthorityProbe({
+    result,
+    candidate: {
+      relation: "continues_active_thread",
+      confidence: 0.99,
+      targetTurnId,
+      targetProposition: continuationProposition,
+      targetOperation: "affirm",
+      evidence: [`Planner authority probe: ${label}.`],
+    },
+  });
+  assert(!continuationPlan.responseActions.includes("establish_assistant_identity"), label);
+  assert(!continuationPlan.requiredDisclosure.includes("助手称呼是小慢。"), label);
+
+  const repairPlan = replanIdentityAuthorityProbe({
+    result,
+    candidate: {
+      relation: "repairs_previous_move",
+      confidence: 0.99,
+      targetTurnId,
+      targetProposition: "助手称呼是慢聊小记。",
+      targetOperation: "repair_or_withdraw",
+      evidence: [`Planner identity-repair authority probe: ${label}.`],
+    },
+  });
+  assert(!repairPlan.requiredDisclosure.includes("助手称呼是小慢。"), label);
+  assert(!repairPlan.requiredDisclosure.some((item) =>
+    item.includes("是当前产品名称，不是助手称呼")
+  ), label);
+  assert.notEqual(
+    repairPlan.positiveFunctionContract?.action === "repair_previous_wording"
+      ? repairPlan.positiveFunctionContract.replacementFact
+      : null,
+    "小慢",
+    label
+  );
+}
 
 // Interaction State is reconstructible from committed raw events and move metadata.
 const reconstructed = build({
@@ -333,7 +1174,7 @@ const reconstructed = build({
       committedAssistantMove: {
         purpose: ["acknowledge_without_psychologizing"],
         claims: [{
-          text: "慢聊小记是AI聊天助手。",
+          text: "助手称呼是小慢。",
           subject: "assistant",
           source: "system_truth",
           provenance: ["requiredDisclosure:identity"],
@@ -376,11 +1217,22 @@ for (const item of [
 const plannerSource = readFileSync("conversation-os/control/responsePlanner.ts", "utf8");
 const orchestrationSource = readFileSync("services/ai/chatOrchestrationService.ts", "utf8");
 const validatorSource = readFileSync("services/ai/responsePlanValidator.ts", "utf8");
+const plannedFunctionValidatorSource = readFileSync(
+  "services/ai/plannedFunctionSemanticValidator.ts",
+  "utf8"
+);
 assert(!plannerSource.includes("primaryDialogueAct"));
 assert(!plannerSource.includes("secondarySignals"));
 assert(!plannerSource.includes("activeInteractionNeeds"));
 assert(!plannerSource.includes("stillOpenUserIntent"));
-assert(!plannerSource.includes("contentAvailability"));
+assert(!plannerSource.includes("firstContactIdentityEvidence"));
+assert(!plannerSource.includes("authority=first_contact"));
+assert(!validatorSource.includes("hasLowPressureConversationEntry"));
+assert(!validatorSource.includes("hasLowPressureNameContinuation"));
+assert(validatorSource.includes("validatePlannedFunctionSemanticOutput"));
+assert(plannedFunctionValidatorSource.includes("if (!handoff && !positiveFunction)"));
+assert(plannedFunctionValidatorSource.includes("positiveFunctionBinding"));
+assert(plannedFunctionValidatorSource.includes("handoffTargetAssistantText"));
 assert.equal((orchestrationSource.match(/createResponsePlan\(/g) ?? []).length, 1);
 assert(!validatorSource.includes("createResponsePlan("));
 

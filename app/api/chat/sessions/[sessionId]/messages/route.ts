@@ -1,5 +1,5 @@
 import { MessageRole, MessageStatus } from "@prisma/client";
-import { NextRequest } from "next/server";
+import { after, NextRequest } from "next/server";
 
 import { failFromError, ok } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth";
@@ -12,6 +12,10 @@ import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingSe
 import { extractExperienceFromChatMessage } from "@/services/experience/experienceExtractorService";
 import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
 import { maybeMergeMemoryV2ResponseContext } from "@/services/memory/responseContextService";
+import {
+  refreshEpisodeSummaryForSession,
+  retrieveRelevantEpisodeMemories,
+} from "@/services/memory/episodeSummaryService";
 import { parseCommittedAssistantMoveMetadata } from "@/services/helping";
 import {
   extractUnderstandingFromMessage,
@@ -63,7 +67,11 @@ export async function GET(
     const user = await requireUser(request);
     const { sessionId } = await context.params;
     await assertSessionOwner(sessionId, user.id);
-    await ensureProactiveChatGreeting({ sessionId, userId: user.id });
+    const greetingResult = await ensureProactiveChatGreeting({
+      sessionId,
+      userId: user.id,
+      force: request.nextUrl.searchParams.get("retryGreeting") === "1",
+    });
 
     const { searchParams } = new URL(request.url);
     const pagination = parsePagination(searchParams);
@@ -145,6 +153,9 @@ export async function GET(
       total,
       hasMore,
       nextCursor: hasMore ? items[0]?.id ?? null : null,
+      greetingStatus: greetingResult.status === "retryable_failure"
+        ? greetingResult.systemStatus
+        : null,
     });
   } catch (error) {
     return failFromError(error);
@@ -382,6 +393,15 @@ export async function POST(
       userId: user.id,
       v1Context: baseUnderstandingContext,
     });
+    const episodeMemoryCandidates = await retrieveRelevantEpisodeMemories({
+      userId: user.id,
+      currentSessionId: sessionId,
+      currentMessage: content,
+      extraction: understandingExtraction,
+    }).catch((error) => {
+      console.error("episode memory retrieval failed", error);
+      return [];
+    });
 
     const reviewedReply = await createReviewedChatReply({
       userId: user.id,
@@ -391,6 +411,7 @@ export async function POST(
       userMessage: content,
       recentMessages: serializedRecentMessages,
       understandingContext,
+      episodeMemoryCandidates,
       includeDebugTrace,
     });
 
@@ -442,6 +463,14 @@ export async function POST(
         200
       );
     }
+
+    after(async () => {
+      try {
+        await refreshEpisodeSummaryForSession({ userId: user.id, sessionId });
+      } catch (error) {
+        console.error("episode summary refresh failed after Assistant commit", error);
+      }
+    });
 
     return ok(
       {

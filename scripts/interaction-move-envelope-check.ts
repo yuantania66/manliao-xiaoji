@@ -22,22 +22,58 @@ const main = async () => {
 const greetingCases = [
   {
     move: "simple_greeting" as const,
+    intent: {
+      move: "simple_greeting" as const,
+      requiredFunction: "initiate_reciprocal_contact" as const,
+      realization: { kind: "reciprocal_contact" as const },
+      expectedUserContribution: "none" as const,
+      userBurden: "none" as const,
+    },
     requiredFunction: "initiate_reciprocal_contact",
+    claims: [],
     questionOrRequest: null,
     expectedUserContribution: "none",
     userBurden: "none",
   },
   {
     move: "open_statement" as const,
+    intent: {
+      move: "open_statement" as const,
+      requiredFunction: "offer_self_contained_conversation_entry" as const,
+      realization: {
+        kind: "self_contained_entry" as const,
+        topic: "fixture topic",
+        proposition: "A self-contained fixture proposition.",
+      },
+      expectedUserContribution: "none" as const,
+      userBurden: "none" as const,
+    },
     requiredFunction: "offer_self_contained_conversation_entry",
+    claims: [{
+      text: "A self-contained fixture proposition.",
+      subject: "conversation" as const,
+      provenance: ["proactiveIntent.realization.proposition"],
+    }],
     questionOrRequest: null,
     expectedUserContribution: "none",
     userBurden: "none",
   },
   {
     move: "light_question" as const,
+    intent: {
+      move: "light_question" as const,
+      requiredFunction: "ask_one_bounded_low_burden_question" as const,
+      realization: {
+        kind: "bounded_question" as const,
+        topic: "fixture topic",
+        question: "A bounded fixture question?",
+      },
+      expectedUserContribution: "answer" as const,
+      userBurden: "low" as const,
+    },
     requiredFunction: "ask_one_bounded_low_burden_question",
-    questionOrRequest: { kind: "question" },
+    claims: [],
+    questionOrRequest: { kind: "question", text: "A bounded fixture question?" },
     expectedUserContribution: "answer",
     userBurden: "low",
   },
@@ -48,12 +84,13 @@ for (const item of greetingCases) {
   const envelope = buildProactiveGreetingAssistantMoveEnvelope({
     assistantMoveId,
     generationId: `generation-${item.move}`,
-    greetingMove: item.move,
+    intent: item.intent,
   });
   assert.equal(proactiveGreetingRequiredFunctionFor(item.move), item.requiredFunction);
   assert.equal(envelope.assistantMoveId, assistantMoveId);
   assert.equal(envelope.origin.kind, "proactive_greeting");
   assert.equal(envelope.committedMove.sourceTurnId, null);
+  assert.deepEqual(envelope.committedMove.claims, item.claims);
   assert.deepEqual(envelope.committedMove.questionOrRequest, item.questionOrRequest);
   assert.equal(envelope.committedMove.expectedUserContribution, item.expectedUserContribution);
   assert.equal(envelope.committedMove.userBurden, item.userBurden);
@@ -146,6 +183,39 @@ assert.deepEqual(fulfillmentEnvelope.handoff, {
   sourceAssistantMoveId: "assistant-greeting-source",
   realizedFunction: "complete_reciprocal_contact",
 });
+const advisoryHandoffPlan: ResponsePlan = {
+  ...handoffPlan,
+  planId: "plan-advisory-content-1",
+  interactionMoveHandoffPlan: {
+    ...handoffPlan.interactionMoveHandoffPlan!,
+    selectedRelation: "opens_or_redirects_thread",
+    requiredFunction: "continue_user_introduced_content",
+    questionPolicy: "optional_after_completion",
+  },
+};
+const advisoryHandoffEnvelope = buildResponsePlanAssistantMoveEnvelope({
+  assistantMoveId: "assistant-response-advisory-1",
+  planId: advisoryHandoffPlan.planId,
+  sourceUserTurnId: "user-turn-1",
+  committedMove,
+  handoffCommitEvidence: {
+    executionPhase: "VALIDATED",
+    finalAttemptPhase: "VALIDATED",
+    executionPlanId: advisoryHandoffPlan.planId,
+    executionTurnId: "user-turn-1",
+    responsePlan: advisoryHandoffPlan,
+    finalValidation: {
+      passed: true,
+      failureReasons: ["planned_function_semantic:handoff_not_satisfied"],
+      hardFailureReasons: [],
+      advisoryFailureReasons: ["planned_function_semantic:handoff_not_satisfied"],
+      rewriteRequired: true,
+      checkedPlanId: advisoryHandoffPlan.planId,
+      planChanged: false,
+    },
+  },
+});
+assert.equal(advisoryHandoffEnvelope.handoff, null);
 assert.equal(handoffCompleted("assistant-greeting-source", [fulfillmentEnvelope]), true);
 assert.equal(handoffCompleted("different-greeting", [fulfillmentEnvelope]), false);
 assert.equal(handoffCompleted("assistant-greeting-source", [responseEnvelope]), false);
@@ -160,7 +230,7 @@ assert.equal(handoffCompleted("assistant-greeting-source", [{
 const openEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
   assistantMoveId: "assistant-greeting-source",
   generationId: "generation-active-source",
-  greetingMove: "simple_greeting",
+  intent: greetingCases[0].intent,
 });
 const safetyMove = buildCommittedResponseMove({
   plan: null,
@@ -344,7 +414,7 @@ const invalidProactiveEdge = parseCommittedAssistantMoveEnvelope({
   ...buildProactiveGreetingAssistantMoveEnvelope({
     assistantMoveId: "assistant-greeting-1",
     generationId: "generation-greeting-1",
-    greetingMove: "simple_greeting",
+    intent: greetingCases[0].intent,
   }),
   handoff: null,
 });
@@ -383,7 +453,8 @@ const guestGreetingSource = await readFile(
 
 assert(!coreSource.includes("promptVersion"));
 assert(plannerSource.includes("isProactiveGreetingPromptVersion"));
-assert(!plannerSource.includes("interactionMoveEnvelope"));
+assert(plannerSource.includes("parseCommittedAssistantMoveEnvelope"));
+assert(!plannerSource.includes("persistentHandoffLifecycleState"));
 for (const source of [authReplySource, authGreetingSource, guestReplySource, guestGreetingSource]) {
   assert(source.includes("interactionMoveEnvelope"));
 }

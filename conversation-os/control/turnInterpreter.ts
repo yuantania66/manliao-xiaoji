@@ -6,6 +6,7 @@ import type {
   GroundingReference,
   RelationalInterpretationCandidate,
   ResponseRelationKind,
+  TargetPropositionOperation,
   TurnInterpretation,
   TurnStateUpdate,
 } from "./types";
@@ -22,6 +23,9 @@ const directQuestionFromText = (text: string): DirectQuestion | null => {
   }
   if (/^(?:你|您)(?:到底)?(?:是谁|是什么(?:东西|助手)?)(?:吗)?[？?。！!]*$/u.test(text)) {
     return { text, kind: "identity", evidence: ["explicit assistant-identity question"] };
+  }
+  if (/^(?:那)?(?:你|您)(?:到底)?(?:叫|叫什么|叫什么名字|的名字是什么)(?:呢|吗)?[？?。！!]*$/u.test(text)) {
+    return { text, kind: "assistant_name", evidence: ["explicit assistant-name question"] };
   }
   if (/(?:发|用|说|回复).{0,4}语音|语音.{0,4}(?:发|说|回复)|(?:为什么|怎么)?(?:不会|不能)说话/u.test(text)) return { text, kind: "voice_output", evidence: ["explicit voice-output or speaking-capability question"] };
   if (/(?:听得见|听得到|听到|听见|语音输入|麦克风)/u.test(text)) return { text, kind: "voice_input", evidence: ["explicit hearing or voice-input capability question"] };
@@ -79,6 +83,7 @@ const adjacentAssistantUsesMatchingEmbodiment = (
 
 const groundingReferenceForQuestion = (question: DirectQuestion | null, context: ConversationControlContext): GroundingReference => {
   if (!question) return context.correction ? "none" : context.repairSignal ? "previous_wording" : "none";
+  if (question.kind === "assistant_name") return "assistant_name";
   if (question.kind === "identity") return "identity";
   if (question.kind === "ai_identity") return "ai_identity";
   if (question.kind === "clinician_identity") return "clinician_identity";
@@ -101,7 +106,7 @@ const groundingReferenceForQuestion = (question: DirectQuestion | null, context:
 
 const primaryActFor = (context: ConversationControlContext, question: DirectQuestion | null): DialogueAct => {
   if (context.interaction.stopIntent) return context.interaction.engagement === "stop_requested" ? "end_conversation" : "request_pause";
-  if (question && ["identity", "ai_identity", "clinician_identity"].includes(question.kind)) return "ask_identity";
+  if (question && ["assistant_name", "identity", "ai_identity", "clinician_identity"].includes(question.kind)) return "ask_identity";
   if (question?.kind === "definition") return "ask_definition";
   if (question?.kind === "reason_or_contradiction") return "challenge_contradiction";
   if (context.repairSignal) return "correct_assistant";
@@ -117,7 +122,14 @@ const uniqueRelationCandidates = (candidates: RelationalInterpretationCandidate[
   for (const candidate of candidates) {
     const key = `${candidate.relation}:${candidate.targetTurnId ?? ""}`;
     const existing = selected.get(key);
-    if (!existing || candidate.confidence > existing.confidence) {
+    if (
+      !existing ||
+      (candidate.targetProposition && !existing.targetProposition) ||
+      (
+        Boolean(candidate.targetProposition) === Boolean(existing.targetProposition) &&
+        candidate.confidence > existing.confidence
+      )
+    ) {
       selected.set(key, candidate);
     } else if (candidate.confidence === existing.confidence) {
       selected.set(key, {
@@ -311,7 +323,7 @@ const buildStateUpdate = (
     obligationChanges: contentMeaning.directQuestions.map((question) => ({
       operation: "open" as const,
       sourceTurnId: context.currentTurnId,
-      targetProposition: question.text,
+      targetProposition: question.targetProposition ?? question.text,
       evidence: question.evidence,
     })),
     initiativeProposal: initiativeForCandidates(candidates),
@@ -461,10 +473,64 @@ const isResponseRelationKind = (value: unknown): value is ResponseRelationKind =
     "acknowledges_previous_move",
   ].includes(value);
 
-const modelRelationCandidates = (model: Partial<TurnInterpretation> | null) => {
+const committedClaimsForTurn = (
+  context: ConversationControlContext | undefined,
+  targetTurnId: string | undefined
+) => {
+  if (!context || !targetTurnId) return [];
+  const targetTurn = context.adjacentTurns.find((turn) =>
+    turn.role === "assistant" && turn.id === targetTurnId
+  );
+  if (!targetTurn) return [];
+  if (
+    context.interactionMoveHandoffTarget?.sourceAssistantMoveId === targetTurnId
+  ) {
+    return context.interactionMoveHandoffTarget.envelope.committedMove.claims.map(
+      (claim, index) => ({
+        id: `${targetTurnId}:claim-${index + 1}`,
+        text: claim.text,
+      })
+    );
+  }
+  return (targetTurn.committedAssistantMove?.claims ?? []).map((claim, index) => ({
+    id: `${targetTurnId}:claim-${index + 1}`,
+    text: claim.text,
+  }));
+};
+
+const currentCommittedClaimAuthorityForContext = (
+  context: ConversationControlContext | undefined
+) => {
+  if (!context) return null;
+  const handoffTarget = context.interactionMoveHandoffTarget;
+  if (handoffTarget && handoffTarget.envelope.committedMove.claims.length > 0) {
+    return {
+      targetTurnId: handoffTarget.sourceAssistantMoveId,
+      claims: committedClaimsForTurn(context, handoffTarget.sourceAssistantMoveId),
+    };
+  }
+  const adjacentAssistantTurn = [...context.adjacentTurns]
+    .reverse()
+    .find((turn) => turn.role === "assistant") ?? null;
+  if (!adjacentAssistantTurn?.id) return null;
+  const claims = committedClaimsForTurn(context, adjacentAssistantTurn.id);
+  return claims.length > 0
+    ? { targetTurnId: adjacentAssistantTurn.id, claims }
+    : null;
+};
+
+const isTargetOperation = (value: unknown): value is TargetPropositionOperation =>
+  value === "explain" || value === "answer" || value === "affirm" || value === "repair_or_withdraw";
+
+const modelRelationCandidates = (
+  model: Partial<TurnInterpretation> | null,
+  context?: ConversationControlContext
+) => {
   if (!model || typeof model.responseRelation !== "object" || model.responseRelation === null) return [];
   const candidates = (model.responseRelation as { candidates?: unknown }).candidates;
   if (!Array.isArray(candidates)) return [];
+  const handoffTarget = context?.interactionMoveHandoffTarget;
+  const claimAuthority = currentCommittedClaimAuthorityForContext(context);
   return candidates.flatMap((candidate): RelationalInterpretationCandidate[] => {
     if (!candidate || typeof candidate !== "object") return [];
     const value = candidate as Record<string, unknown>;
@@ -473,10 +539,66 @@ const modelRelationCandidates = (model: Partial<TurnInterpretation> | null) => {
       ? Math.max(0, Math.min(1, value.confidence))
       : 0;
     if (confidence < 0.55) return [];
+    const targetTurnId = typeof value.targetTurnId === "string"
+      ? value.targetTurnId
+      : undefined;
+    if (
+      handoffTarget &&
+      targetTurnId !== handoffTarget.sourceAssistantMoveId
+    ) return [];
+    const committedClaims = committedClaimsForTurn(context, targetTurnId);
+    const claimTargetingRelation =
+      value.relation === "requests_answer" || value.relation === "repairs_previous_move";
+    if (
+      claimTargetingRelation &&
+      (claimAuthority || committedClaims.length > 0) &&
+      targetTurnId !== claimAuthority?.targetTurnId
+    ) return [];
+    const suppliedTargetProposition = typeof value.targetProposition === "string"
+      ? value.targetProposition
+      : undefined;
+    const suppliedTargetOperation = isTargetOperation(value.targetOperation)
+      ? value.targetOperation
+      : undefined;
+    const suppliedOneTargetField = Boolean(
+      suppliedTargetProposition || suppliedTargetOperation
+    );
+    const suppliedBothTargetFields = Boolean(
+      suppliedTargetProposition && suppliedTargetOperation
+    );
+    if (suppliedOneTargetField && !suppliedBothTargetFields) return [];
+    if (
+      suppliedTargetProposition &&
+      !committedClaims.some((claim) => claim.text === suppliedTargetProposition)
+    ) return [];
+    if (
+      suppliedTargetOperation === "affirm" &&
+      targetTurnId !== claimAuthority?.targetTurnId
+    ) return [];
+    if (
+      suppliedTargetOperation === "repair_or_withdraw" &&
+      value.relation !== "repairs_previous_move"
+    ) return [];
+    if (
+      suppliedTargetOperation === "affirm" &&
+      value.relation !== "continues_active_thread" &&
+      value.relation !== "acknowledges_previous_move"
+    ) return [];
+    if (
+      (suppliedTargetOperation === "explain" || suppliedTargetOperation === "answer") &&
+      value.relation !== "requests_answer"
+    ) return [];
+    if (claimAuthority && claimTargetingRelation && !suppliedBothTargetFields) return [];
     return [{
       relation: value.relation,
       confidence,
-      ...(typeof value.targetTurnId === "string" ? { targetTurnId: value.targetTurnId } : {}),
+      ...(targetTurnId ? { targetTurnId } : {}),
+      ...(suppliedTargetProposition && suppliedTargetOperation
+        ? {
+            targetProposition: suppliedTargetProposition,
+            targetOperation: suppliedTargetOperation,
+          }
+        : {}),
       evidence: Array.isArray(value.evidence)
         ? value.evidence.filter((item): item is string => typeof item === "string")
         : ["Model supplied a relational interpretation candidate."],
@@ -484,12 +606,43 @@ const modelRelationCandidates = (model: Partial<TurnInterpretation> | null) => {
   });
 };
 
+const rejectedCommittedClaimAnswerBinding = ({
+  model,
+  context,
+  acceptedCandidates,
+}: {
+  model: Partial<TurnInterpretation> | null;
+  context?: ConversationControlContext;
+  acceptedCandidates: RelationalInterpretationCandidate[];
+}) => {
+  if (!context || !model || typeof model.responseRelation !== "object" || model.responseRelation === null) {
+    return false;
+  }
+  const rawCandidates = (model.responseRelation as { candidates?: unknown }).candidates;
+  if (!Array.isArray(rawCandidates)) return false;
+  const claimAuthority = currentCommittedClaimAuthorityForContext(context);
+  if (!claimAuthority) return false;
+  const attemptedCommittedClaimAnswer = rawCandidates.some((candidate) => {
+    if (!candidate || typeof candidate !== "object") return false;
+    const value = candidate as Record<string, unknown>;
+    if (value.relation !== "requests_answer") return false;
+    if (typeof value.confidence !== "number" || value.confidence < 0.55) return false;
+    return true;
+  });
+  if (!attemptedCommittedClaimAnswer) return false;
+  return !acceptedCandidates.some((candidate) =>
+    candidate.relation === "requests_answer" &&
+    candidate.targetTurnId === claimAuthority.targetTurnId &&
+    (candidate.targetOperation === "explain" || candidate.targetOperation === "answer") &&
+    claimAuthority.claims.some((claim) => claim.text === candidate.targetProposition)
+  );
+};
+
 export const mergeModelInterpretation = (
   deterministic: TurnInterpretation,
   model: Partial<TurnInterpretation> | null,
   context?: ConversationControlContext
 ): TurnInterpretation => {
-  if (!model) return deterministic;
   const deterministicBoundaryOwnsPrimary = Boolean(
     deterministic.directQuestions.length ||
     deterministic.interaction.stopIntent ||
@@ -498,44 +651,71 @@ export const mergeModelInterpretation = (
     deterministic.interaction.affect === "negative" ||
     deterministic.primaryDialogueAct === "request_action_support"
   );
-  const modelConfidence = typeof model.confidence === "number"
+  const modelConfidence = typeof model?.confidence === "number"
     ? Math.max(0, Math.min(1, model.confidence))
     : deterministic.confidence;
   const modelCorrectionIsHighConfidence =
-    model.primaryDialogueAct !== "correct_assistant" || modelConfidence >= 0.93;
-  const modelSecondary = Array.isArray(model.secondarySignals)
+    model?.primaryDialogueAct !== "correct_assistant" || modelConfidence >= 0.93;
+  const modelSecondary = Array.isArray(model?.secondarySignals)
     ? model.secondarySignals
         .filter(isDialogueAct)
         .filter((act) => act !== "correct_assistant" || modelConfidence >= 0.93)
     : [];
   const primaryDialogueAct = deterministicBoundaryOwnsPrimary
     ? deterministic.primaryDialogueAct
-    : isDialogueAct(model.primaryDialogueAct) && modelCorrectionIsHighConfidence
+    : isDialogueAct(model?.primaryDialogueAct) && modelCorrectionIsHighConfidence
       ? model.primaryDialogueAct
       : deterministic.primaryDialogueAct;
-  const acceptedModelCandidates = modelRelationCandidates(model);
+  const acceptedModelCandidates = modelRelationCandidates(model, context);
+  const claimAnswerBindingFailed = rejectedCommittedClaimAnswerBinding({
+    model,
+    context,
+    acceptedCandidates: acceptedModelCandidates,
+  });
   const activeHandoffTargetId = context?.interactionMoveHandoffTarget?.sourceAssistantMoveId;
-  const modelSupersedesAdjacencyFallback = Boolean(
+  const acceptedCandidates = [
+    ...deterministic.responseRelation.candidates,
+    ...acceptedModelCandidates,
+  ];
+  const concreteCandidateSupersedesAdjacencyFallback = Boolean(
     activeHandoffTargetId &&
-    acceptedModelCandidates.some((candidate) =>
+    acceptedCandidates.some((candidate) =>
       candidate.relation !== "continues_active_thread" &&
       candidate.targetTurnId === activeHandoffTargetId
     )
   );
-  const deterministicCandidates = modelSupersedesAdjacencyFallback
-    ? deterministic.responseRelation.candidates.filter((candidate) => !(
-        candidate.relation === "continues_active_thread" &&
-        candidate.confidence === 0.68 &&
-        candidate.evidence.length === 1 &&
-        candidate.evidence[0] === ADJACENCY_FALLBACK_EVIDENCE
-      ))
+  const filteredDeterministicCandidates = deterministic.responseRelation.candidates.filter((candidate) => {
+    if (claimAnswerBindingFailed && candidate.relation === "requests_answer") return false;
+    if (!concreteCandidateSupersedesAdjacencyFallback) return true;
+    return !(
+      candidate.relation === "continues_active_thread" &&
+      candidate.confidence === 0.68 &&
+      candidate.evidence.length === 1 &&
+      candidate.evidence[0] === ADJACENCY_FALLBACK_EVIDENCE
+    );
+  });
+  const adjacencyFallbackRemoved =
+    filteredDeterministicCandidates.length < deterministic.responseRelation.candidates.length;
+  const deterministicCandidates = adjacencyFallbackRemoved
+    ? filteredDeterministicCandidates
     : deterministic.responseRelation.candidates;
+  if (!model && !adjacencyFallbackRemoved) {
+    return deterministic;
+  }
   const candidates = uniqueRelationCandidates([
     ...deterministicCandidates,
     ...acceptedModelCandidates,
   ]).sort((left, right) => right.confidence - left.confidence);
   const modelRepair = candidates.find((candidate) =>
-    candidate.relation === "repairs_previous_move" && candidate.confidence >= 0.93
+    candidate.relation === "repairs_previous_move" &&
+    (
+      (
+        candidate.targetOperation === "repair_or_withdraw" &&
+        Boolean(candidate.targetProposition)
+      ) ||
+      committedClaimsForTurn(context, candidate.targetTurnId).length === 0
+    ) &&
+    candidate.confidence >= 0.93
   );
   const repairTarget = modelRepair?.targetTurnId && context
     ? context.adjacentTurns.find((turn) => turn.id === modelRepair.targetTurnId)
@@ -548,8 +728,10 @@ export const mergeModelInterpretation = (
     repairTarget &&
     repairTarget.role === "assistant"
       ? {
-          propositionId: `${repairTarget.id ?? "assistant-turn"}:model-rejected-1`,
-          proposition: repairTarget.content,
+          propositionId: committedClaimsForTurn(context, repairTarget.id)
+            .find((claim) => claim.text === modelRepair.targetProposition)?.id ??
+            `${repairTarget.id ?? "assistant-turn"}:model-rejected-1`,
+          proposition: modelRepair.targetProposition ?? repairTarget.content,
           operation: "reject" as const,
           subject: "assistant" as const,
           speaker: "user" as const,
@@ -559,11 +741,55 @@ export const mergeModelInterpretation = (
           evidence: modelRepair.evidence,
         }
       : null;
+  const modelAnswerTarget = candidates.find((candidate) =>
+    candidate.relation === "requests_answer" &&
+    (candidate.targetOperation === "explain" || candidate.targetOperation === "answer") &&
+    Boolean(candidate.targetProposition) &&
+    Boolean(candidate.targetTurnId)
+  );
+  const boundDirectQuestions = claimAnswerBindingFailed
+    ? []
+    : modelAnswerTarget && context
+    ? (deterministic.directQuestions.length > 0
+        ? deterministic.directQuestions.map((question) => ({
+            ...question,
+            kind: modelAnswerTarget.targetOperation === "explain"
+              ? "definition" as const
+              : question.kind,
+            targetTurnId: modelAnswerTarget.targetTurnId,
+            targetProposition: modelAnswerTarget.targetProposition,
+            evidence: Array.from(new Set([
+              ...question.evidence,
+              ...modelAnswerTarget.evidence,
+              `targetTurnId=${modelAnswerTarget.targetTurnId}`,
+              `targetProposition=${modelAnswerTarget.targetProposition}`,
+            ])),
+          }))
+        : [{
+            text: context.currentUserMessage,
+            kind: modelAnswerTarget.targetOperation === "explain"
+              ? "definition" as const
+              : "other" as const,
+            targetTurnId: modelAnswerTarget.targetTurnId,
+            targetProposition: modelAnswerTarget.targetProposition,
+            evidence: [
+              ...modelAnswerTarget.evidence,
+              `targetTurnId=${modelAnswerTarget.targetTurnId}`,
+              `targetProposition=${modelAnswerTarget.targetProposition}`,
+            ],
+          }])
+    : deterministic.directQuestions;
   const stateUpdate: TurnStateUpdate = {
     ...deterministic.stateUpdate,
     commonGround: inferredRepairUpdate
       ? [...deterministic.stateUpdate.commonGround, inferredRepairUpdate]
       : deterministic.stateUpdate.commonGround,
+    obligationChanges: boundDirectQuestions.map((question) => ({
+      operation: "open" as const,
+      sourceTurnId: context?.currentTurnId ?? deterministic.contentMeaning.explicitPropositions[0]?.sourceTurnId ?? "current-turn",
+      targetProposition: question.targetProposition ?? question.text,
+      evidence: question.evidence,
+    })),
     initiativeProposal: initiativeForCandidates(candidates),
     activeThreadProposal: candidates.some((candidate) => candidate.relation === "requests_pause")
       ? {
@@ -594,7 +820,11 @@ export const mergeModelInterpretation = (
     candidates[0].confidence - candidates[1].confidence <= 0.2;
   return {
     ...deterministic,
-    literalMeaning: typeof model.literalMeaning === "string" && model.literalMeaning.trim() ? model.literalMeaning.trim() : deterministic.literalMeaning,
+    contentMeaning: {
+      ...deterministic.contentMeaning,
+      directQuestions: boundDirectQuestions,
+    },
+    literalMeaning: typeof model?.literalMeaning === "string" && model.literalMeaning.trim() ? model.literalMeaning.trim() : deterministic.literalMeaning,
     primaryDialogueAct,
     secondarySignals: Array.from(new Set([...deterministic.secondarySignals, ...modelSecondary])),
     responseRelation: { candidates, ambiguous },
@@ -608,6 +838,7 @@ export const mergeModelInterpretation = (
         })
       : deterministic.userMoveRelation,
     stateUpdate,
+    directQuestions: boundDirectQuestions,
     interpretations: candidates.map((candidate, index) => ({
       id: `${deterministic.contentMeaning.explicitPropositions[0]?.sourceTurnId ?? "turn"}:interpretation-${index + 1}`,
       contentMeaning: deterministic.contentMeaning,
@@ -617,7 +848,9 @@ export const mergeModelInterpretation = (
       evidence: candidate.evidence,
     })),
     confidence: modelConfidence,
-    evidenceSources: Array.from(new Set([...deterministic.evidenceSources, "model_interpretation"])),
-    notes: [...deterministic.notes, ...(Array.isArray(model.notes) ? model.notes.filter((item): item is string => typeof item === "string") : [])],
+    evidenceSources: model
+      ? Array.from(new Set([...deterministic.evidenceSources, "model_interpretation"]))
+      : deterministic.evidenceSources,
+    notes: [...deterministic.notes, ...(Array.isArray(model?.notes) ? model.notes.filter((item): item is string => typeof item === "string") : [])],
   };
 };

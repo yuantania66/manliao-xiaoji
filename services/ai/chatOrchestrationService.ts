@@ -1,6 +1,11 @@
 import { generateChatReply } from "./aiService";
 import { ExternalPromptRejectedError } from "./externalPromptInspection";
-import { createSafetyGeneration, isCrisisInput } from "./chatSafety";
+import {
+  createSafetyGeneration,
+  isCrisisInput,
+  triageSafety,
+  type SafetySemanticProvider,
+} from "./chatSafety";
 import { createClinicalMemoryContext } from "./clinicalMemoryAdapter";
 import { buildAiDebugTrace } from "./debugTrace";
 import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
@@ -27,19 +32,23 @@ import {
   createResponsePlan,
   interpretTurnDeterministically,
   type ConversationControlTrace,
+  type EpisodeMemoryCandidate,
   type OrdinaryHandoffBoundary,
   type ResponseValidationResult,
 } from "@/conversation-os/control";
 import { enrichTurnInterpretation } from "./turnInterpretationAdapter";
 import { enforceResponsePlan } from "./responsePlanValidator";
 import type { InteractionMoveHandoffSemanticProvider } from "./interactionMoveHandoffOutputValidator";
+import type { PlannedFunctionSemanticProvider } from "./plannedFunctionSemanticValidator";
 import {
   buildAttemptTransitions,
   classifyExecutionError,
+  createPlanPreflightRecoveryDirective,
   createExecutionIdentity,
   preflightResponsePlan,
   type ChatExecutionTrace,
 } from "./chatExecutionLifecycle";
+import type { ResponsePlanRecoveryDirective } from "@/conversation-os/control/responsePlanner";
 import {
   buildHillHelpingInput,
   createSkippedHillHelpingTrace,
@@ -61,19 +70,24 @@ type CreateChatReplyInput = {
   memoryContext?: AiMemoryContext | null;
   loadMemoryContext?: () => Promise<AiMemoryContext | null>;
   understandingContext?: StructuredRagContext | null;
+  episodeMemoryCandidates?: EpisodeMemoryCandidate[];
   includeDebugTrace?: boolean;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
   helpingShadowEnabled?: boolean;
   helpingOrdinaryHandoffEnabled?: boolean;
   helpingDecisionProvider?: HillHelpingDecisionProvider;
+  /** Test seam. Production uses configured Qwen json_object Safety triage. */
+  safetySemanticProvider?: SafetySemanticProvider;
   /** Test seam. Production omits this and uses the fail-closed default semantic provider. */
+  plannedFunctionSemanticProvider?: PlannedFunctionSemanticProvider;
+  /** @deprecated Use plannedFunctionSemanticProvider. */
   interactionMoveHandoffSemanticProvider?: InteractionMoveHandoffSemanticProvider;
   inspectHelpingPrompt?: (input: {
     stage: "helping_shadow";
     messages: AiModelMessage[];
   }) => void | Promise<void>;
   inspectExternalPrompt?: (input: {
-    stage: "turn_interpretation" | "surface_realization" | "interaction_move_handoff_validation";
+    stage: "turn_interpretation" | "surface_realization" | "planned_function_semantic_validation" | "interaction_move_handoff_validation";
     messages: AiModelMessage[];
   }) => void | Promise<void>;
 };
@@ -170,11 +184,14 @@ export const createChatReply = async ({
   memoryContext,
   loadMemoryContext,
   understandingContext,
+  episodeMemoryCandidates = [],
   includeDebugTrace = false,
   evaluationAdapter,
   helpingShadowEnabled,
   helpingOrdinaryHandoffEnabled,
   helpingDecisionProvider,
+  safetySemanticProvider,
+  plannedFunctionSemanticProvider,
   interactionMoveHandoffSemanticProvider,
   inspectHelpingPrompt,
   inspectExternalPrompt,
@@ -196,8 +213,77 @@ export const createChatReply = async ({
     recentMessages,
   });
 
-  if (isCrisisInput(userMessage)) {
-    const generation = createSafetyGeneration(userMessage);
+  const safetyTriage = await triageSafety({
+    currentUserMessage: userMessage,
+    recentMessages,
+    provider: safetySemanticProvider,
+  });
+  if (safetyTriage.status === "blocked") {
+    const generation: AiGenerationResult = {
+      text: "",
+      model: "safety-gate",
+      promptVersion: "safety-semantic-triage-v2",
+      latencyMs: 0,
+      postProcessSteps: [],
+      finalReplySource: "constraint_failure",
+    };
+    const judge = createFallbackJudge("crisis", "Safety semantic triage failed closed before ordinary planning.");
+    const clinicalTrace = buildSafetySkippedClinicalTrace({
+      level: "crisis",
+      notes: ["Safety semantic triage was blocked; ordinary ClinicalPlan skipped."],
+      conversationState: conversationState.state,
+    });
+    const helpingTrace = createSkippedHillHelpingTrace("safety_pre_gate");
+    const execution: ChatExecutionTrace = {
+      requestId: executionIdentity.requestId,
+      conversationId,
+      turnId: resolvedTurnId,
+      planId: "safety-pre-gate",
+      phase: "FAILED",
+      planPreflight: { passed: false, failureReasons: ["safety_triage_unavailable"] },
+      transitions: [
+        ...requestStartTransitions,
+        { phase: "FAILED", reason: `Safety semantic triage failed closed (${safetyTriage.failureType}).` },
+      ],
+      attempts: [],
+      failure: {
+        code: "SAFETY_BLOCKED",
+        reason: safetyTriage.reason,
+        retryable: false,
+      },
+    };
+    return {
+      generation,
+      generationAttempts: [],
+      judge,
+      finalSource: "constraint_failure",
+      rewriteAttempted: false,
+      regenerateAttempted: false,
+      fallbackUsed: false,
+      clinicalTrace,
+      helpingTrace,
+      controlTrace: undefined,
+      execution,
+      debugTrace: buildMaybeDebugTrace({
+        includeDebugTrace,
+        userMessage,
+        recentMessages,
+        generation,
+        judge,
+        finalSource: "constraint_failure",
+        fallbackUsed: false,
+        rewriteAttempted: false,
+        regenerateAttempted: false,
+        clinicalTrace,
+        helpingTrace,
+        controlTrace: undefined,
+        execution,
+      }),
+    };
+  }
+
+  if (safetyTriage.decision.requiresSafetyResponse) {
+    const generation = createSafetyGeneration(safetyTriage.decision);
     const rewriteAttempted = false;
     const regenerateAttempted = false;
     const judge = createFallbackJudge("crisis", "safety gate matched; base model skipped");
@@ -218,7 +304,10 @@ export const createChatReply = async ({
       planPreflight: { passed: true, failureReasons: [] },
       transitions: [
         ...requestStartTransitions,
-        { phase: "PLANNED", reason: "Safety pre-gate selected the safety-owned response path." },
+        {
+          phase: "PLANNED",
+          reason: `Safety pre-gate selected the safety-owned response path (channel=${safetyTriage.channel}, risk=${safetyTriage.decision.riskLevel}, categories=${safetyTriage.decision.categories.join("|")}, currentness=${safetyTriage.decision.currentness}).`,
+        },
         { phase: "GENERATED", reason: "Safety generation produced a user-facing candidate." },
         { phase: "VALIDATED", reason: "Safety candidate passed the safety response boundary." },
       ],
@@ -261,6 +350,7 @@ export const createChatReply = async ({
     userMessage,
     recentMessages,
     conversationState,
+    episodeMemoryCandidates,
   });
   const deterministicInterpretation = interpretTurnDeterministically(controlContext);
   const interpreted = await enrichTurnInterpretation(controlContext, deterministicInterpretation, inspectExternalPrompt);
@@ -353,36 +443,84 @@ export const createChatReply = async ({
     interpretation,
     dialogueState,
   });
-  const responsePlan = createResponsePlan({
-    context: controlContext,
-    interpretation,
-    dialogueState,
-    ordinaryHandoffBoundary,
-    clinicalAdviceProvider: ({ need }) => {
-      const clinicalContext = buildClinicalContext({
-        conversationId,
-        userId,
-        userTurn: userMessage,
-        recentTurns: recentMessages,
-        memoryContext: clinicalMemoryContext,
-        conversationState: conversationState.state,
-        conversationStateResult: conversationState,
-        safetyNotes: [],
-      });
-      const selected = createClinicalStrategyAdvice({ context: clinicalContext, need });
-      compatibilityClinicalTrace = buildClinicalTrace({
-        context: clinicalContext,
-        plan: selected.compatibilityPlan,
-        safetyDecision: { level: "low", routedToSafety: false, notes: [`Invoked by Response Planner for ${need}.`] },
-      });
-      return selected.advice;
-    },
-  });
-  const clinicalTrace = compatibilityClinicalTrace;
-  const planPreflight = preflightResponsePlan(
+  const baseCompatibilityClinicalTrace = compatibilityClinicalTrace;
+  const createPlanAttempt = (
+    recoveryDirective: ResponsePlanRecoveryDirective | null = null
+  ) => {
+    compatibilityClinicalTrace = baseCompatibilityClinicalTrace;
+    const plan = createResponsePlan({
+      context: controlContext,
+      interpretation,
+      dialogueState,
+      ordinaryHandoffBoundary,
+      recoveryDirective,
+      clinicalAdviceProvider: ({ need }) => {
+        const clinicalContext = buildClinicalContext({
+          conversationId,
+          userId,
+          userTurn: userMessage,
+          recentTurns: recentMessages,
+          memoryContext: clinicalMemoryContext,
+          conversationState: conversationState.state,
+          conversationStateResult: conversationState,
+          safetyNotes: [],
+        });
+        const selected = createClinicalStrategyAdvice({ context: clinicalContext, need });
+        compatibilityClinicalTrace = buildClinicalTrace({
+          context: clinicalContext,
+          plan: selected.compatibilityPlan,
+          safetyDecision: { level: "low", routedToSafety: false, notes: [`Invoked by Response Planner for ${need}.`] },
+        });
+        return selected.advice;
+      },
+    });
+    return { plan, clinicalTrace: compatibilityClinicalTrace };
+  };
+  let {
+    plan: responsePlan,
+    clinicalTrace,
+  } = createPlanAttempt();
+  let planPreflight = preflightResponsePlan(
     responsePlan,
     responsePlanPreflightAuthority
   );
+  const planPreflightAttempts: NonNullable<ChatExecutionTrace["planPreflightAttempts"]> = [{
+    attempt: 0,
+    planId: responsePlan.planId,
+    ...planPreflight,
+  }];
+  const recoveryDirective = createPlanPreflightRecoveryDirective(
+    responsePlan,
+    planPreflight
+  );
+  if (recoveryDirective) {
+    ({ plan: responsePlan, clinicalTrace } = createPlanAttempt(recoveryDirective));
+    planPreflight = preflightResponsePlan(
+      responsePlan,
+      responsePlanPreflightAuthority
+    );
+    planPreflightAttempts.push({
+      attempt: 1,
+      planId: responsePlan.planId,
+      ...planPreflight,
+    });
+  }
+  const planPreflightTransitions: ChatExecutionTrace["transitions"] = recoveryDirective
+    ? [
+        {
+          phase: "PLANNED",
+          reason: "The single Response Planner produced its initial plan.",
+        },
+        {
+          phase: "REJECTED",
+          reason: planPreflightAttempts[0]!.failureReasons.join(", "),
+        },
+        {
+          phase: "PLANNED",
+          reason: "The same Response Planner replanned once from a turn-local preflight recovery directive.",
+        },
+      ]
+    : [{ phase: "PLANNED", reason: "The single Response Planner produced a plan." }];
   if (!planPreflight.passed) {
     const generation: AiGenerationResult = {
       text: "",
@@ -415,9 +553,10 @@ export const createChatReply = async ({
       planId: responsePlan.planId,
       phase: "FAILED",
       planPreflight,
+      planPreflightAttempts,
       transitions: [
         ...requestStartTransitions,
-        { phase: "PLANNED", reason: "The single Response Planner produced a plan." },
+        ...planPreflightTransitions,
         { phase: "REJECTED", reason: planPreflight.failureReasons.join(", ") },
         { phase: "FAILED", reason: "ResponsePlan preflight failed before any model call." },
       ],
@@ -425,7 +564,7 @@ export const createChatReply = async ({
       failure: {
         code: "PLAN_INVALID",
         reason: planPreflight.failureReasons.join(", "),
-        retryable: true,
+        retryable: false,
       },
     };
     return {
@@ -468,14 +607,18 @@ export const createChatReply = async ({
       : undefined;
     const enforced = await enforceResponsePlan({
       plan: responsePlan,
-      handoffSemanticProvider: interactionMoveHandoffSemanticProvider,
-      inspectHandoffExternalPrompt: inspectExternalPrompt,
-      handoffSemanticContext: handoffTargetMessage
-        ? {
-            targetAssistantText: handoffTargetMessage.content,
-            currentUserText: userMessage,
-          }
+      plannedFunctionSemanticProvider,
+      plannedFunctionSemanticContext: {
+        currentUserText: userMessage,
+        handoffTargetAssistantText: handoffTargetMessage?.content ?? null,
+      },
+      inspectPlannedFunctionExternalPrompt: inspectExternalPrompt
+        ? ({ messages }) => inspectExternalPrompt({
+            stage: "planned_function_semantic_validation",
+            messages,
+          })
         : undefined,
+      handoffSemanticProvider: interactionMoveHandoffSemanticProvider,
       generate: async (constraint, executionPlan) => {
         attemptIds.push(createExecutionIdentity({}).requestId);
         return generateChatReply({
@@ -504,6 +647,9 @@ export const createChatReply = async ({
     const fallbackUsed = false;
     const finalValidation = enforced.validations.at(-1);
     const validated = enforced.outcome === "validated" && Boolean(finalValidation?.passed);
+    const remainingHardFailures = finalValidation?.hardFailureReasons ??
+      (finalValidation?.passed ? [] : finalValidation?.failureReasons ?? []);
+    const unresolvedAdvisories = finalValidation?.advisoryFailureReasons ?? [];
     const executionPlan = enforced.executionPlan;
     const controlTrace: ConversationControlTrace = {
       context: controlContext,
@@ -526,16 +672,30 @@ export const createChatReply = async ({
         obligationTransitions: [],
         notes: [
           validated
-            ? "ResponsePlan output is validated but not committed; Interaction State remains unchanged until persistence succeeds."
+            ? unresolvedAdvisories.length > 0
+              ? `ResponsePlan output is hard-gate valid with unresolved advisory quality findings (${unresolvedAdvisories.join(", ")}); it is not committed until persistence succeeds.`
+              : "ResponsePlan output is validated but not committed; Interaction State remains unchanged until persistence succeeds."
             : "GENERATION_NONCONFORMANT is an execution failure; Interaction State remains unchanged.",
         ],
       },
     };
-    const executionAttempts: ChatExecutionTrace["attempts"] = enforced.attempts.map((attempt, index) => ({
-      attemptId: attemptIds[index] ?? createExecutionIdentity({}).requestId,
-      phase: enforced.validations[index]?.passed ? "VALIDATED" : "REJECTED",
-      generation: attempt,
-      validation: enforced.validations[index],
+    const executionAttempts: ChatExecutionTrace["attempts"] = enforced.attempts.map((attempt, index) => {
+      const validation = enforced.validations[index];
+      const selectedAdvisoryWinner = validated && index === enforced.attempts.length - 1;
+      return {
+        attemptId: attemptIds[index] ?? createExecutionIdentity({}).requestId,
+        phase: validation?.passed && (!validation.rewriteRequired || selectedAdvisoryWinner)
+          ? "VALIDATED"
+          : "REJECTED",
+        generation: attempt,
+        validation,
+      };
+    });
+    const transitionAttempts: ChatExecutionTrace["attempts"] = executionAttempts.map((attempt) => ({
+      ...attempt,
+      validation: attempt.validation
+        ? { ...attempt.validation, passed: attempt.phase === "VALIDATED" }
+        : undefined,
     }));
     const execution: ChatExecutionTrace = {
       requestId: executionIdentity.requestId,
@@ -544,10 +704,11 @@ export const createChatReply = async ({
       planId: executionPlan.planId,
       phase: validated ? "VALIDATED" : "FAILED",
       planPreflight,
+      planPreflightAttempts,
       transitions: [
         ...requestStartTransitions,
-        { phase: "PLANNED", reason: "The single Response Planner produced a preflight-valid plan." },
-        ...buildAttemptTransitions({ attempts: executionAttempts, validated }),
+        ...planPreflightTransitions,
+        ...buildAttemptTransitions({ attempts: transitionAttempts, validated }),
       ],
       attempts: executionAttempts,
       ...(validated
@@ -555,8 +716,8 @@ export const createChatReply = async ({
         : {
             failure: {
               code: "GENERATION_NONCONFORMANT" as const,
-              reason: enforced.validations.flatMap((item) => item.failureReasons).join(", "),
-              retryable: true,
+              reason: remainingHardFailures.join(", "),
+              retryable: false,
             },
           }),
     };
@@ -637,9 +798,10 @@ export const createChatReply = async ({
       planId: responsePlan.planId,
       phase: "FAILED",
       planPreflight,
+      planPreflightAttempts,
       transitions: [
         ...requestStartTransitions,
-        { phase: "PLANNED", reason: "The single Response Planner produced a preflight-valid plan." },
+        ...planPreflightTransitions,
         ...attemptIds.flatMap((attemptId) => [
           {
             phase: "GENERATED" as const,

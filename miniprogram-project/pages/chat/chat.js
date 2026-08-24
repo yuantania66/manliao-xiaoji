@@ -1,7 +1,13 @@
-const { readChatMessages, writeChatMessages, createReply, nowIso, dateKey } = require("../../utils/local-data");
+const { readChatMessages, writeChatMessages, nowIso, dateKey } = require("../../utils/local-data");
 const { getSafeLayout } = require("../../utils/layout");
 const { getDataMode } = require("../../utils/auth");
-const { listSessions, createSession, listMessages, sendMessage: postMessage } = require("../../api/chat");
+const {
+  listSessions,
+  createSession,
+  listMessages,
+  sendMessage: postMessage,
+  sendGuestMessage: postGuestMessage
+} = require("../../api/chat");
 
 const TIME_DIVIDER_GAP = 3 * 60 * 1000;
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
@@ -139,6 +145,7 @@ Page({
   },
 
   typingTimers: [],
+  bottomSafe: 23,
 
   onLoad(options = {}) {
     this.setData({
@@ -160,6 +167,7 @@ Page({
 
   updateSafeLayout() {
     const layout = getSafeLayout();
+    this.bottomSafe = layout.bottomSafe;
     this.setData({
       pageTop: layout.pageTop,
       backTop: layout.backTop,
@@ -170,6 +178,17 @@ Page({
       messagesTop: layout.titleTop + 68,
       messagesBottom: layout.bottomSafe + 66,
       inputBottom: layout.bottomSafe
+    });
+  },
+
+  onKeyboardHeightChange(event) {
+    const height = Math.max(0, Number(event.detail && event.detail.height) || 0);
+    const inputBottom = height > 0 ? height + 8 : this.bottomSafe;
+    this.setData({
+      inputBottom,
+      messagesBottom: inputBottom + 66
+    }, () => {
+      this.scrollTo("chat-bottom");
     });
   },
 
@@ -538,28 +557,58 @@ Page({
       this.refocusInput();
     });
 
-    setTimeout(() => {
-      const reply = {
-        id: `a_${Date.now()}`,
-        role: "assistant",
-        text: createReply(text),
-        createdAt: nowIso()
-      };
-      const finalMessages = sortByTime([...readChatMessages(), reply]);
-      writeChatMessages(finalMessages);
-      const assistantPlaceholder = withTimeLabel({
-        ...reply,
-        text: ""
+    postGuestMessage({
+      content: text,
+      turnId: `mini-${userMessage.id}`,
+      recentMessages: nextMessages.slice(0, -1).slice(-24).map((message) => ({
+        id: message.id,
+        role: message.role,
+        content: message.text,
+        createdAt: message.createdAt
+      }))
+    })
+      .then((data) => {
+        if (data.status === "failed") {
+          throw new Error(
+            data.systemStatus && data.systemStatus.message
+              ? data.systemStatus.message
+              : "这次回复没能生成，请重试"
+          );
+        }
+        if (!data.assistantMessage || !data.assistantMessage.content) {
+          throw new Error("这次回复没能生成，请重试");
+        }
+        const reply = {
+          id: data.assistantMessage.id,
+          role: "assistant",
+          text: data.assistantMessage.content,
+          createdAt: data.assistantMessage.createdAt || nowIso()
+        };
+        const finalMessages = sortByTime([...readChatMessages(), reply]);
+        writeChatMessages(finalMessages);
+        const assistantPlaceholder = withTimeLabel({ ...reply, text: "" });
+        const visibleMessages = sortByTime([
+          ...finalMessages.filter((message) => message.id !== reply.id),
+          assistantPlaceholder
+        ]);
+        this.setData({
+          messages: this.prepareMessagesForView(visibleMessages.map(withTimeLabel)),
+          isEmpty: false,
+          statusText: "",
+          scrollTarget: ""
+        }, () => {
+          this.scrollTo("chat-bottom");
+          this.animateAssistantMessage(reply);
+        });
+      })
+      .catch((error) => {
+        const message = error.message || "发送失败，请稍后再试";
+        this.setData({
+          isSending: false,
+          isTyping: false,
+          statusText: message
+        });
+        wx.showToast({ title: message, icon: "none" });
       });
-      const visibleMessages = sortByTime([...readChatMessages().filter((message) => message.id !== reply.id), assistantPlaceholder]);
-      this.setData({
-        messages: this.prepareMessagesForView(visibleMessages.map(withTimeLabel)),
-        isEmpty: false,
-        scrollTarget: ""
-      }, () => {
-        this.scrollTo("chat-bottom");
-        this.animateAssistantMessage(reply);
-      });
-    }, 900);
   }
 });

@@ -1,0 +1,1 @@
+ALTER TYPE "SemanticMemoryKind" ADD VALUE 'EPISODE_SUMMARY';

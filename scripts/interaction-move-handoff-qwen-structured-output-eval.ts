@@ -122,6 +122,7 @@ const main = async () => {
       currentUserText,
       candidateReply: fixture.reply,
       ordinaryQuestionIndependentlySupported: false,
+      assistantIdentityContract: null,
     };
     const startedAt = Date.now();
     let category = "pass";

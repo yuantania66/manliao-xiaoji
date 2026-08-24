@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { createSafetyGeneration, isCrisisInput } from "../services/ai/chatSafety";
+import {
+  SAFETY_PROMPT_VERSION,
+  createSafetyGeneration,
+  getDeterministicImminentDecision,
+  isCrisisInput,
+} from "../services/ai/chatSafety";
 import { buildAiDebugTrace } from "../services/ai/debugTrace";
 import { createFallbackGeneration } from "../services/ai/aiService";
 import { buildChatPrompt, CHAT_PROMPT_VERSION } from "../services/ai/promptBuilder";
@@ -211,11 +216,27 @@ assert.equal(debug.prompt.filteredHistoryCount, 0);
 assert(!debugText.includes("理解层"));
 assert(!debugText.includes("慢聊状态"));
 
-assert.equal(isCrisisInput("我不想活了"), true);
-assert.equal(isCrisisInput("如果我今晚消失，应该也没人会在意。"), true);
-assert.equal(isCrisisInput("他刚刚打我了，我现在躲在厕所。"), true);
-assert.equal(isCrisisInput("我控制不住想去找他算账，可能会动手。"), true);
-assert.equal(isCrisisInput("我已经吃了很多药，现在有点晕。"), true);
+assert.equal(isCrisisInput("我不想活了"), false);
+assert.equal(isCrisisInput("我想自\n杀"), false);
+assert.equal(isCrisisInput("我想自 杀"), false);
+assert.equal(isCrisisInput("我想自\u200B杀"), false);
+assert.equal(isCrisisInput("我准备杀了他。"), false);
+assert.equal(isCrisisInput("我已经吃了很多药。"), true);
+assert.equal(isCrisisInput("我正在割腕。"), true);
+assert.equal(isCrisisInput("朋友刚对我说“我想自杀”"), false);
+assert.equal(isCrisisInput("研究访谈对象说我想自杀"), false);
+assert.equal(isCrisisInput("“我正在割腕”，这是小说台词"), false);
+assert.equal(isCrisisInput("我已经吃了很多药——这是研究访谈对象的原话"), false);
+assert.equal(isCrisisInput("“我正在割腕”"), false);
+assert.equal(isCrisisInput("『我已经吃了很多药』"), false);
+assert.equal(isCrisisInput("（我已经流血）"), false);
+assert.equal(isCrisisInput("“我正在割腕"), false);
+assert.equal(isCrisisInput("我正在割腕”"), false);
+assert.equal(isCrisisInput("> 我正在割腕"), false);
+assert.equal(isCrisisInput("｜我正在割腕｜"), false);
+assert.equal(isCrisisInput("`我正在割腕`"), false);
+assert.equal(isCrisisInput("｢我正在割腕｣"), false);
+assert.equal(isCrisisInput("❝我正在割腕❞"), false);
 assert.equal(isCrisisInput("我今天一点胃口都没有。"), false);
 assert.equal(isCrisisInput("电影里有杀人情节。"), false);
 assert.equal(isCrisisInput("新闻里说有人砍人。"), false);
@@ -223,11 +244,15 @@ assert.equal(isCrisisInput("我不会伤害自己。"), false);
 assert.equal(isCrisisInput("我没有想过自杀。"), false);
 assert.equal(isCrisisInput("小时候被打过，现在想起来有点难受。"), false);
 assert.equal(isCrisisInput("我按医生说的吃了药，现在有点困。"), false);
-const safety = createSafetyGeneration("我不想活了");
+const safetyDecision = getDeterministicImminentDecision("我已经吃了很多药。");
+assert(safetyDecision);
+const safety = createSafetyGeneration(safetyDecision);
 assert.equal(safety.model, "safety-gate");
-assert.equal(safety.promptVersion, "safety-gate-v1");
+assert.equal(safety.promptVersion, SAFETY_PROMPT_VERSION);
 assert.equal(safety.finalReplySource, "safety");
-assert(safety.text.includes("紧急电话"));
+assert(safety.text.startsWith("我很担心你现在的安全"));
+assert(safety.text.includes("120"));
+assert.equal(createSafetyGeneration("我不想活了").finalReplySource, "safety");
 
 const safetyDebug = buildAiDebugTrace({
   userMessage: "我不想活了",

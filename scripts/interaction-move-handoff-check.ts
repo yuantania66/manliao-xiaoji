@@ -21,7 +21,17 @@ import type { AiConversationMessage } from "../services/ai/types";
 const greetingEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
   assistantMoveId: "assistant-greeting-1",
   generationId: "greeting-generation-1",
-  greetingMove: "light_question",
+  intent: {
+    move: "light_question",
+    requiredFunction: "ask_one_bounded_low_burden_question",
+    realization: {
+      kind: "bounded_question",
+      topic: "food",
+      question: "今天有没有吃到什么还不错的东西？",
+    },
+    expectedUserContribution: "answer",
+    userBurden: "low",
+  },
 });
 
 const greetingMessage = ({
@@ -191,7 +201,13 @@ assert(!JSON.stringify(modelMerged.userMoveRelation).includes("model free explan
 const reciprocalEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
   assistantMoveId: "assistant-reciprocal-greeting",
   generationId: "generation-reciprocal-greeting",
-  greetingMove: "simple_greeting",
+  intent: {
+    move: "simple_greeting",
+    requiredFunction: "initiate_reciprocal_contact",
+    realization: { kind: "reciprocal_contact" },
+    expectedUserContribution: "none",
+    userBurden: "none",
+  },
 });
 const reciprocalText = "嗨";
 const reciprocalContext = {
@@ -213,6 +229,50 @@ const reciprocalContext = {
   },
 };
 const reciprocalDeterministic = interpretTurnDeterministically(reciprocalContext);
+const reciprocalSufficientContext = {
+  ...reciprocalContext,
+  semanticEvidence: {
+    status: "sufficient" as const,
+    source: "current_user_message" as const,
+    reason: "Exercises deterministic concrete-candidate fallback reconciliation.",
+  },
+};
+const reciprocalSufficientDeterministic = interpretTurnDeterministically(
+  reciprocalSufficientContext
+);
+assert.deepEqual(
+  reciprocalSufficientDeterministic.responseRelation.candidates.map(
+    (candidate) => candidate.relation
+  ),
+  ["shares_initiative", "continues_active_thread"]
+);
+const deterministicReciprocalMerged = mergeModelInterpretation(
+  reciprocalSufficientDeterministic,
+  null,
+  reciprocalSufficientContext
+);
+assert.deepEqual(
+  deterministicReciprocalMerged.responseRelation.candidates.map(
+    (candidate) => candidate.relation
+  ),
+  ["shares_initiative"]
+);
+assert.deepEqual(
+  deterministicReciprocalMerged.userMoveRelation?.candidates.map(
+    (candidate) => candidate.kind
+  ),
+  ["reciprocates_move"]
+);
+const deterministicReciprocalRemerged = mergeModelInterpretation(
+  deterministicReciprocalMerged,
+  null,
+  reciprocalSufficientContext
+);
+assert.equal(deterministicReciprocalRemerged, deterministicReciprocalMerged);
+assert.equal(
+  deterministicReciprocalRemerged.responseRelation.candidates,
+  deterministicReciprocalMerged.responseRelation.candidates
+);
 const mergeReciprocalCandidates = (
   candidates: RelationalInterpretationCandidate[]
 ) => mergeModelInterpretation(
@@ -258,44 +318,83 @@ assert.deepEqual(reciprocalMerged.userMoveRelation?.candidates[0]?.evidence, [{
   text: reciprocalText,
 }]);
 
+const fallbackCandidate = reciprocalDeterministic.responseRelation.candidates.find(
+  (candidate) => candidate.relation === "continues_active_thread"
+);
+assert(fallbackCandidate);
+const fallbackOnlyRelation = projectUserMoveRelation({
+  target: reciprocalContext.interactionMoveHandoffTarget,
+  sourceUserTurnId: reciprocalContext.currentTurnId,
+  currentUserText: reciprocalContext.currentUserMessage,
+  semanticEvidenceStatus: reciprocalContext.semanticEvidence.status,
+  responseRelation: {
+    candidates: [fallbackCandidate],
+    ambiguous: false,
+  },
+});
+assert(fallbackOnlyRelation);
+const fallbackOnlyDeterministic = {
+  ...reciprocalDeterministic,
+  responseRelation: {
+    candidates: [fallbackCandidate],
+    ambiguous: false,
+  },
+  userMoveRelation: fallbackOnlyRelation,
+};
+const mergeFallbackOnlyCandidates = (
+  candidates: RelationalInterpretationCandidate[]
+) => mergeModelInterpretation(
+  fallbackOnlyDeterministic,
+  {
+    responseRelation: {
+      candidates,
+      ambiguous: candidates.length > 1,
+    },
+    confidence: 0.91,
+  },
+  reciprocalContext
+);
 assert.deepEqual(
   mergeModelInterpretation(
-    reciprocalDeterministic,
+    fallbackOnlyDeterministic,
     null,
     reciprocalContext
   ).userMoveRelation?.candidates.map((candidate) => candidate.kind),
-  ["reciprocates_move", "unclear"]
+  ["unclear"]
 );
 assert.deepEqual(
-  mergeReciprocalCandidates([
+  mergeFallbackOnlyCandidates([
     modelCandidate("acknowledges_previous_move", 0.54),
   ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
-  ["reciprocates_move", "unclear"]
+  ["unclear"]
 );
 assert.deepEqual(
-  mergeReciprocalCandidates([
+  mergeFallbackOnlyCandidates([
     modelCandidate("acknowledges_previous_move", 0.91, "wrong-assistant-target"),
   ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
-  ["reciprocates_move", "unclear"]
+  ["unclear"]
 );
-const targetlessReciprocalMerged = mergeReciprocalCandidates([{
+const targetlessReciprocalMerged = mergeFallbackOnlyCandidates([{
   relation: "acknowledges_previous_move",
   confidence: 0.91,
   evidence: ["model targetless reciprocal relation"],
 }]);
 assert.deepEqual(
   targetlessReciprocalMerged.userMoveRelation?.candidates.map((candidate) => candidate.kind),
-  ["reciprocates_move", "unclear"]
+  ["unclear"]
 );
 assert(targetlessReciprocalMerged.responseRelation.candidates.some((candidate) =>
   candidate.relation === "continues_active_thread" &&
   candidate.confidence === 0.68
 ));
+assert(!targetlessReciprocalMerged.responseRelation.candidates.some((candidate) =>
+  candidate.relation === "acknowledges_previous_move"
+));
 assert.deepEqual(
-  mergeReciprocalCandidates([
+  mergeFallbackOnlyCandidates([
     modelCandidate("continues_active_thread"),
   ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
-  ["unclear", "reciprocates_move"]
+  ["unclear"]
 );
 assert.deepEqual(
   mergeReciprocalCandidates([
@@ -304,12 +403,47 @@ assert.deepEqual(
   ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
   ["reciprocates_move", "unclear"]
 );
+const unsupportedAnswerMerged = mergeModelInterpretation(
+  reciprocalSufficientDeterministic,
+  {
+    responseRelation: {
+      candidates: [modelCandidate("answers_previous_move")],
+      ambiguous: false,
+    },
+    confidence: 0.91,
+  },
+  reciprocalSufficientContext
+);
+assert.deepEqual(
+  unsupportedAnswerMerged.userMoveRelation?.candidates.map((candidate) => candidate.kind),
+  ["answers_move", "reciprocates_move"]
+);
 assert.deepEqual(
   mergeReciprocalCandidates([
     modelCandidate("opens_new_thread"),
   ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
   ["opens_or_redirects_thread", "reciprocates_move"]
 );
+
+const substantiveContinuesDeterministic = {
+  ...reciprocalSufficientDeterministic,
+  responseRelation: {
+    candidates: reciprocalSufficientDeterministic.responseRelation.candidates.map(
+      (candidate) => candidate.relation === "continues_active_thread"
+        ? { ...candidate, evidence: ["Substantive deterministic continuation evidence."] }
+        : candidate
+    ),
+    ambiguous: true,
+  },
+};
+assert(mergeModelInterpretation(
+  substantiveContinuesDeterministic,
+  null,
+  reciprocalSufficientContext
+).responseRelation.candidates.some((candidate) =>
+  candidate.relation === "continues_active_thread" &&
+  candidate.evidence[0] === "Substantive deterministic continuation evidence."
+));
 assert.deepEqual(
   mergeReciprocalCandidates([
     modelCandidate("opens_new_thread", 0.93),

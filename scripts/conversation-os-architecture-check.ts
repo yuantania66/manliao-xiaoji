@@ -8,7 +8,10 @@ const ALLOWED_LLM_CALL_FILES = new Set([
   "services/ai/turnInterpretationAdapter.ts",
   "services/helping/hillHelpingDecisionService.ts",
   "services/ai/proactiveGreeting.ts",
+  "services/ai/chatSafety.ts",
   "services/ai/interactionMoveHandoffOutputValidator.ts",
+  "services/ai/plannedFunctionSemanticValidator.ts",
+  "services/memory/episodeSummaryService.ts",
   "services/understanding/extractService.ts",
   "services/experience/experienceExtractorService.ts",
 ]);
@@ -27,7 +30,7 @@ const llmCallFiles = files.filter((file) => readFileSync(file, "utf8").includes(
 for (const file of llmCallFiles) {
   assert(
     ALLOWED_LLM_CALL_FILES.has(file),
-    `Unexpected direct LLM call in ${file}. Chat-domain calls are limited to Turn Interpretation, Helping Logic, Surface Realization, and same-plan Output Validation.`
+    `Unexpected direct LLM call in ${file}. Every model call requires an explicit architecture owner and bounded role.`
   );
 }
 
@@ -35,6 +38,33 @@ for (const file of files.filter((file) => file.startsWith("app/api/chat/"))) {
   const content = readFileSync(file, "utf8");
   assert(!content.includes("callModel("), `${file} must not call LLM directly.`);
 }
+
+const chatSafety = readFileSync("services/ai/chatSafety.ts", "utf8");
+assert.equal(
+  (chatSafety.match(/callModel\(/g) ?? []).length,
+  1,
+  "Safety semantic triage may have only one structured provider call site."
+);
+
+const episodeSummaryService = readFileSync("services/memory/episodeSummaryService.ts", "utf8");
+assert.equal(
+  (episodeSummaryService.match(/callModel\(/g) ?? []).length,
+  1,
+  "Episode Summary may have only one bounded structured provider call site."
+);
+assert(
+  episodeSummaryService.includes("committedMessages") &&
+    episodeSummaryService.includes("sourceMessageIds") &&
+    !episodeSummaryService.includes("createResponsePlan(") &&
+    !episodeSummaryService.includes("generateChatReply("),
+  "Episode Summary must remain a committed-message memory writer, not Planner or Surface."
+);
+assert(
+  chatSafety.includes("只做判定，不生成回复") &&
+    !chatSafety.includes("createResponsePlan(") &&
+    !chatSafety.includes("generateChatReply("),
+  "Safety semantic triage must remain a non-writer and must not become Planner or Surface."
+);
 
 const aiService = readFileSync("services/ai/aiService.ts", "utf8");
 const callModelIndex = aiService.indexOf("callModel(");
@@ -63,29 +93,32 @@ assert(
 );
 
 const handoffValidator = readFileSync("services/ai/interactionMoveHandoffOutputValidator.ts", "utf8");
+const plannedFunctionValidator = readFileSync("services/ai/plannedFunctionSemanticValidator.ts", "utf8");
 assert.equal(
-  (handoffValidator.match(/callModel\(/g) ?? []).length,
+  (plannedFunctionValidator.match(/callModel\(/g) ?? []).length,
   1,
-  "Interaction Move Handoff Output Validation may have only one structured provider call site."
+  "Planned Function Semantic Validation may have only one structured provider call site."
 );
 assert(
-  handoffValidator.includes("same-plan semantic verifier") &&
-    handoffValidator.includes("not a response writer") &&
-    handoffValidator.includes("provider_failure") &&
-    handoffValidator.includes("malformed_verdict") &&
-    handoffValidator.includes("binding_mismatch") &&
-    handoffValidator.includes("uncertain"),
-  "Handoff validation must remain an explicit same-plan, non-writer, fail-closed verifier."
+  plannedFunctionValidator.includes("same-plan semantic verifier") &&
+    plannedFunctionValidator.includes("not a response writer") &&
+    plannedFunctionValidator.includes("provider_failure") &&
+    plannedFunctionValidator.includes("malformed_verdict") &&
+    plannedFunctionValidator.includes("binding_mismatch") &&
+    plannedFunctionValidator.includes("uncertain"),
+  "Planned-function validation must remain an explicit same-plan, non-writer, fail-closed hard verifier with advisory quality findings."
 );
 assert(
-  !handoffValidator.includes("createResponsePlan(") &&
-    !handoffValidator.includes("generateChatReply("),
-  "Handoff validation must not become a second Planner or Surface."
+  !plannedFunctionValidator.includes("createResponsePlan(") &&
+    !plannedFunctionValidator.includes("generateChatReply("),
+  "Planned-function validation must not become a second Planner or Surface."
 );
 assert(
-  handoffValidator.indexOf("inspectPromptBeforeExternalCall(") < handoffValidator.indexOf("callModel("),
-  "Handoff validation must inspect its structured prompt before its external model call."
+  plannedFunctionValidator.indexOf("inspectPromptBeforeExternalCall(") < plannedFunctionValidator.indexOf("callModel("),
+  "Planned-function validation must inspect its structured prompt before its external model call."
 );
+assert.equal((handoffValidator.match(/callModel\(/g) ?? []).length, 0,
+  "Legacy handoff validation adapter must delegate to the canonical planned-function provider.");
 
 const chatOrchestration = readFileSync("services/ai/chatOrchestrationService.ts", "utf8");
 assert.equal(
@@ -174,7 +207,7 @@ console.log(
   JSON.stringify(
     {
       llmCallFiles,
-      normalChatPipeline: "ContextAssembly -> TurnInterpretation -> DialogueState -> HelpingLogicShadow -> ResponsePlanner -> SurfaceRealization -> OutputValidation -> StateUpdate",
+      normalChatPipeline: "SafetyGate -> ContextAssembly -> TurnInterpretation -> DialogueState -> HelpingLogicShadow -> ResponsePlanner -> SurfaceRealization -> OutputValidation -> StateUpdate",
       frozenLegacyStrategyFields: {
         engageMode: readUnionMembers(conversationTypes, "EngageMode").length,
         experienceGoal: readUnionMembers(conversationTypes, "ExperienceGoal").length,

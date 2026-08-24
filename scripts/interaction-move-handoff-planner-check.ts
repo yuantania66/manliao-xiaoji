@@ -10,6 +10,7 @@ import {
   interpretTurnDeterministically,
   mergeModelInterpretation,
   planInteractionMoveHandoff,
+  projectUserMoveRelation,
   type ActiveInteractionMoveHandoffTarget,
   type InteractionMoveHandoffPlan,
   type ResponsePlanPreflightAuthoritySnapshot,
@@ -17,7 +18,10 @@ import {
   type UserMoveRelationKind,
   type UserMoveRelationProjection,
 } from "../conversation-os/control";
-import type { ProactiveGreetingRequiredFunction } from "../conversation-os/interactionMoveEnvelope";
+import type {
+  ProactiveGreetingRequiredFunction,
+  ProactiveMoveIntentV1,
+} from "../conversation-os/interactionMoveEnvelope";
 import { determineConversationState } from "../conversation-os/state";
 import { PROACTIVE_GREETING_PROMPT_VERSION } from "../lib/proactive-greeting";
 import { preflightResponsePlan } from "../services/ai/chatExecutionLifecycle";
@@ -38,10 +42,48 @@ const span = {
   text: userText,
 };
 
-const moveForFunction: Record<ProactiveGreetingRequiredFunction, "simple_greeting" | "open_statement" | "light_question"> = {
-  initiate_reciprocal_contact: "simple_greeting",
-  offer_self_contained_conversation_entry: "open_statement",
-  ask_one_bounded_low_burden_question: "light_question",
+const intentForFunction: Record<ProactiveGreetingRequiredFunction, ProactiveMoveIntentV1> = {
+  initiate_reciprocal_contact: {
+    move: "simple_greeting",
+    requiredFunction: "initiate_reciprocal_contact",
+    realization: { kind: "reciprocal_contact" },
+    expectedUserContribution: "none",
+    userBurden: "none",
+  },
+  offer_self_contained_conversation_entry: {
+    move: "open_statement",
+    requiredFunction: "offer_self_contained_conversation_entry",
+    realization: {
+      kind: "self_contained_entry",
+      topic: "fixture topic",
+      proposition: "A self-contained fixture proposition.",
+    },
+    expectedUserContribution: "none",
+    userBurden: "none",
+  },
+  ask_one_bounded_low_burden_question: {
+    move: "light_question",
+    requiredFunction: "ask_one_bounded_low_burden_question",
+    realization: {
+      kind: "bounded_question",
+      topic: "food",
+      question: "今天有没有吃到什么还不错的东西？",
+    },
+    expectedUserContribution: "answer",
+    userBurden: "low",
+  },
+};
+
+const initialFirstContactIntent: ProactiveMoveIntentV1 = {
+  move: "open_statement",
+  requiredFunction: "offer_self_contained_conversation_entry",
+  realization: {
+    kind: "self_contained_entry",
+    topic: "assistant first-contact identity and low-pressure entry",
+    proposition: "你好，我是小慢。不用先想好完整话题，从此刻最想说的一句话开始就可以。",
+  },
+  expectedUserContribution: "none",
+  userBurden: "none",
 };
 
 const targetFor = (
@@ -50,7 +92,7 @@ const targetFor = (
   const envelope = buildProactiveGreetingAssistantMoveEnvelope({
     assistantMoveId: `assistant-${sourceGreetingFunction}`,
     generationId: `generation-${sourceGreetingFunction}`,
-    greetingMove: moveForFunction[sourceGreetingFunction],
+    intent: intentForFunction[sourceGreetingFunction],
   });
   return {
     sourceAssistantMoveId: envelope.assistantMoveId,
@@ -269,7 +311,7 @@ assert.deepEqual(authenticatedPlan, guestPlan);
 const reciprocalEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
   assistantMoveId: "assistant-reciprocal",
   generationId: "generation-reciprocal",
-  greetingMove: "simple_greeting",
+  intent: intentForFunction.initiate_reciprocal_contact,
 });
 const recentMessages: AiConversationMessage[] = [{
   id: reciprocalEnvelope.assistantMoveId,
@@ -352,17 +394,138 @@ assert.deepEqual(tuple(reproducedReciprocalPlan.interactionMoveHandoffPlan), {
   questionPolicy: "optional_after_completion",
 });
 
+for (const greetingMove of ["simple_greeting", "open_statement"] as const) {
+  const deterministicEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+    assistantMoveId: `assistant-deterministic-${greetingMove}`,
+    generationId: `generation-deterministic-${greetingMove}`,
+    intent: greetingMove === "simple_greeting"
+      ? intentForFunction.initiate_reciprocal_contact
+      : initialFirstContactIntent,
+  });
+  const deterministicMessages: AiConversationMessage[] = [{
+    id: deterministicEnvelope.assistantMoveId,
+    role: "assistant",
+    content: greetingMove === "simple_greeting"
+      ? "嗨，又见面了。"
+      : "把想说的话慢慢打出来就好。",
+    status: "saved",
+    interactionMoveEnvelope: deterministicEnvelope,
+  }];
+  const deterministicContext = {
+    ...assembleConversationControlContext({
+      conversationId: `phm-a-deterministic-${greetingMove}`,
+      currentTurnId: `phm-a-deterministic-${greetingMove}-turn`,
+      userMessage: reproducedReciprocalText,
+      recentMessages: deterministicMessages,
+      conversationState: determineConversationState({
+        currentUserMessage: reproducedReciprocalText,
+        recentMessages: deterministicMessages,
+      }),
+    }),
+    semanticEvidence: {
+      status: "sufficient" as const,
+      source: "current_user_message" as const,
+      reason: "Exercises deterministic concrete-candidate fallback reconciliation.",
+    },
+  };
+  const deterministicInterpretation = mergeModelInterpretation(
+    interpretTurnDeterministically(deterministicContext),
+    null,
+    deterministicContext
+  );
+  const deterministicDialogueState = buildDialogueState(
+    deterministicContext,
+    deterministicInterpretation
+  );
+  const deterministicAuthority = createResponsePlanPreflightAuthoritySnapshot({
+    context: deterministicContext,
+    interpretation: deterministicInterpretation,
+    dialogueState: deterministicDialogueState,
+  });
+  const deterministicPlan = createResponsePlan({
+    context: deterministicContext,
+    interpretation: deterministicInterpretation,
+    dialogueState: deterministicDialogueState,
+    clinicalAdviceProvider: () => null,
+  });
+  assert.deepEqual(
+    deterministicInterpretation.userMoveRelation?.candidates.map((item) => item.kind),
+    ["reciprocates_move"]
+  );
+  assert.deepEqual(
+    tuple(deterministicPlan.interactionMoveHandoffPlan),
+    {
+      selectedRelation: "reciprocates_move",
+      requiredFunction: "complete_reciprocal_contact",
+      completionIntent: "fulfill",
+      questionPolicy: "optional_after_completion",
+    }
+  );
+  assert.deepEqual(
+    deterministicPlan.responseActions,
+    []
+  );
+  assert.notEqual(
+    deterministicPlan.positiveFunctionContract?.action === "establish_assistant_identity"
+      ? deterministicPlan.positiveFunctionContract.mode
+      : null,
+    "first_contact"
+  );
+  assert(!deterministicPlan.requiredDisclosure.includes("助手称呼是小慢。"));
+  assert(!deterministicPlan.requiredDisclosure.includes("助手是AI聊天助手。"));
+  assert(preflightResponsePlan(deterministicPlan, deterministicAuthority).passed);
+}
+
 const unavailableModelPlan = createPlanForInterpretation(
   reproducedReciprocalContext,
-  reproducedReciprocalDeterministic
+  mergeModelInterpretation(
+    reproducedReciprocalDeterministic,
+    null,
+    reproducedReciprocalContext
+  )
 );
 assert.equal(
   unavailableModelPlan.interactionMoveHandoffPlan?.requiredFunction,
+  "complete_reciprocal_contact"
+);
+
+const reproducedFallback = reproducedReciprocalDeterministic.responseRelation.candidates.find(
+  (candidate) => candidate.relation === "continues_active_thread"
+);
+assert(reproducedFallback);
+const reproducedFallbackRelation = projectUserMoveRelation({
+  target: reproducedReciprocalContext.interactionMoveHandoffTarget,
+  sourceUserTurnId: reproducedReciprocalContext.currentTurnId,
+  currentUserText: reproducedReciprocalContext.currentUserMessage,
+  semanticEvidenceStatus: reproducedReciprocalContext.semanticEvidence.status,
+  responseRelation: {
+    candidates: [reproducedFallback],
+    ambiguous: false,
+  },
+});
+assert(reproducedFallbackRelation);
+const reproducedFallbackOnly = {
+  ...reproducedReciprocalDeterministic,
+  responseRelation: {
+    candidates: [reproducedFallback],
+    ambiguous: false,
+  },
+  userMoveRelation: reproducedFallbackRelation,
+};
+assert.equal(
+  createPlanForInterpretation(
+    reproducedReciprocalContext,
+    mergeModelInterpretation(
+      reproducedFallbackOnly,
+      null,
+      reproducedReciprocalContext
+    )
+  ).interactionMoveHandoffPlan?.requiredFunction,
   "defer_handoff_completion"
 );
 
 const targetlessReciprocalInterpretation = mergeModelInterpretation(
-  reproducedReciprocalDeterministic,
+  reproducedFallbackOnly,
   {
     responseRelation: {
       candidates: [{
@@ -386,6 +549,61 @@ assert.equal(
   createPlanForInterpretation(
     reproducedReciprocalContext,
     targetlessReciprocalInterpretation
+  ).interactionMoveHandoffPlan?.requiredFunction,
+  "defer_handoff_completion"
+);
+
+for (const invalidCandidate of [
+  {
+    relation: "acknowledges_previous_move" as const,
+    confidence: 0.54,
+    targetTurnId: reciprocalEnvelope.assistantMoveId,
+    evidence: ["below-threshold reciprocal relation"],
+  },
+  {
+    relation: "acknowledges_previous_move" as const,
+    confidence: 0.91,
+    targetTurnId: "wrong-assistant-target",
+    evidence: ["wrong-target reciprocal relation"],
+  },
+]) {
+  const invalidInterpretation = mergeModelInterpretation(
+    reproducedFallbackOnly,
+    {
+      responseRelation: { candidates: [invalidCandidate], ambiguous: false },
+      confidence: 0.91,
+    },
+    reproducedReciprocalContext
+  );
+  assert.equal(
+    createPlanForInterpretation(
+      reproducedReciprocalContext,
+      invalidInterpretation
+    ).interactionMoveHandoffPlan?.requiredFunction,
+    "defer_handoff_completion"
+  );
+}
+
+const continuesOnlyInterpretation = mergeModelInterpretation(
+  reproducedFallbackOnly,
+  {
+    responseRelation: {
+      candidates: [{
+        relation: "continues_active_thread",
+        confidence: 0.91,
+        targetTurnId: reciprocalEnvelope.assistantMoveId,
+        evidence: ["model continuation relation"],
+      }],
+      ambiguous: false,
+    },
+    confidence: 0.91,
+  },
+  reproducedReciprocalContext
+);
+assert.equal(
+  createPlanForInterpretation(
+    reproducedReciprocalContext,
+    continuesOnlyInterpretation
   ).interactionMoveHandoffPlan?.requiredFunction,
   "defer_handoff_completion"
 );
@@ -422,6 +640,30 @@ assert.equal(
   "defer_handoff_completion"
 );
 
+const unsupportedAnswerInterpretation = mergeModelInterpretation(
+  reproducedReciprocalDeterministic,
+  {
+    responseRelation: {
+      candidates: [{
+        relation: "answers_previous_move",
+        confidence: 0.91,
+        targetTurnId: reciprocalEnvelope.assistantMoveId,
+        evidence: ["model answer relation"],
+      }],
+      ambiguous: false,
+    },
+    confidence: 0.91,
+  },
+  reproducedReciprocalContext
+);
+assert.equal(
+  createPlanForInterpretation(
+    reproducedReciprocalContext,
+    unsupportedAnswerInterpretation
+  ).interactionMoveHandoffPlan?.requiredFunction,
+  "defer_handoff_completion"
+);
+
 const topicRedirectInterpretation = mergeModelInterpretation(
   reproducedReciprocalDeterministic,
   {
@@ -449,7 +691,7 @@ assert.equal(
 const questionEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
   assistantMoveId: "assistant-question-greeting",
   generationId: "generation-question-greeting",
-  greetingMove: "light_question",
+  intent: intentForFunction.ask_one_bounded_low_burden_question,
 });
 const questionMessages: AiConversationMessage[] = [{
   id: questionEnvelope.assistantMoveId,
@@ -576,9 +818,19 @@ assert.throws(() => {
     currentSource: { userText: string };
   }).currentSource.userText = "mutation must fail";
 }, TypeError);
-assert.equal(responsePlan.interactionMoveHandoffPlan?.requiredFunction,
-  "complete_reciprocal_contact");
-assert(!responsePlan.responseActions.includes("respond_to_proactive_greeting"));
+assert.deepEqual(tuple(responsePlan.interactionMoveHandoffPlan), {
+  selectedRelation: "reciprocates_move",
+  requiredFunction: "complete_reciprocal_contact",
+  completionIntent: "fulfill",
+  questionPolicy: "optional_after_completion",
+});
+assert.deepEqual(responsePlan.responseActions, []);
+assert(!responsePlan.relevanceProvenance.some((item) =>
+  item.planElement === "responseAction:acknowledge_without_psychologizing"
+));
+assert(!responsePlan.relevanceProvenance.some((item) =>
+  item.planElement === "responseAction:take_light_topic_initiative"
+));
 assert(preflightV1(responsePlan).passed);
 assert(preflightV1({
   ...responsePlan,
@@ -591,6 +843,39 @@ const logicallyEquivalentAuthority = createResponsePlanPreflightAuthoritySnapsho
 });
 assert.deepEqual(logicallyEquivalentAuthority, responsePlanAuthority);
 assert(preflightResponsePlan(responsePlan, logicallyEquivalentAuthority).passed);
+
+const independentlySupportedDialogueState = {
+  ...dialogueState,
+  currentActivity: {
+    ...dialogueState.currentActivity,
+    primary: "supporting_action" as const,
+  },
+};
+const independentlySupportedAuthority = createResponsePlanPreflightAuthoritySnapshot({
+  context,
+  interpretation,
+  dialogueState: independentlySupportedDialogueState,
+});
+const independentlySupportedPlan = createResponsePlan({
+  context,
+  interpretation,
+  dialogueState: independentlySupportedDialogueState,
+  clinicalAdviceProvider: () => null,
+});
+assert.equal(
+  independentlySupportedPlan.interactionMoveHandoffPlan?.requiredFunction,
+  "complete_reciprocal_contact"
+);
+assert.deepEqual(independentlySupportedPlan.responseActions, ["offer_action_support"]);
+assert(independentlySupportedPlan.relevanceProvenance.some((item) =>
+  item.planElement === "responseAction:offer_action_support" &&
+  item.sourceTurnId === context.currentTurnId &&
+  item.evidence.length > 0
+));
+assert(preflightResponsePlan(
+  independentlySupportedPlan,
+  independentlySupportedAuthority
+).passed);
 assert(preflightV1({
   ...responsePlan,
   interactionMoveHandoffPlan: undefined,
@@ -676,7 +961,7 @@ const buildV1ResponsePlan = ({
   const envelope = buildProactiveGreetingAssistantMoveEnvelope({
     assistantMoveId: "assistant-typed-repair-target",
     generationId: "generation-typed-repair-target",
-    greetingMove: "simple_greeting",
+    intent: intentForFunction.initiate_reciprocal_contact,
   });
   const messages: AiConversationMessage[] = [{
     id: envelope.assistantMoveId,

@@ -3,15 +3,35 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { CalendarDays, Search } from "lucide-react";
 
 import type { CommittedAssistantMoveEnvelopeV1 } from "@/conversation-os";
 import { apiRequest, ClientApiError } from "@/lib/client-api";
 import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
+import { createClientTurnId } from "@/lib/client-turn-id";
+import {
+  advanceChatSessionAuthority,
+  canApplyChatSessionResult,
+  canApplyChatTurnResult,
+  createChatTurnAuthorityState,
+  resolveChatTurnResult,
+  submitChatTurnAuthority,
+  type ChatTurnAuthorityState,
+  type ChatTurnResultAuthority,
+} from "@/lib/chat-turn-result-authority";
 import {
   appendGuestRecentGreeting,
   collapseConsecutiveGuestGreetings,
+  guestProactiveGreetingKind,
   parseGuestRecentGreetings,
 } from "@/lib/guest-proactive-greeting";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
@@ -33,6 +53,26 @@ type ExecutionSystemStatus = {
   retryable: boolean;
   turnId: string;
 };
+
+type TurnScopedExecutionStatus = ExecutionSystemStatus & {
+  inputText: string;
+  isGuest: boolean;
+  authority: ChatTurnResultAuthority;
+};
+
+type AsyncTurnCompletionPath =
+  | "guest-submit-failure"
+  | "guest-submit-success"
+  | "guest-submit-transport"
+  | "auth-submit-failure"
+  | "auth-submit-success"
+  | "auth-submit-transport"
+  | "guest-retry-failure"
+  | "guest-retry-success"
+  | "guest-retry-transport"
+  | "auth-retry-failure"
+  | "auth-retry-success"
+  | "auth-retry-transport";
 
 type AiDebugTrace = {
   visibleSteps: string[];
@@ -254,6 +294,7 @@ type ChatMessagesListResponse = {
   total: number;
   hasMore: boolean;
   nextCursor: string | null;
+  greetingStatus?: ExecutionSystemStatus | null;
 };
 
 type CachedChat = {
@@ -261,6 +302,7 @@ type CachedChat = {
   messages: Message[];
   hasMore?: boolean;
   nextCursor?: string | null;
+  greetingStatus?: ExecutionSystemStatus | null;
 };
 
 type GuestAiUsage = {
@@ -274,7 +316,8 @@ const CHAT_CACHE_PREFIX = "xinqingChatCache";
 const GUEST_MODE_KEY = "xinqingGuestMode";
 const GUEST_CHAT_CACHE_KEY = "xinqingGuestChatCache:v2";
 const GUEST_AI_USAGE_KEY = "xinqingGuestAiUsage";
-const GUEST_RECENT_GREETINGS_KEY = "xinqingGuestRecentGreetings:v1";
+const GUEST_RECENT_GREETINGS_KEY = "xinqingGuestRecentGreetings:v2";
+const GUEST_LEGACY_RECENT_GREETINGS_KEY = "xinqingGuestRecentGreetings:v1";
 const GUEST_AI_DAILY_LIMIT = 3;
 const GUEST_SESSION_ID = "guest-session";
 const LOCAL_DEMO_TOKEN_PREFIX = "local_demo_";
@@ -483,13 +526,17 @@ const writeGuestMessages = (messages: Message[]) => {
 const readGuestRecentGreetings = () => {
   if (typeof window === "undefined") return [];
   return parseGuestRecentGreetings(
-    window.localStorage.getItem(GUEST_RECENT_GREETINGS_KEY)
+    window.localStorage.getItem(GUEST_RECENT_GREETINGS_KEY) ??
+      window.localStorage.getItem(GUEST_LEGACY_RECENT_GREETINGS_KEY)
   );
 };
 
-const rememberGuestGreeting = (greeting: string) => {
+const rememberGuestGreeting = (greeting: Message) => {
   if (typeof window === "undefined") return;
-  const next = appendGuestRecentGreeting(readGuestRecentGreetings(), greeting);
+  const next = appendGuestRecentGreeting(readGuestRecentGreetings(), {
+    text: greeting.text,
+    interactionMoveEnvelope: greeting.interactionMoveEnvelope,
+  });
   window.localStorage.setItem(
     GUEST_RECENT_GREETINGS_KEY,
     JSON.stringify(next)
@@ -505,6 +552,11 @@ const reserveGuestOpenGreeting = () => {
   }
   window.sessionStorage.setItem(GUEST_OPEN_GREETING_DEDUPE_KEY, String(now));
   return true;
+};
+
+const releaseGuestOpenGreeting = () => {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(GUEST_OPEN_GREETING_DEDUPE_KEY);
 };
 
 const createGuestGreetingMessage = async ({
@@ -524,6 +576,7 @@ const createGuestGreetingMessage = async ({
         body: {
           kind,
           recentMessages: recentMessages.slice(-6).map((message) => ({
+            id: message.id,
             role: message.role,
             content: message.text,
             promptVersion: message.promptVersion,
@@ -533,38 +586,53 @@ const createGuestGreetingMessage = async ({
         },
       }
     );
-    rememberGuestGreeting(data.assistantMessage.content);
-
-    return {
+    const greeting = {
       id: data.assistantMessage.id,
-      role: "assistant",
+      role: "assistant" as const,
       text: data.assistantMessage.content,
       createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
       promptVersion: data.assistantMessage.promptVersion,
       interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
     };
+    rememberGuestGreeting(greeting);
+    return greeting;
   } catch {
     return null;
   }
 };
 
-const readOrSeedGuestMessages = async (): Promise<Message[]> => {
+type GuestGreetingLoadResult = {
+  messages: Message[];
+  greetingFailed: boolean;
+};
+
+const readOrSeedGuestMessages = async (): Promise<GuestGreetingLoadResult> => {
   const messages = readGuestMessages();
   if (!reserveGuestOpenGreeting()) {
-    return messages;
+    return { messages, greetingFailed: false };
   }
 
   const nonGreetingMessages = messages.filter(
     (message) => !isProactiveGreetingPromptVersion(message.promptVersion)
   );
-  const greeting = await createGuestGreetingMessage({
-    kind: messages.length > 0 ? "return" : "initial",
-    recentMessages: nonGreetingMessages,
+  const greetingKind = guestProactiveGreetingKind({
+    localMessageCount: messages.length,
+    recentGreetings: readGuestRecentGreetings(),
   });
-  if (!greeting) return messages;
-  const nextMessages = [...messages, greeting];
-  writeGuestMessages(nextMessages);
-  return nextMessages;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (attempt > 0 && !reserveGuestOpenGreeting()) break;
+    const greeting = await createGuestGreetingMessage({
+      kind: greetingKind,
+      recentMessages: nonGreetingMessages,
+    });
+    if (greeting) {
+      const nextMessages = [...messages, greeting];
+      writeGuestMessages(nextMessages);
+      return { messages: nextMessages, greetingFailed: false };
+    }
+    releaseGuestOpenGreeting();
+  }
+  return { messages, greetingFailed: true };
 };
 
 const getTodayKey = () =>
@@ -633,9 +701,10 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [typingMessageIds, setTypingMessageIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
-  const [executionStatus, setExecutionStatus] = useState<
-    (ExecutionSystemStatus & { inputText: string; isGuest: boolean }) | null
-  >(null);
+  const [executionStatus, setExecutionStatus] = useState<TurnScopedExecutionStatus | null>(null);
+  const [greetingStatus, setGreetingStatus] = useState<ExecutionSystemStatus | null>(
+    canUseInitialChat ? (initialChat?.greetingStatus ?? null) : null
+  );
   const [isDebugLoggingIn, setIsDebugLoggingIn] = useState(false);
   const typingCancelledRef = useRef(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
@@ -644,12 +713,69 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   const prependScrollRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
   const hydratedFromCacheRef = useRef(false);
   const positionedTargetRef = useRef<string | null>(null);
+  const sessionContextKey = `${requestedSessionId ?? ""}\u0000${sessionId ?? ""}`;
+  const sessionContextRef = useRef<{
+    key: string;
+    authority: ChatTurnAuthorityState;
+  }>({
+    key: sessionContextKey,
+    authority: createChatTurnAuthorityState(sessionId ?? ""),
+  });
 
   const getErrorMessage = useCallback((error: unknown) => {
     if (error instanceof ClientApiError) return error.message;
     if (error instanceof Error) return error.message;
     return "服务暂时不可用，请稍后再试";
   }, []);
+
+  useLayoutEffect(() => {
+    if (sessionContextRef.current.key === sessionContextKey) return;
+    const authority = advanceChatSessionAuthority(
+      sessionContextRef.current.authority,
+      sessionId ?? ""
+    );
+    sessionContextRef.current = { key: sessionContextKey, authority };
+    setExecutionStatus((current) =>
+      current && canApplyChatSessionResult({ current: authority, result: current.authority })
+        ? current
+        : null
+    );
+    setGreetingStatus(null);
+    setErrorMessage("");
+  }, [sessionContextKey, sessionId]);
+
+  const applyTurnCompletionResult = useCallback(
+    (
+      _path: AsyncTurnCompletionPath,
+      authority: ChatTurnResultAuthority,
+      completion: {
+        executionStatus?: TurnScopedExecutionStatus | null;
+        errorMessage?: string;
+      }
+    ) => {
+      if ("executionStatus" in completion) {
+        setExecutionStatus((current) =>
+          resolveChatTurnResult({
+            current: sessionContextRef.current.authority,
+            result: authority,
+            previousValue: current,
+            nextValue: completion.executionStatus ?? null,
+          })
+        );
+      }
+      if (completion.errorMessage !== undefined) {
+        setErrorMessage((current) =>
+          resolveChatTurnResult({
+            current: sessionContextRef.current.authority,
+            result: authority,
+            previousValue: current,
+            nextValue: completion.errorMessage ?? "",
+          })
+        );
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -666,7 +792,11 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         setIsGuestMode(true);
         setSessionId(GUEST_SESSION_ID);
         shouldAutoScrollToBottomRef.current = true;
-        setMessages(await readOrSeedGuestMessages());
+        const guestLoad = await readOrSeedGuestMessages();
+        setMessages(guestLoad.messages);
+        setErrorMessage(guestLoad.greetingFailed
+          ? "欢迎语暂时没生成，可以直接发消息或刷新重试。"
+          : "");
         setHasMoreOlderMessages(false);
         setOlderMessagesCursor(null);
         setIsLoadingMessages(false);
@@ -694,6 +824,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         setMessages(initialChat.messages);
         setHasMoreOlderMessages(initialChat.hasMore ?? false);
         setOlderMessagesCursor(initialChat.nextCursor ?? null);
+        setGreetingStatus(initialChat.greetingStatus ?? null);
         setIsLoadingMessages(false);
         return;
       }
@@ -738,6 +869,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         setMessages(nextMessages);
         setHasMoreOlderMessages(data.hasMore);
         setOlderMessagesCursor(data.nextCursor);
+        setGreetingStatus(data.greetingStatus ?? null);
         writeChatCache({
           sessionId: activeSessionId,
           messages: nextMessages,
@@ -951,7 +1083,18 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       return;
     }
 
-    const optimisticId = `turn-${crypto.randomUUID()}`;
+    const optimisticId = createClientTurnId();
+    const submittedAuthority = submitChatTurnAuthority(
+      sessionContextRef.current.authority,
+      optimisticId
+    );
+    sessionContextRef.current.authority = submittedAuthority.state;
+    const resultAuthority = submittedAuthority.result;
+    const isCurrentSessionResult = () =>
+      canApplyChatSessionResult({
+        current: sessionContextRef.current.authority,
+        result: resultAuthority,
+      });
     const pendingAssistantId = `typing-${Date.now()}`;
     const now = new Date().toISOString();
     const userMessage: Message = { id: optimisticId, role: "user", text, createdAt: now };
@@ -996,6 +1139,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           turnId: optimisticId,
           inputText: text,
           isGuest: true,
+          authority: resultAuthority,
         });
         return;
       }
@@ -1014,6 +1158,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
             turnId: optimisticId,
             debugTrace: showAiDebugTrace,
             recentMessages: messages.slice(-24).map((message) => ({
+              id: message.id,
               role: message.role,
               content: message.text,
               promptVersion: message.promptVersion,
@@ -1025,6 +1170,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         if (!showAiDebugTrace) {
           incrementGuestAiUsage();
         }
+        if (!isCurrentSessionResult()) return;
         if (data.status === "failed" || !data.assistantMessage) {
           setMessages((current) => {
             const next = current.filter((message) => message.id !== pendingAssistantId);
@@ -1033,10 +1179,22 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           });
           setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
           if (data.systemStatus) {
-            setExecutionStatus({ ...data.systemStatus, inputText: text, isGuest: true });
+            const nextStatus = {
+              ...data.systemStatus,
+              inputText: text,
+              isGuest: true,
+              authority: resultAuthority,
+            };
+            applyTurnCompletionResult("guest-submit-failure", resultAuthority, {
+              executionStatus: nextStatus,
+            });
           }
           return;
         }
+        applyTurnCompletionResult("guest-submit-success", resultAuthority, {
+          executionStatus: null,
+        });
+        if (!isCurrentSessionResult()) return;
         await replacePendingAssistant({
           id: data.assistantMessage.id,
           role: "assistant",
@@ -1047,13 +1205,17 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           debugTrace: data.debugTrace,
         });
       } catch (error) {
-        setMessages((current) =>
-          current.filter(
-            (message) => message.id !== pendingAssistantId && message.id !== optimisticId
-          )
-        );
-        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
-        setErrorMessage(getErrorMessage(error));
+        if (isCurrentSessionResult()) {
+          setMessages((current) =>
+            current.filter(
+              (message) => message.id !== pendingAssistantId && message.id !== optimisticId
+            )
+          );
+          setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+        }
+        applyTurnCompletionResult("guest-submit-transport", resultAuthority, {
+          errorMessage: getErrorMessage(error),
+        });
       }
       return;
     }
@@ -1069,6 +1231,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         method: "POST",
         body: { content: text, turnId: optimisticId, debugTrace: showAiDebugTrace },
       });
+      if (!isCurrentSessionResult()) return;
       if (data.status === "failed" || !data.assistantMessage) {
         setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
         setMessages((current) => [
@@ -1083,10 +1246,21 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           },
         ]);
         if (data.systemStatus) {
-          setExecutionStatus({ ...data.systemStatus, inputText: text, isGuest: false });
+          const nextStatus = {
+            ...data.systemStatus,
+            inputText: text,
+            isGuest: false,
+            authority: resultAuthority,
+          };
+          applyTurnCompletionResult("auth-submit-failure", resultAuthority, {
+            executionStatus: nextStatus,
+          });
         }
         return;
       }
+      applyTurnCompletionResult("auth-submit-success", resultAuthority, {
+        executionStatus: null,
+      });
       const committedAssistantMessage = data.assistantMessage;
       setTypingMessageIds((current) =>
         current.filter((id) => id !== pendingAssistantId).concat(committedAssistantMessage.id)
@@ -1113,9 +1287,11 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         },
       ]);
       await revealAssistantReply(committedAssistantMessage.id, committedAssistantMessage.content);
+      if (!isCurrentSessionResult()) return;
       const refreshed = await apiRequest<ChatMessagesListResponse>(
         `/api/chat/sessions/${sessionId}/messages?pageSize=50`
       );
+      if (!isCurrentSessionResult()) return;
       writeChatCache({
         sessionId,
         messages: toMessages(refreshed.items),
@@ -1123,19 +1299,60 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         nextCursor: refreshed.nextCursor,
       });
     } catch (error) {
-      setMessages((current) =>
-        current.filter(
-          (message) => message.id !== pendingAssistantId && message.id !== optimisticId
-        )
-      );
-      setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
-      setErrorMessage(getErrorMessage(error));
+      if (isCurrentSessionResult()) {
+        setMessages((current) =>
+          current.filter(
+            (message) => message.id !== pendingAssistantId && message.id !== optimisticId
+          )
+        );
+        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+      }
+      applyTurnCompletionResult("auth-submit-transport", resultAuthority, {
+        errorMessage: getErrorMessage(error),
+      });
     }
   };
 
   const handleExecutionRetry = async () => {
+    if (greetingStatus?.retryable && sessionId && !isGuestMode) {
+      setGreetingStatus(null);
+      setErrorMessage("");
+      try {
+        const data = await apiRequest<ChatMessagesListResponse>(
+          `/api/chat/sessions/${sessionId}/messages?pageSize=50&retryGreeting=1`
+        );
+        const nextMessages = toMessages(data.items);
+        setMessages(nextMessages);
+        setHasMoreOlderMessages(data.hasMore);
+        setOlderMessagesCursor(data.nextCursor);
+        setGreetingStatus(data.greetingStatus ?? null);
+        writeChatCache({
+          sessionId,
+          messages: nextMessages,
+          hasMore: data.hasMore,
+          nextCursor: data.nextCursor,
+          greetingStatus: data.greetingStatus ?? null,
+        });
+      } catch (error) {
+        setGreetingStatus(greetingStatus);
+        setErrorMessage(getErrorMessage(error));
+      }
+      return;
+    }
     const pending = executionStatus;
     if (!pending?.retryable || !sessionId) return;
+    const resultAuthority = pending.authority;
+    const isCurrentSessionResult = () =>
+      canApplyChatSessionResult({
+        current: sessionContextRef.current.authority,
+        result: resultAuthority,
+      });
+    const ownsLatestTurnResult = () =>
+      canApplyChatTurnResult({
+        current: sessionContextRef.current.authority,
+        result: resultAuthority,
+      });
+    if (!ownsLatestTurnResult()) return;
     setExecutionStatus(null);
     setErrorMessage("");
     try {
@@ -1157,6 +1374,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
               .filter((message) => message.id !== pending.turnId)
               .slice(-24)
               .map((message) => ({
+                id: message.id,
                 role: message.role,
                 content: message.text,
                 promptVersion: message.promptVersion,
@@ -1166,14 +1384,22 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           },
         });
         if (!showAiDebugTrace) incrementGuestAiUsage();
+        if (!isCurrentSessionResult()) return;
         if (data.status === "failed" || !data.assistantMessage) {
-          setExecutionStatus({
+          const nextStatus = {
             ...(data.systemStatus ?? pending),
             inputText: pending.inputText,
             isGuest: true,
+            authority: resultAuthority,
+          };
+          applyTurnCompletionResult("guest-retry-failure", resultAuthority, {
+            executionStatus: nextStatus,
           });
           return;
         }
+        applyTurnCompletionResult("guest-retry-success", resultAuthority, {
+          executionStatus: null,
+        });
         const assistant: Message = {
           id: data.assistantMessage.id,
           role: "assistant",
@@ -1205,14 +1431,22 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         method: "POST",
         body: { retryTurnId: pending.turnId, debugTrace: showAiDebugTrace },
       });
+      if (!isCurrentSessionResult()) return;
       if (data.status === "failed" || !data.assistantMessage) {
-        setExecutionStatus({
+        const nextStatus = {
           ...(data.systemStatus ?? pending),
           inputText: pending.inputText,
           isGuest: false,
+          authority: resultAuthority,
+        };
+        applyTurnCompletionResult("auth-retry-failure", resultAuthority, {
+          executionStatus: nextStatus,
         });
         return;
       }
+      applyTurnCompletionResult("auth-retry-success", resultAuthority, {
+        executionStatus: null,
+      });
       const assistant: Message = {
         id: data.assistantMessage.id,
         role: "assistant",
@@ -1225,8 +1459,15 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       setMessages((current) => [...current, assistant]);
       await revealAssistantReply(assistant.id, data.assistantMessage.content);
     } catch (error) {
-      setExecutionStatus(pending);
-      setErrorMessage(getErrorMessage(error));
+      const completion = {
+        executionStatus: pending,
+        errorMessage: getErrorMessage(error),
+      };
+      if (pending.isGuest) {
+        applyTurnCompletionResult("guest-retry-transport", resultAuthority, completion);
+      } else {
+        applyTurnCompletionResult("auth-retry-transport", resultAuthority, completion);
+      }
     }
   };
 
@@ -1418,13 +1659,13 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           </button>
         </form>
 
-        {executionStatus ? (
+        {executionStatus ?? greetingStatus ? (
           <div
             role="status"
             className="absolute bottom-[82px] left-[18px] right-[18px] flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--page-bg)] px-3 py-2 text-[11px] leading-4 text-[var(--soft-copy)]"
           >
-            <span>{executionStatus.message}</span>
-            {executionStatus.retryable ? (
+            <span>{(executionStatus ?? greetingStatus)?.message}</span>
+            {(executionStatus ?? greetingStatus)?.retryable ? (
               <button
                 type="button"
                 onClick={handleExecutionRetry}

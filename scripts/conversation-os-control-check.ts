@@ -13,6 +13,7 @@ import { determineConversationState } from "../conversation-os/state";
 import type { AiConversationMessage } from "../services/ai/types";
 import { validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
 import { createChatReply } from "../services/ai/chatOrchestrationService";
+import type { SafetySemanticProvider } from "../services/ai/chatSafety";
 
 const clinicalAdvice: ClinicalStrategyAdvice = {
   strategy: "rogers",
@@ -22,6 +23,15 @@ const clinicalAdvice: ClinicalStrategyAdvice = {
   interventionBoundaries: ["no diagnosis"],
   evidence: ["test provider called by planner"],
 };
+
+const noRiskSafetyProvider: SafetySemanticProvider = async () => JSON.stringify({
+  schemaVersion: 1,
+  riskLevel: "none",
+  categories: [],
+  currentness: "current",
+  evidence: [],
+  requiresSafetyResponse: false,
+});
 
 const build = (userMessage: string, recentMessages: AiConversationMessage[] = []) => {
   const state = determineConversationState({ currentUserMessage: userMessage, recentMessages });
@@ -193,14 +203,22 @@ assert(counterResults.every((item) => item.responsePlan.closurePolicy.mode !== "
 
 assert(validateResponsePlanOutput({ plan: bodyQuestion.responsePlan, reply: "我没有身体，不能真的坐；刚才那是文字里的说法。" }).passed);
 assert(!validateResponsePlanOutput({ plan: bodyQuestion.responsePlan, reply: "我可以陪你坐一会儿。" }).passed);
-assert(validateResponsePlanOutput({ plan: identityQuestion.responsePlan, reply: "我是慢聊小记的 AI 聊天助手。" }).passed);
+assert(validateResponsePlanOutput({ plan: identityQuestion.responsePlan, reply: "我是小慢，是慢聊小记里的 AI 聊天助手。" }).passed);
 assert(!validateResponsePlanOutput({ plan: identityQuestion.responsePlan, reply: "你觉得我是谁呢？" }).passed);
 assert(validateResponsePlanOutput({ plan: clinicianQuestion.responsePlan, reply: "我是 AI 聊天助手，不是心理医生或治疗师。" }).passed);
 assert(!validateResponsePlanOutput({ plan: clinicianQuestion.responsePlan, reply: "我是慢聊小记的心理医生。" }).passed);
-assert(!validateResponsePlanOutput({ plan: scenarioA.responsePlan, reply: "没关系，那我们就先这样待着。" }).passed);
-assert(!validateResponsePlanOutput({ plan: scenarioA.responsePlan, reply: "没关系，就这样安静待着也挺好。" }).passed);
+for (const qualityOnlyReply of [
+  "没关系，那我们就先这样待着。",
+  "没关系，就这样安静待着也挺好。",
+  "想不到也没关系，你想聊点什么？",
+  ]) {
+  const validation = validateResponsePlanOutput({ plan: scenarioA.responsePlan, reply: qualityOnlyReply });
+  assert.equal(validation.passed, false, qualityOnlyReply);
+  assert.equal(validation.rewriteRequired, false, qualityOnlyReply);
+  assert((validation.hardFailureReasons?.length ?? 0) > 0, qualityOnlyReply);
+  assert.equal(validation.advisoryFailureReasons?.length, 0, qualityOnlyReply);
+}
 assert(validateResponsePlanOutput({ plan: scenarioA.responsePlan, reply: "那我来起个轻松的头：今天有没有一件小事让你多看了一眼？" }).passed);
-assert(!validateResponsePlanOutput({ plan: scenarioA.responsePlan, reply: "想不到也没关系，你想聊点什么？" }).passed);
 assert(validateResponsePlanOutput({ plan: definitionQuestion.responsePlan, reply: "“接住”是指认真回应你的话，不是真的用手去接。" }).passed);
 assert(validateResponsePlanOutput({ plan: voiceQuestion.responsePlan, reply: "我现在只能打字，没法发送或播放语音。" }).passed);
 
@@ -281,6 +299,7 @@ const runAsyncChecks = async () => {
         conversationId: `external-prompt-rejection-${stage}`,
         userMessage,
         recentMessages: assistantInvite,
+        safetySemanticProvider: noRiskSafetyProvider,
         inspectExternalPrompt: ({ stage: observedStage }) => {
           observedStages.push(observedStage);
           if (observedStage === stage) throw new Error(`preflight rejected ${stage}`);

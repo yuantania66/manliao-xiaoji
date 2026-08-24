@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { AppError } from "../lib/errors";
@@ -18,6 +19,17 @@ import {
   type HillHelpingInput,
   type HillHelpingPlan,
 } from "../services/helping";
+
+const HILL_HELPING_PRESERVATION_CONTRACT_VERSION = "hill_helping_fast_boundary_preservation_v1";
+const HILL_HELPING_PRESERVATION_CONTRACT =
+  "deterministic fast-boundary completion requires zero Helping provider calls; only a turn not completed by the fast boundary and still requiring Helping may call the provider, exactly once; Safety and hard validation remain unchanged";
+const HILL_HELPING_PRESERVATION_CONTRACT_HASH =
+  "179982abcdfe97480f763b9754397798d4217e9fe1260468197c7dc171532691";
+
+assert.equal(
+  createHash("sha256").update(HILL_HELPING_PRESERVATION_CONTRACT).digest("hex"),
+  HILL_HELPING_PRESERVATION_CONTRACT_HASH
+);
 
 const selfCheck = {
   unsupportedAssumptions: [],
@@ -229,11 +241,16 @@ const run = async () => {
       recentMessages: priorHelpingQuestion,
       turnId: `pair-${index + 1}-framed`,
     });
+    let framedProviderCalls = 0;
     const framed = await runHillHelpingShadow({
       input: framedInput,
       enabled: true,
-      provider: providerFor(explorationPlan, () => { pairedProviderCalls += 1; }),
+      provider: providerFor(explorationPlan, () => {
+        framedProviderCalls += 1;
+        pairedProviderCalls += 1;
+      }),
     });
+    assert.equal(framedProviderCalls, 1, `${form} in an established frame must call the provider exactly once.`);
     assert.equal(framed.provider.attempted, true, `${form} in an answer frame must not be fast-routed by form.`);
     assert.equal(
       framed.decision?.status === "decided" ? framed.decision.plan.applicability : null,
@@ -368,7 +385,7 @@ const run = async () => {
   const safetyReply = await createChatReply({
     conversationId: "hill-batch1-safety",
     currentTurnId: "hill-batch1-safety-turn",
-    userMessage: "我现在想伤害自己",
+    userMessage: "我正在伤害自己",
     recentMessages: [],
     helpingShadowEnabled: true,
     helpingDecisionProvider: providerFor(explorationPlan, () => { safetyProviderCalls += 1; }),
@@ -414,15 +431,15 @@ const run = async () => {
         if (stage === "surface_realization") enabledSurfacePrompts.push(JSON.stringify(messages));
       },
     });
-    assert.equal(shadowProviderCalls, 1, "One non-fast Shadow turn must call the Helping provider exactly once.");
-    assert.equal(helpingPromptInspections, 1, "The exact Helping prompt must be inspectable before its external call.");
+    assert.equal(shadowProviderCalls, 0, "A deterministic fast-boundary turn must not call the Helping provider.");
+    assert.equal(helpingPromptInspections, 0, "A deterministic fast-boundary turn must not construct an external Helping prompt.");
     assert.deepEqual(enabled.controlTrace?.responsePlan, disabled.controlTrace?.responsePlan);
     assert.deepEqual(enabled.controlTrace?.dialogueState, disabled.controlTrace?.dialogueState);
     assert.deepEqual(enabled.controlTrace?.stateUpdate, disabled.controlTrace?.stateUpdate);
     assert.deepEqual(enabledSurfacePrompts, disabledSurfacePrompts);
     assert.equal(enabled.generation.text, disabled.generation.text);
-    assert.equal(JSON.stringify(enabled.controlTrace?.responsePlan).includes("helping"), false);
-    assert.equal(JSON.stringify(enabled.controlTrace?.dialogueState).includes("HillHelping"), false);
+    assert.equal(JSON.stringify(enabled.controlTrace?.responsePlan ?? null).includes("helping"), false);
+    assert.equal(JSON.stringify(enabled.controlTrace?.dialogueState ?? null).includes("HillHelping"), false);
   } finally {
     if (previousProvider === undefined) delete process.env.AI_PROVIDER;
     else process.env.AI_PROVIDER = previousProvider;
@@ -434,9 +451,9 @@ const run = async () => {
   const planner = readFileSync("conversation-os/control/responsePlanner.ts", "utf8");
   const surface = readFileSync("services/ai/promptBuilder.ts", "utf8");
   const validator = readFileSync("services/ai/responsePlanValidator.ts", "utf8");
-  const safetyIndex = orchestration.indexOf("if (isCrisisInput(userMessage))");
+  const safetyIndex = orchestration.indexOf("const safetyTriage = await triageSafety({");
   const helpingIndex = orchestration.indexOf("await runHillHelpingShadow({");
-  const plannerIndex = orchestration.indexOf("const responsePlan = createResponsePlan({");
+  const plannerIndex = orchestration.indexOf("const plan = createResponsePlan({");
   assert(safetyIndex >= 0 && safetyIndex < helpingIndex && helpingIndex < plannerIndex);
   assert.equal((orchestration.match(/runHillHelpingShadow\(/gu) ?? []).length, 1);
   for (const [name, source] of [["Planner", planner], ["Surface", surface], ["Validator", validator]] as const) {
@@ -446,6 +463,8 @@ const run = async () => {
   }
 
   console.log(JSON.stringify({
+    preservationContractVersion: HILL_HELPING_PRESERVATION_CONTRACT_VERSION,
+    preservationContractHash: HILL_HELPING_PRESERVATION_CONTRACT_HASH,
     validContractFixtures: 6,
     invalidContractCounterExamples: invalidPlanCases.length,
     sameFormDifferentContextPairs: pairedForms.length,

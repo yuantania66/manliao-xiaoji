@@ -11,9 +11,11 @@ import type {
 } from "./types";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
 import { projectAffectEvidenceTerms } from "../state";
+import { parseCommittedAssistantMoveEnvelope } from "../interactionMoveEnvelope";
 import { planInteractionMoveHandoff } from "./interactionMoveHandoffPlanner";
 import { selectOrdinaryHandoffAction } from "./ordinaryHandoff";
 import { buildCanonicalResponsePlanPreflightProvenance } from "./responsePlanPreflightAuthority";
+import { getRequiredGroundingDisclosure } from "./assistantGrounding";
 
 export type ClinicalAdviceProvider = (input: {
   need: "emotional_support" | "action_support";
@@ -21,7 +23,115 @@ export type ClinicalAdviceProvider = (input: {
   interpretation: TurnInterpretation;
 }) => ClinicalStrategyAdvice | null;
 
+export type ResponsePlanRecoveryDirective = {
+  attempt: 1;
+  rejectedPlanId: string;
+  failureReason: "missing_emotional_support_evidence_spans";
+  unavailableActions: readonly ["offer_emotional_support"];
+};
+
 const unique = <T>(items: T[]) => Array.from(new Set(items));
+
+const selectEpisodeMemory = ({
+  context,
+  interpretation,
+  dialogueState,
+}: {
+  context: ConversationControlContext;
+  interpretation: TurnInterpretation;
+  dialogueState: DialogueState;
+}) => {
+  const excluded =
+    context.safety.triggered ||
+    context.semanticEvidence.status === "insufficient" ||
+    interpretation.directQuestions.length > 0 ||
+    interpretation.repairSignal ||
+    dialogueState.repairState.status === "active" ||
+    hasActivity(dialogueState, "pausing") ||
+    interpretation.responseRelation.candidates.some((candidate) =>
+      candidate.relation === "requests_pause" ||
+      candidate.relation === "repairs_previous_move" ||
+      candidate.relation === "challenges_move_fit"
+    );
+  if (excluded) return null;
+  return [...context.episodeMemoryCandidates]
+    .filter((candidate) => candidate.relevanceScore >= 3)
+    .sort((left, right) =>
+      right.relevanceScore - left.relevanceScore ||
+      right.occurredAt.localeCompare(left.occurredAt)
+    )[0] ?? null;
+};
+
+const assistantNameDisclosures = getRequiredGroundingDisclosure("assistant_name");
+const identityDisclosures = getRequiredGroundingDisclosure("identity");
+const canonicalAssistantIdentityClaims = unique([
+  ...assistantNameDisclosures,
+  ...identityDisclosures,
+]);
+const productIdentityDisambiguation = (context: ConversationControlContext) =>
+  `${context.grounding.availableFacts.product.name}是当前产品名称，不是助手称呼。`;
+
+const hasExactAdjacentAssistantCommittedClaim = ({
+  context,
+  targetTurnId,
+  targetProposition,
+}: {
+  context: ConversationControlContext;
+  targetTurnId?: string;
+  targetProposition?: string;
+}) => {
+  if (!targetTurnId || !targetProposition) return false;
+  const targetTurn = context.adjacentTurns.find((turn) =>
+    turn.id === targetTurnId && turn.role === "assistant" && turn.status !== "blocked"
+  );
+  if (!targetTurn) return false;
+  const parsedEnvelope = parseCommittedAssistantMoveEnvelope(targetTurn.interactionMoveEnvelope);
+  const envelopeClaims = parsedEnvelope.status === "valid" &&
+      parsedEnvelope.envelope.assistantMoveId === targetTurn.id
+    ? parsedEnvelope.envelope.committedMove.claims
+    : [];
+  return [
+    ...envelopeClaims,
+    ...(targetTurn.committedAssistantMove?.claims ?? []),
+  ].some((claim) => claim.text === targetProposition);
+};
+
+const identityContinuationEvidence = ({
+  context,
+  interpretation,
+}: {
+  context: ConversationControlContext;
+  interpretation: TurnInterpretation;
+}) => interpretation.responseRelation.candidates.find((candidate) =>
+  candidate.targetOperation === "affirm" &&
+  Boolean(candidate.targetProposition) &&
+  canonicalAssistantIdentityClaims.includes(candidate.targetProposition as string) &&
+  hasExactAdjacentAssistantCommittedClaim({
+    context,
+    targetTurnId: candidate.targetTurnId,
+    targetProposition: candidate.targetProposition,
+  })
+) ?? null;
+
+const identityRepairEvidence = ({
+  context,
+  interpretation,
+}: {
+  context: ConversationControlContext;
+  interpretation: TurnInterpretation;
+}) => {
+  const productName = context.grounding.availableFacts.product.name;
+  return interpretation.responseRelation.candidates.find((candidate) =>
+    candidate.relation === "repairs_previous_move" &&
+    candidate.targetOperation === "repair_or_withdraw" &&
+    candidate.targetProposition?.includes(productName) &&
+    hasExactAdjacentAssistantCommittedClaim({
+      context,
+      targetTurnId: candidate.targetTurnId,
+      targetProposition: candidate.targetProposition,
+    })
+  ) ?? null;
+};
 
 const hasActivity = (
   state: DialogueState,
@@ -105,10 +215,17 @@ const positiveFunctionContractFor = ({
       interpretation.correction?.targetTurnId ??
       [...context.adjacentTurns].reverse().find((turn) => turn.role === "assistant")?.id ??
       context.currentTurnId;
-    const targetText = context.adjacentTurns.find((turn) => turn.id === targetTurnId)?.content ??
+    const targetText = dialogueState.commonGround.rejected.find((proposition) =>
+      proposition.sourceTurnId === targetTurnId
+    )?.text ?? context.adjacentTurns.find((turn) => turn.id === targetTurnId)?.content ??
       interpretation.correction?.challengedPropositions[0]?.text ??
       "";
-    const replacementFact = replacementFactFromCorrection(context.currentUserMessage);
+    const identityRepair = identityRepairEvidence({ context, interpretation });
+    const identityReplacement = identityRepair &&
+        targetText === identityRepair.targetProposition
+      ? context.grounding.availableFacts.assistant.displayName
+      : null;
+    const replacementFact = replacementFactFromCorrection(context.currentUserMessage) ?? identityReplacement;
     const interactionMoveSubtype = replacementFact
       ? null
       : interactionMoveSubtypeFor({
@@ -291,12 +408,14 @@ export const createResponsePlan = ({
   dialogueState,
   ordinaryHandoffBoundary = null,
   clinicalAdviceProvider,
+  recoveryDirective = null,
 }: {
   context: ConversationControlContext;
   interpretation: TurnInterpretation;
   dialogueState: DialogueState;
   ordinaryHandoffBoundary?: OrdinaryHandoffBoundary | null;
   clinicalAdviceProvider: ClinicalAdviceProvider;
+  recoveryDirective?: ResponsePlanRecoveryDirective | null;
 }): ResponsePlan => {
   const lastAssistantTurn = [...context.adjacentTurns]
     .reverse()
@@ -342,7 +461,13 @@ export const createResponsePlan = ({
   });
   if (hasAnyV1HandoffInput) {
     actions = actions.filter((action) => action !== "respond_to_proactive_greeting");
-    if (interactionMoveHandoffPlan?.requiredFunction === "respect_user_boundary") {
+    if (
+      interactionMoveHandoffPlan?.requiredFunction === "complete_reciprocal_contact"
+    ) {
+      actions = actions.filter(
+        (action) => action !== "acknowledge_without_psychologizing"
+      );
+    } else if (interactionMoveHandoffPlan?.requiredFunction === "respect_user_boundary") {
       actions = ["respect_pause"];
     } else if (
       interactionMoveHandoffPlan?.requiredFunction === "withdraw_or_repair_targeted_move"
@@ -361,12 +486,30 @@ export const createResponsePlan = ({
       actions = unique(["answer_directly", ...actions]);
     }
   }
+  const identityContinuation = identityContinuationEvidence({ context, interpretation });
+  const identityRepair = identityRepairEvidence({ context, interpretation });
+  const hasIdentityAuthority = Boolean(identityContinuation);
+  if (
+    hasIdentityAuthority &&
+    !context.safety.triggered &&
+    !hasActivity(dialogueState, "pausing")
+  ) {
+    actions = unique(["establish_assistant_identity", ...actions]);
+  }
+  if (recoveryDirective) {
+    actions = actions.filter(
+      (action) => !recoveryDirective.unavailableActions.some(
+        (unavailableAction) => unavailableAction === action
+      )
+    );
+    if (actions.length === 0) actions = ["acknowledge_without_psychologizing"];
+  }
   const repairsAssistant = hasActivity(dialogueState, "repairing_common_ground");
   const clinicalNeed = repairsAssistant
     ? null
-    : hasActivity(dialogueState, "supporting_action")
+    : actions.includes("offer_action_support")
     ? "action_support"
-    : hasActivity(dialogueState, "supporting_emotion")
+    : actions.includes("offer_emotional_support")
       ? "emotional_support"
       : null;
   const clinicalStrategy = clinicalNeed
@@ -378,6 +521,21 @@ export const createResponsePlan = ({
           context,
           sourceAssistantMoveId: interactionMoveHandoffPlan.sourceAssistantMoveId,
         })
+      : identityContinuation &&
+          actions.includes("establish_assistant_identity")
+        ? {
+            action: "establish_assistant_identity" as const,
+            mode: "identity_continuation" as const,
+            displayName: context.grounding.availableFacts.assistant.displayName,
+            sourceTurnId: context.currentTurnId,
+            targetProposition: identityContinuation?.targetProposition ?? null,
+            evidence: [
+              `targetTurnId=${identityContinuation?.targetTurnId ?? "missing"}`,
+              `targetProposition=${identityContinuation?.targetProposition ?? "missing"}`,
+              "targetOperation=affirm",
+              ...(identityContinuation?.evidence ?? []),
+            ],
+          }
       : positiveFunctionContractFor({
           actions,
           context,
@@ -390,9 +548,40 @@ export const createResponsePlan = ({
   ) {
     actions = actions.filter((action) => action !== "take_light_topic_initiative");
   }
-  const requiredDisclosure = unique(
-    dialogueState.openObligations.flatMap((item) => item.requiredDisclosure)
-  );
+  const stateProposesIdle = hasActivity(dialogueState, "idle");
+  const hasCurrentUnresolvedContent =
+    dialogueState.openObligations.length > 0 ||
+    hasActivity(dialogueState, "repairing_common_ground") ||
+    interpretation.responseRelation.candidates.some((candidate) =>
+      candidate.relation === "requests_answer" ||
+      candidate.relation === "repairs_previous_move" ||
+      candidate.relation === "challenges_move_fit" ||
+      (
+        candidate.relation === "continues_active_thread" &&
+        !(
+          candidate.confidence === 0.68 &&
+          candidate.evidence.length === 1 &&
+          candidate.evidence[0] === "Current user turn follows an adjacent assistant turn."
+        )
+      ) ||
+      candidate.relation === "opens_new_thread" ||
+      candidate.relation === "requests_action_support" ||
+      candidate.relation === "shares_distress"
+    );
+  const allowIdle =
+    stateProposesIdle &&
+    interactionMoveHandoffPlan === null &&
+    dialogueState.lastCommittedAssistantMove !== null &&
+    !hasCurrentUnresolvedContent;
+  if (allowIdle) {
+    actions = actions.filter((action) => action !== "take_light_topic_initiative");
+    if (actions.length === 0) actions = ["acknowledge_without_psychologizing"];
+  }
+  const requiredDisclosure = unique([
+    ...dialogueState.openObligations.flatMap((item) => item.requiredDisclosure),
+    ...(identityContinuation || identityRepair ? assistantNameDisclosures : []),
+    ...(identityRepair ? [productIdentityDisambiguation(context)] : []),
+  ]);
   const groundingFacts = dialogueState.commonGround.confirmed
     .map((item) => item.text)
     .filter((fact) => fact.startsWith("Selected user-confirmed memory:"));
@@ -418,7 +607,6 @@ export const createResponsePlan = ({
           structurallyComplexConcurrent.length > 0
         ? "standard"
         : "minimal";
-  const idle = hasActivity(dialogueState, "idle");
   const handoffInvitesCalibration = actions.includes("invite_low_pressure_calibration");
   const handoffRequiresNoQuestion = actions.some((action) =>
     action === "continue_established_frame" ||
@@ -430,7 +618,7 @@ export const createResponsePlan = ({
       ? "none"
       : "optional_after_answer"
     : hasActivity(dialogueState, "pausing") ||
-    idle ||
+    allowIdle ||
     simpleDirectAnswer ||
     (repairsAssistant && !takesTopicInitiative) ||
     answersAssistantQuestion ||
@@ -450,7 +638,11 @@ export const createResponsePlan = ({
       planElement: `responseAction:${action}`,
       source: "interaction_state" as const,
       sourceTurnId: context.currentTurnId,
-      evidence: actionEvidence(action, dialogueState, context, ordinaryHandoffBoundary),
+      evidence: action === "establish_assistant_identity"
+        ? positiveFunctionContract?.action === "establish_assistant_identity"
+          ? positiveFunctionContract.evidence
+          : ["missing_identity_positive_function_contract"]
+        : actionEvidence(action, dialogueState, context, ordinaryHandoffBoundary),
     })),
     ...requiredDisclosure.map((disclosure) => ({
       planElement: `requiredDisclosure:${disclosure}`,
@@ -478,9 +670,27 @@ export const createResponsePlan = ({
       answerObligations: dialogueState.openObligations,
     }),
   ];
+  const selectedEpisodeMemory = selectEpisodeMemory({
+    context,
+    interpretation,
+    dialogueState,
+  });
+  if (selectedEpisodeMemory) {
+    relevanceProvenance.push({
+      planElement: `selectedEpisodeMemory:${selectedEpisodeMemory.semanticMemoryId}`,
+      source: "interaction_state",
+      evidence: [
+        `relevanceScore=${selectedEpisodeMemory.relevanceScore}`,
+        ...selectedEpisodeMemory.matchedDimensions.map((item) => `matchedDimension=${item}`),
+        ...selectedEpisodeMemory.sourceMessageIds.map((id) => `sourceMessageId=${id}`),
+      ],
+    });
+  }
 
   return {
-    planId: `${context.conversationId}:${context.currentTurnId}:response-plan`,
+    planId: `${context.conversationId}:${context.currentTurnId}:response-plan${
+      recoveryDirective ? `:recovery-${recoveryDirective.attempt}` : ""
+    }`,
     decisionOwner: "conversation_os.response_planner",
     behaviorSource: clinicalStrategy ? "legacy_compat" : "ordinary_conversation",
     planningDepth,
@@ -501,7 +711,9 @@ export const createResponsePlan = ({
       reason: interactionMoveHandoffPlan?.questionPolicy === "none"
         ? "The active interaction-move handoff requires no follow-up question."
         : interactionMoveHandoffPlan?.questionPolicy === "optional_after_completion"
-          ? "A question is optional only after the handoff function is completed and independently supported by the ordinary plan."
+          ? interactionMoveHandoffPlan.requiredFunction === "complete_reciprocal_contact"
+            ? "After reciprocal contact is completed, one low-pressure invitation may let the user choose what to discuss."
+            : "A question is optional only after the handoff function is completed and independently supported by the ordinary plan."
       : hasActivity(dialogueState, "pausing")
         ? "Interaction State is paused."
         : handoffInvitesCalibration
@@ -527,12 +739,12 @@ export const createResponsePlan = ({
     closurePolicy: {
       mode: hasActivity(dialogueState, "pausing")
         ? "allow_pause"
-        : idle
+        : allowIdle
           ? "allow_idle"
           : "forbid_closure",
       reason: hasActivity(dialogueState, "pausing")
         ? "Interaction State contains explicit pause evidence."
-        : idle
+        : allowIdle
           ? "The committed interaction can settle without forcing a new topic."
         : "Interaction State contains no accepted stop transition.",
     },
@@ -560,6 +772,7 @@ export const createResponsePlan = ({
     safetyConstraints: context.safety.triggered
       ? [context.safety.reason ?? "Safety override applies."]
       : [],
+    selectedEpisodeMemory,
     relevanceProvenance,
     evidence: unique([
       `currentActivity=${dialogueState.currentActivity.primary}`,
@@ -569,6 +782,16 @@ export const createResponsePlan = ({
       `openObligations=${dialogueState.openObligations.length}`,
       `clinicalInvoked=${Boolean(clinicalStrategy)}`,
       `ordinaryHandoff=${ordinaryHandoffAction ?? "none"}`,
+      ...(recoveryDirective
+        ? [
+            `recoveryAttempt=${recoveryDirective.attempt}`,
+            `rejectedPlanId=${recoveryDirective.rejectedPlanId}`,
+            `recoveryFailureReason=${recoveryDirective.failureReason}`,
+            ...recoveryDirective.unavailableActions.map(
+              (action) => `recoveryUnavailableAction=${action}`
+            ),
+          ]
+        : []),
       ...preProactiveGreetingUserMessages.map(
         (content) => `preProactiveGreetingUserMessage=${content}`
       ),

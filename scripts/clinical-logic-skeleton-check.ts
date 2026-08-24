@@ -19,12 +19,12 @@ const responseGoalSelectorSource = readFileSync("services/clinical/responseGoalS
 const rogersStrategySource = readFileSync("services/clinical/rogersStrategy.ts", "utf8");
 const legacyAiServiceSource = readFileSync("services/ai/aiService.ts", "utf8");
 
-const safetyBranchIndex = orchestration.indexOf("if (isCrisisInput(userMessage))");
+const safetyBranchIndex = orchestration.indexOf("const safetyTriage = await triageSafety({");
 const clinicalContextIndex = orchestration.indexOf("const clinicalContext = buildClinicalContext");
-const responsePlanIndex = orchestration.indexOf("const responsePlan = createResponsePlan");
+const responsePlanIndex = orchestration.indexOf("const plan = createResponsePlan");
 const generateIndex = orchestration.indexOf("generateChatReply({");
 
-assert(safetyBranchIndex >= 0, "Safety gate must remain in createChatReply().");
+assert(safetyBranchIndex >= 0, "Safety triage must remain in createChatReply().");
 assert(responsePlanIndex > safetyBranchIndex, "ResponsePlan must be created after Safety gate.");
 assert(clinicalContextIndex > responsePlanIndex, "ClinicalContext must exist only inside the Planner's optional advice callback.");
 assert(generateIndex > responsePlanIndex, "ResponsePlan must be created before Prompt Builder / LLM generation.");

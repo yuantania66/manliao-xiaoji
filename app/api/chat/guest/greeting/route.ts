@@ -8,6 +8,7 @@ import {
 } from "@/conversation-os";
 import { generateProactiveGreeting } from "@/services/ai/proactiveGreeting";
 import { AiConversationMessage } from "@/services/ai/types";
+import { normalizeGuestRecentGreeting } from "@/lib/guest-proactive-greeting";
 
 const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
   if (!Array.isArray(value)) return [];
@@ -41,11 +42,10 @@ const normalizeRecentGreetings = (value: unknown) => {
   if (!Array.isArray(value)) return [];
   return value
     .slice(-3)
-    .flatMap((item) =>
-      typeof item === "string" && item.trim()
-        ? [item.trim().slice(0, 120)]
-        : []
-    );
+    .flatMap((item) => {
+      const greeting = normalizeGuestRecentGreeting(item);
+      return greeting ? [greeting] : [];
+    });
 };
 
 const readJson = async (request: Request) => {
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const interactionMoveEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
       assistantMoveId,
       generationId: `guest-proactive-generation-${eventId}`,
-      greetingMove: generation.proactiveGreetingMove,
+      intent: generation.proactiveIntent,
     });
 
     return ok({

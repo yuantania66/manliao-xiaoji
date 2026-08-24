@@ -21,6 +21,14 @@ const sendMessage = (sessionId, content) =>
     data: { content }
   });
 
+const sendGuestMessage = ({ content, turnId, recentMessages }) =>
+  request({
+    url: "/api/chat/guest",
+    method: "POST",
+    auth: false,
+    data: { content, turnId, recentMessages }
+  });
+
 const searchMessages = (query) =>
   request({
     url: `/api/chat/search?q=${encodeURIComponent(query)}`
@@ -31,5 +39,6 @@ module.exports = {
   createSession,
   listMessages,
   sendMessage,
+  sendGuestMessage,
   searchMessages
 };

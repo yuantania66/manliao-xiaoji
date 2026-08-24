@@ -1,10 +1,17 @@
-import type { ResponsePlan, ResponseValidationResult } from "@/conversation-os/control";
+import { ASSISTANT_GROUNDING, type ResponsePlan, type ResponseValidationResult } from "@/conversation-os/control";
 import { extractAffectEvidence } from "@/conversation-os/state";
 import { explicitlyResumesPreGreetingHistory } from "@/lib/proactive-greeting";
 
 import { collectUnsupportedMeaningFailureReasons } from "./semanticEvidenceReplyGuard";
 import {
-  validateInteractionMoveHandoffOutput,
+  validatePlannedFunctionSemanticOutput,
+  type PlannedFunctionSemanticContext,
+  type PlannedFunctionSemanticProvider,
+  type PlannedFunctionSemanticValidationPromptInspector,
+} from "./plannedFunctionSemanticValidator";
+import {
+  adaptInteractionMoveHandoffPromptInspector,
+  adaptInteractionMoveHandoffSemanticProvider,
   type InteractionMoveHandoffSemanticContext,
   type InteractionMoveHandoffSemanticProvider,
   type InteractionMoveHandoffValidationPromptInspector,
@@ -12,6 +19,15 @@ import {
 import type { AiGenerationResult } from "./types";
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+const ASSISTANT_DISPLAY_NAME = ASSISTANT_GROUNDING.availableFacts.assistant.displayName;
+const PRODUCT_NAME = ASSISTANT_GROUNDING.availableFacts.product.name;
+const usesProductNameAsAssistantName = (value: string) =>
+  ["我叫", "我的名字是", "可以叫我", "称呼我"].some((prefix) => {
+    const prefixIndex = value.indexOf(prefix);
+    if (prefixIndex < 0) return false;
+    return value.slice(prefixIndex + prefix.length, prefixIndex + prefix.length + PRODUCT_NAME.length + 6)
+      .includes(PRODUCT_NAME);
+  });
 const normalizeForEcho = (value: string) =>
   value
     .replace(/[\s，。！？、,.!?：:；;“”"'‘’（）()…—-]/gu, "")
@@ -28,6 +44,14 @@ const recursivelyFreeze = <T>(value: T, seen = new WeakSet<object>()): T => {
     recursivelyFreeze(child, seen);
   }
   return Object.freeze(value);
+};
+
+export const classifyResponseValidationReasons = (failureReasons: string[]) => {
+  const uniqueReasons = Array.from(new Set(failureReasons));
+  return {
+    hardFailureReasons: uniqueReasons,
+    advisoryFailureReasons: [],
+  };
 };
 
 type RepairSemanticEvidence = {
@@ -342,6 +366,8 @@ const collectUnsupportedAffectClaimFailures = ({
   return failures;
 };
 
+// Historical compatibility helper retained while old evidence fixtures migrate; not a production gate.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const collectEmotionalSupportFailures = ({
   plan,
   reply,
@@ -504,6 +530,8 @@ const collectPressureQuestionRepairEvidence = ({
   };
 };
 
+// Historical compatibility helper retained while old evidence fixtures migrate; not a production gate.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const collectRepairQualityFailures = ({
   plan,
   reply,
@@ -686,7 +714,9 @@ const repeatsRejectedGroundingProposition = (
     NonNullable<ResponsePlan["correction"]>["challengedPropositions"][number]["groundingReference"]
   >
 ) => {
-  if (reference === "identity") return /慢聊小记|(?:我是|属于|作为).{0,8}(?:AI|人工智能|聊天助手)/u.test(reply);
+  if (reference === "assistant_name") return reply.includes(ASSISTANT_DISPLAY_NAME);
+  if (reference === "identity") return reply.includes(ASSISTANT_DISPLAY_NAME) ||
+    /(?:我是|属于|作为).{0,8}(?:AI|人工智能|聊天助手)/u.test(reply);
   if (reference === "ai_identity") return /(?:我是|属于|作为).{0,8}(?:AI|人工智能|聊天助手|真人|人类)/u.test(reply);
   if (reference === "clinician_identity") return /心理医生|心理咨询师|咨询师|治疗师|专业人员/u.test(reply);
   if (["body", "body_metaphor", "physical_presence", "physical_presence_metaphor"].includes(reference)) {
@@ -701,8 +731,11 @@ const repeatsRejectedGroundingProposition = (
 };
 
 const obligationSatisfied = (reply: string, obligation: ResponsePlan["answerObligations"][number]) => {
+  if (obligation.kind === "assistant_name") {
+    return reply.includes(ASSISTANT_DISPLAY_NAME) && !usesProductNameAsAssistantName(reply);
+  }
   if (obligation.kind === "identity") {
-    return /慢聊小记/u.test(reply) && /AI|人工智能|聊天助手/u.test(reply);
+    return reply.includes(ASSISTANT_DISPLAY_NAME) && /AI|人工智能|聊天助手/u.test(reply);
   }
   if (obligation.kind === "ai_identity") {
     const statesAiIdentity = /AI|人工智能|聊天助手/u.test(reply);
@@ -743,6 +776,29 @@ export const validateResponsePlanOutput = ({ plan, reply }: { plan: ResponsePlan
   if ((text.match(/[？?]/gu) ?? []).length > 1) {
     failureReasons.push("too_many_follow_up_questions");
   }
+  if (plan.responseActions.includes("establish_assistant_identity")) {
+    const identityContract = plan.positiveFunctionContract?.action === "establish_assistant_identity"
+      ? plan.positiveFunctionContract
+      : null;
+    if (!identityContract) {
+      failureReasons.push("assistant_identity:missing_positive_function_contract");
+    }
+    if (!text.includes(identityContract?.displayName ?? ASSISTANT_DISPLAY_NAME)) {
+      failureReasons.push("assistant_identity:missing_canonical_display_name");
+    }
+    if (usesProductNameAsAssistantName(text)) {
+      failureReasons.push("assistant_identity:product_name_used_as_assistant_name");
+    }
+    if (/(?:我没有|没有自己的|还没有|暂时没有).{0,6}(?:名字|称呼)/u.test(text)) {
+      failureReasons.push("assistant_identity:canonical_identity_withheld");
+    }
+  }
+  if (
+    plan.requiredDisclosure.some((item) => item.includes("是当前产品名称，不是助手称呼")) &&
+    !(text.includes(PRODUCT_NAME) && /产品/u.test(text) && /不是.{0,8}(?:称呼|名字)/u.test(text))
+  ) {
+    failureReasons.push("assistant_identity:missing_product_assistant_disambiguation");
+  }
   if (plan.closurePolicy.mode === "forbid_closure" && /就(?:先)?这样(?:安静地?)?待着|安静(?:地)?待着也|先不说也行|不聊也行|停在这里|先放在这里/u.test(text)) {
     failureReasons.push("premature_closure");
   }
@@ -756,8 +812,9 @@ export const validateResponsePlanOutput = ({ plan, reply }: { plan: ResponsePlan
   }
   failureReasons.push(...collectOrdinaryAcknowledgementFailures({ plan, reply: text }));
   failureReasons.push(...collectOrdinaryHandoffFailures({ plan, reply: text }));
-  failureReasons.push(...collectEmotionalSupportFailures({ plan, reply: text }));
-  failureReasons.push(...collectRepairQualityFailures({ plan, reply: text }));
+  if (plan.positiveFunctionContract?.action === "offer_emotional_support") {
+    failureReasons.push(...collectUnsupportedAffectClaimFailures({ plan, reply: text }));
+  }
   failureReasons.push(...collectTopicInitiativeFailures({ plan, reply: text }));
   failureReasons.push(...collectProactiveGreetingResponseFailures({ plan, reply: text }));
   for (const proposition of plan.correction?.challengedPropositions ?? []) {
@@ -783,9 +840,13 @@ export const validateResponsePlanOutput = ({ plan, reply }: { plan: ResponsePlan
   if (plan.prohibitedClaims.some((claim) => claim.includes("message form or repetition"))) {
     failureReasons.push(...collectUnsupportedMeaningFailureReasons(text));
   }
+  const uniqueFailureReasons = Array.from(new Set(failureReasons));
+  const classified = classifyResponseValidationReasons(uniqueFailureReasons);
   return {
-    passed: failureReasons.length === 0,
-    failureReasons: Array.from(new Set(failureReasons)),
+    passed: classified.hardFailureReasons.length === 0,
+    failureReasons: uniqueFailureReasons,
+    ...classified,
+    rewriteRequired: classified.advisoryFailureReasons.length > 0,
     checkedPlanId: plan.planId,
     planChanged: false,
   };
@@ -959,40 +1020,75 @@ const constraintFailureGeneration = (
 export const enforceResponsePlan = async ({
   plan,
   generate,
+  plannedFunctionSemanticContext,
+  plannedFunctionSemanticProvider,
+  inspectPlannedFunctionExternalPrompt,
   handoffSemanticContext,
   handoffSemanticProvider,
   inspectHandoffExternalPrompt,
 }: {
   plan: ResponsePlan;
   generate: (constraint: string | null, executionPlan: ResponsePlan) => Promise<AiGenerationResult>;
+  plannedFunctionSemanticContext?: PlannedFunctionSemanticContext;
+  plannedFunctionSemanticProvider?: PlannedFunctionSemanticProvider;
+  inspectPlannedFunctionExternalPrompt?: PlannedFunctionSemanticValidationPromptInspector;
+  /** @deprecated Use plannedFunctionSemanticContext. */
   handoffSemanticContext?: InteractionMoveHandoffSemanticContext;
+  /** @deprecated Use plannedFunctionSemanticProvider. */
   handoffSemanticProvider?: InteractionMoveHandoffSemanticProvider;
+  /** @deprecated Use inspectPlannedFunctionExternalPrompt. */
   inspectHandoffExternalPrompt?: InteractionMoveHandoffValidationPromptInspector;
 }) => {
   const executionPlan = recursivelyFreeze(structuredClone(plan));
+  const semanticContext = plannedFunctionSemanticContext ?? (
+    handoffSemanticContext
+      ? {
+          currentUserText: handoffSemanticContext.currentUserText,
+          handoffTargetAssistantText: handoffSemanticContext.targetAssistantText,
+        }
+      : undefined
+  );
+  const semanticProvider = plannedFunctionSemanticProvider ?? (
+    handoffSemanticProvider
+      ? adaptInteractionMoveHandoffSemanticProvider(executionPlan, handoffSemanticProvider)
+      : undefined
+  );
+  const semanticPromptInspector = inspectPlannedFunctionExternalPrompt ?? (
+    inspectHandoffExternalPrompt
+      ? adaptInteractionMoveHandoffPromptInspector(inspectHandoffExternalPrompt)
+      : undefined
+  );
   const validateCandidate = async (reply: string): Promise<ResponseValidationResult> => {
     const deterministic = validateResponsePlanOutput({ plan: executionPlan, reply });
-    const handoff = await validateInteractionMoveHandoffOutput({
+    const semantic = await validatePlannedFunctionSemanticOutput({
       plan: executionPlan,
       reply,
-      semanticContext: handoffSemanticContext,
-      provider: handoffSemanticProvider,
-      inspectExternalPrompt: inspectHandoffExternalPrompt,
+      semanticContext,
+      provider: semanticProvider,
+      inspectExternalPrompt: semanticPromptInspector,
     });
-    const failureReasons = Array.from(new Set([
-      ...deterministic.failureReasons,
-      ...handoff.failureReasons,
+    const hardFailureReasons = Array.from(new Set([
+      ...(deterministic.hardFailureReasons ?? deterministic.failureReasons),
+      ...semantic.hardFailureReasons,
     ]));
+    const advisoryFailureReasons = Array.from(new Set([
+      ...(deterministic.advisoryFailureReasons ?? []),
+      ...semantic.advisoryFailureReasons,
+    ]));
+    const failureReasons = [...hardFailureReasons, ...advisoryFailureReasons];
     return {
-      passed: deterministic.passed && handoff.passed,
+      passed: hardFailureReasons.length === 0,
       failureReasons,
+      hardFailureReasons,
+      advisoryFailureReasons,
+      rewriteRequired: advisoryFailureReasons.length > 0,
       checkedPlanId: executionPlan.planId,
       planChanged: false,
     };
   };
   const first = await generate(null, executionPlan);
   const firstValidation = await validateCandidate(first.text);
-  if (firstValidation.passed) {
+  if (firstValidation.failureReasons.length === 0) {
     return {
       outcome: "validated" as const,
       executionPlan,

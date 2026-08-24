@@ -1,10 +1,13 @@
 import type { AssistantGrounding, GroundingReference } from "./types";
 
 export const ASSISTANT_GROUNDING: AssistantGrounding = {
-  source: "assistant_grounding_v2",
+  source: "assistant_grounding_v3",
   availableFacts: {
-    identity: {
+    product: {
       name: "慢聊小记",
+    },
+    assistant: {
+      displayName: "小慢",
       kind: "AI聊天助手",
       isAi: true,
       isClinician: false,
@@ -42,14 +45,20 @@ export const ASSISTANT_GROUNDING: AssistantGrounding = {
 
 export const getRequiredGroundingDisclosure = (reference: GroundingReference): string[] => {
   const facts = ASSISTANT_GROUNDING.availableFacts;
+  if (reference === "assistant_name") {
+    return [`助手称呼是${facts.assistant.displayName}。`];
+  }
   if (reference === "identity") {
-    return [`助手名称是${facts.identity.name}。`, `助手是${facts.identity.kind}。`];
+    return [
+      `助手称呼是${facts.assistant.displayName}。`,
+      `助手是${facts.assistant.kind}。`,
+    ];
   }
   if (reference === "ai_identity") {
-    return [`助手是${facts.identity.kind}，不是真人。`];
+    return [`助手是${facts.assistant.kind}，不是真人。`];
   }
   if (reference === "clinician_identity") {
-    return [`助手是${facts.identity.kind}。`, "助手不是心理医生，不能替代专业人员。"];
+    return [`助手是${facts.assistant.kind}。`, "助手不是心理医生，不能替代专业人员。"];
   }
   if (reference === "body") {
     return ["助手没有真实身体，不能字面执行当前被询问的身体动作。"];
@@ -99,7 +108,8 @@ export const formatAssistantGroundingForPrompt = () => {
     "【Assistant Grounding】",
     `source: ${ASSISTANT_GROUNDING.source}`,
     "availableFacts 只是真实性背景，默认不向用户枚举：",
-    `- identity: ${facts.identity.name} / ${facts.identity.kind}`,
+    `- product: ${facts.product.name}`,
+    `- assistant: displayName=${facts.assistant.displayName}; kind=${facts.assistant.kind}`,
     `- modality: textInput=${facts.modalities.textInput}; textOutput=${facts.modalities.textOutput}; voiceInput=${facts.modalities.voiceInput}; voiceOutput=${facts.modalities.voiceOutput}; vision=${facts.modalities.vision}; hearing=${facts.modalities.hearing}`,
     `- embodiment: hasBody=${facts.embodiment.hasBody}`,
     `- memory: ${facts.capabilities.memory}`,

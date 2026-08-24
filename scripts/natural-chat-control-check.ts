@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 
+import { buildProactiveGreetingAssistantMoveEnvelope } from "../conversation-os";
 import {
   assembleConversationControlContext,
   buildDialogueState,
@@ -7,14 +8,18 @@ import {
   interpretTurnDeterministically,
   mergeModelInterpretation,
   type DialogueAct,
+  type RelationalInterpretationCandidate,
   type ResponseRelationKind,
 } from "../conversation-os/control";
 import { determineConversationState } from "../conversation-os/state";
 import { buildChatPrompt } from "../services/ai/promptBuilder";
 import {
+  classifyResponseValidationReasons,
+  enforceResponsePlan,
   formatResponsePlanRegenerateConstraint,
   validateResponsePlanOutput,
 } from "../services/ai/responsePlanValidator";
+import { isCrisisInput } from "../services/ai/chatSafety";
 import { buildInterpretationMessages } from "../services/ai/turnInterpretationAdapter";
 import type { AiConversationMessage } from "../services/ai/types";
 import { PROACTIVE_GREETING_PROMPT_VERSION } from "../lib/proactive-greeting";
@@ -25,12 +30,14 @@ const build = ({
   modelPrimary,
   modelConfidence = 0.95,
   modelSecondary = [],
+  modelCandidates,
 }: {
   userMessage: string;
   recentMessages: AiConversationMessage[];
   modelPrimary?: DialogueAct;
   modelConfidence?: number;
   modelSecondary?: DialogueAct[];
+  modelCandidates?: RelationalInterpretationCandidate[];
 }) => {
   const conversationState = determineConversationState({
     currentUserMessage: userMessage,
@@ -55,19 +62,22 @@ const build = ({
   };
   const modelRelation = modelPrimary ? modelRelationByAct[modelPrimary] : undefined;
   const lastAssistantTurn = [...context.adjacentTurns].reverse().find((turn) => turn.role === "assistant");
-  const interpretation = modelPrimary
+  const suppliedModelCandidates = modelCandidates ?? (modelRelation
+    ? [{
+        relation: modelRelation,
+        confidence: modelConfidence,
+        ...(lastAssistantTurn?.id ? { targetTurnId: lastAssistantTurn.id } : {}),
+        evidence: ["test model relational interpretation"],
+      }]
+    : []);
+  const interpretation = modelPrimary || suppliedModelCandidates.length > 0
     ? mergeModelInterpretation(deterministic, {
         primaryDialogueAct: modelPrimary,
         secondarySignals: modelSecondary,
-        ...(modelRelation
+        ...(suppliedModelCandidates.length > 0
           ? {
               responseRelation: {
-                candidates: [{
-                  relation: modelRelation,
-                  confidence: modelConfidence,
-                  ...(lastAssistantTurn?.id ? { targetTurnId: lastAssistantTurn.id } : {}),
-                  evidence: ["test model relational interpretation"],
-                }],
+                candidates: suppliedModelCandidates,
                 ambiguous: false,
               },
             }
@@ -211,6 +221,38 @@ assert(correctionPrompt.messages[1]?.content.includes("responseActions: repair_p
 const interpretationInstruction = buildInterpretationMessages(turn4.context)[0]?.content ?? "";
 assert(interpretationInstruction.includes("preserve multiple plausible response relations"));
 assert(interpretationInstruction.includes("Do not force one primary intent"));
+assert(
+  interpretationInstruction.includes(
+    "Use opens_new_thread only when the current User turn contains concrete content"
+  )
+);
+assert(
+  interpretationInstruction.includes(
+    "A greeting, phatic acknowledgment, receipt, lack of topic content, or generic willingness to chat is not by itself opens_new_thread."
+  )
+);
+assert(
+  interpretationInstruction.includes(
+    "Use continues_active_thread only when the current User turn contains concrete content"
+  )
+);
+assert(
+  interpretationInstruction.includes(
+    "Mere adjacency, reciprocal contact, a receipt, or a generic greeting is not by itself continues_active_thread."
+  )
+);
+assert(
+  interpretationInstruction.includes(
+    "Use acknowledges_previous_move when the current User turn only acknowledges"
+  )
+);
+assert(
+  interpretationInstruction.includes(
+    "Preserve multiple candidates only when each distinct semantic reading independently satisfies its own typed preconditions"
+  )
+);
+assert(!interpretationInstruction.includes("regex"));
+assert(!interpretationInstruction.includes("keyword"));
 
 const lowConfidenceCorrection = build({
   userMessage: "睡到自然醒吧",
@@ -326,38 +368,18 @@ assert.equal(
   "An answer to the assistant's question must not open a second interview question by default."
 );
 assert.equal(screenshotHyped.responsePlan.questionPolicy.mode, "none");
-assert.equal(
-  validateResponsePlanOutput({
-    plan: screenshotNoTopic.responsePlan,
-    reply: screenshotNoTopicReply.content,
-  }).passed,
-  false,
-  "Topic initiative must reject a reassurance/pause preface that returns to generic positive interviewing."
-);
-assert.equal(
-  validateResponsePlanOutput({
-    plan: screenshotFestival.responsePlan,
-    reply: screenshotFestivalReply.content,
-  }).passed,
-  false,
-  "An ordinary answer must reject a second interview question and unsupported event evaluation."
-);
-assert.equal(
-  validateResponsePlanOutput({
-    plan: screenshotFestival.responsePlan,
-    reply: "现场感觉怎么样？听起来你去看了音乐节。",
-  }).passed,
-  false,
-  "A forbidden interview question must not pass by placing a statement after the question mark."
-);
-assert.equal(
-  validateResponsePlanOutput({
-    plan: screenshotHyped.responsePlan,
-    reply: "那挺棒的，现场氛围好确实容易让人投入。",
-  }).passed,
-  false,
-  "Ordinary acknowledgement must reject unsupported praise and generic causal mechanisms."
-);
+for (const [plan, reply, label] of [
+  [screenshotNoTopic.responsePlan, screenshotNoTopicReply.content, "topic initiative"],
+  [screenshotFestival.responsePlan, screenshotFestivalReply.content, "ordinary interview"],
+  [screenshotFestival.responsePlan, "现场感觉怎么样？听起来你去看了音乐节。", "question punctuation"],
+  [screenshotHyped.responsePlan, "那挺棒的，现场氛围好确实容易让人投入。", "unsupported evaluation"],
+] as const) {
+  const validation = validateResponsePlanOutput({ plan, reply });
+  assert.equal(validation.passed, false, label);
+  assert((validation.hardFailureReasons?.length ?? 0) > 0, label);
+  assert.equal(validation.rewriteRequired, false, label);
+  assert.equal(validation.advisoryFailureReasons?.length, 0, label);
+}
 assert.equal(
   validateResponsePlanOutput({
     plan: screenshotFestival.responsePlan,
@@ -412,6 +434,8 @@ for (const reply of unsupportedIdleEvaluationCounterexamples) {
     reply,
   });
   assert.equal(validation.passed, false, reply);
+  assert.equal(validation.rewriteRequired, false, reply);
+  assert((validation.hardFailureReasons?.length ?? 0) > 0, reply);
   const constraint = formatResponsePlanRegenerateConstraint(
     screenshotIdle.responsePlan,
     validation.failureReasons
@@ -429,6 +453,48 @@ assert.equal(
   true,
   "A concise acknowledgement without added evaluation remains valid."
 );
+
+const completedMove: AiConversationMessage = {
+  id: "natural-chat-completed-move",
+  role: "assistant",
+  content: "已经解释清楚了。",
+  status: "saved",
+  committedAssistantMove: {
+    purpose: ["answer_directly"],
+    claims: [],
+    assumptions: [],
+    questionOrRequest: null,
+    expectedUserContribution: "none",
+    userBurden: "none",
+    sourceTurnId: "natural-chat-prior-user",
+    evidence: ["Committed completed move fixture."],
+  },
+};
+const completedMoveAcknowledgement = build({
+  userMessage: "好的吧",
+  recentMessages: [completedMove],
+  modelCandidates: [
+    {
+      relation: "acknowledges_previous_move",
+      confidence: 0.96,
+      targetTurnId: completedMove.id,
+      evidence: ["The User only acknowledges the completed move."],
+    },
+    {
+      relation: "yields_initiative",
+      confidence: 0.88,
+      targetTurnId: completedMove.id,
+      evidence: ["Lower-confidence initiative hedge."],
+    },
+  ],
+});
+assert.equal(completedMoveAcknowledgement.responsePlan.closurePolicy.mode, "allow_idle");
+assert.equal(completedMoveAcknowledgement.responsePlan.questionPolicy.mode, "none");
+assert(!completedMoveAcknowledgement.responsePlan.responseActions.includes("take_light_topic_initiative"));
+assert.equal(validateResponsePlanOutput({
+  plan: completedMoveAcknowledgement.responsePlan,
+  reply: "嗯，好。",
+}).passed, true);
 
 const screenshotPrompt = buildChatPrompt({
   userMessage: "挺嗨的",
@@ -507,6 +573,81 @@ for (const [index, userMessage] of shortPositiveAnswers.entries()) {
   );
 }
 
+const firstContactText = "你好，我是小慢，一个AI聊天助手。你可以在这里随便聊，也可以和我一起慢慢理清一些事情；不用先想好完整话题，想到什么就从什么开始。";
+const firstContactEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+  assistantMoveId: "natural-chat-first-contact",
+  generationId: "natural-chat-first-contact-generation",
+  intent: {
+    move: "open_statement",
+    requiredFunction: "offer_self_contained_conversation_entry",
+    realization: {
+      kind: "self_contained_entry",
+      topic: "assistant first-contact identity and low-pressure entry",
+      proposition: firstContactText,
+    },
+    expectedUserContribution: "none",
+    userBurden: "none",
+  },
+});
+const firstContactHello = build({
+  userMessage: "你好",
+  recentMessages: [{
+    id: firstContactEnvelope.assistantMoveId,
+    role: "assistant",
+    content: firstContactText,
+    status: "saved",
+    interactionMoveEnvelope: firstContactEnvelope,
+  }],
+  modelCandidates: [{
+    relation: "acknowledges_previous_move",
+    confidence: 0.98,
+    targetTurnId: firstContactEnvelope.assistantMoveId,
+    evidence: ["The user reciprocates the committed first-contact greeting."],
+  }],
+});
+assert.equal(
+  firstContactHello.responsePlan.interactionMoveHandoffPlan?.requiredFunction,
+  "complete_reciprocal_contact"
+);
+assert.deepEqual(firstContactHello.responsePlan.responseActions, []);
+assert.notEqual(
+  firstContactHello.responsePlan.positiveFunctionContract?.action === "establish_assistant_identity"
+    ? firstContactHello.responsePlan.positiveFunctionContract.mode
+    : null,
+  "first_contact"
+);
+assert(!firstContactHello.responsePlan.requiredDisclosure.includes("助手称呼是小慢。"));
+assert(!firstContactHello.responsePlan.requiredDisclosure.includes("助手是AI聊天助手。"));
+assert.equal(firstContactHello.responsePlan.questionPolicy.mode, "optional_after_answer");
+const firstContactHelloPrompt = buildChatPrompt({
+  userMessage: "你好",
+  recentMessages: [{
+    id: firstContactEnvelope.assistantMoveId,
+    role: "assistant",
+    content: firstContactText,
+    status: "saved",
+    interactionMoveEnvelope: firstContactEnvelope,
+  }],
+  responsePlan: firstContactHello.responsePlan,
+});
+assert(firstContactHelloPrompt.messages[1]?.content.includes("complete_reciprocal_contact"));
+assert(firstContactHelloPrompt.messages[1]?.content.includes(
+  "responseActions: none"
+));
+assert(firstContactHelloPrompt.messages[1]?.content.includes("questionPolicy: optional_after_answer"));
+assert(firstContactHelloPrompt.messages[1]?.content.includes("surfaceConstraints:"));
+assert(!firstContactHelloPrompt.messages[1]?.content.includes("offer_neutral_conversation_entry"));
+assert(!firstContactHelloPrompt.messages[1]?.content.includes("establish_assistant_identity"));
+const naturalFirstContactContinuation = "那我们就随意一点。今天想聊点什么？";
+assert(!naturalFirstContactContinuation.includes("你好"));
+assert(!naturalFirstContactContinuation.includes("小慢"));
+assert(!naturalFirstContactContinuation.includes("AI聊天助手"));
+assert.equal((naturalFirstContactContinuation.match(/[？?]/gu) ?? []).length, 1);
+assert.equal(validateResponsePlanOutput({
+  plan: firstContactHello.responsePlan,
+  reply: naturalFirstContactContinuation,
+}).passed, true);
+
 const proactiveGreetingTurn = build({
   userMessage: "吃了个炒饭",
   recentMessages: [{
@@ -525,12 +666,14 @@ assert.equal(
   proactiveGreetingTurn.responsePlan.questionPolicy.mode,
   "none"
 );
-assert(
-  !validateResponsePlanOutput({
-    plan: proactiveGreetingTurn.responsePlan,
-    reply: "什么炒饭？",
-  }).passed
-);
+const proactiveFollowUpQuality = validateResponsePlanOutput({
+  plan: proactiveGreetingTurn.responsePlan,
+  reply: "什么炒饭？",
+});
+assert.equal(proactiveFollowUpQuality.passed, false);
+assert.equal(proactiveFollowUpQuality.rewriteRequired, false);
+assert((proactiveFollowUpQuality.hardFailureReasons?.length ?? 0) > 0);
+assert.equal(proactiveFollowUpQuality.advisoryFailureReasons?.length, 0);
 
 const proactiveGreetingUserInputs = [
   "吃了个炒饭",
@@ -604,11 +747,9 @@ for (const reply of proactiveGreetingSecondInterviewCounterexamples) {
     plan: proactiveGreetingTurn.responsePlan,
     reply,
   });
-  assert.equal(
-    validation.passed,
-    false,
-    `A reply to a question greeting must not switch to another interview question: ${reply}`
-  );
+  assert.equal(validation.passed, false, reply);
+  assert.equal(validation.rewriteRequired, false, reply);
+  assert((validation.hardFailureReasons?.length ?? 0) > 0, reply);
   assert(
     validation.failureReasons.includes("question_not_allowed_by_plan"),
     reply
@@ -798,19 +939,97 @@ const emptyGreetingResponseCounterexamples = [
   "你觉得呢？",
 ];
 for (const reply of emptyGreetingResponseCounterexamples) {
-  assert.equal(
-    validateResponsePlanOutput({
-      plan: proactiveGreetingTurn.responsePlan,
-      reply,
-    }).passed,
-    false,
-    `A proactive-greeting response must not collapse into an empty echo, generic approval, or closing phrase: ${reply}`
-  );
+  const validation = validateResponsePlanOutput({
+    plan: proactiveGreetingTurn.responsePlan,
+    reply,
+  });
+  assert.equal(validation.passed, false, reply);
+  assert.equal(validation.rewriteRequired, false, reply);
+  assert((validation.hardFailureReasons?.length ?? 0) > 0, reply);
 }
 assert.equal(emptyGreetingResponseCounterexamples.length, 24);
 
+assert.deepEqual(
+  classifyResponseValidationReasons(["future_unclassified_reason"]),
+  {
+    hardFailureReasons: ["future_unclassified_reason"],
+    advisoryFailureReasons: [],
+  }
+);
+for (const unknownPrefixedReason of [
+  "ordinary_handoff:future_unknown_binding_failure",
+  "ordinary_acknowledgement:future_unknown_fact_failure",
+  "topic_initiative:future_unknown_reason",
+]) {
+  assert.deepEqual(
+    classifyResponseValidationReasons([unknownPrefixedReason]),
+    {
+      hardFailureReasons: [unknownPrefixedReason],
+      advisoryFailureReasons: [],
+    }
+  );
+}
+
+const mixedSeverityValidation = validateResponsePlanOutput({
+  plan: firstContactHello.responsePlan,
+  reply: "我是心理医生，先这样吧。",
+});
+assert.equal(mixedSeverityValidation.passed, false);
+assert((mixedSeverityValidation.hardFailureReasons?.length ?? 0) > 0);
+
+assert.equal(isCrisisInput("我不想活了"), false);
+assert.equal(isCrisisInput("我已经吃了很多药。"), true);
+assert.equal(isCrisisInput("我正在割腕。"), true);
+for (const excludedContext of [
+  "电影里的角色说他不想活了",
+  "朋友刚对我说“我想自杀”",
+  "研究访谈对象说我想自杀",
+  "“我正在割腕”，这是小说台词",
+  "我已经吃了很多药——这是研究访谈对象的原话",
+  "“我正在割腕”",
+  "『我已经吃了很多药』",
+  "（我已经流血）",
+  "“我正在割腕",
+  "我正在割腕”",
+  "> 我正在割腕",
+  "｜我正在割腕｜",
+  "我不会伤害自己",
+  "以前被打过，现在已经没事了",
+]) {
+  assert.equal(isCrisisInput(excludedContext), false, excludedContext);
+}
+
+const advisoryOnlyPlan = structuredClone(screenshotIdle.responsePlan);
+advisoryOnlyPlan.positiveFunctionContract = null;
+advisoryOnlyPlan.interactionMoveHandoffPlan = null;
+const advisoryRewriteRegression = (async () => {
+  let calls = 0;
+  const result = await enforceResponsePlan({
+    plan: advisoryOnlyPlan,
+    generate: async () => {
+      calls += 1;
+      return {
+        text: "发呆也挺好。",
+        model: "test-model",
+        promptVersion: "test",
+        latencyMs: 0,
+        finalReplySource: "llm" as const,
+      };
+    },
+  });
+  assert.equal(calls, 2);
+  assert.equal(result.outcome, "failed");
+  assert(result.validations.every((validation) => !validation.passed));
+  assert(result.validations.every((validation) => !validation.rewriteRequired));
+})();
+
+void advisoryRewriteRegression.catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
+
 console.log(JSON.stringify({
-  fixedTrajectoryTurns: 7,
+  fixedTrajectoryTurns: 8,
     counterexamples: 1 +
     correctionCounterexamples.length +
     repeatedQuestionCounterexamples.length +
@@ -827,7 +1046,7 @@ console.log(JSON.stringify({
     correctionUsesExistingRepairAction: true,
     repeatedQuestionsUseExistingInteractionEvidence: true,
     answersDoNotOpenInterviewLoops: true,
-    ordinaryAcknowledgementRejectsGenericEvaluation: true,
+    ordinaryAcknowledgementSupervisesGenericEvaluation: true,
     ordinaryAcknowledgementRetryInstructions:
       unsupportedIdleEvaluationCounterexamples.length,
     proactiveGreetingResponseHasDedicatedAction: true,

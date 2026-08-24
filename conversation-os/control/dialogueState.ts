@@ -19,7 +19,7 @@ const obligationFor = (
   sourceTurnId: context.currentTurnId,
   // Compatibility metadata only. The Planner reads openObligations, not this label.
   triggeringUserAct: interpretation.primaryDialogueAct,
-  targetProposition: question.text,
+  targetProposition: question.targetProposition ?? question.text,
   status: "open",
   question: question.text,
   kind: question.kind,
