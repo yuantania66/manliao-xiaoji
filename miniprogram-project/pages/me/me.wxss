@@ -50,6 +50,35 @@
   margin-top: 34rpx;
 }
 
+.login-panel {
+  margin-top: 34rpx;
+}
+
+.login-panel .login-button {
+  margin-top: 20rpx;
+}
+
+.login-error {
+  margin-bottom: 20rpx;
+  color: #9f6b61;
+  font-size: 24rpx;
+  line-height: 36rpx;
+}
+
+.privacy-confirm {
+  display: flex;
+  align-items: center;
+  color: #6d665f;
+  font-size: 24rpx;
+  line-height: 40rpx;
+}
+
+.privacy-link {
+  margin-left: 6rpx;
+  color: #71877b;
+  text-decoration: underline;
+}
+
 .insight-entry {
   position: relative;
   height: 128rpx;

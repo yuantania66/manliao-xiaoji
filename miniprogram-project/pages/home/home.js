@@ -1,7 +1,7 @@
 const { formatDateLabel } = require("../../utils/local-data");
 const { getAuth, saveAuth, enterGuest, isGuest } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
-const { loginWithWechat } = require("../../api/auth");
+const { loginWithWechat, getMe } = require("../../api/auth");
 
 const prompts = [
   { title: "今天过得怎么样？", lead: "不用急着说清楚。\n先选一个此刻更需要的方式。" },
@@ -35,21 +35,67 @@ Page({
     chatCopy: chatCopies[0],
     noteCopy: noteCopies[0],
     showEntry: false,
+    isCheckingAuth: false,
     isLoggingIn: false,
     entryError: "",
+    privacyConfirmed: false,
     activeTab: "home",
     switchingTab: false
   },
 
   onLoad(options) {
+    this.forceEntry = options.entry === "1";
     this.updateSafeLayout();
     this.setData({
       todayLabel: formatDateLabel(),
       prompt: pick(prompts),
       chatCopy: pick(chatCopies),
       noteCopy: pick(noteCopies),
-      showEntry: options.entry === "1" || (!getAuth() && !isGuest())
+      showEntry: this.forceEntry || (!getAuth() && !isGuest())
     });
+  },
+
+  onShow() {
+    this.reconcileAuth();
+  },
+
+  reconcileAuth() {
+    if (this.forceEntry || isGuest()) return;
+    const auth = getAuth();
+    if (!auth) {
+      this.setData({ showEntry: true, isCheckingAuth: false });
+      return;
+    }
+    if (this.authCheckPending) return;
+    const checkId = (this.authCheckId || 0) + 1;
+    this.authCheckId = checkId;
+    this.authCheckPending = true;
+    this.setData({ showEntry: true, isCheckingAuth: true, entryError: "" });
+    getMe()
+      .then(() => {
+        if (this.authCheckId !== checkId || !getAuth()) return;
+        this.setData({ showEntry: false, entryError: "" });
+      })
+      .catch(() => {
+        if (this.authCheckId !== checkId) return;
+        const stillStored = getAuth();
+        this.setData({
+          showEntry: true,
+          entryError: stillStored
+            ? "暂时无法验证登录状态，请检查网络后重试。"
+            : "登录状态已失效，请重新登录。"
+        });
+      })
+      .finally(() => {
+        if (this.authCheckId === checkId) {
+          this.authCheckPending = false;
+          this.setData({ isCheckingAuth: false });
+        }
+      });
+  },
+
+  togglePrivacy(event) {
+    this.setData({ privacyConfirmed: event.detail.value.includes("confirmed") });
   },
 
   updateSafeLayout() {
@@ -62,12 +108,23 @@ Page({
 
   handleLogin() {
     if (this.data.isLoggingIn) return;
-    this.setData({ isLoggingIn: true, entryError: "" });
+    if (!this.data.privacyConfirmed) {
+      this.setData({ entryError: "请先阅读并同意隐私政策。" });
+      return;
+    }
+    this.authCheckId = (this.authCheckId || 0) + 1;
+    this.authCheckPending = false;
+    this.setData({ isCheckingAuth: false, isLoggingIn: true, entryError: "" });
     wx.login({
       success: ({ code }) => {
-        loginWithWechat(code || `mini_home_${Date.now()}`)
+        if (!code) {
+          this.setData({ isLoggingIn: false, entryError: "微信未返回有效登录凭证，请重试。" });
+          return;
+        }
+        loginWithWechat(code)
           .then((auth) => {
             saveAuth(auth);
+            this.forceEntry = false;
             this.setData({ showEntry: false, entryError: "" });
           })
           .catch((error) => {
@@ -91,8 +148,11 @@ Page({
   },
 
   enterGuest() {
+    this.authCheckId = (this.authCheckId || 0) + 1;
+    this.authCheckPending = false;
+    this.forceEntry = false;
     enterGuest();
-    this.setData({ showEntry: false, entryError: "" });
+    this.setData({ showEntry: false, isCheckingAuth: false, entryError: "" });
   },
 
   goChat() {
@@ -120,6 +180,7 @@ Page({
   },
 
   onUnload() {
+    this.authCheckId = (this.authCheckId || 0) + 1;
     if (this.tabSwitchTimer) clearTimeout(this.tabSwitchTimer);
   }
 });

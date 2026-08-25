@@ -5,9 +5,22 @@ const USER_CACHE_KEYS = [
   "xinqingMiniNotes"
 ];
 
+const isUsableAuth = (auth, now = Date.now()) => {
+  if (!auth || typeof auth !== "object" || Array.isArray(auth)) return false;
+  if (typeof auth.token !== "string" || !auth.token || auth.token.startsWith("local_demo_")) return false;
+  if (typeof auth.expiresAt !== "string") return false;
+  const expiresAt = new Date(auth.expiresAt).getTime();
+  return Number.isFinite(expiresAt) && expiresAt > now;
+};
+
 const getAuth = () => {
-  const auth = wx.getStorageSync(AUTH_KEY) || null;
-  if (auth && auth.token && String(auth.token).startsWith("local_demo_")) {
+  let auth = null;
+  try {
+    auth = wx.getStorageSync(AUTH_KEY) || null;
+  } catch (error) {
+    return null;
+  }
+  if (!isUsableAuth(auth)) {
     wx.removeStorageSync(AUTH_KEY);
     return null;
   }
@@ -15,6 +28,7 @@ const getAuth = () => {
 };
 
 const saveAuth = (auth) => {
+  if (!isUsableAuth(auth)) throw new Error("登录响应无效");
   wx.setStorageSync(AUTH_KEY, auth);
   wx.removeStorageSync(GUEST_KEY);
   USER_CACHE_KEYS.forEach((key) => wx.removeStorageSync(key));
@@ -60,5 +74,6 @@ module.exports = {
   enterGuest,
   isGuest,
   isAuthenticated,
-  getDataMode
+  getDataMode,
+  isUsableAuth
 };

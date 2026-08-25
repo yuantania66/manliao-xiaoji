@@ -178,6 +178,21 @@
   margin-top: 34rpx;
 }
 
+.privacy-confirm {
+  display: flex;
+  align-items: center;
+  margin-top: 28rpx;
+  color: #6d665f;
+  font-size: 24rpx;
+  line-height: 40rpx;
+}
+
+.privacy-link {
+  margin-left: 6rpx;
+  color: #71877b;
+  text-decoration: underline;
+}
+
 .entry-sheet .primary-button[disabled] {
   background: #d8d1c9;
 }
