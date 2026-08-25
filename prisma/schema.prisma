@@ -1,5 +1,9 @@
 generator client {
   provider = "prisma-client-js"
+}
+
+generator p5Client {
+  provider = "prisma-client-js"
   output   = "../.generated/p5-prisma"
 }
 
@@ -306,6 +310,27 @@ enum RelationshipStatus {
   MERGED
 }
 
+enum P6CacheKind {
+  RELATIONSHIP
+  GROWTH
+}
+
+enum P6FixtureClaimKind {
+  FACT
+  HYPOTHESIS
+}
+
+enum P6FixtureDataClass {
+  ORDINARY
+  SAFETY
+  SECRET
+}
+
+enum P6RecomputeStatus {
+  PENDING
+  COMPLETED
+}
+
 enum VersionTargetType {
   SEMANTIC_MEMORY
   UNDERSTANDING
@@ -394,6 +419,9 @@ model User {
   assistantPublications  AssistantPublication[]
   governanceDeletionRequests GovernanceDeletionRequest[]
   governanceSourceEdges GovernanceSourceEdge[]
+  p6AcceptedSnapshots    P6AcceptedMemorySnapshot[]
+  p6Caches               P6RelationshipGrowthCache[]
+  p6RecomputeRequests    P6TargetedRecompute[]
 }
 
 model Session {
@@ -1205,6 +1233,64 @@ model RelationshipVersion {
   @@unique([relationshipId, version])
   @@index([userId, createdAt])
   @@index([userId, relationshipId])
+}
+
+/// P6 local-fixture authority only. Production P4 ingestion is intentionally absent.
+model P6AcceptedMemorySnapshot {
+  id                    String                 @id @default(cuid())
+  userId                String
+  descriptorId          String
+  sourceMemoryVersionId String
+  sourceVersion         Int
+  authorityVersion      String
+  artifactHash          String                 @unique
+  projection            P6CacheKind
+  claimKind             P6FixtureClaimKind
+  dataClass             P6FixtureDataClass
+  content               String
+  accepted              Boolean
+  isCurrent             Boolean
+  deletedAt             DateTime?
+  createdAt             DateTime               @default(now())
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceMemoryVersionId, sourceVersion])
+  @@index([userId, accepted, isCurrent, deletedAt])
+}
+
+/// Current-only optional enhancement cache. It owns no conversational authority.
+model P6RelationshipGrowthCache {
+  id                     String      @id @default(cuid())
+  userId                 String
+  kind                   P6CacheKind
+  version                Int
+  sourceMemoryVersionIds Json
+  cycle                  String
+  payload                Json
+  commitmentHash         String
+  generatedAt            DateTime
+  staleAt                DateTime
+  invalidatedAt          DateTime?
+  user                   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind])
+  @@index([userId, invalidatedAt, staleAt])
+}
+
+/// Local proof of deletion-triggered targeted recompute; P5 production wiring is pending.
+model P6TargetedRecompute {
+  id                    String              @id @default(cuid())
+  userId                String
+  kind                  P6CacheKind
+  sourceMemoryVersionId String
+  reason                String
+  status                P6RecomputeStatus   @default(PENDING)
+  createdAt             DateTime            @default(now())
+  completedAt           DateTime?
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, sourceMemoryVersionId, status])
+  @@index([userId, status, createdAt])
 }
 
 /// Append-only generic version/audit index.
