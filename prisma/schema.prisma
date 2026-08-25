@@ -270,6 +270,35 @@ enum SemanticMemoryStatus {
   ARCHIVED
 }
 
+enum P4MinimumMemoryCategory {
+  STABLE_PREFERENCE
+  PERSONAL_FACT
+  IMPORTANT_RELATIONSHIP
+  COMMITMENT_PLAN_GOAL
+  SIGNIFICANT_EVENT
+  UNRESOLVED_TOPIC
+  EXPLICIT_REMEMBER_REQUEST
+}
+
+enum P4MinimumMemoryStatus {
+  ACTIVE
+  SUPERSEDED
+}
+
+enum P4PromotionEligibility {
+  ELIGIBLE
+  INELIGIBLE
+}
+
+enum P4PromotionReason {
+  ALLOWLISTED
+  NOT_ALLOWLISTED
+  HYPOTHESIS
+  SAFETY_DATA
+  SECRET
+  SENSITIVE_WITHOUT_OPT_IN
+}
+
 enum UnderstandingStatus {
   OPEN
   PAUSED
@@ -422,6 +451,9 @@ model User {
   p6AcceptedSnapshots    P6AcceptedMemorySnapshot[]
   p6Caches               P6RelationshipGrowthCache[]
   p6RecomputeRequests    P6TargetedRecompute[]
+  p4MinimumMemories      P4MinimumMemory[]
+  p4ProfileCache         P4ProfileCache?
+  p4PromotionArtifacts   P4PromotionEligibilityArtifact[]
 }
 
 model Session {
@@ -1024,10 +1056,76 @@ model SemanticMemoryVersion {
   user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   semanticMemory   SemanticMemory       @relation("SemanticMemoryVersions", fields: [semanticMemoryId], references: [id], onDelete: Cascade)
   currentFor       SemanticMemory?      @relation("SemanticMemoryCurrentVersion")
+  p4MinimumMemories P4MinimumMemory[]
+  p4PromotionArtifacts P4PromotionEligibilityArtifact[]
 
   @@unique([semanticMemoryId, version])
+  @@unique([id, userId])
   @@index([userId, createdAt])
   @@index([userId, semanticMemoryId])
+}
+
+/// P4 local-only, source-bound minimum memory. Conversation evidence remains authoritative.
+model P4MinimumMemory {
+  id                    String                  @id @default(cuid())
+  userId                String
+  subjectKey            String
+  category              P4MinimumMemoryCategory
+  content               String
+  sourceMemoryVersionId String
+  version               Int
+  isSensitive           Boolean                 @default(false)
+  retrievalVector       Json
+  eligibilityArtifactId String                  @unique
+  sensitiveExpiresAt    DateTime?
+  status                P4MinimumMemoryStatus   @default(ACTIVE)
+  supersededAt          DateTime?
+  createdAt             DateTime                @default(now())
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMemoryVersion   SemanticMemoryVersion   @relation(fields: [sourceMemoryVersionId, userId], references: [id, userId], onDelete: Cascade)
+  eligibilityArtifact   P4PromotionEligibilityArtifact @relation(fields: [eligibilityArtifactId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([userId, subjectKey, version])
+  @@unique([userId, sourceMemoryVersionId])
+  @@unique([eligibilityArtifactId, userId])
+  @@index([userId, status, createdAt])
+}
+
+/// Strict local/synthetic eligibility decision. Runtime callers may reference its id only.
+model P4PromotionEligibilityArtifact {
+  id                    String                  @id @default(cuid())
+  userId                String
+  sourceMemoryVersionId String                  @unique
+  descriptorId          String
+  authorityVersion      String
+  artifactHash          String                  @unique
+  eligibility           P4PromotionEligibility
+  reason                P4PromotionReason
+  category              P4MinimumMemoryCategory?
+  retrievalVector       Json
+  isSensitive           Boolean                 @default(false)
+  consentUtf16Start     Int?
+  consentUtf16End       Int?
+  consentTextHash       String?
+  decisionPayload       Json
+  createdAt             DateTime                @default(now())
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMemoryVersion   SemanticMemoryVersion   @relation(fields: [sourceMemoryVersionId, userId], references: [id, userId], onDelete: Cascade)
+  promotedMemory        P4MinimumMemory?
+
+  @@unique([id, userId])
+  @@index([userId, eligibility, createdAt])
+}
+
+/// Rebuildable current-only projection. Empty or stale cache must never block chat.
+model P4ProfileCache {
+  userId                 String    @id
+  version                Int
+  sourceMemoryVersionIds Json
+  generatedAt            DateTime
+  payload                Json
+  invalidatedAt          DateTime?
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Understanding {
