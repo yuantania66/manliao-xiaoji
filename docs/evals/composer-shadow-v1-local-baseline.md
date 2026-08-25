@@ -24,6 +24,8 @@ Before Snapshot composition, `v1_execution_outcome_integrity_authority_v1` indep
 
 Run the local synthetic check directly with the repository TypeScript runner. The real-Qwen script is inert unless it is explicitly passed `--allow-synthetic-qwen`, receives explicit credentials/base URL, and `COMPOSER_SHADOW_SYNTHETIC_ONLY=true`. It contains synthetic text only. That CLI deliberately uses `stream:false`; its request timing is **not** incremental decoder timing evidence.
 
+The frozen `composer_real_qwen_12x3_runner_mechanism_v1` covers the authoritative 12 ordinary cases with three separately identified runs per case and one `runConfigHash`. Each of its 36 structured rows contains hashes, counts, request-level timings and provider token counts when returned. A provider repair remains a call within one run and never substitutes for an independent run. Run its no-network mechanism gate with `node --import tsx scripts/composer-shadow-qwen-local.ts --check-mechanism`. The mock result is permanently labeled `mechanism_only_not_evidence`; it cannot satisfy behavior stability. The explicit real-Qwen mode may only produce `candidate_requires_ledger_authority_validation`, because only a subsequent strict Ledger Authority result can establish exit evidence. The script writes JSON to stdout only and has no production, database or real-data path.
+
 ## Time gate
 
 The P1 exit gate remains **pending**. This baseline does not claim the required 200 successful first-attempt Hot observations across three separate calendar days (minimum 50/day and all Context bands), three-run behavior stability, paired blind human review, bootstrap confidence interval, or a `[BUDGET-CANDIDATE]`. Those observations cannot be replaced by generated timestamps or synthetic counts.
