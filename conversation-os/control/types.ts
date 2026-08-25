@@ -26,6 +26,7 @@ export type DirectQuestion = {
   text: string;
   kind: DirectQuestionKind;
   subject?: string;
+  subjectOwnership?: "current_user_self" | "external_or_other" | "uncertain" | "committed_assistant_claim";
   targetTurnId?: string;
   targetProposition?: string;
   evidence: string[];
@@ -200,6 +201,39 @@ export type RelationalTurnInterpretation = {
   evidence: string[];
 };
 
+export type OrdinaryPostureSourceSpan = {
+  source: "current_user_turn" | "adjacent_committed_user_turn";
+  sourceTurnId: string;
+  start: number;
+  end: number;
+  text: string;
+};
+
+export type OrdinaryPostureProposal = {
+  mode: "accompany" | "explore";
+  sourceSpans: OrdinaryPostureSourceSpan[];
+  proposedContribution: { targetSpanIndexes: number[]; instruction: string };
+  evidence: string[];
+};
+
+export type OrdinaryPosturePlan = {
+  mode: "accompany" | "explore";
+  sourceSpans: OrdinaryPostureSourceSpan[];
+  requiredContribution: { targetSpanIndexes: number[]; instruction: string };
+  evidence: string[];
+};
+
+export type PurposeSubjectOwnershipAuthorityTrace = {
+  attempted: boolean;
+  used: boolean;
+  reason: string;
+  ownership?: "current_user_self" | "external_or_other" | "uncertain";
+  model?: string;
+  latencyMs?: number;
+  contractSha256?: string;
+  error?: string;
+};
+
 export type TurnInterpretation = {
   contentMeaning: ContentMeaning;
   responseRelation: {
@@ -209,6 +243,8 @@ export type TurnInterpretation = {
   userMoveRelation: UserMoveRelationProjection | null;
   stateUpdate: TurnStateUpdate;
   interpretations: RelationalTurnInterpretation[];
+  ordinaryPostureProposal: OrdinaryPostureProposal | null;
+  purposeSubjectOwnershipAuthority?: PurposeSubjectOwnershipAuthorityTrace;
   /**
    * Compatibility evidence only. Dialogue State and Response Planner must not
    * use this field to select a response strategy.
@@ -467,6 +503,7 @@ export type ResponsePlan = {
   clinicalStrategy: ClinicalStrategyAdvice | null;
   positiveFunctionContract: PositiveFunctionContract | null;
   interactionMoveHandoffPlan: InteractionMoveHandoffPlan | null;
+  ordinaryPosture: OrdinaryPosturePlan | null;
   questionPolicy: { mode: "none" | "optional_after_answer" | "one_low_pressure_question"; reason: string };
   closurePolicy: { mode: "forbid_closure" | "allow_pause" | "allow_idle" | "end_conversation"; reason: string };
   tone: string[];

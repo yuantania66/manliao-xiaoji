@@ -4,6 +4,8 @@ import type {
   DialogueState,
   InteractionMoveSubtype,
   OrdinaryHandoffBoundary,
+  OrdinaryPosturePlan,
+  OrdinaryPostureSourceSpan,
   PositiveFunctionContract,
   ResponseAction,
   ResponsePlan,
@@ -14,7 +16,10 @@ import { projectAffectEvidenceTerms } from "../state";
 import { parseCommittedAssistantMoveEnvelope } from "../interactionMoveEnvelope";
 import { planInteractionMoveHandoff } from "./interactionMoveHandoffPlanner";
 import { selectOrdinaryHandoffAction } from "./ordinaryHandoff";
-import { buildCanonicalResponsePlanPreflightProvenance } from "./responsePlanPreflightAuthority";
+import {
+  buildCanonicalOrdinaryPostureProvenance,
+  buildCanonicalResponsePlanPreflightProvenance,
+} from "./responsePlanPreflightAuthority";
 import { getRequiredGroundingDisclosure } from "./assistantGrounding";
 
 export type ClinicalAdviceProvider = (input: {
@@ -31,6 +36,98 @@ export type ResponsePlanRecoveryDirective = {
 };
 
 const unique = <T>(items: T[]) => Array.from(new Set(items));
+
+const exactPostureSpanSource = (
+  context: ConversationControlContext,
+  span: OrdinaryPostureSourceSpan
+) => {
+  if (span.source === "current_user_turn") {
+    return span.sourceTurnId === context.currentTurnId
+      ? context.currentUserMessage
+      : null;
+  }
+  const source = context.adjacentTurns.find((turn) =>
+    turn.role === "user" && turn.id === span.sourceTurnId && turn.status === "saved"
+  );
+  return source?.content ?? null;
+};
+
+const acceptedOrdinaryPosture = ({
+  context,
+  interpretation,
+  priorityOwned,
+  boundary,
+}: {
+  context: ConversationControlContext;
+  interpretation: TurnInterpretation;
+  priorityOwned: boolean;
+  boundary: OrdinaryHandoffBoundary | null;
+}): OrdinaryPosturePlan | null => {
+  if (priorityOwned) return null;
+  const proposal = interpretation.ordinaryPostureProposal;
+  const boundaryRejectsExplore = boundary?.userBoundaries.some((item) =>
+    item === "no_analysis" || item === "no_questions" || item === "pause" || item === "stop"
+  ) ?? false;
+  const validProposal = Boolean(
+    proposal &&
+    proposal.sourceSpans.length > 0 &&
+    proposal.sourceSpans.every((span) => {
+      const sourceText = exactPostureSpanSource(context, span);
+      return Boolean(
+        sourceText !== null &&
+        Number.isInteger(span.start) &&
+        Number.isInteger(span.end) &&
+        span.start >= 0 &&
+        span.end > span.start &&
+        sourceText?.slice(span.start, span.end) === span.text
+      );
+    }) &&
+    proposal.proposedContribution.targetSpanIndexes.length > 0 &&
+    new Set(proposal.proposedContribution.targetSpanIndexes).size ===
+      proposal.proposedContribution.targetSpanIndexes.length &&
+    proposal.proposedContribution.targetSpanIndexes.every((index) =>
+      Number.isInteger(index) && index >= 0 && index < proposal.sourceSpans.length
+    ) &&
+    proposal.proposedContribution.instruction.trim().length > 0 &&
+    proposal.proposedContribution.instruction.trim().length <= 240 &&
+    proposal.evidence.some((item) => item.trim()) &&
+    !(proposal.mode === "explore" && boundaryRejectsExplore) &&
+    !interpretation.responseRelation.ambiguous
+  );
+  if (validProposal && proposal) {
+    return {
+      mode: proposal.mode,
+      sourceSpans: structuredClone(proposal.sourceSpans),
+      requiredContribution: {
+        targetSpanIndexes: [...proposal.proposedContribution.targetSpanIndexes],
+        instruction: proposal.proposedContribution.instruction.trim(),
+      },
+      evidence: unique(["owner=conversation_os.response_planner", ...proposal.evidence]),
+    };
+  }
+  const currentText = context.currentUserMessage;
+  const start = currentText.search(/\S/u);
+  const end = currentText.trimEnd().length;
+  if (start < 0 || end <= start) return null;
+  return {
+    mode: "accompany",
+    sourceSpans: [{
+      source: "current_user_turn",
+      sourceTurnId: context.currentTurnId,
+      start,
+      end,
+      text: currentText.slice(start, end),
+    }],
+    requiredContribution: {
+      targetSpanIndexes: [0],
+      instruction: "对用户当前已经表达的具体内容作出贴切回应，并保留由用户决定是否继续或转向的空间。",
+    },
+    evidence: [
+      "owner=conversation_os.response_planner",
+      proposal ? "interpreter_proposal_rejected" : "ambiguous_or_missing_proposal_defaults_to_accompany",
+    ],
+  };
+};
 
 const selectEpisodeMemory = ({
   context,
@@ -633,6 +730,20 @@ export const createResponsePlan = ({
         : takesTopicInitiative
           ? "one_low_pressure_question"
           : "optional_after_answer";
+  const ordinaryPosture = acceptedOrdinaryPosture({
+    context,
+    interpretation,
+    boundary: ordinaryHandoffBoundary,
+    priorityOwned: Boolean(
+      context.safety.triggered ||
+      hasActivity(dialogueState, "pausing") ||
+      repairsAssistant ||
+      dialogueState.openObligations.length > 0 ||
+      positiveFunctionContract ||
+      interactionMoveHandoffPlan ||
+      requiredDisclosure.length > 0
+    ),
+  });
   const relevanceProvenance: ResponsePlan["relevanceProvenance"] = [
     ...actions.map((action) => ({
       planElement: `responseAction:${action}`,
@@ -658,6 +769,9 @@ export const createResponsePlan = ({
       sourceTurnId: dialogueState.commonGround.confirmed.find((item) => item.text === fact)?.sourceTurnId,
       evidence: dialogueState.commonGround.confirmed.find((item) => item.text === fact)?.evidence ?? [],
     })),
+    ...(ordinaryPosture
+      ? [buildCanonicalOrdinaryPostureProvenance(ordinaryPosture)]
+      : []),
     ...buildCanonicalResponsePlanPreflightProvenance({
       handoffPlan: interactionMoveHandoffPlan,
       currentUserText: context.currentUserMessage,
@@ -706,6 +820,7 @@ export const createResponsePlan = ({
     clinicalStrategy,
     positiveFunctionContract,
     interactionMoveHandoffPlan,
+    ordinaryPosture,
     questionPolicy: {
       mode: questionMode,
       reason: interactionMoveHandoffPlan?.questionPolicy === "none"

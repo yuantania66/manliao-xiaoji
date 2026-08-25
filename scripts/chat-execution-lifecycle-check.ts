@@ -11,6 +11,7 @@ import {
 } from "@prisma/client";
 
 import type { ResponsePlan } from "../conversation-os/control";
+import { buildCanonicalOrdinaryPostureProvenance } from "../conversation-os/control/responsePlanPreflightAuthority";
 import {
   activeHandoff,
   attachCommittedAssistantMoveEnvelope,
@@ -44,7 +45,7 @@ import type { AiGenerationResult } from "../services/ai/types";
 const plan: ResponsePlan = {
   planId: "execution-check:turn-1:response-plan",
   decisionOwner: "conversation_os.response_planner",
-  behaviorSource: "ordinary_conversation",
+  behaviorSource: "legacy_compat",
   planningDepth: "minimal",
   answerObligations: [],
   disclosureScope: { conversationId: "execution-check", turnId: "turn-1" },
@@ -55,6 +56,7 @@ const plan: ResponsePlan = {
   clinicalStrategy: null,
   positiveFunctionContract: null,
   interactionMoveHandoffPlan: null,
+  ordinaryPosture: null,
   questionPolicy: { mode: "none", reason: "deterministic check" },
   closurePolicy: { mode: "forbid_closure", reason: "deterministic check" },
   tone: ["natural"],
@@ -70,6 +72,57 @@ const plan: ResponsePlan = {
   }],
   evidence: ["test plan"],
 };
+
+const ordinaryPlan: ResponsePlan = {
+  ...plan,
+  behaviorSource: "ordinary_conversation",
+  ordinaryPosture: {
+    mode: "accompany",
+    sourceSpans: [{
+      source: "current_user_turn",
+      sourceTurnId: "turn-1",
+      start: 0,
+      end: 4,
+      text: "当前内容",
+    }],
+    requiredContribution: {
+      targetSpanIndexes: [0],
+      instruction: "对用户当前表达的具体内容作出贴切回应。",
+    },
+    evidence: ["owner=conversation_os.response_planner"],
+  },
+  relevanceProvenance: [
+    ...plan.relevanceProvenance,
+    buildCanonicalOrdinaryPostureProvenance({
+      mode: "accompany",
+      sourceSpans: [{
+        source: "current_user_turn",
+        sourceTurnId: "turn-1",
+        start: 0,
+        end: 4,
+        text: "当前内容",
+      }],
+      requiredContribution: {
+        targetSpanIndexes: [0],
+        instruction: "对用户当前表达的具体内容作出贴切回应。",
+      },
+      evidence: ["owner=conversation_os.response_planner"],
+    }),
+  ],
+};
+
+const ordinaryAuthority = {
+  expectedInteractionMoveHandoffPlan: null,
+  currentSource: {
+    conversationId: "execution-check",
+    userTurnId: "turn-1",
+    userText: "当前内容",
+  },
+  adjacentCommittedUserSources: [],
+  targetSource: null,
+  expectedAnswerObligations: [],
+  canonicalProvenance: [],
+} as const;
 
 const generation = (text: string): AiGenerationResult => ({
   text,
@@ -106,7 +159,49 @@ const closeServer = (server: Server) => new Promise<void>((resolve, reject) => {
 });
 
 const main = async () => {
-assert.deepEqual(preflightResponsePlan(plan), { passed: true, failureReasons: [] });
+assert.deepEqual(preflightResponsePlan(ordinaryPlan, ordinaryAuthority), { passed: true, failureReasons: [] });
+assert.deepEqual(
+  preflightResponsePlan({
+    ...ordinaryPlan,
+    ordinaryPosture: ordinaryPlan.ordinaryPosture && {
+      ...ordinaryPlan.ordinaryPosture,
+      sourceSpans: [{
+        ...ordinaryPlan.ordinaryPosture.sourceSpans[0],
+        text: "伪造内容",
+      }],
+    },
+  }, ordinaryAuthority).failureReasons,
+  ["ordinary_posture_source_span_authority_mismatch", "ordinary_posture_provenance_mismatch"]
+);
+const postureModeTamper = structuredClone(ordinaryPlan) as ResponsePlan & {
+  ordinaryPosture: NonNullable<ResponsePlan["ordinaryPosture"]>;
+};
+postureModeTamper.ordinaryPosture.mode = "invalid" as "accompany";
+assert(preflightResponsePlan(postureModeTamper, ordinaryAuthority).failureReasons.includes("invalid_ordinary_posture_mode"));
+assert(preflightResponsePlan(postureModeTamper, ordinaryAuthority).failureReasons.includes("ordinary_posture_provenance_mismatch"));
+
+const postureInstructionTamper = structuredClone(ordinaryPlan);
+postureInstructionTamper.ordinaryPosture!.requiredContribution.instruction = "篡改后的 instruction";
+assert.deepEqual(
+  preflightResponsePlan(postureInstructionTamper, ordinaryAuthority).failureReasons,
+  ["ordinary_posture_provenance_mismatch"]
+);
+
+const postureTargetTamper = structuredClone(ordinaryPlan);
+postureTargetTamper.ordinaryPosture!.requiredContribution.targetSpanIndexes = [0, 0];
+assert(preflightResponsePlan(postureTargetTamper, ordinaryAuthority).failureReasons.includes("invalid_ordinary_posture_target_span_indexes"));
+assert(preflightResponsePlan(postureTargetTamper, ordinaryAuthority).failureReasons.includes("ordinary_posture_provenance_mismatch"));
+
+const postureProvenanceTamper = structuredClone(ordinaryPlan);
+postureProvenanceTamper.relevanceProvenance = postureProvenanceTamper.relevanceProvenance.map((item) =>
+  item.planElement === "ordinaryPosture:binding"
+    ? { ...item, evidence: ["legacy_noncanonical_posture_evidence"] }
+    : item
+);
+assert.deepEqual(
+  preflightResponsePlan(postureProvenanceTamper, ordinaryAuthority).failureReasons,
+  ["ordinary_posture_provenance_mismatch"]
+);
 assert.equal(
   preflightResponsePlan({ ...plan, decisionOwner: "conversation_os.response_planner", relevanceProvenance: [] }).passed,
   false

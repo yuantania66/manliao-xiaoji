@@ -130,6 +130,7 @@ const turn1 = build({
 });
 assert.equal(turn1.interpretation.primaryDialogueAct, "yield_initiative");
 assert(turn1.responsePlan.responseActions.includes("take_light_topic_initiative"));
+assert.equal(turn1.responsePlan.ordinaryPosture?.mode, "accompany");
 assert.equal(turn1.responsePlan.questionPolicy.mode, "one_low_pressure_question");
 assert(turn1.responsePlan.tone.includes("neutral-friendly without reassurance"));
 assert.equal(turn1.responsePlan.lengthGuidance, "Usually one or two concise sentences.");
@@ -146,6 +147,7 @@ const turn2 = build({
 });
 assert.equal(turn2.deterministic.primaryDialogueAct, "ask_information");
 assert(turn2.responsePlan.responseActions.includes("answer_directly"));
+assert.equal(turn2.responsePlan.ordinaryPosture, null);
 assert.equal(turn2.responsePlan.questionPolicy.mode, "none");
 
 const turn3History: AiConversationMessage[] = [
@@ -161,6 +163,7 @@ const turn3 = build({
 assert.equal(turn3.interpretation.primaryDialogueAct, "correct_assistant");
 assert.equal(turn3.dialogueState.repairState.status, "active");
 assert(turn3.responsePlan.responseActions.includes("repair_previous_wording"));
+assert.equal(turn3.responsePlan.ordinaryPosture, null);
 assert.equal(turn3.responsePlan.questionPolicy.mode, "none");
 assert(turn3.dialogueState.confirmedFacts.includes("Current user message: 我最近没上班"));
 
@@ -177,6 +180,7 @@ const turn4 = build({
 assert.equal(turn4.interpretation.primaryDialogueAct, "answer");
 assert(turn4.context.interaction.evidence.some((item) => item.includes("repeated questions")));
 assert.equal(turn4.responsePlan.questionPolicy.mode, "none");
+assert.equal(turn4.responsePlan.ordinaryPosture?.mode, "accompany");
 assert(!turn4.responsePlan.responseActions.includes("repair_previous_wording"));
 assert.equal(
   turn4.responsePlan.lengthGuidance,

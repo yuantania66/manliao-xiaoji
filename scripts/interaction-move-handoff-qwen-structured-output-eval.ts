@@ -46,6 +46,7 @@ const planFor = (caseId: string): ResponsePlan => ({
   clinicalStrategy: null,
   positiveFunctionContract: null,
   interactionMoveHandoffPlan: structuredClone(handoff),
+  ordinaryPosture: null,
   questionPolicy: { mode: "none", reason: "fixed Qwen structured-output eval" },
   closurePolicy: { mode: "forbid_closure", reason: "fixed Qwen structured-output eval" },
   tone: ["natural"],

@@ -37,6 +37,10 @@ import {
   type ResponseValidationResult,
 } from "@/conversation-os/control";
 import { enrichTurnInterpretation } from "./turnInterpretationAdapter";
+import {
+  runPurposeSubjectOwnershipAuthority,
+  type PurposeSubjectOwnershipProvider,
+} from "./purposeSubjectOwnershipAuthority";
 import { enforceResponsePlan } from "./responsePlanValidator";
 import type { InteractionMoveHandoffSemanticProvider } from "./interactionMoveHandoffOutputValidator";
 import type { PlannedFunctionSemanticProvider } from "./plannedFunctionSemanticValidator";
@@ -78,12 +82,18 @@ type CreateChatReplyInput = {
   helpingDecisionProvider?: HillHelpingDecisionProvider;
   /** Test seam. Production uses configured Qwen json_object Safety triage. */
   safetySemanticProvider?: SafetySemanticProvider;
+  /** Local/eval seam only. Production must not send real User text to this authority without separate approval. */
+  purposeSubjectOwnershipProvider?: PurposeSubjectOwnershipProvider;
   /** Test seam. Production omits this and uses the fail-closed default semantic provider. */
   plannedFunctionSemanticProvider?: PlannedFunctionSemanticProvider;
   /** @deprecated Use plannedFunctionSemanticProvider. */
   interactionMoveHandoffSemanticProvider?: InteractionMoveHandoffSemanticProvider;
   inspectHelpingPrompt?: (input: {
     stage: "helping_shadow";
+    messages: AiModelMessage[];
+  }) => void | Promise<void>;
+  inspectPurposeSubjectOwnershipPrompt?: (input: {
+    stage: "purpose_subject_ownership";
     messages: AiModelMessage[];
   }) => void | Promise<void>;
   inspectExternalPrompt?: (input: {
@@ -191,9 +201,11 @@ export const createChatReply = async ({
   helpingOrdinaryHandoffEnabled,
   helpingDecisionProvider,
   safetySemanticProvider,
+  purposeSubjectOwnershipProvider,
   plannedFunctionSemanticProvider,
   interactionMoveHandoffSemanticProvider,
   inspectHelpingPrompt,
+  inspectPurposeSubjectOwnershipPrompt,
   inspectExternalPrompt,
 }: CreateChatReplyInput): Promise<ChatReplyResult> => {
   const executionIdentity = createExecutionIdentity({ requestId, turnId: currentTurnId });
@@ -354,7 +366,13 @@ export const createChatReply = async ({
   });
   const deterministicInterpretation = interpretTurnDeterministically(controlContext);
   const interpreted = await enrichTurnInterpretation(controlContext, deterministicInterpretation, inspectExternalPrompt);
-  const interpretation = interpreted.interpretation;
+  const purposeOwnership = await runPurposeSubjectOwnershipAuthority({
+    context: controlContext,
+    interpretation: interpreted.interpretation,
+    provider: purposeSubjectOwnershipProvider,
+    inspectPrompt: inspectPurposeSubjectOwnershipPrompt,
+  });
+  const interpretation = purposeOwnership.interpretation;
   const responseRelations = new Set(
     interpretation.responseRelation.candidates.map((candidate) => candidate.relation)
   );

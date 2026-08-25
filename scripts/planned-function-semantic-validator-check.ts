@@ -35,6 +35,7 @@ const basePlan = (): ResponsePlan => ({
   clinicalStrategy: null,
   positiveFunctionContract: null,
   interactionMoveHandoffPlan: null,
+  ordinaryPosture: null,
   questionPolicy: { mode: "none", reason: "offline semantic gate check" },
   closurePolicy: { mode: "forbid_closure", reason: "offline semantic gate check" },
   tone: ["natural"],

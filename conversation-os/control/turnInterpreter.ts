@@ -51,7 +51,9 @@ const directQuestionFromText = (text: string): DirectQuestion | null => {
   }
   const definition = text.match(/^(.{1,20}?)(?:是什么意思|是啥意思|什么叫)[？?。！!]*$/u);
   if (definition) return { text, kind: "definition", subject: definition[1], evidence: ["explicit definition question"] };
-  if (/(?:为什么|为何|怎么会|那你怎么)/u.test(text)) return { text, kind: "reason_or_contradiction", evidence: ["explicit reason or contradiction question"] };
+  if (/(?:为什么|为何|怎么会|那你怎么)/u.test(text)) {
+    return { text, kind: "reason_or_contradiction", evidence: ["explicit reason or contradiction question"] };
+  }
   if (/\p{L}|\p{N}/u.test(text) && (/[？?]\s*$/u.test(text) || /(?:吗|么|呢)[。！!]*$/u.test(text))) {
     return { text, kind: "other", evidence: ["explicit interrogative form"] };
   }
@@ -436,6 +438,7 @@ export const interpretTurnDeterministically = (context: ConversationControlConte
   );
   return {
     ...relational,
+    ordinaryPostureProposal: null,
     literalMeaning: text,
     primaryDialogueAct,
     secondarySignals,
@@ -521,6 +524,60 @@ const currentCommittedClaimAuthorityForContext = (
 
 const isTargetOperation = (value: unknown): value is TargetPropositionOperation =>
   value === "explain" || value === "answer" || value === "affirm" || value === "repair_or_withdraw";
+
+const modelOrdinaryPostureProposal = (
+  model: Partial<TurnInterpretation> | null
+): TurnInterpretation["ordinaryPostureProposal"] => {
+  const raw = model?.ordinaryPostureProposal;
+  if (!raw || typeof raw !== "object") return null;
+  const value = raw as unknown as Record<string, unknown>;
+  const hasExactKeys = (record: Record<string, unknown>, expected: string[]) =>
+    Object.keys(record).length === expected.length &&
+    expected.every((key) => Object.hasOwn(record, key));
+  if (!hasExactKeys(value, ["mode", "sourceSpans", "proposedContribution", "evidence"])) return null;
+  if (value.mode !== "accompany" && value.mode !== "explore") return null;
+  if (!Array.isArray(value.sourceSpans) || value.sourceSpans.length === 0) return null;
+  const sourceSpans = value.sourceSpans.map((span) => {
+    if (!span || typeof span !== "object") return null;
+    const item = span as Record<string, unknown>;
+    if (!hasExactKeys(item, ["source", "sourceTurnId", "start", "end", "text"])) return null;
+    if (
+      (item.source !== "current_user_turn" && item.source !== "adjacent_committed_user_turn") ||
+      typeof item.sourceTurnId !== "string" ||
+      !Number.isInteger(item.start) ||
+      !Number.isInteger(item.end) ||
+      typeof item.text !== "string"
+    ) return null;
+    return {
+      source: item.source as "current_user_turn" | "adjacent_committed_user_turn",
+      sourceTurnId: item.sourceTurnId,
+      start: item.start as number,
+      end: item.end as number,
+      text: item.text,
+    };
+  });
+  if (sourceSpans.some((span) => span === null)) return null;
+  const contribution = value.proposedContribution;
+  if (!contribution || typeof contribution !== "object") return null;
+  const proposed = contribution as Record<string, unknown>;
+  if (!hasExactKeys(proposed, ["targetSpanIndexes", "instruction"])) return null;
+  if (
+    !Array.isArray(proposed.targetSpanIndexes) ||
+    proposed.targetSpanIndexes.length === 0 ||
+    !proposed.targetSpanIndexes.every(Number.isInteger) ||
+    typeof proposed.instruction !== "string"
+  ) return null;
+  if (!Array.isArray(value.evidence) || !value.evidence.every((item) => typeof item === "string")) return null;
+  return {
+    mode: value.mode,
+    sourceSpans: sourceSpans as NonNullable<TurnInterpretation["ordinaryPostureProposal"]>["sourceSpans"],
+    proposedContribution: {
+      targetSpanIndexes: proposed.targetSpanIndexes as number[],
+      instruction: proposed.instruction,
+    },
+    evidence: value.evidence as string[],
+  };
+};
 
 const modelRelationCandidates = (
   model: Partial<TurnInterpretation> | null,
@@ -667,6 +724,7 @@ export const mergeModelInterpretation = (
       ? model.primaryDialogueAct
       : deterministic.primaryDialogueAct;
   const acceptedModelCandidates = modelRelationCandidates(model, context);
+  const ordinaryPostureProposal = modelOrdinaryPostureProposal(model);
   const claimAnswerBindingFailed = rejectedCommittedClaimAnswerBinding({
     model,
     context,
@@ -753,6 +811,7 @@ export const mergeModelInterpretation = (
     ? (deterministic.directQuestions.length > 0
         ? deterministic.directQuestions.map((question) => ({
             ...question,
+            subjectOwnership: "committed_assistant_claim" as const,
             kind: modelAnswerTarget.targetOperation === "explain"
               ? "definition" as const
               : question.kind,
@@ -770,6 +829,7 @@ export const mergeModelInterpretation = (
             kind: modelAnswerTarget.targetOperation === "explain"
               ? "definition" as const
               : "other" as const,
+            subjectOwnership: "committed_assistant_claim" as const,
             targetTurnId: modelAnswerTarget.targetTurnId,
             targetProposition: modelAnswerTarget.targetProposition,
             evidence: [
@@ -847,6 +907,7 @@ export const mergeModelInterpretation = (
       confidence: candidate.confidence,
       evidence: candidate.evidence,
     })),
+    ordinaryPostureProposal,
     confidence: modelConfidence,
     evidenceSources: model
       ? Array.from(new Set([...deterministic.evidenceSources, "model_interpretation"]))

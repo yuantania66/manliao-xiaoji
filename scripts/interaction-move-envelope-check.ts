@@ -148,6 +148,7 @@ const handoffPlan: ResponsePlan = {
       end: 2,
     }],
   },
+  ordinaryPosture: null,
   questionPolicy: { mode: "none", reason: "handoff completion fixture" },
   closurePolicy: { mode: "forbid_closure", reason: "handoff completion fixture" },
   tone: ["natural"],

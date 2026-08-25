@@ -9,6 +9,7 @@ const ALLOWED_LLM_CALL_FILES = new Set([
   "services/helping/hillHelpingDecisionService.ts",
   "services/ai/proactiveGreeting.ts",
   "services/ai/chatSafety.ts",
+  "services/ai/purposeSubjectOwnershipAuthority.ts",
   "services/ai/interactionMoveHandoffOutputValidator.ts",
   "services/ai/plannedFunctionSemanticValidator.ts",
   "services/memory/episodeSummaryService.ts",
@@ -44,6 +45,24 @@ assert.equal(
   (chatSafety.match(/callModel\(/g) ?? []).length,
   1,
   "Safety semantic triage may have only one structured provider call site."
+);
+
+const purposeSubjectOwnershipAuthority = readFileSync(
+  "services/ai/purposeSubjectOwnershipAuthority.ts",
+  "utf8"
+);
+assert.equal(
+  (purposeSubjectOwnershipAuthority.match(/callModel\(/g) ?? []).length,
+  1,
+  "Purpose Subject-Ownership Authority may have only one bounded structured provider call site."
+);
+assert(
+  purposeSubjectOwnershipAuthority.includes("responseFormat: \"json_object\"") &&
+    purposeSubjectOwnershipAuthority.includes("provider_not_authorized") &&
+    purposeSubjectOwnershipAuthority.includes("current_user_self") &&
+    !purposeSubjectOwnershipAuthority.includes("createResponsePlan(") &&
+    !purposeSubjectOwnershipAuthority.includes("generateChatReply("),
+  "Purpose Subject-Ownership must remain a strict local/eval authority, not Planner or Surface."
 );
 
 const episodeSummaryService = readFileSync("services/memory/episodeSummaryService.ts", "utf8");

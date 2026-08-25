@@ -35,6 +35,7 @@ const basePlan = (id: string): ResponsePlan => ({
   clinicalStrategy: null,
   positiveFunctionContract: null,
   interactionMoveHandoffPlan: null,
+  ordinaryPosture: null,
   questionPolicy: { mode: "none", reason: "frozen Qwen semantic gate" },
   closurePolicy: { mode: "forbid_closure", reason: "frozen Qwen semantic gate" },
   tone: ["natural"],

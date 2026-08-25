@@ -114,6 +114,7 @@ const responsePlanFor = ({
     clinicalStrategy: null,
     positiveFunctionContract: null,
     interactionMoveHandoffPlan: handoff,
+    ordinaryPosture: null,
     questionPolicy: {
       mode: handoff.questionPolicy === "none" ? "none" : "optional_after_answer",
       reason: "PHM-C check",

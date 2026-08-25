@@ -126,6 +126,7 @@ const planFor = ({
     clinicalStrategy: null,
     positiveFunctionContract: null,
     interactionMoveHandoffPlan: handoff,
+    ordinaryPosture: null,
     questionPolicy: {
       mode: handoff.questionPolicy === "none" ? "none" : "optional_after_answer",
       reason: "frozen Qwen Surface eval",

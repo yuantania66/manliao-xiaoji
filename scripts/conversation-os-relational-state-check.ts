@@ -11,6 +11,7 @@ import {
   interpretTurnDeterministically,
   mergeModelInterpretation,
   type ClinicalStrategyAdvice,
+  type OrdinaryPostureProposal,
   type RelationalInterpretationCandidate,
 } from "../conversation-os/control";
 import { determineConversationState } from "../conversation-os/state";
@@ -32,11 +33,13 @@ const build = ({
   recentMessages = [],
   modelCandidates = [],
   unconfirmedHypotheses = [],
+  postureProposal = null,
 }: {
   userMessage: string;
   recentMessages?: AiConversationMessage[];
   modelCandidates?: RelationalInterpretationCandidate[];
   unconfirmedHypotheses?: string[];
+  postureProposal?: OrdinaryPostureProposal | null;
 }) => {
   const conversationState = determineConversationState({
     currentUserMessage: userMessage,
@@ -51,13 +54,14 @@ const build = ({
   });
   context.unconfirmedHypotheses.push(...unconfirmedHypotheses);
   const deterministic = interpretTurnDeterministically(context);
-  const interpretation = modelCandidates.length > 0
+  const interpretation = modelCandidates.length > 0 || postureProposal
     ? mergeModelInterpretation(deterministic, {
         responseRelation: {
           candidates: modelCandidates,
           ambiguous: modelCandidates.length > 1,
         },
         confidence: Math.max(...modelCandidates.map((item) => item.confidence)),
+        ordinaryPostureProposal: postureProposal,
       }, context)
     : deterministic;
   const dialogueState = buildDialogueState(context, interpretation);
@@ -147,6 +151,125 @@ assert.equal(afterRepeatedQuestions.responsePlan.questionPolicy.mode, "none");
 const atNewConversation = build({ userMessage: "不知道聊什么" });
 assert(relations(atNewConversation).includes("yields_initiative"));
 assert.equal(atNewConversation.dialogueState.initiativeOwner, "assistant");
+assert.equal(atNewConversation.responsePlan.ordinaryPosture?.mode, "accompany");
+assert.equal(atNewConversation.responsePlan.ordinaryPosture?.sourceSpans[0]?.text, "不知道聊什么");
+
+const selfExploration = build({
+  userMessage: "我为什么总会这样",
+});
+assert.equal(selfExploration.interpretation.directQuestions.length, 1);
+assert.equal(selfExploration.responsePlan.answerObligations.length, 1);
+assert.equal(selfExploration.responsePlan.ordinaryPosture, null);
+
+for (const externalWhy of ["为什么会下雨", "这个接口为什么报错"]) {
+  const directExternal = build({ userMessage: externalWhy });
+  assert.equal(directExternal.interpretation.directQuestions[0]?.subjectOwnership, undefined);
+  assert.equal(directExternal.responsePlan.answerObligations.length, 1);
+  assert.equal(directExternal.responsePlan.ordinaryPosture, null);
+}
+
+const externalModelCannotOverrideDirect = build({
+  userMessage: "为什么会下雨",
+  postureProposal: {
+    mode: "explore",
+    sourceSpans: [{
+      source: "current_user_turn",
+      sourceTurnId: "relational-state-check:turn-1",
+      start: 0,
+      end: 6,
+      text: "为什么会下雨",
+    }],
+    proposedContribution: { targetSpanIndexes: [0], instruction: "把外部问题改成自我探索。" },
+    evidence: ["malicious or mistaken model proposal"],
+  },
+});
+assert.equal(externalModelCannotOverrideDirect.responsePlan.answerObligations.length, 1);
+assert.equal(externalModelCannotOverrideDirect.responsePlan.ordinaryPosture, null);
+
+const invalidProposalFallsBack = build({
+  userMessage: "今天事情不少",
+  postureProposal: {
+    mode: "explore",
+    sourceSpans: [{
+      source: "current_user_turn",
+      sourceTurnId: "wrong-turn",
+      start: 0,
+      end: 6,
+      text: "今天事情不少",
+    }],
+    proposedContribution: { targetSpanIndexes: [0], instruction: "推断隐藏原因。" },
+    evidence: ["invalid fixture"],
+  },
+});
+assert.equal(invalidProposalFallsBack.responsePlan.ordinaryPosture?.mode, "accompany");
+assert(invalidProposalFallsBack.responsePlan.ordinaryPosture?.evidence.includes("interpreter_proposal_rejected"));
+
+const strictProposalBase = build({ userMessage: "今天事情不少" });
+const strictRejected = mergeModelInterpretation(strictProposalBase.deterministic, {
+  ordinaryPostureProposal: {
+    mode: "explore",
+    sourceSpans: [{
+      source: "current_user_turn",
+      sourceTurnId: "relational-state-check:turn-1",
+      start: 0,
+      end: 6,
+      text: "今天事情不少",
+      extra: "must reject the whole proposal",
+    }],
+    proposedContribution: { targetSpanIndexes: [0, "bad"], instruction: "整理已有材料。" },
+    evidence: ["strict fixture"],
+  } as unknown as OrdinaryPostureProposal,
+}, strictProposalBase.context);
+assert.equal(strictRejected.ordinaryPostureProposal, null);
+
+const adjacentCommittedProposal = build({
+  userMessage: "还是这个",
+  recentMessages: [
+    { id: "prior-user", role: "user", content: "一边想休息，一边又怕落下", status: "saved" },
+    { id: "prior-assistant", role: "assistant", content: "我听见这两边都在拉你。", status: "saved" },
+  ],
+  postureProposal: {
+    mode: "explore",
+    sourceSpans: [{
+      source: "adjacent_committed_user_turn",
+      sourceTurnId: "prior-user",
+      start: 0,
+      end: 12,
+      text: "一边想休息，一边又怕落下",
+    }],
+    proposedContribution: {
+      targetSpanIndexes: [0],
+      instruction: "整理用户已表达的两边拉扯，让用户可以确认或修正。",
+    },
+    evidence: ["The current turn explicitly returns to adjacent committed User material."],
+  },
+});
+assert.equal(adjacentCommittedProposal.responsePlan.ordinaryPosture?.mode, "explore");
+assert.equal(
+  adjacentCommittedProposal.responsePlan.ordinaryPosture?.sourceSpans[0]?.source,
+  "adjacent_committed_user_turn"
+);
+
+for (const status of [undefined, "blocked"] as const) {
+  const excludedAdjacent = build({
+    userMessage: "还是这个",
+    recentMessages: [
+      { id: `excluded-${status ?? "undefined"}`, role: "user", content: "一边想休息，一边又怕落下", status },
+      { id: "excluded-assistant", role: "assistant", content: "明白。", status: "saved" },
+    ],
+    postureProposal: {
+      ...adjacentCommittedProposal.interpretation.ordinaryPostureProposal!,
+      sourceSpans: [{
+        source: "adjacent_committed_user_turn",
+        sourceTurnId: `excluded-${status ?? "undefined"}`,
+        start: 0,
+        end: 12,
+        text: "一边想休息，一边又怕落下",
+      }],
+    },
+  });
+  assert.equal(excludedAdjacent.responsePlan.ordinaryPosture?.mode, "accompany");
+}
 
 const afterPause = build({
   userMessage: "不知道聊什么",

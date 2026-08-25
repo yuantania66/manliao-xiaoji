@@ -3,6 +3,7 @@ import type {
   ConversationControlContext,
   DialogueState,
   InteractionMoveHandoffPlan,
+  OrdinaryPosturePlan,
   ResponsePlan,
   TurnInterpretation,
 } from "./types";
@@ -25,6 +26,10 @@ export type ResponsePlanPreflightAuthoritySnapshot = DeepReadonly<{
     userTurnId: string;
     userText: string;
   };
+  adjacentCommittedUserSources: Array<{
+    userTurnId: string;
+    userText: string;
+  }>;
   targetSource: {
     assistantMoveId: string;
     greetingFunction: InteractionMoveHandoffPlan["sourceGreetingFunction"];
@@ -113,6 +118,28 @@ export const projectCanonicalResponsePlanPreflightProvenance = (
   item.planElement === "interactionMoveHandoffPlan:relation"
 );
 
+export const buildCanonicalOrdinaryPostureProvenance = (
+  posture: OrdinaryPosturePlan
+): RelevanceProvenance => {
+  const primarySpan = posture.sourceSpans[0];
+  return {
+    planElement: "ordinaryPosture:binding",
+    source: primarySpan?.source === "adjacent_committed_user_turn"
+      ? "adjacent_turn"
+      : "current_turn",
+    sourceTurnId: primarySpan?.sourceTurnId,
+    evidence: [
+      `mode=${posture.mode}`,
+      ...posture.sourceSpans.map((span, index) =>
+        `sourceSpan[${index}]=${span.source}:${span.sourceTurnId}:${span.start}:${span.end}:${JSON.stringify(span.text)}`
+      ),
+      `targetSpanIndexes=${JSON.stringify(posture.requiredContribution.targetSpanIndexes)}`,
+      `instruction=${JSON.stringify(posture.requiredContribution.instruction)}`,
+      ...posture.evidence.map((item, index) => `postureEvidence[${index}]=${JSON.stringify(item)}`),
+    ],
+  };
+};
+
 export const createResponsePlanPreflightAuthoritySnapshot = ({
   context,
   interpretation,
@@ -156,6 +183,11 @@ export const createResponsePlanPreflightAuthoritySnapshot = ({
       userTurnId: context.currentTurnId,
       userText: context.currentUserMessage,
     },
+    adjacentCommittedUserSources: context.adjacentTurns.flatMap((turn) =>
+      turn.role === "user" && turn.id && turn.status === "saved"
+        ? [{ userTurnId: turn.id, userText: turn.content }]
+        : []
+    ),
     targetSource,
     expectedAnswerObligations: dialogueState.openObligations,
     canonicalProvenance: buildCanonicalResponsePlanPreflightProvenance({

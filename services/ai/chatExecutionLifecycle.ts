@@ -5,6 +5,7 @@ import type { ResponsePlan, ResponseValidationResult } from "@/conversation-os/c
 import type { ResponsePlanRecoveryDirective } from "@/conversation-os/control/responsePlanner";
 import { validateInteractionMoveHandoffPlan } from "@/conversation-os/control/interactionMoveHandoffPlanner";
 import {
+  buildCanonicalOrdinaryPostureProvenance,
   projectCanonicalResponsePlanPreflightProvenance,
   type ResponsePlanPreflightAuthoritySnapshot,
 } from "@/conversation-os/control/responsePlanPreflightAuthority";
@@ -123,10 +124,92 @@ export const preflightResponsePlan = (
   if (plan.interactionMoveHandoffPlan === undefined) {
     failureReasons.push("missing_interaction_move_handoff_plan_field");
   }
+  if (plan.ordinaryPosture === undefined) {
+    failureReasons.push("missing_ordinary_posture_field");
+  }
   const handoff = plan.interactionMoveHandoffPlan;
   const repairContract = plan.positiveFunctionContract?.action === "repair_previous_wording"
     ? plan.positiveFunctionContract
     : null;
+  const priorityOwnsTurn = Boolean(
+    plan.behaviorSource === "legacy_compat" ||
+    handoff ||
+    plan.answerObligations.length > 0 ||
+    plan.positiveFunctionContract ||
+    plan.requiredDisclosure.length > 0 ||
+    plan.responseActions.includes("respect_pause") ||
+    plan.responseActions.includes("repair_previous_wording")
+  );
+  const posture = plan.ordinaryPosture;
+  if (posture === null) {
+    if (!priorityOwnsTurn) failureReasons.push("ordinary_posture_required_for_ordinary_turn");
+  } else if (posture !== undefined) {
+    if (priorityOwnsTurn) failureReasons.push("ordinary_posture_conflicts_with_priority_owned_turn");
+    if (!authority) {
+      failureReasons.push("ordinary_posture_authority_missing");
+    } else {
+      if (posture.mode !== "accompany" && posture.mode !== "explore") {
+        failureReasons.push("invalid_ordinary_posture_mode");
+      }
+      if (!Array.isArray(posture.sourceSpans) || posture.sourceSpans.length === 0) {
+        failureReasons.push("missing_ordinary_posture_source_spans");
+      } else {
+        for (const span of posture.sourceSpans) {
+          const sourceText = span.source === "current_user_turn"
+            ? span.sourceTurnId === authority.currentSource.userTurnId
+              ? authority.currentSource.userText
+              : null
+            : span.source === "adjacent_committed_user_turn"
+              ? authority.adjacentCommittedUserSources.find((item) =>
+                  item.userTurnId === span.sourceTurnId
+                )?.userText ?? null
+              : null;
+          if (
+            sourceText === null ||
+            !Number.isInteger(span.start) ||
+            !Number.isInteger(span.end) ||
+            span.start < 0 ||
+            span.end <= span.start ||
+            sourceText.slice(span.start, span.end) !== span.text
+          ) failureReasons.push("ordinary_posture_source_span_authority_mismatch");
+        }
+      }
+      const indexes = posture.requiredContribution?.targetSpanIndexes;
+      if (
+        !Array.isArray(indexes) ||
+        indexes.length === 0 ||
+        new Set(indexes).size !== indexes.length ||
+        indexes.some((index) =>
+          !Number.isInteger(index) || index < 0 || index >= posture.sourceSpans.length
+        )
+      ) failureReasons.push("invalid_ordinary_posture_target_span_indexes");
+      const instruction = posture.requiredContribution?.instruction?.trim() ?? "";
+      if (instruction.length === 0 || instruction.length > 240) {
+        failureReasons.push("invalid_ordinary_posture_instruction");
+      }
+      if (!Array.isArray(posture.evidence) || !posture.evidence.some((item) => item.trim())) {
+        failureReasons.push("missing_ordinary_posture_evidence");
+      }
+      const postureProvenance = plan.relevanceProvenance.filter((item) =>
+        item.planElement === "ordinaryPosture:binding"
+      );
+      if (!sameJsonValue(postureProvenance, [buildCanonicalOrdinaryPostureProvenance(posture)])) {
+        failureReasons.push("ordinary_posture_provenance_mismatch");
+      }
+    }
+  }
+  if (
+    plan.closurePolicy.mode === "allow_idle" &&
+    (plan.responseActions.includes("take_light_topic_initiative") || plan.questionPolicy.mode !== "none")
+  ) failureReasons.push("idle_conflicts_with_initiative_or_question");
+  if (
+    plan.responseActions.includes("take_light_topic_initiative") &&
+    (plan.closurePolicy.mode === "allow_idle" || plan.closurePolicy.mode === "allow_pause")
+  ) failureReasons.push("initiative_conflicts_with_idle_or_pause");
+  if (
+    plan.responseActions.includes("respect_pause") &&
+    (plan.responseActions.length !== 1 || plan.questionPolicy.mode !== "none")
+  ) failureReasons.push("respect_pause_must_be_exclusive");
   if (authority) {
     if (!sameJsonValue(handoff, authority.expectedInteractionMoveHandoffPlan)) {
       failureReasons.push("interaction_move_handoff_authority_mismatch");

@@ -17,7 +17,7 @@ import {
 const createFixturePlan = (planId: string) => ({
   planId,
   decisionOwner: "conversation_os.response_planner" as const,
-  behaviorSource: "ordinary_conversation" as const,
+  behaviorSource: "legacy_compat" as const,
   planningDepth: "minimal" as const,
   answerObligations: [],
   disclosureScope: { conversationId: "offline-fixture", turnId: "offline-turn" },
@@ -28,6 +28,7 @@ const createFixturePlan = (planId: string) => ({
   clinicalStrategy: null,
   positiveFunctionContract: null,
   interactionMoveHandoffPlan: null,
+  ordinaryPosture: null,
   questionPolicy: { mode: "none" as const, reason: "offline fixture" },
   closurePolicy: { mode: "forbid_closure" as const, reason: "offline fixture" },
   tone: ["offline fixture"],
