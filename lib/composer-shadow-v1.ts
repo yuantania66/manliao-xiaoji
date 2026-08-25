@@ -4,6 +4,7 @@ import {
   hashFrozenObservationValue,
   type FrozenV1ObservationSnapshotV1,
 } from "./frozen-v1-observation-snapshot-authority";
+import { assertComposerObservationLedgerAuthorityResultV1, type ComposerObservationLedgerAuthorityResultV1 } from "./composer-observation-ledger-authority";
 
 export const COMPOSER_SHADOW_INPUT_SCHEMA = "composer_shadow_input_v1" as const;
 export const COMPOSER_SHADOW_OUTPUT_SCHEMA = "composer_shadow_output_v1" as const;
@@ -446,24 +447,27 @@ export const buildHashCountObservationV1 = ({ observationId, runConfigHash, snap
   recentTurnCount: validInput?.recentCommittedTurns.length ?? 0, episodeCandidateCount: validInput?.episodeCandidates.length ?? 0, hasActiveEvent: validInput?.activeEvent !== null && validInput !== null,
   v1SnapshotHash: hashComposerValue(v1), shadowStatus: shadow?.invocationStatus ?? "not_invoked",
   calls: shadow?.calls ?? 0, outputHash: shadow?.outputHash ?? null,
-  replyLength: shadow?.output?.reply.length ?? null, segmentCount: shadow?.timings.segmentCount ?? null,
+  replyLength: shadow?.output?.reply.length ?? (baselineCase.expectedSafetyOwnership === "safety" ? 0 : null), segmentCount: shadow?.timings.segmentCount ?? null,
   v1: { resultStatus: v1.resultStatus, committedWinnerHash: v1.committedWinnerHash, failureCategory: v1.failureCategory, retryable: v1.retryable, blockingQwenCalls: v1.blockingQwenCalls, plannerAttempts: v1.plannerAttempts, surfaceCandidates: v1.surfaceCandidates, serverElapsedMs: v1.serverElapsedMs, episodeSelectedIdHash: v1.episodeSelectedIdHash, committedEdge: v1.committedEdge, writeSetHash: v1.writeSetHash },
-  shadow: { model, promptVersion: "composer_shadow_prompt_v1", calls: shadow?.calls ?? 0, repairUsed: shadow?.repairUsed ?? false, promptTokens: null, completionTokens: null, outputHash: shadow?.outputHash ?? null, purpose: shadow?.output?.purpose ?? null, replyLength: shadow?.output?.reply.length ?? null, episodeRefHash: shadow?.output?.episodeRef ? hashComposerValue(shadow.output.episodeRef) : null, groundingRefIds: shadow?.output?.groundingRefs ?? [], eventRefHash: shadow?.output?.eventRef ? hashComposerValue(shadow.output.eventRef) : null, schemaValid: shadow?.invocationStatus === "success", turnBindingValid: shadow?.invocationStatus === "success", groundingRefsValid: shadow?.invocationStatus === "success", episodeRefValid: shadow?.invocationStatus === "success", eventRefValid: shadow?.invocationStatus === "success", timings: shadow?.timings ?? null },
+  shadow: { model: model ? hashComposerValue(model) : null, promptVersion: "composer_shadow_prompt_v1", calls: shadow?.calls ?? 0, repairUsed: shadow?.repairUsed ?? false, promptTokens: null, completionTokens: null, outputHash: shadow?.outputHash ?? null, purpose: shadow?.output?.purpose ?? null, replyLength: shadow?.output?.reply.length ?? (baselineCase.expectedSafetyOwnership === "safety" ? 0 : null), episodeRefHash: shadow?.output?.episodeRef ? hashComposerValue(shadow.output.episodeRef) : null, groundingRefIds: shadow?.output?.groundingRefs.map(hashComposerValue) ?? [], eventRefHash: shadow?.output?.eventRef ? hashComposerValue(shadow.output.eventRef) : null, schemaValid: shadow?.invocationStatus === "success", turnBindingValid: shadow?.invocationStatus === "success", groundingRefsValid: shadow?.invocationStatus === "success", episodeRefValid: shadow?.invocationStatus === "success", eventRefValid: shadow?.invocationStatus === "success", timings: shadow?.timings ?? null },
   qualityAnnotations: { evaluatorVersion: null, willingToReply: null, selfUnderstandingIncrement: null, autonomyPreserved: null, unsupportedPsychologizing: null, historicalCausalityOverstated: null, notesCode: [] },
   isolation: snapshot.isolation,
   });
 };
 
-export const buildPairedDeterministicReportV1 = (rows: readonly HashCountObservationV1[]) => {
-  const ordered = [...rows].sort((a, b) => a.caseId.localeCompare(b.caseId) || a.observationId.localeCompare(b.observationId));
+export const buildPairedDeterministicReportV1 = (ledger: ComposerObservationLedgerAuthorityResultV1) => {
+  assertComposerObservationLedgerAuthorityResultV1(ledger);
   return JSON.stringify({
     schemaVersion: "composer_shadow_paired_report_v1",
-    observationCount: ordered.length,
-    eligibleCount: ordered.filter((row) => row.eligibility === "eligible").length,
-    safetyIneligibleCount: ordered.filter((row) => row.ineligibleReason === "safety_owned").length,
-    successCount: ordered.filter((row) => row.shadowStatus === "success").length,
-    failureCounts: Object.fromEntries([...new Set(ordered.map((row) => row.shadowStatus))].sort().map((status) => [status, ordered.filter((row) => row.shadowStatus === status).length])),
-    cases: ordered,
-    timeGate: { status: "pending", successfulFirstAttemptHotRequired: 200, separateCalendarDaysRequired: 3, minimumPerDay: 50 },
+    ledgerAuthorityVersion: ledger.authorityVersion,
+    ledgerHash: ledger.ledgerHash,
+    runConfigHash: ledger.runConfigHash,
+    observationCount: ledger.observationCount,
+    caseCoverage: ledger.caseCoverage,
+    behaviorStability: ledger.behaviorStability,
+    eventIsolation: ledger.eventIsolation,
+    blindReview: ledger.blindReview,
+    latencyCalibration: ledger.latencyCalibration,
+    p1ExitStatus: ledger.p1ExitStatus,
   }, null, 2);
 };

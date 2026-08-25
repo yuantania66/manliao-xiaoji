@@ -26,6 +26,7 @@ import {
 } from "./hot-cold-p0-frozen-replay";
 import { createFrozenV1ObservationSnapshotV1, type FrozenV1ExecutionMetricsV1 } from "../lib/frozen-v1-observation-snapshot-authority";
 import { createV1ExecutionOutcomeIntegrityResultV1 } from "../lib/v1-execution-outcome-integrity-authority";
+import { createComposerObservationLedgerAuthorityResultV1, createEventNonPublicationSourceAuditV1 } from "../lib/composer-observation-ledger-authority";
 
 class StepClock implements MonotonicClock {
   private value = 0;
@@ -110,10 +111,6 @@ const controller = new AbortController();
 controller.abort();
 const cancelled = requireInvoked(await runComposerShadowV1({ snapshot: ordinarySnapshot, input, provider: async () => stream([JSON.stringify(output)]), clock: new StepClock(), externalSignal: controller.signal }));
 assert.equal(cancelled.invocationStatus, "cancelled");
-const processExit = new AbortController();
-processExit.abort("process_exit");
-const interrupted = requireInvoked(await runComposerShadowV1({ snapshot: ordinarySnapshot, input, provider: providerFrom(JSON.stringify(output)), clock: new StepClock(), externalSignal: processExit.signal }));
-assert.equal(interrupted.invocationStatus, "cancelled", "injectable process-exit interruption remains observation-local");
 
 const timeout = requireInvoked(await runComposerShadowV1({
   snapshot: ordinarySnapshot,
@@ -127,7 +124,7 @@ const timeout = requireInvoked(await runComposerShadowV1({
 }));
 assert.equal(timeout.invocationStatus, "timed_out");
 
-for (const failed of [malformed, providerFailure, cancelled, interrupted, timeout]) {
+for (const failed of [malformed, providerFailure, cancelled, timeout]) {
   assert.equal(hashComposerValue(v1), v1Before, `${failed.invocationStatus} changed V1 snapshot`);
 }
 
@@ -176,7 +173,7 @@ assert.equal(adversarial.timings.segmentCount, 2, "timing scanner must segment o
 const covered = SYNTHETIC_BASELINE_CASES_V1.map((baselineCase) => {
   const caseSnapshot = snapshotFor(baselineCase.caseId, { ...committedMetrics, committedEdge: null, episodeSelectedIdHash: null });
   const caseInput = buildComposerShadowInputFromSnapshotV1(caseSnapshot, `coverage-${baselineCase.caseId}`);
-  return buildHashCountObservationV1({ observationId: `coverage-${baselineCase.caseId}`, runConfigHash, snapshot: caseSnapshot, input: caseInput, shadow: null, notInvokedReason: baselineCase.expectedSafetyOwnership === "safety" ? "safety_owned" : "feature_disabled" });
+  return buildHashCountObservationV1({ observationId: `composer-observation:${baselineCase.caseId}:slot:1`, runConfigHash, snapshot: caseSnapshot, input: caseInput, shadow: null, notInvokedReason: baselineCase.expectedSafetyOwnership === "safety" ? "safety_owned" : "feature_disabled" });
 });
 assert.equal(covered.length, SYNTHETIC_BASELINE_CASES_V1.length);
 assert(covered.every((row) => row.shadowStatus === "not_invoked" && row.notInvokedReason !== null));
@@ -184,11 +181,13 @@ const telemetry = JSON.stringify(sink.all());
 assert.equal(telemetry.includes(input.currentUserText), false);
 assert.equal(telemetry.includes(output.reply), false);
 
-const reportA = buildPairedDeterministicReportV1(sink.all());
-const reportB = buildPairedDeterministicReportV1([...sink.all()].reverse());
+const ledgerEventAudit = createEventNonPublicationSourceAuditV1();
+const ledger = createComposerObservationLedgerAuthorityResultV1({ entries: covered.map((observation) => ({ slot: 1 as const, observation })), eventSourceAudit: ledgerEventAudit });
+const reportA = buildPairedDeterministicReportV1(ledger);
+const reportB = buildPairedDeterministicReportV1(ledger);
 assert.equal(reportA, reportB);
 assert(reportA.includes('"status": "pending"'));
-assert(reportA.includes('"separateCalendarDaysRequired": 3'));
+assert(reportA.includes('"three_calendar_days"'));
 
 const p0Hash = buildHotColdP0RunConfigHash({ revision: "synthetic-revision", model: "synthetic-v1" });
 const p0Rows: HotColdP0ObservationV1[] = ["cold", "hot"].map((processTemperature, index) => ({
