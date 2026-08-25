@@ -31,6 +31,23 @@ enum MessageStatus {
   REWRITTEN
 }
 
+enum AssistantPublicationStatus {
+  reserved
+  streaming
+  committed
+  failed_retryable
+  failed_terminal
+}
+
+enum AssistantPublicationFailureCode {
+  PLAN_INVALID
+  GENERATION_NONCONFORMANT
+  SAFETY_BLOCKED
+  PROVIDER_ERROR
+  TIMEOUT
+  PERSISTENCE_ERROR
+}
+
 enum AiSourceType {
   CHAT
   NOTE_SLIP
@@ -340,6 +357,7 @@ model User {
   relationshipVersions   RelationshipVersion[]
   versionHistories       VersionHistory[]
   refinementJobs         RefinementJob[]
+  assistantPublications  AssistantPublication[]
 }
 
 model Session {
@@ -379,7 +397,9 @@ model ChatSession {
   updatedAt     DateTime      @updatedAt
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages      ChatMessage[]
+  assistantPublications AssistantPublication[]
 
+  @@unique([id, userId])
   @@index([userId, updatedAt])
 }
 
@@ -399,11 +419,41 @@ model ChatMessage {
   aiGeneration        AiGeneration?       @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
   replyToMessage      ChatMessage?        @relation("ChatMessageReply", fields: [replyToMessageId], references: [id], onDelete: SetNull)
   assistantReply      ChatMessage?        @relation("ChatMessageReply")
+  reservedPublication  AssistantPublication? @relation("AssistantPublicationUserMessage")
+  committedPublication AssistantPublication? @relation("AssistantPublicationCommittedMessage")
   emotionSlices       EmotionSlice[]
   feedbacks           AiMessageFeedback[]
 
   @@index([sessionId, createdAt])
   @@index([userId, createdAt])
+}
+
+model AssistantPublication {
+  id                 String                     @id @default(cuid())
+  sessionId          String
+  userId             String
+  clientTurnId       String
+  userMessageId      String?                    @unique
+  committedMessageId String?                    @unique
+  status             AssistantPublicationStatus @default(reserved)
+  leaseOwner         String?
+  leaseExpiresAt     DateTime?
+  attempt            Int                        @default(0)
+  draftVersion       Int                        @default(0)
+  draftContent       String                     @default("")
+  finalContent       String?
+  failureCode        AssistantPublicationFailureCode?
+  contentDeletedAt   DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  userMessage        ChatMessage?               @relation("AssistantPublicationUserMessage", fields: [userMessageId], references: [id], onDelete: SetNull)
+  committedMessage   ChatMessage?               @relation("AssistantPublicationCommittedMessage", fields: [committedMessageId], references: [id], onDelete: SetNull)
+  session            ChatSession                 @relation(fields: [sessionId, userId], references: [id, userId], onDelete: Cascade)
+  user               User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, clientTurnId])
+  @@index([sessionId, status])
+  @@index([leaseExpiresAt])
 }
 
 model Note {
