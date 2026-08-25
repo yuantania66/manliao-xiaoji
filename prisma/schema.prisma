@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../.generated/p5-prisma"
 }
 
 datasource db {
@@ -46,6 +47,39 @@ enum AssistantPublicationFailureCode {
   PROVIDER_ERROR
   TIMEOUT
   PERSISTENCE_ERROR
+}
+
+enum GovernanceDeletionStatus {
+  VISIBILITY_REVOKED
+  DERIVATIVES_INVALIDATED
+  RECOMPUTE_MARKED
+  PHYSICAL_DELETE_PENDING
+  COMPLETED
+  FAILED_RETRYABLE
+  FAILED_TERMINAL
+}
+
+enum GovernanceDerivativeKind {
+  MEMORY
+  INDEX
+  PROFILE
+  RELATIONSHIP
+  GROWTH
+  REPLAY
+  SHADOW
+}
+
+enum GovernanceDeletionPhase {
+  VISIBILITY
+  DERIVATIVES
+  RECOMPUTE
+  PHYSICAL_DELETE
+}
+
+enum GovernanceAuditResult {
+  APPLIED
+  REPLAYED
+  FAILED
 }
 
 enum AiSourceType {
@@ -358,6 +392,8 @@ model User {
   versionHistories       VersionHistory[]
   refinementJobs         RefinementJob[]
   assistantPublications  AssistantPublication[]
+  governanceDeletionRequests GovernanceDeletionRequest[]
+  governanceSourceEdges GovernanceSourceEdge[]
 }
 
 model Session {
@@ -398,6 +434,7 @@ model ChatSession {
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages      ChatMessage[]
   assistantPublications AssistantPublication[]
+  governanceDeletionRequests GovernanceDeletionRequest[]
 
   @@unique([id, userId])
   @@index([userId, updatedAt])
@@ -413,6 +450,7 @@ model ChatMessage {
   aiGenerationId      String?
   replyToMessageId    String?             @unique
   interactionMetadata Json?
+  contentDeletedAt    DateTime?
   createdAt           DateTime            @default(now())
   session             ChatSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -421,11 +459,14 @@ model ChatMessage {
   assistantReply      ChatMessage?        @relation("ChatMessageReply")
   reservedPublication  AssistantPublication? @relation("AssistantPublicationUserMessage")
   committedPublication AssistantPublication? @relation("AssistantPublicationCommittedMessage")
+  governanceDeletionRequests GovernanceDeletionRequest[]
+  governanceSourceEdges GovernanceSourceEdge[]
   emotionSlices       EmotionSlice[]
   feedbacks           AiMessageFeedback[]
 
   @@index([sessionId, createdAt])
   @@index([userId, createdAt])
+  @@unique([id, userId, sessionId])
 }
 
 model AssistantPublication {
@@ -454,6 +495,73 @@ model AssistantPublication {
   @@unique([sessionId, clientTurnId])
   @@index([sessionId, status])
   @@index([leaseExpiresAt])
+}
+
+model GovernanceDeletionRequest {
+  id                       String                   @id @default(cuid())
+  userId                   String
+  sessionId                String
+  sourceMessageId          String?                  @unique
+  sourceMessageIdHash      String
+  requestKey               String
+  status                   GovernanceDeletionStatus @default(VISIBILITY_REVOKED)
+  requestedAt              DateTime
+  visibilityRevokedAt      DateTime
+  derivativesInvalidatedAt DateTime?
+  recomputeMarkedAt        DateTime?
+  replayPurgedAt           DateTime?
+  physicalDeletedAt        DateTime?
+  leaseOwner               String?
+  leaseExpiresAt           DateTime?
+  attempt                  Int                      @default(0)
+  failureCode              String?
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  user                     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session                  ChatSession              @relation(fields: [sessionId, userId], references: [id, userId], onDelete: Cascade)
+  sourceMessage            ChatMessage?             @relation(fields: [sourceMessageId, userId, sessionId], references: [id, userId, sessionId], onDelete: Restrict)
+  edges                    GovernanceSourceEdge[]
+  audits                   GovernanceDeletionAudit[]
+
+  @@unique([userId, requestKey])
+  @@unique([id, userId])
+  @@unique([id, userId, sessionId, sourceMessageId])
+  @@unique([sourceMessageId, userId, sessionId])
+  @@index([status, leaseExpiresAt])
+}
+
+model GovernanceSourceEdge {
+  id              String                   @id @default(cuid())
+  userId          String
+  sessionId       String
+  sourceMessageId String
+  requestId       String?
+  targetKind      GovernanceDerivativeKind
+  targetIdHash    String
+  createdAt       DateTime                 @default(now())
+  invalidatedAt   DateTime?
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMessage   ChatMessage              @relation(fields: [sourceMessageId, userId, sessionId], references: [id, userId, sessionId], onDelete: Cascade)
+  request         GovernanceDeletionRequest? @relation(fields: [requestId, userId, sessionId, sourceMessageId], references: [id, userId, sessionId, sourceMessageId], onDelete: Cascade)
+
+  @@unique([sourceMessageId, targetKind, targetIdHash])
+  @@index([userId, sourceMessageId])
+}
+
+model GovernanceDeletionAudit {
+  id            String                  @id @default(cuid())
+  requestId     String
+  requestIdHash String
+  phase         GovernanceDeletionPhase
+  result        GovernanceAuditResult
+  occurredAt    DateTime
+  durationMs    Int
+  effectCount   Int
+  attempt       Int
+  request       GovernanceDeletionRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, phase])
+  @@index([occurredAt])
 }
 
 model Note {
