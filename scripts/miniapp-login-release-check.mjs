@@ -32,6 +32,12 @@ storage.set("xinqingAuth", { token: "expired", expiresAt: new Date(0).toISOStrin
 assert.equal(auth.getAuth(), null);
 assert.equal(storage.has("xinqingAuth"), false);
 assert.throws(() => auth.saveAuth({ token: "bad" }), /登录响应无效/);
+for (const key of ["xinqingMiniGuestChatMessages", "xinqingMiniGuestNotes"]) storage.set(key, "private-guest-data");
+const preservedDraft = { content: "待恢复", mediaItems: [], clientRequestId: "request-preserved" };
+storage.set("xinqingMiniNoteDraft:v1", preservedDraft);
+auth.saveAuth(validAuth);
+for (const key of ["xinqingMiniGuestChatMessages", "xinqingMiniGuestNotes"]) assert.equal(storage.has(key), false);
+assert.deepEqual(storage.get("xinqingMiniNoteDraft:v1"), preservedDraft);
 
 storage.set("xinqing_api_env", "local");
 storage.set("xinqing_api_base_url", "http://attacker.invalid");

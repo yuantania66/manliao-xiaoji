@@ -4,7 +4,7 @@
   <view class="title">我的小记</view>
   <view class="body intro">{{introText}}</view>
   <view class="search-box">⌕<input value="{{query}}" bindinput="onInput" placeholder="查找小记内容" /></view>
-  <view wx:if="{{statusText}}" class="history-status">{{statusText}}</view>
+  <view wx:if="{{statusText}}" class="history-status" aria-live="polite">{{statusText}}</view>
   <navigator url="/pages/note-calendar/note-calendar" class="calendar-entry card-sage" hover-class="none">
     <view class="entry-title">心情日历</view>
     <view class="entry-copy">按天气回看某一天</view>

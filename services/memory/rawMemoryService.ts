@@ -168,6 +168,9 @@ export const createRawMemoryFromNote = async ({
     if (note.isDraft) {
       throw new Error("Draft notes are not eligible for RawMemory until published.");
     }
+    if (!note.content.trim()) {
+      throw new Error("Textless notes do not create text RawMemory.");
+    }
 
     const payload = {
       noteId: note.id,

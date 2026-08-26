@@ -5,6 +5,7 @@
     <view class="detail-menu-button" bindtap="toggleMenu">···</view>
     <view wx:if="{{isMenuOpen}}" class="menu-mask" bindtap="closeMenu"></view>
     <view wx:if="{{isMenuOpen}}" class="detail-menu">
+      <view class="edit-menu-item" bindtap="startEditing">修改文字</view>
       <view class="delete-menu-item" bindtap="deleteCurrentNote">
         <view class="delete-icon">
           <view class="delete-icon-handle"></view>
@@ -19,7 +20,12 @@
   <view wx:if="{{note}}" class="detail-content">
     <view class="detail-date">{{note.dateLabel}}</view>
 
-    <view wx:if="{{note.hasText}}" class="text-content">{{note.content}}</view>
+    <view wx:if="{{isEditing}}" class="edit-panel" role="group" aria-label="修改小记文字">
+      <textarea maxlength="500" value="{{editContent}}" bindinput="onEditInput" aria-label="小记文字" />
+      <view wx:if="{{statusText}}" class="edit-error" aria-live="assertive">{{statusText}}</view>
+      <view class="edit-actions"><button bindtap="cancelEditing" disabled="{{isUpdating}}">取消</button><button bindtap="saveEdit" loading="{{isUpdating}}" disabled="{{isUpdating}}">保存修改</button></view>
+    </view>
+    <view wx:elif="{{note.hasText}}" class="text-content">{{note.content}}</view>
 
     <view wx:if="{{note.hasImages}}" class="media-grid {{note.imageGridClass}}">
       <image

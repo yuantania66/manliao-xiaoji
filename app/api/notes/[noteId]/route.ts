@@ -4,7 +4,8 @@ import { failFromError, ok } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
-import { requireNonEmptyString } from "@/lib/validation";
+import { RawMemorySourceType } from "@prisma/client";
+import { removeNoteUploadFile } from "@/app/api/uploads/notes/storage";
 
 const readJson = async (request: Request) => {
   try {
@@ -75,13 +76,22 @@ export async function PATCH(
     const { noteId } = await context.params;
     await findOwnedNote(noteId, user.id);
     const body = await readJson(request);
+    if (typeof body.content !== "string") {
+      throw new AppError("VALIDATION_ERROR", "content 必须是字符串", 400, { field: "content" });
+    }
+    const content = body.content.trim();
+    if (content.length > 500) {
+      throw new AppError("VALIDATION_ERROR", "content 不能超过 500 个字符", 400, { field: "content", maxLength: 500 });
+    }
+    const existing = await prisma.note.findFirst({ where: { id: noteId, userId: user.id }, select: { mediaUrls: true } });
+    if (!content && (!Array.isArray(existing?.mediaUrls) || existing.mediaUrls.length === 0)) {
+      throw new AppError("VALIDATION_ERROR", "文字和图片至少需要一项", 400);
+    }
 
     const note = await prisma.note.update({
       where: { id: noteId },
       data: {
-        ...(body.content === undefined
-          ? {}
-          : { content: requireNonEmptyString(body.content, "content", 500) }),
+        content,
       },
       select: {
         id: true,
@@ -109,7 +119,15 @@ export async function DELETE(
     const user = await requireUser(request);
     const { noteId } = await context.params;
     await findOwnedNote(noteId, user.id);
-    await prisma.note.delete({ where: { id: noteId } });
+    const uploads = await prisma.noteUpload.findMany({ where: { noteId, userId: user.id } });
+    await prisma.$transaction([
+      prisma.rawMemory.deleteMany({ where: { userId: user.id, sourceType: RawMemorySourceType.NOTE, sourceId: noteId } }),
+      prisma.note.delete({ where: { id: noteId } }),
+    ]);
+    await Promise.all(uploads.map(async (upload) => {
+      await removeNoteUploadFile(upload.storageKey);
+      await prisma.noteUpload.deleteMany({ where: { id: upload.id, userId: user.id, noteId: null } });
+    }));
     return ok({ deleted: true });
   } catch (error) {
     return failFromError(error);

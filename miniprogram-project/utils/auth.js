@@ -2,7 +2,9 @@ const AUTH_KEY = "xinqingAuth";
 const GUEST_KEY = "xinqingGuestMode";
 const USER_CACHE_KEYS = [
   "xinqingMiniChatMessages",
-  "xinqingMiniNotes"
+  "xinqingMiniNotes",
+  "xinqingMiniGuestChatMessages",
+  "xinqingMiniGuestNotes"
 ];
 
 const isUsableAuth = (auth, now = Date.now()) => {

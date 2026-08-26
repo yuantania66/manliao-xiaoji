@@ -1,11 +1,14 @@
-import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
+import { randomBytes, randomUUID } from "crypto";
+import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { NextRequest } from "next/server";
 
 import { failFromError, ok } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
+
+import { getNoteUploadRoot, hashUploadToken, removeNoteUploadFile, uploadIdFromUrl } from "./storage";
 
 export const runtime = "nodejs";
 
@@ -23,15 +26,6 @@ const getMaxImageSizeBytes = () => {
   return sizeMb * 1024 * 1024;
 };
 
-const getUploadRoot = () =>
-  process.env.UPLOAD_DIR?.trim() || path.join(process.cwd(), "public", "uploads");
-
-const getPublicBaseUrl = (request: NextRequest) => {
-  const configured = process.env.UPLOAD_PUBLIC_BASE_URL?.trim();
-  if (configured) return configured.replace(/\/$/, "");
-  return `${new URL(request.url).origin}/uploads`;
-};
-
 const parseFile = async (request: NextRequest) => {
   const formData = await request.formData().catch(() => {
     throw new AppError("VALIDATION_ERROR", "请求体必须是 multipart/form-data", 400);
@@ -47,7 +41,7 @@ const parseFile = async (request: NextRequest) => {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireUser(request);
+    const user = await requireUser(request);
 
     const file = await parseFile(request);
     const extension = ALLOWED_IMAGE_TYPES.get(file.type);
@@ -65,15 +59,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const directory = path.join(getUploadRoot(), "notes");
+    const id = randomUUID();
+    const accessToken = randomBytes(32).toString("base64url");
+    const directory = path.join(getNoteUploadRoot(), user.id);
     await mkdir(directory, { recursive: true });
 
-    const filename = `${randomUUID()}.${extension}`;
-    const filePath = path.join(directory, filename);
+    const storageKey = `${user.id}/${id}.${extension}`;
+    const filePath = path.join(getNoteUploadRoot(), storageKey);
     const bytes = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, bytes, { flag: "wx" });
 
-    const url = `${getPublicBaseUrl(request)}/notes/${filename}`;
+    try {
+      await prisma.noteUpload.create({
+        data: { id, userId: user.id, storageKey, mimeType: file.type, size: file.size, accessTokenHash: hashUploadToken(accessToken) },
+      });
+    } catch (error) {
+      await unlink(filePath).catch(() => undefined);
+      throw error;
+    }
+
+    const url = `${new URL(request.url).origin}/api/uploads/notes/${id}?token=${accessToken}`;
     return ok({
       items: [
         {
@@ -83,6 +88,25 @@ export async function POST(request: NextRequest) {
         },
       ],
     });
+  } catch (error) {
+    return failFromError(error);
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await requireUser(request);
+    const body = await request.json().catch(() => null) as { urls?: unknown } | null;
+    if (!body || !Array.isArray(body.urls) || body.urls.length > 9) {
+      throw new AppError("VALIDATION_ERROR", "urls 必须是最多 9 项的数组", 400);
+    }
+    const ids = body.urls.map((value) => typeof value === "string" ? uploadIdFromUrl(value) : null);
+    if (ids.some((id) => !id)) throw new AppError("VALIDATION_ERROR", "urls 包含无效上传地址", 400);
+    const uploads = await prisma.noteUpload.findMany({ where: { id: { in: ids as string[] }, userId: user.id, noteId: null } });
+    if (uploads.length !== new Set(ids).size) throw new AppError("NOT_FOUND", "上传文件不存在或不可清理", 404);
+    await Promise.all(uploads.map((upload) => removeNoteUploadFile(upload.storageKey)));
+    await prisma.noteUpload.deleteMany({ where: { id: { in: ids as string[] }, userId: user.id, noteId: null } });
+    return ok({ deleted: uploads.length });
   } catch (error) {
     return failFromError(error);
   }

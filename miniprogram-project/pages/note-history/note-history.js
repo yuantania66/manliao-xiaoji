@@ -1,6 +1,6 @@
 const { readNotes } = require("../../utils/local-data");
 const { getDataMode } = require("../../utils/auth");
-const { listNotes } = require("../../api/notes");
+const { listAllNotes } = require("../../api/notes");
 const { getSafeLayout } = require("../../utils/layout");
 
 const titleOf = (content, note = {}) => {
@@ -30,7 +30,8 @@ Page({
     isEmpty: true,
     notes: [],
     backTop: 54,
-    statusText: ""
+    statusText: "",
+    isLoading: false
   },
 
   onLoad(options) {
@@ -56,20 +57,24 @@ Page({
   },
 
   refresh() {
+    const generation = (this.refreshGeneration || 0) + 1;
+    this.refreshGeneration = generation;
     const dataMode = getDataMode();
     if (dataMode === "authenticated") {
-      const params = this.data.date ? `?date=${this.data.date}&pageSize=50` : "?pageSize=50";
-      listNotes(params)
-        .then((data) => {
+      this.setData({ isLoading: true, statusText: "正在加载小记…" });
+      listAllNotes(this.data.date ? { date: this.data.date } : {})
+        .then((items) => {
+          if (generation !== this.refreshGeneration) return;
           const keyword = this.data.query.trim();
-          const notes = (data.items || [])
+          const notes = items
             .map(normalizeRemoteNote)
             .filter((note) => !keyword || note.content.includes(keyword) || (note.mood && `${note.mood.name}${note.mood.desc}`.includes(keyword)));
-          this.setData({ notes, isEmpty: notes.length === 0, statusText: "" });
+          this.setData({ notes, isEmpty: notes.length === 0, statusText: "", isLoading: false });
         })
         .catch((error) => {
+          if (generation !== this.refreshGeneration) return;
           const message = error.message || "小记加载失败，请稍后再试";
-          this.setData({ notes: [], isEmpty: true, statusText: message });
+          this.setData({ notes: [], isEmpty: true, statusText: message, isLoading: false });
           wx.showToast({ title: message, icon: "none" });
         })
       return;
@@ -83,11 +88,13 @@ Page({
     this.setData({
       notes: [],
       isEmpty: true,
+      isLoading: false,
       statusText: "请先登录，或在首页选择游客模式。"
     });
   },
 
   refreshLocal() {
+    this.refreshGeneration = (this.refreshGeneration || 0) + 1;
     const keyword = this.data.query.trim();
     const notes = readNotes()
       .filter((note) => !this.data.date || note.dateKey === this.data.date)
@@ -96,6 +103,7 @@ Page({
     this.setData({
       notes,
       isEmpty: notes.length === 0,
+      isLoading: false,
       statusText: "游客模式，只显示本机小记。"
     });
   }
