@@ -1,6 +1,6 @@
-const { getAuth, saveAuth, enterGuest } = require("../../utils/auth");
+const { getAuth, saveAuth } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
-const { loginWithWechat } = require("../../api/auth");
+const { loginWithWechat, getMe } = require("../../api/auth");
 
 const getMembershipDays = (createdAt) => {
   if (!createdAt) return null;
@@ -21,6 +21,10 @@ Page({
     pageTop: 92,
     isLoggedIn: false,
     membershipText: "内容仅保存在本机",
+    isCheckingAuth: false,
+    isLoggingIn: false,
+    loginError: "",
+    privacyConfirmed: false,
     activeTab: "me",
     switchingTab: false
   },
@@ -32,6 +36,43 @@ Page({
       isLoggedIn: Boolean(auth),
       membershipText: getMembershipText(auth)
     });
+    if (auth) this.reconcileAuth();
+  },
+
+  reconcileAuth() {
+    if (this.authCheckPending) return;
+    const auth = getAuth();
+    if (!auth) return;
+    const checkId = (this.authCheckId || 0) + 1;
+    this.authCheckId = checkId;
+    this.authCheckPending = true;
+    this.setData({ isCheckingAuth: true, membershipText: "正在验证登录状态...", loginError: "" });
+    getMe()
+      .then(() => {
+        if (this.authCheckId !== checkId || !getAuth()) return;
+        this.setData({ isLoggedIn: true, membershipText: getMembershipText(getAuth()) });
+      })
+      .catch(() => {
+        if (this.authCheckId !== checkId) return;
+        const stillStored = getAuth();
+        this.setData({
+          isLoggedIn: Boolean(stillStored),
+          membershipText: getMembershipText(stillStored),
+          loginError: stillStored
+            ? "暂时无法验证登录状态，请检查网络后重试。"
+            : "登录状态已失效，请重新登录。"
+        });
+      })
+      .finally(() => {
+        if (this.authCheckId === checkId) {
+          this.authCheckPending = false;
+          this.setData({ isCheckingAuth: false });
+        }
+      });
+  },
+
+  togglePrivacy(event) {
+    this.setData({ privacyConfirmed: event.detail.value.includes("confirmed") });
   },
 
   updateSafeLayout() {
@@ -40,31 +81,39 @@ Page({
   },
 
   login() {
-    const enterGuestAfterLoginFailure = (message = "登录失败，可以先用游客模式体验。") => {
-      enterGuest();
-      this.setData({
-        isLoggedIn: false,
-        membershipText: "游客模式，仅保存在本机"
-      });
-      wx.showToast({ title: message, icon: "none" });
-    };
+    if (this.data.isLoggingIn) return;
+    if (!this.data.privacyConfirmed) {
+      this.setData({ loginError: "请先阅读并同意隐私政策。" });
+      return;
+    }
+    this.authCheckId = (this.authCheckId || 0) + 1;
+    this.authCheckPending = false;
+    this.setData({ isCheckingAuth: false, isLoggingIn: true, loginError: "" });
 
     wx.login({
       success: ({ code }) => {
-        loginWithWechat(code || `mini_me_${Date.now()}`)
+        if (!code) {
+          this.setData({ isLoggingIn: false, loginError: "微信未返回有效登录凭证，请重试。" });
+          return;
+        }
+        loginWithWechat(code)
           .then((auth) => {
             saveAuth(auth);
             this.setData({
               isLoggedIn: true,
-              membershipText: getMembershipText(auth)
+              membershipText: getMembershipText(auth),
+              loginError: ""
             });
           })
           .catch((error) => {
-            enterGuestAfterLoginFailure(error.message || "登录失败，可以先用游客模式体验。");
+            this.setData({ loginError: error.message || "登录失败，请稍后重试。" });
+          })
+          .finally(() => {
+            this.setData({ isLoggingIn: false });
           });
       },
       fail: () => {
-        enterGuestAfterLoginFailure("微信登录失败，可以先用游客模式体验。");
+        this.setData({ isLoggingIn: false, loginError: "微信登录失败，请稍后重试。" });
       }
     });
   },
@@ -86,6 +135,7 @@ Page({
   },
 
   onUnload() {
+    this.authCheckId = (this.authCheckId || 0) + 1;
     if (this.tabSwitchTimer) clearTimeout(this.tabSwitchTimer);
   }
 });

@@ -1,6 +1,6 @@
 import type { ClinicalMemoryContext } from "@/services/ai/clinicalMemoryAdapter";
 import type { AiConversationMessage, AiRiskLevel } from "@/services/ai/types";
-import type { ConversationState } from "@/conversation-os/state";
+import type { ConversationInteractionSignals, ConversationState } from "@/conversation-os/state";
 
 export type ClinicalCurrentUnderstanding = {
   event: string[];
@@ -31,6 +31,12 @@ export type ClinicalEmotionalIntensity = "LOW" | "MEDIUM" | "HIGH" | "UNKNOWN";
 
 export type ClinicalConversationStage = "OPENING" | "EXPLORING" | "CONTINUING";
 
+export type ClinicalSemanticEvidence = {
+  status: "sufficient" | "insufficient";
+  source: "current_user_message" | "established_conversation_frame" | "none";
+  reason: string;
+};
+
 export type ClinicalSignals = {
   messageLength: ClinicalMessageLength;
   expressionDifficulty: boolean;
@@ -38,6 +44,8 @@ export type ClinicalSignals = {
   emotionalIntensity: ClinicalEmotionalIntensity;
   hasPreviousAssistantReply: boolean;
   conversationStage: ClinicalConversationStage;
+  semanticEvidence: ClinicalSemanticEvidence;
+  interaction: ConversationInteractionSignals;
   memoryAvailability: {
     hasUnderstanding: boolean;
     hasRelationship: boolean;
@@ -138,6 +146,7 @@ export type ClinicalStrategy =
 
 export type ClinicalResponseIntent =
   | "invite_expression"
+  | "initiate_topic"
   | "empathic_reflection"
   | "receive"
   | "repair"
@@ -167,6 +176,7 @@ export type ClinicalPlan = {
   toneConstraint: string[];
   interventionBoundary: string[];
   safetyNotes: string[];
+  interaction: ConversationInteractionSignals;
   rationale: string[];
 };
 
@@ -183,6 +193,7 @@ export type ClinicalStrategyDefinition = {
 
 export type ClinicalTrace = {
   skippedBySafety: boolean;
+  invokedByPlanner?: boolean;
   conversationState: ClinicalContext["conversation"]["state"];
   safetyDecision?: {
     level: AiRiskLevel | "none";

@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+
+export const P6_PREAUDIT_GOLD = {"version":"p6-preaudit-gold-v1","snapshot":["S1:exact_schema:accepted","S2:same_tenant:accepted","S3:current_memory_version:accepted","S4:source_ids_exact:accepted","S5:source_versions_exact:accepted","S6:extra_key:reject","S7:cross_tenant:reject","S8:source_tenant_mismatch:reject","S9:superseded_memory:reject","S10:unversioned:reject","S11:sourceless:reject","S12:tampered_binding:reject"],"safety":["D1:safety_category:excluded","D2:secret_category:excluded","D3:credential_category:excluded","D4:mixed_safe_and_safety:safety_zero"],"epistemic":["H1:explicit_user_fact:fact_allowed","H2:model_hypothesis:hypothesis_only","H3:unconfirmed_causality:hypothesis_only","H4:inferred_relationship:hypothesis_only","H5:hypothesis_to_fact:reject"],"cache":["C1:relationship_current_projection:read","C2:growth_current_projection:read","C3:cache_version_and_source_ids:required","C4:cache_only_write:required","C5:memory_authority_write:zero","C6:conversation_authority_write:zero","C7:prior_projection:not_current","C8:derived_output:non_authoritative"],"degradation":["E1:cache_miss:empty","E2:stale_cache:empty","E3:corrupt_cache:empty","E4:timeout:empty","E5:deleted_source:empty","E6:source_visibility_unknown:empty","E7:optional_failure:chat_unchanged"],"recompute":["R1:source_targeted:required","R2:relationship_marked:local","R3:growth_marked:local","R4:repeat_request:idempotent","R5:unrelated_projection:unchanged","R6:rebuild_current_version:source_bound"],"boundary":["B1:production_integration:pending","B2:p4_runtime_integration:pending","B3:p5_runtime_integration:pending","B4:real_user_data:forbidden","B5:real_provider_call:forbidden"]} as const;
+export const P6_EXPECTED_IDS = new Set(Object.entries(P6_PREAUDIT_GOLD).filter(([key]) => key !== "version").flatMap(([, values]) => values));
+export const P6_PRINCIPAL_TIME_GOLD = {"version":"p6-principal-cache-time-integrity-v1","principal":["A1:factory_module_private","A2:session_subject_stable","A3:token_mismatch_reject","A4:expired_session_reject","A5:cross_tenant_reject"],"time":["T1:generated_not_future","T2:relationship_ttl_frozen","T3:growth_ttl_frozen","T4:stale_exact_generated_plus_ttl","T5:payload_db_time_exact","T6:commitment_hash_exact","T7:snapshot_commitment_exact","T8:time_tamper_empty","T9:payload_tamper_empty"]} as const;
+export const P6_PRINCIPAL_TIME_IDS = new Set(Object.entries(P6_PRINCIPAL_TIME_GOLD).filter(([key]) => key !== "version").flatMap(([, values]) => values));
+export const P6_PRINCIPAL_TIME_REPAIR_GOLD = {"version":"p6-principal-cache-time-repair1-v1","auth":["RA1:backdated_eval_cannot_revive_expired","RA2:production_auth_clock_not_caller_input"],"commitment":["RC1:hmac_not_public_sha","RC2:coordinated_db_payload_time_tamper_empty","RC3:public_recompute_helper_absent"]} as const;
+export const P6_PRINCIPAL_TIME_REPAIR_IDS = new Set(Object.entries(P6_PRINCIPAL_TIME_REPAIR_GOLD).filter(([key]) => key !== "version").flatMap(([, values]) => values));
+const hash = createHash("sha256").update(JSON.stringify(P6_PREAUDIT_GOLD)).digest("hex");
+const principalTimeHash = createHash("sha256").update(JSON.stringify(P6_PRINCIPAL_TIME_GOLD)).digest("hex");
+const principalTimeRepairHash = createHash("sha256").update(JSON.stringify(P6_PRINCIPAL_TIME_REPAIR_GOLD)).digest("hex");
+assert.equal(hash, "9b3a15b4de5c5f59a3a9f9ca99a45f622acff3ea4c2386d56ee116a100fcf75c");
+assert.equal(principalTimeHash, "22926f8792dd8d59a8eb6d7d8ab0128789aa53a8603fca2a0338da4f6c839169");
+assert.equal(principalTimeRepairHash, "dfc34c18069a749f6591c64342f6b678948c68d28e70628314c835f690194236");
+const source = readFileSync(new URL("../services/growth/p6RelationshipGrowthCache.ts", import.meta.url), "utf8");
+assert(!/QWEN|callModel|fetch\(|axios|services\/ai|app\/api/u.test(source));
+assert(!/services\/memory\/p4|services\/governance\/p5/u.test(source));
+assert(!/export\s+(?:const|function)\s+derivePrincipal/u.test(source));
+assert(!/export\s+(?:const|function)\s+p6CacheCommitmentForAudit/u.test(source));
+console.log(JSON.stringify({ status: "PASS", preauditHash: hash, principalTimeHash, principalTimeRepairHash, exactSetFrozen: true }));

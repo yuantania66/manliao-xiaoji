@@ -1,7 +1,34 @@
+import type { CommittedAssistantMoveEnvelopeV1 } from "./interactionMoveEnvelope";
+
+export type CommittedAssistantMove = {
+  purpose: string[];
+  claims: Array<{
+    text: string;
+    subject?: "user" | "assistant" | "system" | "conversation";
+    source?: "current_turn" | "adjacent_turn" | "interaction_state" | "system_truth" | "safety";
+    provenance: string[];
+  }>;
+  assumptions: Array<{ text: string; status: "hypothesized" }>;
+  questionOrRequest: {
+    kind: "question" | "request";
+    text?: string;
+  } | null;
+  expectedUserContribution: "answer" | "choose_topic" | "share" | "none";
+  userBurden: "none" | "low" | "medium" | "high";
+  sourceTurnId: string;
+  evidence: string[];
+};
+
 export type ConversationMessage = {
+  id?: string;
   role: "user" | "assistant";
   content: string;
   createdAt?: string;
+  replyToMessageId?: string | null;
+  promptVersion?: string | null;
+  status?: "saved" | "rewritten" | "fallback" | "blocked";
+  committedAssistantMove?: CommittedAssistantMove | null;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1 | null;
 };
 
 export type UserMessageInput = {

@@ -1,13 +1,29 @@
 import type { ConversationContext, Orientation, UpdateResult } from "@/conversation-os";
+import type {
+  CommittedAssistantMove,
+  CommittedAssistantMoveEnvelopeV1,
+} from "@/conversation-os";
 import type { ClinicalTrace } from "@/services/clinical/clinicalTypes";
+import type { HillHelpingShadowTrace } from "@/services/helping/hillHelpingTypes";
+import type {
+  ConversationControlTrace,
+  ResponsePlan,
+} from "@/conversation-os/control";
+import type { ChatExecutionTrace } from "./chatExecutionLifecycle";
 
 export type AiConversationRole = "user" | "assistant" | "system";
 
 export type AiConversationMessage = {
+  id?: string;
   role: AiConversationRole;
   content: string;
   promptVersion?: string | null;
   aiGenerationId?: string | null;
+  createdAt?: string;
+  status?: "saved" | "rewritten" | "fallback" | "blocked";
+  replyToMessageId?: string | null;
+  committedAssistantMove?: CommittedAssistantMove | null;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1 | null;
 };
 
 export type AiMemoryContext = {
@@ -60,10 +76,24 @@ export type AiGenerationResult = {
     after: string;
     reason?: string;
   }[];
-  finalReplySource?: "llm" | "guard_rewrite" | "fallback" | "mock" | "safety";
+  finalReplySource?:
+    | "llm"
+    | "llm_regenerate"
+    | "constraint_failure"
+    | "guard_rewrite"
+    | "fallback"
+    | "mock"
+    | "safety";
   tokenInput?: number;
   tokenOutput?: number;
   promptMeta?: AiPromptMeta;
+  /** Internal trace only. Never render these messages as conversation content. */
+  promptMessages?: AiModelMessage[];
+  generationParameters?: {
+    temperature: number;
+    topP: number | null;
+    seed: number | null;
+  };
   providerReasoning?: AiProviderReasoningMeta;
   raw?: unknown;
 };
@@ -84,6 +114,7 @@ export type AiPromptMeta = {
   conversationOrientation?: Orientation;
   conversationUpdate?: UpdateResult;
   voiceConstraints?: AiVoiceConstraints;
+  responsePlan?: ResponsePlan;
   filteredHistory: {
     role: AiConversationRole;
     reason: string;
@@ -149,6 +180,9 @@ export type AiDebugTrace = {
     evidence: string[];
   }[];
   clinicalLogic?: ClinicalTrace;
+  helpingLogic?: HillHelpingShadowTrace;
+  conversationControl?: ConversationControlTrace;
+  execution?: ChatExecutionTrace;
   prompt: {
     mode: "base_product" | "fallback" | "safety";
     promptVersion: string;
@@ -165,6 +199,7 @@ export type AiDebugTrace = {
     conversationOrientation?: Orientation;
     conversationUpdate?: UpdateResult;
     voiceConstraints?: AiVoiceConstraints;
+    responsePlan?: ResponsePlan;
     filteredHistory: AiPromptMeta["filteredHistory"];
     modelMessageRoles: AiModelRole[];
   };
@@ -188,9 +223,17 @@ export type AiDebugTrace = {
     judgeModel?: string;
   };
   route: {
-    finalSource: "base_model" | "fallback" | "safety";
+    finalSource:
+      | "llm"
+      | "llm_regenerate"
+      | "constraint_failure"
+      | "guard_rewrite"
+      | "fallback"
+      | "safety";
     fallbackUsed: boolean;
     rewriteAttempted: boolean;
+    regenerateAttempted?: boolean;
     safetyUsed?: boolean;
+    safetyOverrideReason?: string;
   };
 };

@@ -14,6 +14,9 @@ const promptBuilder = read("services/ai/promptBuilder.ts");
 const loginService = read("services/ai/chatReplyService.ts");
 const guestRoute = read("app/api/chat/guest/route.ts");
 const loginRoute = read("app/api/chat/sessions/[sessionId]/messages/route.ts");
+const semanticEvidenceGuard = read("services/ai/semanticEvidenceReplyGuard.ts");
+const responsePlanValidator = read("services/ai/responsePlanValidator.ts");
+const typesSource = read("services/ai/types.ts");
 const packageJson = read("package.json");
 const envExample = read(".env.example");
 
@@ -22,9 +25,28 @@ assert(
   "Unified AI orchestration must export createChatReply()."
 );
 assert(
-  orchestration.includes("isCrisisInput(userMessage)") &&
-    orchestration.indexOf("isCrisisInput(userMessage)") < orchestration.indexOf("generateChatReply({"),
+  orchestration.includes("await triageSafety({") &&
+    orchestration.indexOf("await triageSafety({") < orchestration.indexOf("generateChatReply({"),
   "createChatReply() must run Safety before normal generation."
+);
+assert(
+  orchestration.includes('code: "SAFETY_BLOCKED"') &&
+    orchestration.indexOf('code: "SAFETY_BLOCKED"') < orchestration.indexOf("enforceResponsePlan({"),
+  "Malformed or unavailable semantic Safety triage must fail closed before ordinary planning."
+);
+assert(
+  chatSafety.includes('getAiProvider() === "qwen"') &&
+    chatSafety.includes("isAiProviderConfigured()") &&
+    chatSafety.includes('channel: "local_fixture_only"') &&
+    chatSafety.includes('failureType: "provider_unconfigured"'),
+  "Configured production Qwen must run semantic Safety while only explicitly named local fixtures may omit it."
+);
+assert(
+  chatSafety.includes("process.env.AI_SAFETY_MODEL?.trim()") &&
+    chatSafety.includes("process.env.AI_MAIN_MODEL?.trim()") &&
+    chatSafety.includes("getDefaultAiModel()") &&
+    !chatSafety.includes('"qwen-plus"'),
+  "Safety semantic triage must inherit configured project model selection without hardcoding qwen-plus."
 );
 assert(
   orchestration.includes("loadMemoryContext") &&
@@ -32,42 +54,116 @@ assert(
   "createChatReply() must resolve memory before normal generation."
 );
 assert(
-  orchestration.includes("buildClinicalContext") &&
-    orchestration.indexOf("buildClinicalContext") < orchestration.indexOf("createClinicalPlan("),
-  "createChatReply() must build ClinicalContext before ClinicalPlan."
-);
-assert(
-  orchestration.includes("createClinicalPlan(clinicalContext)") &&
-    orchestration.indexOf("createClinicalPlan(clinicalContext)") < orchestration.indexOf("generateChatReply({"),
-  "createChatReply() must create ClinicalPlan before normal generation."
-);
-assert(
   orchestration.includes("createClinicalMemoryContext(understandingContext)") &&
     orchestration.indexOf("createClinicalMemoryContext(understandingContext)") <
       orchestration.indexOf("buildClinicalContext("),
-  "createChatReply() must adapt StructuredRagContext into ClinicalMemoryContext before ClinicalContext."
+  "Clinical advice must receive the approved memory adapter when the Response Planner requests it."
 );
 assert(
   orchestration.includes("buildSafetySkippedClinicalTrace") &&
     orchestration.indexOf("buildSafetySkippedClinicalTrace") < orchestration.indexOf("buildClinicalContext("),
-  "Safety path must skip ordinary ClinicalPlan and emit a safety ClinicalTrace."
+  "Safety path must return before any optional Clinical advice."
 );
 assert(
-  orchestration.includes("createFallbackGeneration"),
-  "createChatReply() must own fallback orchestration."
+  orchestration.includes("assembleConversationControlContext") &&
+    orchestration.includes("interpretTurnDeterministically") &&
+    orchestration.includes("buildDialogueState") &&
+    (orchestration.match(/createResponsePlan\(/g) ?? []).length === 1,
+  "createChatReply() must assemble, interpret, build state, and use exactly one Response Planner callsite."
+);
+assert(
+  orchestration.indexOf("createResponsePlan({") < orchestration.indexOf("generateChatReply({"),
+  "The final preflight-valid ResponsePlan must be finalized before Surface Realization."
+);
+assert(
+  orchestration.includes("createPlanPreflightRecoveryDirective(") &&
+    orchestration.includes("if (recoveryDirective) {") &&
+    orchestration.includes("createPlanAttempt(recoveryDirective)") &&
+    orchestration.includes("planPreflightAttempts.push({") &&
+    orchestration.includes("attempt: 1") &&
+    orchestration.indexOf("createPlanPreflightRecoveryDirective(") <
+      orchestration.indexOf("enforceResponsePlan({"),
+  "Orchestration must permit one bounded pre-Surface recovery through the same Planner."
+);
+assert(
+  !orchestration.includes("responsePlan.responseActions.filter") &&
+    !orchestration.includes("responsePlan.positiveFunctionContract ="),
+  "Orchestration must not patch a rejected plan or become a second Planner."
+);
+assert(
+  orchestration.includes("createClinicalStrategyAdvice") && !orchestration.includes("createClinicalPlan("),
+  "Production orchestration may request Clinical advice but must not let Clinical select a ResponseGoal."
+);
+assert(
+  !orchestration.includes("createFallbackGeneration") && !orchestration.includes("getFallbackReply"),
+  "Ordinary model failure must not create a second fallback chat goal."
+);
+const guardApplications = Array.from(orchestration.matchAll(/enforceResponsePlan\(\{/g));
+assert.equal(
+  guardApplications.length,
+  1,
+  "Normal generation must validate the same ResponsePlan once via regenerate-capable enforcement."
+);
+assert(
+  responsePlanValidator.includes("validateResponsePlanOutput") &&
+    responsePlanValidator.includes("planChanged: false") &&
+    !responsePlanValidator.includes("createResponsePlan(") &&
+    !responsePlanValidator.includes("selectResponseGoal("),
+  "Output Validation must reject or regenerate against the same plan and must not re-plan."
+);
+assert(
+  !orchestration.includes("enforceSemanticEvidenceReplyContract") &&
+    orchestration.includes("enforceResponsePlan"),
+  "The legacy semantic guard must be deauthorized from production; ResponsePlan validation owns output checks."
+);
+assert(
+  semanticEvidenceGuard.includes('clinicalPlan.responseIntent === "receive"') &&
+    semanticEvidenceGuard.includes('clinicalPlan.questionFunction === "none"') &&
+    semanticEvidenceGuard.includes("hasUnsupportedMeaning") &&
+    semanticEvidenceGuard.includes('finalReplySource: "constraint_failure"') &&
+    semanticEvidenceGuard.includes('finalSource: "llm_regenerate"') &&
+    !semanticEvidenceGuard.includes("buildGroundedClarificationReply") &&
+    !semanticEvidenceGuard.includes("你发的“"),
+  "The semantic-evidence guard must detect unsupported meaning, allow one regenerate, and hard-fail without authoring chat copy."
+);
+assert(
+  !semanticEvidenceGuard.includes("我看到你发的是") &&
+    !semanticEvidenceGuard.includes("现在的线索还不够") &&
+    !semanticEvidenceGuard.includes("你可以继续"),
+  "The removed deterministic observation template must not remain in the semantic-evidence guard."
+);
+assert(
+  orchestration.includes("regenerateAttempted") &&
+    !orchestration.includes('rewriteAttempted ? "guard_rewrite" : "llm"'),
+  "finalSource must come from ResponsePlan realization/validation, not guard_rewrite authorship."
+);
+assert(
+  typesSource.includes('"llm_regenerate"') &&
+    typesSource.includes('"constraint_failure"') &&
+    typesSource.includes('"guard_rewrite"'),
+  "finalReplySource must include llm_regenerate and constraint_failure while retaining guard_rewrite for compatibility reads."
+);
+assert(
+  orchestration.indexOf("await triageSafety({") <
+    orchestration.indexOf("enforceResponsePlan({"),
+  "Safety must retain priority and return before ordinary planning validation."
 );
 assert(
   chatSafety.includes('finalReplySource: "safety"'),
   "Safety generation must be named safety, not fallback."
 );
 assert(
+  typesSource.includes("safetyOverrideReason?: string") &&
+    read("services/ai/debugTrace.ts").includes(
+      'safetyOverrideReason: finalSource === "safety" ? judge.reason : undefined'
+    ),
+  "Safety override must expose an explicit reason in debug trace."
+);
+assert(
   !chatSafety.includes('finalReplySource: "fallback"'),
   "Safety generation must not reuse fallback source naming."
 );
-assert(
-  aiService.includes('finalReplySource: "fallback"'),
-  "Ordinary fallback generation must keep fallback source naming."
-);
+assert(!orchestration.includes('finalSource: "fallback"'), "Production orchestration must not emit ordinary fallback chat copy.");
 
 assert(
   loginService.includes('import { createChatReply } from "./chatOrchestrationService"'),
@@ -108,25 +204,22 @@ assert(
   "Logged-in chat persistence service must not duplicate orchestration helper logic."
 );
 
-assert(
-  aiService.includes("runConversationPipeline("),
-  "Normal generation must still go through Conversation OS."
-);
+assert(!aiService.includes("runConversationPipeline("), "Surface Realization must not run the legacy Engage planner.");
+assert(aiService.includes("responsePlan"), "Surface Realization must require the finalized ResponsePlan.");
 assert(
   packageJson.includes('"check:ai-orchestration"'),
   "package.json must expose check:ai-orchestration."
 );
 assert(
+  packageJson.includes('"check:chat-safety-semantic"') &&
+    packageJson.includes('"check:safety-semantic-qwen-real"'),
+  "package.json must expose deterministic and real-Qwen Safety semantic checks."
+);
+assert(
   packageJson.includes('"check:clinical-logic-skeleton"'),
   "package.json must expose check:clinical-logic-skeleton."
 );
-assert(
-  clinicalPlanService.includes("selectResponseGoal(context)") &&
-    clinicalPlanService.includes("selectClinicalStrategy") &&
-    clinicalPlanService.includes('primaryStrategy === "rogers"') &&
-    clinicalPlanService.includes("createRogersClinicalPlan(context, responseGoal)"),
-  "Default normal ClinicalPlan must use ResponseGoalSelector -> StrategySelector -> Rogers dry-run strategy."
-);
+assert(clinicalPlanService.includes("selectResponseGoal(context)"), "Legacy ClinicalPlan compatibility service remains unit-testable.");
 assert(
   clinicalPlanService.includes("createNoOpClinicalPlan"),
   "NoOp ClinicalStrategy fallback must remain available."
@@ -136,9 +229,10 @@ assert(
   "ClinicalPlan prompt feature flag must default to false in .env.example."
 );
 assert(
-  promptBuilder.includes("CLINICAL_PLAN_PROMPT_ENABLED") &&
-    promptBuilder.includes("formatClinicalPlanForPrompt"),
-  "ClinicalPlan prompt integration must be feature-flagged in Prompt Builder."
+  promptBuilder.includes("formatResponsePlanForPrompt") &&
+    promptBuilder.includes("Conversation OS ResponsePlan") &&
+    promptBuilder.includes("responsePlan ? RESPONSE_PLAN_PRODUCT_PROMPT : BASE_PRODUCT_PROMPT"),
+  "Production Prompt Builder must render the single ResponsePlan and suppress legacy strategy carriers."
 );
 
 const structuredContext: StructuredRagContext = {
@@ -263,7 +357,8 @@ console.log(
         rawMemory: clinicalMemory.excluded.rawMemory,
         directRecentMemories: clinicalMemory.excluded.directRecentMemories,
       },
-      clinicalLogic: "Rogers dry-run ClinicalPlan receives ClinicalMemoryContext and enters debug trace",
+      conversationControl: "Context -> Interpretation -> DialogueState -> one ResponsePlan -> Surface -> Validation -> StateUpdate",
+      clinicalLogic: "Clinical is invoked only when Response Planner requests emotional/action strategy advice",
     },
     null,
     2

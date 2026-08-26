@@ -24,11 +24,14 @@ const readUnionMembers = (source: string, typeName: string) => {
 };
 
 const responseGoalSelector = stripComments(read("services/clinical/responseGoalSelector.ts"));
+const orchestration = stripComments(read("services/ai/chatOrchestrationService.ts"));
+const responsePlanner = stripComments(read("conversation-os/control/responsePlanner.ts"));
+const responseValidator = stripComments(read("services/ai/responsePlanValidator.ts"));
 
 const usedSignals = Array.from(responseGoalSelector.matchAll(/context\.signals\.([a-zA-Z0-9_]+)/g)).map(
   (match) => match[1]
 );
-const allowedSignals = new Set(["expressionDifficulty", "explicitAdviceRequest", "messageLength"]);
+const allowedSignals = new Set(["expressionDifficulty", "explicitAdviceRequest", "semanticEvidence", "interaction"]);
 
 for (const signal of usedSignals) {
   assert(
@@ -64,8 +67,30 @@ assert(
   "ResponseGoalSelector must continue to use approved explicitAdviceRequest signal."
 );
 assert(
-  responseGoalSelector.includes("context.signals.messageLength"),
-  "ResponseGoalSelector may use messageLength only as a supporting feature."
+  responseGoalSelector.includes("context.signals.semanticEvidence.status"),
+  "ResponseGoalSelector must decide interpretation eligibility from semantic evidence, not message length."
+);
+assert(
+  responseGoalSelector.includes("context.signals.interaction"),
+  "The compatibility ResponseGoalSelector must consume approved interaction evidence without inferring it from message length."
+);
+
+assert.equal(
+  (orchestration.match(/createResponsePlan\(/g) ?? []).length,
+  1,
+  "Production orchestration must create exactly one ResponsePlan."
+);
+assert(
+  responsePlanner.includes('decisionOwner: "conversation_os.response_planner"'),
+  "Conversation OS Response Planner must be the sole non-safety decision owner."
+);
+assert(
+  orchestration.includes("createClinicalStrategyAdvice") && !orchestration.includes("createClinicalPlan("),
+  "Clinical Logic must be an optional strategy provider, not a second production decision owner."
+);
+assert(
+  !responseValidator.includes("createResponsePlan(") && !responseValidator.includes("selectResponseGoal("),
+  "Output Validation must not plan or select a response goal."
 );
 
 const clinicalFiles = walk("services/clinical");
@@ -184,7 +209,10 @@ assert(
 console.log(
   JSON.stringify(
     {
-      responseGoalSelectorAllowedSignals: Array.from(new Set(usedSignals)),
+      productionDecisionOwner: "conversation_os.response_planner",
+      responsePlanCount: 1,
+      clinicalRole: "optional_strategy_provider",
+      legacyResponseGoalSelectorAllowedSignals: Array.from(new Set(usedSignals)),
       clinicalFilesChecked: clinicalFiles.length,
       frozenLegacy: {
         engageMode: readUnionMembers(conversationTypes, "EngageMode").length,

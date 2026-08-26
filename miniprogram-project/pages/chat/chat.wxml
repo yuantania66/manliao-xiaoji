@@ -38,7 +38,7 @@
   </scroll-view>
 
   <form class="chat-input" style="bottom: {{inputBottom}}px;" bindsubmit="sendMessage">
-    <input name="content" value="{{input}}" focus="{{inputFocus}}" confirm-hold="{{true}}" bindinput="onInput" bindconfirm="sendMessage" confirm-type="send" placeholder="说点什么" />
+    <input name="content" value="{{input}}" focus="{{inputFocus}}" adjust-position="{{false}}" confirm-hold="{{true}}" bindkeyboardheightchange="onKeyboardHeightChange" bindinput="onInput" bindconfirm="sendMessage" confirm-type="send" placeholder="说点什么" />
     <button form-type="submit" disabled="{{!canSend || isSending}}">发送</button>
   </form>
 </view>

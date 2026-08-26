@@ -2,11 +2,22 @@
 
 本文件是 SlowTalk Notes v1 的正式产品与架构需求基准。
 
-本文只归并已经确认的 PRD、Architecture v1 Final、Memory V2、Clinical Logic 与 Safety 文档口径，不新增产品能力、不新增架构层、不扩展已冻结边界。
+本文归并已经确认的 PRD、Architecture v1 Final、Memory V2、Clinical Logic 与
+Safety 文档口径。2026-07-23 已批准的 Conversation OS 控制权收口更新了普通
+聊天运行时职责。2026-07-31 已批准的 Hill 助人过程产品契约进一步划分了普通
+对话汇总权与助人领域决策权，但不新增产品层。
 
 ## 1. Product Positioning
 
-慢聊小记是重隐私、长生命周期、具备数字治愈属性的 AI 陪伴产品。
+慢聊小记的 Application 可以承载两个产品，但二者不是同一个工作流：
+
+- **慢聊**：聊天、陪伴与助人过程；
+- **小记**：用户主动记录事件、开心、成就、善意或其他生活材料。
+
+当前 Hill 迁移只适用于“慢聊”。小记、长期记忆和用户隔离是独立待办，不得被
+聊天改造顺带实现。
+
+慢聊是重隐私、长生命周期、具备数字治愈属性的 AI 陪伴产品。
 
 它不是普通聊天机器人，也不是医疗产品。产品核心不是让 AI 在单句回复中显得更聪明，而是让用户在持续使用中感受到：
 
@@ -117,23 +128,24 @@ Safety & Governance Layer
 - 判断心理策略。
 - 生成长期心智模型。
 - 做安全风险判定。
-- 直接决定 `ResponseGoal`。
+- 直接决定 Hill 目标、意图或技术。
 
 ### 5.2 Conversation Layer
 
 职责：
 
 - 接收用户输入。
-- 对本轮与最近若干轮对话做实时 Observe / Understand / Update。
-- 维护实时 conversation mechanics。
-- 输出客观会话事实和已批准 deterministic signals。
-- 组装 trace-relevant conversation context。
-- 调用 Clinical Logic。
+- 组装当前消息、必要相邻话轮、回答义务、主动权、修复状态、Assistant Grounding 和相关记忆。
+- 形成可组合的 Turn Interpretation 与 Dialogue State。
+- 在每个普通非 Safety 慢聊话轮中调用 Helping Logic；
+- 由唯一 Response Planner 输出一个 `ResponsePlan`。
+- 在成功发送后记录 obligation/state update 和适用时的
+  `CommittedHelpingMove`。
 
 不负责：
 
-- 决定 `ResponseGoal`。
-- 选择心理学方法。
+- 绕过 Response Planner 让其他模块决定本轮动作。
+- 自己实现心理学方法。
 - 写长期 Memory。
 - 形成用户画像。
 - 扩展旧 Conversation OS 策略字段。
@@ -142,17 +154,23 @@ Safety & Governance Layer
 
 职责：
 
-- 消费 `ClinicalContext`。
-- 做第一普通回应决策：`ResponseGoal`。
-- 选择服务于 `ResponseGoal` 的 `Strategy`。
-- 输出 `ClinicalPlan`。
-- 明确 question function、tone constraints、intervention boundaries、safety notes。
+- 在每个普通非 Safety 慢聊话轮中，作为 Helping Logic 产生可追踪的
+  `HillHelpingDecision`；
+- 判断 Hill 助人过程的适用性；
+- 评估相关的上一已提交助人行动及当前用户反应；
+- 选择流动的探索、领悟或行动目标；
+- 评估准备度与反证；
+- 选择服务于当前意图的 Hill 技术并执行 Helper Self Check；
+- 输出结构化 `HillHelpingPlan`，供 Response Planner 汇总；
+- 在迁移完成前，把旧 Rogers / `ClinicalPlan` 路径限制为显式兼容。
 
 不负责：
 
 - 直接读取 RawMemory。
 - 写 Memory。
 - 覆盖 Safety。
+- 删除直接回答义务或普通对话约束。
+- 汇总最终 `ResponsePlan`。
 - 生成最终中文文案。
 - 诊断、评估、治疗计划、临床报告。
 
@@ -167,8 +185,7 @@ Safety & Governance Layer
 
 不负责：
 
-- 当前轮 `ResponseGoal`。
-- Clinical Strategy。
+- 当前轮 Hill 适用性、目标、意图或技术。
 - Safety 判断。
 - Prompt construction。
 
@@ -182,24 +199,28 @@ Safety & Governance Layer
 - 访问控制、审计、删除权、遗忘权。
 - 产品边界与训练数据隔离。
 
-Safety 可以在输入、ClinicalPlan、Prompt、最终回复等位置否决普通链路。
+Safety 可以在输入、Hill 决定、Prompt、最终回复等位置否决普通链路。
 
 ## 6. Runtime Flow
 
-普通非安全聊天的运行时数据流：
+批准的目标运行时数据流：
 
 ```text
-Conversation outputs
-  -> ClinicalContext
-  -> ResponseGoal
-  -> Strategy
-  -> ClinicalPlan
-  -> Prompt construction
-  -> LLM generation
-  -> post-processing / trace / save
+Context Assembly
+  -> Turn Interpretation
+  -> Dialogue State
+  -> Helping Logic / HillHelpingDecision
+  -> Response Planner (one final plan assembler)
+  -> one ResponsePlan
+  -> Surface Realization
+  -> same-plan Output Validation
+  -> State Update / trace / save
 ```
 
 该流程不是产品层级划分。任何实现变化都必须继续遵守五层架构。
+
+批次 0 的运行代码仍保持 2026-07-23 基线：Response Planner 只在少量活动下
+请求旧 Clinical advice。该状态只作为迁移比较基线，不再是批准的产品目标。
 
 ## 7. Long-term Understanding
 
@@ -277,22 +298,26 @@ Understanding 表达当前对用户的长期理解草稿。
 - 必须可追溯 Evidence。
 - 必须允许修正和下降置信。
 
-## 9. Clinical Logic: Response Goal Before Strategy
+## 9. One ResponsePlan With Hill Domain Decision
 
-Clinical Logic 的第一决策是 `ResponseGoal`，不是 Rogers / CBT / ACT / MI。
+Conversation OS Response Planner 是唯一最终计划汇总者，但不是 Hill 领域决策
+所有者。
 
-最小 Response Goal：
+职责边界：
 
-- `help_continue_expression`
-- `clarify`
-- `reflect`
-- `summarize`
-- `support_action`
-- `hold_space`
+- Conversation OS 负责事实、共同理解、直接回答义务、用户控制和普通对话动作；
+- Helping Logic 负责适用性、反应、准备度、目标、意图和技术；
+- Response Planner 把两类不重叠的决定汇总为一个 `ResponsePlan`；
+- Surface 和 Validator 不得重新选择 Hill 方法；
+- Safety 可以覆盖整个普通链路。
 
-Strategy 是完成 Response Goal 的方法。
+每个普通非 Safety 话轮必须产生一个成功决定或显式失败。成功决定可以是
+`not_applicable`，这时由 Conversation OS 完成普通聊天或直接回答；它不表示每
+一轮都要使用助人话术。
 
-当前 Rogers dry-run 只作为默认策略之一，不是第一决策入口。CBT / ACT / MI 不在 v1 实现范围内。
+旧 `help_continue_expression`、`clarify`、`reflect`、`summarize`、
+`support_action`、`hold_space`、Rogers advice 与 Need Resolution 只能作为迁移
+兼容和历史评测语义，不能继续扩展成与 Hill 并列的决策系统。
 
 ## 10. Safety Priority
 
@@ -300,10 +325,9 @@ Safety 永远高于 Clinical Logic。
 
 当 Safety 命中 crisis / high-risk：
 
-- 不进入普通 ClinicalPlan。
-- 不选择普通 ResponseGoal。
-- 不选择普通 ClinicalStrategy。
-- 不注入普通 Clinical prompt。
+- 不进入普通 `HillHelpingDecision`；
+- 不推进探索、领悟或行动目标；
+- 不注入普通 Helping / Clinical 方法；
 - 直接进入 Safety Response。
 
 ## 11. Phase Roadmap
@@ -322,7 +346,7 @@ Safety 永远高于 Clinical Logic。
 - Understanding MVP。
 - Conversation trace。
 - Safety 最小规则。
-- ResponseGoal dry-run / minimal prompt flag。
+- 一个可追踪的 ResponsePlan、Surface Realization 与同计划 Output Validation。
 
 不做：
 
@@ -373,9 +397,16 @@ Safety 永远高于 Clinical Logic。
 - Conversation OS 骨架。
 - Legacy `EngageMode` / `ExperienceGoal` / `QuestionStyle` / `VoiceConstraints`。
 - Memory V2 Phase 2。
-- Clinical Logic skeleton。
-- ResponseGoal dry-run。
-- ClinicalPlan prompt flag 默认关闭。
+- Clinical Logic / Helping Logic 的 Hill 产品合同与分批迁移计划。
+- 已通过技术验收的批次 1 类型化 Hill Shadow：默认关闭，只记录独立 trace，不改变
+  `ResponsePlan`、正式状态或用户可见回复。
+- 已通过完整冻结门并于 2026-08-04 关闭的 Batch 1.5-E 普通聊天交接基线：由独立
+  默认关闭的 `HILL_HELPING_ORDINARY_HANDOFF` 控制，只把确定性 `uncertain` 边界
+  交给普通 Planner；不启用 Hill 目标、技术或正式助人状态。早期人工盲审与候选
+  1—6 的失败结果保留为历史证据，不覆盖后续 60/60 冻结门结论。
+- Conversation OS 单一 ResponsePlan 决策闭环。
+- Helping Logic 拥有 Hill 领域判断；Response Planner 保持唯一最终计划汇总权。
+- 旧按需 Clinical advice、ResponseGoal 和 ClinicalPlan 仅作为迁移基线及兼容评测。
 - Golden Dataset 与 eval 基础。
 - Architecture v1 final constraints。
 
@@ -385,8 +416,13 @@ Safety 永远高于 Clinical Logic。
 - Timeline schema 深化。
 - Understanding schema 深化。
 - Relationship 消歧 / 合并。
-- Conversation State 影响 ResponseGoal。
+- 未经审查扩展 Conversation State 决策字段。
+- 继续扩展 Need Resolution 枚举或旧 Clinical Strategy 集合。
 - CBT / ACT / MI 策略实现。
+- 把 Batch 2 infrastructure-only 授权扩大为用户可见 Hill 行为；Batch 2 只实现
+  跨轮关联、序列化/加载、Shadow trace 与提交边界，Batch 3 仍须单独验收和授权。
+- 把已冻结的 Batch 2A metadata/parser 合同解释为正式生产 Helping 写入或跨轮
+  Helping 决策已经启用；这些仍须通过 Batch 2B—2D。
 - Prompt 大改。
 - 旧 Conversation OS 策略扩展。
 
@@ -399,3 +435,5 @@ Safety 永远高于 Clinical Logic。
 - [RESPONSE_GOAL_DESIGN.md](./RESPONSE_GOAL_DESIGN.md)
 - [CONVERSATION_LAYER_BOUNDARY_REVIEW.md](./CONVERSATION_LAYER_BOUNDARY_REVIEW.md)
 - [CLINICAL_GOLDEN_DATASET_SPEC.md](./CLINICAL_GOLDEN_DATASET_SPEC.md)
+- [HILL_HELPING_PROCESS_PRODUCT_CONTRACT_V1.md](./HILL_HELPING_PROCESS_PRODUCT_CONTRACT_V1.md)
+- [HILL_HELPING_PROCESS_ARCHITECTURE_MIGRATION_PLAN_V1.md](./HILL_HELPING_PROCESS_ARCHITECTURE_MIGRATION_PLAN_V1.md)

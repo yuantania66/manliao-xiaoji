@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "hill-helping-batch1-5-preservation-v1-2026-08-01",
+  "status": "frozen_before_candidate_run",
+  "purpose": "Cross-run quality preservation for emotional support and existing ordinary repair behavior during Batch 1.5.",
+  "gate": {
+    "runsPerScenario": 3,
+    "scenarioCount": 20,
+    "requiredValidatedRate": 1,
+    "requiredExpectedActionRate": 1,
+    "maximumConstraintFailures": 0,
+    "maximumHelpingProviderCalls": 0,
+    "maximumRegenerationRate": 0.2
+  },
+  "scenarios": [
+    {
+      "id": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "userMessage": "我今天有点不太高兴",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "userMessage": "心里有点堵",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "userMessage": "今天突然有点难过",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "userMessage": "我现在又委屈又生气",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-future-worry",
+      "kind": "emotional_support",
+      "userMessage": "明天那件事让我有点担心",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "userMessage": "刚才被忽略的时候挺难受的",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "userMessage": "我觉得有点丢脸",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-lonely",
+      "kind": "emotional_support",
+      "userMessage": "今晚莫名有点孤单",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-irritated",
+      "kind": "emotional_support",
+      "userMessage": "我现在真的很烦",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "userMessage": "我不想分析，只是有点难受",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "userMessage": "不是，我没说我害怕被否定，你理解偏了",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "我今天开会一直没说话" },
+        { "id": "a1", "role": "assistant", "content": "你其实是害怕被大家否定。" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "userMessage": "我说了不想要建议，你还是在教我怎么做",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "我只想说说今天的事，不要建议" },
+        { "id": "a1", "role": "assistant", "content": "你可以先列三个方案，再决定怎么做。" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "userMessage": "我没有撑不住，我只是说今天有点累",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "今天有点累" },
+        { "id": "a1", "role": "assistant", "content": "听起来你已经快撑不住了。" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "userMessage": "不是同事，是我姐姐，你把人弄错了",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "她昨天又给我打电话了" },
+        { "id": "a1", "role": "assistant", "content": "那个同事又联系你了。" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "userMessage": "你又在追问，没有回应我刚才说的重点",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "那件事让我很难受" },
+        { "id": "a1", "role": "assistant", "content": "具体什么时候、在哪里、还有谁在场？" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "userMessage": "你没有听我说的重点，只是在说你会听",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "我最在意的是他当时那句话" },
+        { "id": "a1", "role": "assistant", "content": "我在，我会认真听你说。" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "userMessage": "我已经说了不是内疚，你还在重复这个判断",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "我只是觉得这件事很麻烦" },
+        { "id": "a1", "role": "assistant", "content": "这种内疚感一直压着你。" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "userMessage": "你一点都不懂我，刚才完全说偏了",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "我不去不是因为害怕" },
+        { "id": "a1", "role": "assistant", "content": "你是在逃避面对这件事。" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "userMessage": "我不是来听你讲应该不应该的，你把重点弄错了",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "我不想去参加那次聚会" },
+        { "id": "a1", "role": "assistant", "content": "你应该勇敢一点，不能总躲着。" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "userMessage": "我说的是和妈妈吵架，不是在问怎么放松",
+      "recentMessages": [
+        { "id": "u1", "role": "user", "content": "我刚和妈妈吵了一架" },
+        { "id": "a1", "role": "assistant", "content": "要不要先做个呼吸练习放松一下？" }
+      ],
+      "expectedAction": "repair_previous_wording"
+    }
+  ]
+}

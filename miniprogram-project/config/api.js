@@ -21,10 +21,20 @@ const getStorageValue = (key) => {
 
 const getApiEnv = () => getStorageValue(API_ENV_KEY) || DEFAULT_API_ENV;
 
+const getRuntimeEnvVersion = () => {
+  try {
+    return wx.getAccountInfoSync().miniProgram.envVersion;
+  } catch (error) {
+    return "unknown";
+  }
+};
+
 const getApiBaseUrl = () => {
+  if (getRuntimeEnvVersion() !== "develop") return API_BASE_URLS.prod;
+  const env = getApiEnv();
   const override = getStorageValue(API_BASE_URL_KEY);
   if (override) return override;
-  return API_BASE_URLS[getApiEnv()] || "";
+  return API_BASE_URLS[env] || "";
 };
 
 module.exports = {
@@ -33,6 +43,7 @@ module.exports = {
   API_BASE_URLS,
   DEFAULT_API_ENV,
   API_TIMEOUT,
+  getRuntimeEnvVersion,
   getApiEnv,
   getApiBaseUrl
 };

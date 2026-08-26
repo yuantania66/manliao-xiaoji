@@ -13,6 +13,7 @@ const compat = new FlatCompat({
 const eslintConfig = [
   globalIgnores([
     ".next/**",
+    ".generated/**",
     "node_modules/**",
     "public/uploads/**",
     "miniprogram-project/**",

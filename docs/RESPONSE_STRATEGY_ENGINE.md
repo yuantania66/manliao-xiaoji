@@ -2,15 +2,33 @@
 
 ## Status
 
-Design draft for architecture review.
+Retired design draft; retained as a historical UX-boundary inventory.
 
-This document does not implement code. It redesigns the input to Response Strategy Engine after review feedback.
+The approved
+[Hill product contract](./HILL_HELPING_PROCESS_PRODUCT_CONTRACT_V1.md)
+supersedes this document as the source of helping goals, intentions and
+techniques.
 
-Key correction:
+Do not implement or extend:
 
-> Response Strategy must not start by choosing a counseling technique.
->
-> It must start by resolving the user's current need.
+- `ResolvedUserNeed`;
+- `Need Resolution` as a new layer or decision engine;
+- `ResponseStrategyPlan` as a parallel plan;
+- the target pipeline in this draft.
+
+The useful parts of this draft remain:
+
+- explicit user requests and boundaries as evidence;
+- harmful moves as `HillHelpingPlan.prohibitedMoves`;
+- expected experience as a review dimension;
+- repair, pressure, pause and meaning-authority constraints.
+
+They do not select Hill goals or techniques. Helping Logic owns applicability,
+reaction, readiness, goal, intention and skill; Response Planner still
+assembles one final `ResponsePlan`.
+
+All sections below are historical design material unless explicitly marked as
+the current decision.
 
 ## North Star
 
@@ -1093,7 +1111,7 @@ Need Resolution and Response Strategy must not:
 - Replace safety handling.
 - Turn the user into a case formulation.
 
-## Acceptance Criteria
+## Historical Acceptance Criteria
 
 This architecture passes review only if:
 
@@ -1104,7 +1122,7 @@ This architecture passes review only if:
 5. Voice is downstream and cannot make strategy decisions.
 6. Trace proves the system did not simply choose a counseling technique from message form.
 
-## Recommendation
+## Historical Recommendation
 
 Do not implement Response Strategy as:
 
@@ -1124,10 +1142,25 @@ Technique Selection
 Voice
 ```
 
-The next implementation task should not be "add Strategy enum".
+The former recommendation was that the next implementation task should not be
+"add Strategy enum".
 
-The next implementation task should be:
+The former draft then stated:
 
 > Build Need Resolution as the input to Strategy.
 
-Only then should the system choose Reflection, Repair, Open Question, Summary, or Planning.
+That recommendation is superseded.
+
+## Current Decision
+
+Do not build Need Resolution as another decision system.
+
+The next implementation batch is:
+
+> Build the approved `HillHelpingDecision` as a Shadow result for every
+> ordinary non-Safety turn, without changing the baseline reply or committed
+> state.
+
+The need definitions above may be reused only as evidence, prohibited moves or
+human-review language after mapping them to the Hill contract. They cannot
+become enums that compete with exploration, insight and action.

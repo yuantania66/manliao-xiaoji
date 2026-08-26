@@ -22,7 +22,7 @@
   <view class="note-title">{{prompt.title}}</view>
   <view class="date">{{todayLabel}}</view>
   <view class="note-lead">{{prompt.lead}}</view>
-  <view wx:if="{{statusText}}" class="mode-notice">{{statusText}}</view>
+  <view wx:if="{{statusText}}" class="mode-notice" aria-live="polite">{{statusText}}</view>
 
   <view class="note-card">
     <textarea class="note-textarea" maxlength="500" value="{{content}}" bindinput="onInput" placeholder="此刻想到的，就从这里开始写。" placeholder-class="note-textarea-placeholder" />
@@ -83,8 +83,6 @@
       <view class="media-remove" catchtap="removeMedia" data-index="{{index}}">×</view>
     </view>
   </view>
-
-  <button wx:if="{{isDevRuntime}}" class="dev-media-test" bindtap="fillMediaLimitTest">生成 9 张图片测试</button>
 
   <view class="note-actions">
     <button class="media-button" bindtap="chooseMedia">+ <text class="media-title">添加图片</text><text class="media-sub">{{mediaCount}} / 9</text></button>

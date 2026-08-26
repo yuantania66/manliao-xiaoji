@@ -1,6 +1,6 @@
-const { readNotes, writeNotes } = require("../../utils/local-data");
+const { readNotes, writeNotes, updateNote: updateLocalNote } = require("../../utils/local-data");
 const { getDataMode } = require("../../utils/auth");
-const { getNote, deleteNote } = require("../../api/notes");
+const { getNote, updateNote, deleteNote } = require("../../api/notes");
 const { getSafeLayout } = require("../../utils/layout");
 
 const asMediaItems = (items = []) => {
@@ -63,6 +63,9 @@ Page({
     backTop: 54,
     isMenuOpen: false,
     isDeleting: false,
+    isEditing: false,
+    isUpdating: false,
+    editContent: "",
     statusText: ""
   },
 
@@ -156,6 +159,33 @@ Page({
 
   closeMenu() {
     this.setData({ isMenuOpen: false });
+  },
+
+  startEditing() {
+    if (!this.data.note || this.data.isUpdating) return;
+    this.setData({ isMenuOpen: false, isEditing: true, editContent: this.data.note.content || "", statusText: "" });
+  },
+
+  cancelEditing() { if (!this.data.isUpdating) this.setData({ isEditing: false, editContent: "" }); },
+
+  onEditInput(event) { this.setData({ editContent: event.detail.value }); },
+
+  saveEdit() {
+    if (!this.data.note || this.data.isUpdating) return;
+    const content = this.data.editContent.trim();
+    if (!content && !this.data.note.hasImages) { this.setData({ statusText: "小记内容不能为空。" }); return; }
+    if (content === (this.data.note.content || "")) { this.setData({ isEditing: false, editContent: "" }); return; }
+    const dataMode = getDataMode();
+    if (dataMode === "none") { this.setData({ statusText: "登录状态已失效，请重新登录后再保存。" }); return; }
+    this.setData({ isUpdating: true, statusText: "" });
+    const update = dataMode === "authenticated" ? updateNote(this.data.note.id, content) : Promise.resolve(updateLocalNote(this.data.note.id, content));
+    update.then((saved) => {
+      if (!saved) throw new Error("小记不存在");
+      const note = withViewFlags(dataMode === "authenticated" ? normalizeRemoteNote(saved) : normalizeLocalNote(saved));
+      this.setData({ note, isEditing: false, editContent: "", statusText: "" });
+    }).catch((error) => {
+      this.setData({ statusText: error.message || "修改失败，请稍后再试" });
+    }).finally(() => this.setData({ isUpdating: false }));
   },
 
   deleteCurrentNote() {

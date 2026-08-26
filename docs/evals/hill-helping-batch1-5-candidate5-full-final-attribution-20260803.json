@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "status": "frozen_before_further_code_change",
+  "reviewer": "codex-layered-functional-audit",
+  "sourceArtifact": "docs/evals/hill-helping-batch1-5-preservation-candidate5-20260803.json",
+  "sourceArtifactSha256": "4db8229b4511c2faeb4bc3fcebd41306658b3422b867a4ed6ad42662aabdc28c",
+  "runtimeArchive": "docs/evals/hill-helping-batch1-5-runtime-source-candidate5-20260803.tar.gz",
+  "runtimeArchiveSha256": "161c90e15922c7971a1910fcf453ac6e414a657cedb7353ec9224e443d012ee8",
+  "datasetSha256": "12bd41f3c6c4370ddc3593cf997203037bc321a3b40d890ce196e9f6bcd6f243",
+  "reviewBasis": [
+    "HILL_HELPING_BATCH1_5_POST_CANDIDATE4_POSITIVE_ACCEPTANCE_CONTRACT_V1"
+  ],
+  "scope": {
+    "allFinalRowsAudited": 60,
+    "regenerationRunsAudited": 22,
+    "regenerationAttemptsAudited": 44
+  },
+  "machineResult": {
+    "validated": 53,
+    "constraintFailures": 7,
+    "regenerations": 22,
+    "passed": false
+  },
+  "functionalFinalResult": {
+    "appropriatePass": 44,
+    "surfaceFailure": 15,
+    "validatorFalsePositive": 1,
+    "validatorFalseNegative": 10,
+    "both": 1,
+    "note": "The 15 surface failures include the 10 validator false negatives and the 5 substantively correct machine constraint failures. The one 'both' row is also a true final failure. The validator false-positive row is an appropriate reply incorrectly counted as a machine failure."
+  },
+  "anomalies": [
+    {
+      "id": "C5-FN-01",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 1,
+      "machine": "passed",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "The final reply offered '聊聊别的', an unscoped topic outside the current blocked feeling."
+    },
+    {
+      "id": "C5-FN-02",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 2,
+      "machine": "passed",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "The final reply again offered '聊聊别的' as the second branch of an A-or-B choice."
+    },
+    {
+      "id": "C5-FN-03",
+      "scenarioId": "emotion-vague-blocked",
+      "runIndex": 3,
+      "machine": "passed",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "The final reply repeated the same unscoped '聊聊别的' topic switch."
+    },
+    {
+      "id": "C5-FN-04",
+      "scenarioId": "emotion-sudden-sadness",
+      "runIndex": 1,
+      "machine": "passed",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "'今天发生的事' invented a triggering event; the user only said sadness arose today."
+    },
+    {
+      "id": "C5-FN-05",
+      "scenarioId": "emotion-sudden-sadness",
+      "runIndex": 3,
+      "machine": "passed",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "The final reply again introduced an unevidenced event that supposedly happened today."
+    },
+    {
+      "id": "C5-FN-06",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 1,
+      "machine": "passed_after_regeneration",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "'说说别的部分' was not grammatically scoped to the current feeling and introduced unknown content."
+    },
+    {
+      "id": "C5-FN-07",
+      "scenarioId": "emotion-lonely",
+      "runIndex": 1,
+      "machine": "passed",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "'让它待一会儿' added an unrequested pause to focus control."
+    },
+    {
+      "id": "C5-FN-08",
+      "scenarioId": "emotion-lonely",
+      "runIndex": 3,
+      "machine": "passed_after_regeneration",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "'今晚让你有这感觉的具体瞬间' introduced an unmentioned cause/event."
+    },
+    {
+      "id": "C5-FN-09",
+      "scenarioId": "emotion-irritated",
+      "runIndex": 1,
+      "machine": "passed_after_regeneration",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "'说说别的' was an unscoped topic switch that the Validator missed."
+    },
+    {
+      "id": "C5-FN-10",
+      "scenarioId": "emotion-no-analysis",
+      "runIndex": 3,
+      "machine": "passed_after_regeneration",
+      "attribution": "surface_failure_validator_false_negative",
+      "finding": "'想随便说点什么的时候再说' added unknown content and deferred expression instead of preserving only burden reduction."
+    },
+    {
+      "id": "C5-SF-01",
+      "scenarioId": "emotion-mild-unhappy",
+      "runIndex": 2,
+      "machine": "failed",
+      "attribution": "surface_failure",
+      "finding": "Both attempts left current scope: first via another topic, then via an unmentioned cause/event and new distress label."
+    },
+    {
+      "id": "C5-SF-02",
+      "scenarioId": "emotion-sudden-sadness",
+      "runIndex": 2,
+      "machine": "failed",
+      "attribution": "surface_failure",
+      "finding": "The first attempt switched topics; the second invented an event and did not complete current focus control."
+    },
+    {
+      "id": "C5-SF-03",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 2,
+      "machine": "failed",
+      "attribution": "surface_failure",
+      "finding": "Both attempts requested an unevidenced prior event or cause."
+    },
+    {
+      "id": "C5-SF-04",
+      "scenarioId": "emotion-embarrassed",
+      "runIndex": 3,
+      "machine": "failed",
+      "attribution": "surface_failure",
+      "finding": "The first attempt invented a prior event and the second offered another topic."
+    },
+    {
+      "id": "C5-SF-05",
+      "scenarioId": "emotion-no-analysis",
+      "runIndex": 2,
+      "machine": "failed",
+      "attribution": "surface_failure",
+      "finding": "Both attempts added an unrequested pause; the first also added another topic."
+    },
+    {
+      "id": "C5-BOTH-01",
+      "scenarioId": "repair-question-pressure",
+      "runIndex": 1,
+      "machine": "failed",
+      "attribution": "both",
+      "finding": "Both attempts naturally owned and functionally rejected the pressure-question move, so the reported missing-repair reason was false; both then continued with a new pressure question, a true defect the Validator omitted. Planner also selected take_light_topic_initiative concurrently with repair."
+    },
+    {
+      "id": "C5-VFP-01",
+      "scenarioId": "repair-question-pressure",
+      "runIndex": 2,
+      "machine": "failed",
+      "attribution": "validator_false_positive",
+      "finding": "Both attempts identified the specific detail questions and functionally rejected their failure to address the user's focus. The second used an unambiguous omitted assistant subject; neither continued questioning."
+    }
+  ],
+  "regenerationAttributionCounts": {
+    "firstAttempts": {
+      "surface_failure": 14,
+      "validator_false_positive": 3,
+      "both": 5,
+      "appropriate_pass": 0,
+      "surface_failure_validator_false_negative": 0
+    },
+    "secondAttempts": {
+      "surface_failure": 5,
+      "validator_false_positive": 1,
+      "both": 1,
+      "appropriate_pass": 11,
+      "surface_failure_validator_false_negative": 4
+    }
+  },
+  "rootCauses": [
+    {
+      "owner": "surface_contract_projection",
+      "finding": "Qwen repeatedly realizes focus control as an A-or-B choice and invents an unevidenced second branch despite negative scope instructions."
+    },
+    {
+      "owner": "validator_scope_composition",
+      "finding": "Scope validation is still phrase-fragment based and misses '聊聊别的/说说别的', inferred today/tonight events, '让它待一会儿', and deferred unknown content."
+    },
+    {
+      "owner": "repair_validator_composition",
+      "finding": "Pressure-question repair does not recognize '没对上重点/问偏/没回应重点/偏离重点' as functional disavowal and over-requires an explicit first-person subject."
+    },
+    {
+      "owner": "planner_action_composition",
+      "finding": "One repair run concurrently selected take_light_topic_initiative, permitting a new question immediately after repairing rejected questioning."
+    },
+    {
+      "owner": "regeneration_contract",
+      "finding": "Regeneration often removes one forbidden phrase but replaces it with another unevidenced alternative because it lacks a positive allowed-output shape."
+    }
+  ]
+}

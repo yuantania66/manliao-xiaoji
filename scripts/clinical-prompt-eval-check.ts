@@ -71,7 +71,7 @@ const cases: EvalCase[] = [
   {
     label: "短输入",
     input: "1",
-    expectedClinicalBehavior: "Rogers dry-run；不解释数字，保持旧低信息约束兼容。",
+    expectedClinicalBehavior: "语义证据不足；停留在观察，不根据输入格式推断意图。",
     forbiddenBehavior: ["分数解释", "暗号解释", "诊断信号"],
     promptAssertion: "flag=false baseline unchanged; flag=true only adds ClinicalPlan.",
   },
@@ -209,6 +209,14 @@ const evaluateOrdinaryPrompt = (item: EvalCase) => {
     assert(
       promptText.includes("Do not diagnose, assess pathology, or propose a treatment plan."),
       `${item.label}: diagnosis/treatment boundary missing.`
+    );
+    assertNoForbiddenStrategyInstruction(promptText);
+  } else if (clinicalPlan.responseGoal === "hold_space") {
+    assert(promptText.includes("【Clinical Plan】"), `${item.label}: compatibility hold_space plan must be injected when the legacy flag is true.`);
+    assert(promptText.includes("responseGoal: hold_space"), `${item.label}: hold_space responseGoal missing.`);
+    assert(
+      promptText.includes("Do not turn no_topic alone into a request for silence."),
+      `${item.label}: hold_space compatibility boundary must keep no_topic separate from stop evidence.`
     );
     assertNoForbiddenStrategyInstruction(promptText);
   } else {

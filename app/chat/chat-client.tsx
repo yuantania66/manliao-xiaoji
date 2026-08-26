@@ -3,22 +3,38 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { CalendarDays, Search } from "lucide-react";
 
+import type { CommittedAssistantMoveEnvelopeV1 } from "@/conversation-os";
 import { apiRequest, ClientApiError } from "@/lib/client-api";
 import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
-import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
+import { createClientTurnId } from "@/lib/client-turn-id";
 import {
-  isP2PublicationClientOptIn,
-  publicationMarkerLabel,
-  resolvePublicationUiState,
-  type PublicationUiFields,
-} from "@/lib/p2-publication-ui";
-
-type MessagePublication = PublicationUiFields & {
-  status?: string | null;
-};
+  advanceChatSessionAuthority,
+  canApplyChatSessionResult,
+  canApplyChatTurnResult,
+  createChatTurnAuthorityState,
+  resolveChatTurnResult,
+  submitChatTurnAuthority,
+  type ChatTurnAuthorityState,
+  type ChatTurnResultAuthority,
+} from "@/lib/chat-turn-result-authority";
+import {
+  appendGuestRecentGreeting,
+  collapseConsecutiveGuestGreetings,
+  guestProactiveGreetingKind,
+  parseGuestRecentGreetings,
+} from "@/lib/guest-proactive-greeting";
+import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
 
 type Message = {
   id: string;
@@ -26,10 +42,37 @@ type Message = {
   text: string;
   createdAt: string;
   promptVersion?: string | null;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1 | null;
   debugTrace?: AiDebugTrace;
-  /** Present only on P2 / eval responses — never invent for V1. */
-  publication?: MessagePublication | null;
 };
+
+type ExecutionSystemStatus = {
+  type: "system_status";
+  code: string;
+  message: string;
+  retryable: boolean;
+  turnId: string;
+};
+
+type TurnScopedExecutionStatus = ExecutionSystemStatus & {
+  inputText: string;
+  isGuest: boolean;
+  authority: ChatTurnResultAuthority;
+};
+
+type AsyncTurnCompletionPath =
+  | "guest-submit-failure"
+  | "guest-submit-success"
+  | "guest-submit-transport"
+  | "auth-submit-failure"
+  | "auth-submit-success"
+  | "auth-submit-transport"
+  | "guest-retry-failure"
+  | "guest-retry-success"
+  | "guest-retry-transport"
+  | "auth-retry-failure"
+  | "auth-retry-success"
+  | "auth-retry-transport";
 
 type AiDebugTrace = {
   visibleSteps: string[];
@@ -135,6 +178,15 @@ type AiDebugTrace = {
       prohibitedExpressions: string[];
       questionDirectives: string[];
     };
+    responsePlan?: {
+      planId: string;
+      decisionOwner: string;
+      answerObligations: { kind: string }[];
+      responseActions: string[];
+      clinicalStrategy: unknown | null;
+      questionPolicy: { mode: string };
+      closurePolicy: { mode: string };
+    };
     filteredHistory: {
       role: string;
       reason: string;
@@ -154,7 +206,14 @@ type AiDebugTrace = {
       after: string;
       reason?: string;
     }[];
-    finalReplySource?: "llm" | "guard_rewrite" | "fallback" | "mock" | "safety";
+    finalReplySource?:
+      | "llm"
+      | "llm_regenerate"
+      | "constraint_failure"
+      | "guard_rewrite"
+      | "fallback"
+      | "mock"
+      | "safety";
     tokenInput?: number;
     tokenOutput?: number;
     providerReasoning?: {
@@ -175,7 +234,32 @@ type AiDebugTrace = {
     finalSource: string;
     fallbackUsed: boolean;
     rewriteAttempted: boolean;
+    regenerateAttempted?: boolean;
     safetyUsed?: boolean;
+    safetyOverrideReason?: string;
+  };
+  conversationControl?: {
+    interpretation: {
+      primaryDialogueAct: string;
+      responseRelation: {
+        candidates: { relation: string; confidence: number }[];
+      };
+    };
+    dialogueState: {
+      currentActivity: { primary: string; concurrent: string[] };
+      initiativeOwner: string;
+    };
+    responsePlan: {
+      planId: string;
+      decisionOwner: string;
+      answerObligations: { kind: string }[];
+      responseActions: string[];
+      questionPolicy: { mode: string };
+      closurePolicy: { mode: string };
+    };
+    clinicalInvoked: boolean;
+    validation: { passed: boolean; failureReasons: string[]; planChanged: false }[];
+    stateUpdate: { remainingOpenLoops: string[] };
   };
 };
 
@@ -200,15 +284,25 @@ type ChatMessageResponse = {
   content: string;
   createdAt?: string;
   promptVersion?: string | null;
+  interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1 | null;
 };
 
 type ChatMessagesListResponse = {
   items: ChatMessageResponse[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+  nextCursor: string | null;
+  greetingStatus?: ExecutionSystemStatus | null;
 };
 
 type CachedChat = {
   sessionId: string;
   messages: Message[];
+  hasMore?: boolean;
+  nextCursor?: string | null;
+  greetingStatus?: ExecutionSystemStatus | null;
 };
 
 type GuestAiUsage = {
@@ -222,6 +316,8 @@ const CHAT_CACHE_PREFIX = "xinqingChatCache";
 const GUEST_MODE_KEY = "xinqingGuestMode";
 const GUEST_CHAT_CACHE_KEY = "xinqingGuestChatCache:v2";
 const GUEST_AI_USAGE_KEY = "xinqingGuestAiUsage";
+const GUEST_RECENT_GREETINGS_KEY = "xinqingGuestRecentGreetings:v2";
+const GUEST_LEGACY_RECENT_GREETINGS_KEY = "xinqingGuestRecentGreetings:v1";
 const GUEST_AI_DAILY_LIMIT = 3;
 const GUEST_SESSION_ID = "guest-session";
 const LOCAL_DEMO_TOKEN_PREFIX = "local_demo_";
@@ -324,6 +420,9 @@ const formatEngineDetails = (trace: AiDebugTrace) => {
     prompt?.conversationContext
       ? `Conversation OS: notice=${prompt.conversationContext.latestNotice.observations.length}, unknowns=${prompt.conversationContext.understanding.unknowns.length}, experienceGoal=${prompt.conversationContext.responseGoal.experienceGoal?.join(",") ?? "unknown"}, engageMode=${prompt.conversationContext.responseGoal.engageMode ?? "unknown"}`
       : "Conversation OS: unknown",
+    trace.conversationControl
+      ? `Conversation OS Control: owner=${trace.conversationControl.responsePlan.decisionOwner}, plan=${trace.conversationControl.responsePlan.planId}, relations=${trace.conversationControl.interpretation.responseRelation.candidates.map((item) => `${item.relation}:${item.confidence}`).join(",") || "none"}, activity=${trace.conversationControl.dialogueState.currentActivity.primary}, concurrent=${trace.conversationControl.dialogueState.currentActivity.concurrent.join(",") || "none"}, initiative=${trace.conversationControl.dialogueState.initiativeOwner}, obligations=${trace.conversationControl.responsePlan.answerObligations.map((item) => item.kind).join(",") || "none"}, actions=${trace.conversationControl.responsePlan.responseActions.join(",")}, clinical=${trace.conversationControl.clinicalInvoked}, validation=${trace.conversationControl.validation.map((item) => item.passed).join(" -> ")}, open=${trace.conversationControl.stateUpdate.remainingOpenLoops.length}`
+      : "Conversation OS Control: safety or unavailable",
     prompt?.conversationOrientation
       ? `Orientation: current=${prompt.conversationOrientation.currentUnderstanding.length}, unknowns=${prompt.conversationOrientation.unknowns.length}, directions=${prompt.conversationOrientation.possibleDirections.length}`
       : "Orientation: unknown",
@@ -357,7 +456,10 @@ const formatEngineDetails = (trace: AiDebugTrace) => {
       ? `Clinical: state=${trace.clinicalLogic.conversationState}, skippedBySafety=${trace.clinicalLogic.skippedBySafety}, intent=${trace.clinicalLogic.selectedPlan?.responseIntent ?? "none"}, strategy=${trace.clinicalLogic.selectedPlan?.primaryStrategy ?? "none"}, memory=understanding:${trace.clinicalLogic.memoryUsed.understandings.length}/relationship:${trace.clinicalLogic.memoryUsed.relationships.length}/timeline:${trace.clinicalLogic.memoryUsed.timelineEvents.length}`
       : "Clinical: unknown",
     `审查: disabled / ${trace.judge.reason}`,
-    `路线: ${trace.route.finalSource}, rewrite=${trace.route.rewriteAttempted}, fallback=${trace.route.fallbackUsed}`,
+    `路线: ${trace.route.finalSource}, rewrite=${trace.route.rewriteAttempted}, regenerate=${trace.route.regenerateAttempted ?? false}, fallback=${trace.route.fallbackUsed}`,
+    ...(trace.route.safetyOverrideReason
+      ? [`Safety override: ${trace.route.safetyOverrideReason}`]
+      : []),
   ].join("\n");
 };
 
@@ -370,6 +472,7 @@ const toMessages = (items: ChatMessageResponse[]): Message[] =>
       text: item.content,
       createdAt: item.createdAt ?? new Date().toISOString(),
       promptVersion: item.promptVersion,
+      interactionMoveEnvelope: item.interactionMoveEnvelope,
     }));
 
 const getChatCacheKey = () => {
@@ -407,7 +510,9 @@ const readGuestMessages = (): Message[] => {
 
   try {
     const cached = JSON.parse(window.sessionStorage.getItem(GUEST_CHAT_CACHE_KEY) || "[]");
-    return Array.isArray(cached) ? (cached as Message[]) : [];
+    return Array.isArray(cached)
+      ? collapseConsecutiveGuestGreetings(cached as Message[])
+      : [];
   } catch {
     return [];
   }
@@ -416,6 +521,26 @@ const readGuestMessages = (): Message[] => {
 const writeGuestMessages = (messages: Message[]) => {
   if (typeof window === "undefined") return;
   window.sessionStorage.setItem(GUEST_CHAT_CACHE_KEY, JSON.stringify(messages));
+};
+
+const readGuestRecentGreetings = () => {
+  if (typeof window === "undefined") return [];
+  return parseGuestRecentGreetings(
+    window.localStorage.getItem(GUEST_RECENT_GREETINGS_KEY) ??
+      window.localStorage.getItem(GUEST_LEGACY_RECENT_GREETINGS_KEY)
+  );
+};
+
+const rememberGuestGreeting = (greeting: Message) => {
+  if (typeof window === "undefined") return;
+  const next = appendGuestRecentGreeting(readGuestRecentGreetings(), {
+    text: greeting.text,
+    interactionMoveEnvelope: greeting.interactionMoveEnvelope,
+  });
+  window.localStorage.setItem(
+    GUEST_RECENT_GREETINGS_KEY,
+    JSON.stringify(next)
+  );
 };
 
 const reserveGuestOpenGreeting = () => {
@@ -429,6 +554,11 @@ const reserveGuestOpenGreeting = () => {
   return true;
 };
 
+const releaseGuestOpenGreeting = () => {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(GUEST_OPEN_GREETING_DEDUPE_KEY);
+};
+
 const createGuestGreetingMessage = async ({
   kind,
   recentMessages,
@@ -437,6 +567,7 @@ const createGuestGreetingMessage = async ({
   recentMessages: Message[];
 }): Promise<Message | null> => {
   try {
+    const recentGreetings = readGuestRecentGreetings();
     const data = await apiRequest<{ assistantMessage: ChatMessageResponse }>(
       "/api/chat/guest/greeting",
       {
@@ -445,43 +576,63 @@ const createGuestGreetingMessage = async ({
         body: {
           kind,
           recentMessages: recentMessages.slice(-6).map((message) => ({
+            id: message.id,
             role: message.role,
             content: message.text,
             promptVersion: message.promptVersion,
+            interactionMoveEnvelope: message.interactionMoveEnvelope,
           })),
+          recentGreetings,
         },
       }
     );
-
-    return {
+    const greeting = {
       id: data.assistantMessage.id,
-      role: "assistant",
+      role: "assistant" as const,
       text: data.assistantMessage.content,
       createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
       promptVersion: data.assistantMessage.promptVersion,
+      interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
     };
+    rememberGuestGreeting(greeting);
+    return greeting;
   } catch {
     return null;
   }
 };
 
-const readOrSeedGuestMessages = async (): Promise<Message[]> => {
+type GuestGreetingLoadResult = {
+  messages: Message[];
+  greetingFailed: boolean;
+};
+
+const readOrSeedGuestMessages = async (): Promise<GuestGreetingLoadResult> => {
   const messages = readGuestMessages();
   if (!reserveGuestOpenGreeting()) {
-    return messages;
+    return { messages, greetingFailed: false };
   }
 
   const nonGreetingMessages = messages.filter(
     (message) => !isProactiveGreetingPromptVersion(message.promptVersion)
   );
-  const greeting = await createGuestGreetingMessage({
-    kind: messages.length > 0 ? "return" : "initial",
-    recentMessages: nonGreetingMessages,
+  const greetingKind = guestProactiveGreetingKind({
+    localMessageCount: messages.length,
+    recentGreetings: readGuestRecentGreetings(),
   });
-  if (!greeting) return messages;
-  const nextMessages = [...messages, greeting];
-  writeGuestMessages(nextMessages);
-  return nextMessages;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (attempt > 0 && !reserveGuestOpenGreeting()) break;
+    const greeting = await createGuestGreetingMessage({
+      kind: greetingKind,
+      recentMessages: nonGreetingMessages,
+    });
+    if (greeting) {
+      const nextMessages = [...messages, greeting];
+      writeGuestMessages(nextMessages);
+      return { messages: nextMessages, greetingFailed: false };
+    }
+    releaseGuestOpenGreeting();
+  }
+  return { messages, greetingFailed: true };
 };
 
 const getTodayKey = () =>
@@ -524,22 +675,13 @@ const incrementGuestAiUsage = () => {
   return Math.max(GUEST_AI_DAILY_LIMIT - next.count, 0);
 };
 
-function ChatContent({
-  initialChat,
-  forceP2PublicationOptIn = false,
-}: {
-  initialChat: InitialChatData;
-  forceP2PublicationOptIn?: boolean;
-}) {
+function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   const searchParams = useSearchParams();
   const date = searchParams.get("date");
   const requestedSessionId = searchParams.get("sessionId");
   const targetMessageId = searchParams.get("messageId");
   const showAiDebugTrace =
     searchParams.get("debugAi") === "1" || process.env.NEXT_PUBLIC_AI_DEBUG_TRACE === "true";
-  /** Opt-in only: ?p2Publication=1 or /chat/p2-preview — does not enable site-wide P2. */
-  const p2PublicationOptIn =
-    forceP2PublicationOptIn || isP2PublicationClientOptIn(searchParams);
   const [input, setInput] = useState("");
   const canUseInitialChat =
     !requestedSessionId || requestedSessionId === initialChat?.sessionId;
@@ -551,20 +693,89 @@ function ChatContent({
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(!canUseInitialChat || !initialChat);
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
+  const [hasMoreOlderMessages, setHasMoreOlderMessages] = useState(initialChat?.hasMore ?? false);
+  const [olderMessagesCursor, setOlderMessagesCursor] = useState<string | null>(
+    initialChat?.nextCursor ?? null
+  );
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [typingMessageIds, setTypingMessageIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [executionStatus, setExecutionStatus] = useState<TurnScopedExecutionStatus | null>(null);
+  const [greetingStatus, setGreetingStatus] = useState<ExecutionSystemStatus | null>(
+    canUseInitialChat ? (initialChat?.greetingStatus ?? null) : null
+  );
   const [isDebugLoggingIn, setIsDebugLoggingIn] = useState(false);
   const typingCancelledRef = useRef(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
+  const isLoadingOlderMessagesRef = useRef(false);
+  const shouldAutoScrollToBottomRef = useRef(true);
+  const prependScrollRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
   const hydratedFromCacheRef = useRef(false);
   const positionedTargetRef = useRef<string | null>(null);
+  const sessionContextKey = `${requestedSessionId ?? ""}\u0000${sessionId ?? ""}`;
+  const sessionContextRef = useRef<{
+    key: string;
+    authority: ChatTurnAuthorityState;
+  }>({
+    key: sessionContextKey,
+    authority: createChatTurnAuthorityState(sessionId ?? ""),
+  });
 
-  const getErrorMessage = (error: unknown) => {
+  const getErrorMessage = useCallback((error: unknown) => {
     if (error instanceof ClientApiError) return error.message;
     if (error instanceof Error) return error.message;
     return "服务暂时不可用，请稍后再试";
-  };
+  }, []);
+
+  useLayoutEffect(() => {
+    if (sessionContextRef.current.key === sessionContextKey) return;
+    const authority = advanceChatSessionAuthority(
+      sessionContextRef.current.authority,
+      sessionId ?? ""
+    );
+    sessionContextRef.current = { key: sessionContextKey, authority };
+    setExecutionStatus((current) =>
+      current && canApplyChatSessionResult({ current: authority, result: current.authority })
+        ? current
+        : null
+    );
+    setGreetingStatus(null);
+    setErrorMessage("");
+  }, [sessionContextKey, sessionId]);
+
+  const applyTurnCompletionResult = useCallback(
+    (
+      _path: AsyncTurnCompletionPath,
+      authority: ChatTurnResultAuthority,
+      completion: {
+        executionStatus?: TurnScopedExecutionStatus | null;
+        errorMessage?: string;
+      }
+    ) => {
+      if ("executionStatus" in completion) {
+        setExecutionStatus((current) =>
+          resolveChatTurnResult({
+            current: sessionContextRef.current.authority,
+            result: authority,
+            previousValue: current,
+            nextValue: completion.executionStatus ?? null,
+          })
+        );
+      }
+      if (completion.errorMessage !== undefined) {
+        setErrorMessage((current) =>
+          resolveChatTurnResult({
+            current: sessionContextRef.current.authority,
+            result: authority,
+            previousValue: current,
+            nextValue: completion.errorMessage ?? "",
+          })
+        );
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -580,7 +791,14 @@ function ChatContent({
         }
         setIsGuestMode(true);
         setSessionId(GUEST_SESSION_ID);
-        setMessages(await readOrSeedGuestMessages());
+        shouldAutoScrollToBottomRef.current = true;
+        const guestLoad = await readOrSeedGuestMessages();
+        setMessages(guestLoad.messages);
+        setErrorMessage(guestLoad.greetingFailed
+          ? "欢迎语暂时没生成，可以直接发消息或刷新重试。"
+          : "");
+        setHasMoreOlderMessages(false);
+        setOlderMessagesCursor(null);
         setIsLoadingMessages(false);
         return;
       }
@@ -590,7 +808,10 @@ function ChatContent({
       if (!hydratedFromCacheRef.current && cached && !requestedSessionId) {
         hydratedFromCacheRef.current = true;
         setSessionId(cached.sessionId);
+        shouldAutoScrollToBottomRef.current = true;
         setMessages(cached.messages);
+        setHasMoreOlderMessages(cached.hasMore ?? false);
+        setOlderMessagesCursor(cached.nextCursor ?? null);
       }
 
       if (initialChat && !requestedSessionId) {
@@ -599,7 +820,11 @@ function ChatContent({
 
       if (initialChat && canUseInitialChat) {
         setSessionId(initialChat.sessionId);
+        shouldAutoScrollToBottomRef.current = true;
         setMessages(initialChat.messages);
+        setHasMoreOlderMessages(initialChat.hasMore ?? false);
+        setOlderMessagesCursor(initialChat.nextCursor ?? null);
+        setGreetingStatus(initialChat.greetingStatus ?? null);
         setIsLoadingMessages(false);
         return;
       }
@@ -640,11 +865,23 @@ function ChatContent({
         if (cancelled) return;
         const nextMessages = toMessages(data.items);
         setSessionId(activeSessionId);
+        shouldAutoScrollToBottomRef.current = true;
         setMessages(nextMessages);
-        writeChatCache({ sessionId: activeSessionId, messages: nextMessages });
+        setHasMoreOlderMessages(data.hasMore);
+        setOlderMessagesCursor(data.nextCursor);
+        setGreetingStatus(data.greetingStatus ?? null);
+        writeChatCache({
+          sessionId: activeSessionId,
+          messages: nextMessages,
+          hasMore: data.hasMore,
+          nextCursor: data.nextCursor,
+        });
       } catch (error) {
         if (cancelled) return;
+        shouldAutoScrollToBottomRef.current = true;
         setMessages([]);
+        setHasMoreOlderMessages(false);
+        setOlderMessagesCursor(null);
         setErrorMessage(getErrorMessage(error));
       } finally {
         if (!cancelled) setIsLoadingMessages(false);
@@ -656,7 +893,7 @@ function ChatContent({
     return () => {
       cancelled = true;
     };
-  }, [canUseInitialChat, initialChat, requestedSessionId]);
+  }, [canUseInitialChat, getErrorMessage, initialChat, requestedSessionId]);
 
   useEffect(() => {
     return () => {
@@ -692,8 +929,115 @@ function ChatContent({
       }
     }
 
+    if (prependScrollRef.current) {
+      const previous = prependScrollRef.current;
+      prependScrollRef.current = null;
+      scrollElement.scrollTop =
+        scrollElement.scrollHeight - previous.scrollHeight + previous.scrollTop;
+      return;
+    }
+
+    if (!shouldAutoScrollToBottomRef.current) return;
+
     scrollElement.scrollTop = scrollElement.scrollHeight;
   }, [date, messages, targetMessageId, typingMessageIds]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (
+      isGuestMode ||
+      !sessionId ||
+      !hasMoreOlderMessages ||
+      !olderMessagesCursor ||
+      isLoadingOlderMessagesRef.current
+    ) {
+      return;
+    }
+
+    const scrollElement = messagesScrollRef.current;
+    if (!scrollElement) return;
+
+    isLoadingOlderMessagesRef.current = true;
+    setIsLoadingOlderMessages(true);
+    setErrorMessage("");
+
+    try {
+      const data = await apiRequest<ChatMessagesListResponse>(
+        `/api/chat/sessions/${sessionId}/messages?pageSize=50&before=${encodeURIComponent(
+          olderMessagesCursor
+        )}`
+      );
+      const olderMessages = toMessages(data.items);
+      prependScrollRef.current = {
+        scrollHeight: scrollElement.scrollHeight,
+        scrollTop: scrollElement.scrollTop,
+      };
+      shouldAutoScrollToBottomRef.current = false;
+      setMessages((current) => {
+        const currentIds = new Set(current.map((message) => message.id));
+        const uniqueOlderMessages = olderMessages.filter((message) => !currentIds.has(message.id));
+        if (uniqueOlderMessages.length === 0) {
+          prependScrollRef.current = null;
+          return current;
+        }
+        const nextMessages = [...uniqueOlderMessages, ...current];
+        writeChatCache({
+          sessionId,
+          messages: nextMessages,
+          hasMore: data.hasMore,
+          nextCursor: data.nextCursor,
+        });
+        return nextMessages;
+      });
+      setHasMoreOlderMessages(data.hasMore);
+      setOlderMessagesCursor(data.nextCursor);
+    } catch (error) {
+      prependScrollRef.current = null;
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      isLoadingOlderMessagesRef.current = false;
+      setIsLoadingOlderMessages(false);
+    }
+  }, [
+    getErrorMessage,
+    hasMoreOlderMessages,
+    isGuestMode,
+    olderMessagesCursor,
+    sessionId,
+  ]);
+
+  const handleMessagesScroll = () => {
+    const scrollElement = messagesScrollRef.current;
+    if (scrollElement && scrollElement.scrollTop <= 32) {
+      void loadOlderMessages();
+    }
+  };
+
+  useEffect(() => {
+    const targetKey = targetMessageId ?? date;
+    if (
+      !targetKey ||
+      isGuestMode ||
+      isLoadingMessages ||
+      isLoadingOlderMessages ||
+      !hasMoreOlderMessages
+    ) {
+      return;
+    }
+
+    const targetIsLoaded = targetMessageId
+      ? messages.some((message) => message.id === targetMessageId)
+      : messages.some((message) => formatMessageDate(message.createdAt) === date);
+    if (!targetIsLoaded) void loadOlderMessages();
+  }, [
+    date,
+    hasMoreOlderMessages,
+    isGuestMode,
+    isLoadingMessages,
+    isLoadingOlderMessages,
+    loadOlderMessages,
+    messages,
+    targetMessageId,
+  ]);
 
   const revealAssistantReply = (messageId: string, fullText: string) =>
     new Promise<void>(async (resolve) => {
@@ -739,10 +1083,22 @@ function ChatContent({
       return;
     }
 
-    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticId = createClientTurnId();
+    const submittedAuthority = submitChatTurnAuthority(
+      sessionContextRef.current.authority,
+      optimisticId
+    );
+    sessionContextRef.current.authority = submittedAuthority.state;
+    const resultAuthority = submittedAuthority.result;
+    const isCurrentSessionResult = () =>
+      canApplyChatSessionResult({
+        current: sessionContextRef.current.authority,
+        result: resultAuthority,
+      });
     const pendingAssistantId = `typing-${Date.now()}`;
     const now = new Date().toISOString();
     const userMessage: Message = { id: optimisticId, role: "user", text, createdAt: now };
+    shouldAutoScrollToBottomRef.current = true;
     setMessages((current) => [
       ...current,
       userMessage,
@@ -751,197 +1107,7 @@ function ChatContent({
     setTypingMessageIds((current) => [...current, pendingAssistantId]);
     setInput("");
     setErrorMessage("");
-
-    // P2 provisional UI opt-in only (?p2Publication=1 / /chat/p2-preview).
-    // Real Qwen streaming → provisional (临时) → commit (已确认). Default chat stays V1.
-    if (p2PublicationOptIn) {
-      const p2SessionId = sessionId ?? "p2-eval-local";
-      const clientTurnId = optimisticId;
-      const workerId = `ui-${clientTurnId.slice(0, 24)}`;
-      const authUserId = getStoredAuth()?.user?.id ?? null;
-      const recentMessages = messages
-        .filter((message) => message.role === "user" || message.role === "assistant")
-        .slice(-12)
-        .map((message) => ({
-          role: message.role as "user" | "assistant",
-          content: message.text,
-        }));
-
-      try {
-        const response = await fetch("/api/chat/p2-publication/eval", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            op: "generate_stream",
-            sessionId: p2SessionId,
-            clientTurnId,
-            workerId,
-            content: text,
-            userId: authUserId,
-            recentMessages,
-          }),
-        });
-
-        if (response.status === 404) {
-          throw new ClientApiError(
-            "P2 publication 未开启（服务端 flag 默认 off）。请在受控环境设置 P2_PUBLICATION_ENABLED=1 后再用 /chat/p2-preview 预览。",
-            404,
-            "NOT_FOUND",
-          );
-        }
-
-        if (!response.ok || !response.body) {
-          let message = "P2 流式请求失败";
-          try {
-            const payload = (await response.json()) as {
-              ok?: boolean;
-              error?: { message?: string };
-            };
-            if (payload?.error?.message) message = payload.error.message;
-          } catch {
-            /* ignore */
-          }
-          throw new ClientApiError(message, response.status, "P2_STREAM_FAILED");
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let buffer = "";
-        let assistantId = pendingAssistantId;
-        let sawCommitted = false;
-
-        const applyAssistant = (next: {
-          id?: string;
-          text: string;
-          publication: MessagePublication;
-        }) => {
-          const id = next.id ?? assistantId;
-          setTypingMessageIds((current) =>
-            current.filter((item) => item !== pendingAssistantId && item !== assistantId).concat(id),
-          );
-          setMessages((current) =>
-            current.map((message) =>
-              message.id === pendingAssistantId || message.id === assistantId
-                ? {
-                    id,
-                    role: "assistant",
-                    text: next.text,
-                    createdAt: now,
-                    publication: next.publication,
-                  }
-                : message,
-            ),
-          );
-          assistantId = id;
-        };
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            let event: {
-              type?: string;
-              body?: string;
-              finalContent?: string;
-              provisional?: boolean;
-              provisionalMarkedTemporary?: boolean;
-              provisionalMarker?: string;
-              message?: string;
-              code?: string;
-              missingEnv?: string[];
-              publication?: { status?: string; id?: string };
-            };
-            try {
-              event = JSON.parse(trimmed) as typeof event;
-            } catch {
-              continue;
-            }
-
-            if (event.type === "provisional") {
-              applyAssistant({
-                id: event.publication?.id ?? assistantId,
-                text: event.body || "",
-                publication: {
-                  provisional: true,
-                  provisionalMarkedTemporary: true,
-                  provisionalMarker: event.provisionalMarker ?? null,
-                  status: event.publication?.status ?? "streaming",
-                  publicationStatus: event.publication?.status ?? "streaming",
-                },
-              });
-            } else if (event.type === "committed") {
-              sawCommitted = true;
-              applyAssistant({
-                id: event.publication?.id ?? assistantId,
-                text: event.finalContent || "",
-                publication: {
-                  provisional: false,
-                  provisionalMarkedTemporary:
-                    event.provisionalMarkedTemporary ?? false,
-                  status: event.publication?.status ?? "committed",
-                  publicationStatus: event.publication?.status ?? "committed",
-                },
-              });
-              setTypingMessageIds((current) =>
-                current.filter((item) => item !== assistantId && item !== pendingAssistantId),
-              );
-            } else if (event.type === "error") {
-              const missing =
-                Array.isArray(event.missingEnv) && event.missingEnv.length > 0
-                  ? ` 缺少：${event.missingEnv.join(", ")}`
-                  : "";
-              setTypingMessageIds((current) =>
-                current.filter((item) => item !== assistantId && item !== pendingAssistantId),
-              );
-              if (event.code === "stream_in_progress") {
-                setErrorMessage(event.message || "连接恢复中，正在同步未确认回复…");
-              } else if (!sawCommitted) {
-                setMessages((current) =>
-                  current.map((message) =>
-                    message.id === assistantId || message.id === pendingAssistantId
-                      ? {
-                          ...message,
-                          publication: {
-                            provisional: false,
-                            provisionalMarkedTemporary: false,
-                            status: event.publication?.status ?? "failed_retryable",
-                            publicationStatus:
-                              event.publication?.status ?? "failed_retryable",
-                          },
-                        }
-                      : message,
-                  ),
-                );
-                setErrorMessage((event.message || "这次回复没能完成") + missing);
-              }
-            }
-          }
-        }
-
-        setTypingMessageIds((current) =>
-          current.filter((item) => item !== assistantId && item !== pendingAssistantId),
-        );
-      } catch (error) {
-        setMessages((current) =>
-          current.filter(
-            (message) => message.id !== pendingAssistantId && message.id !== optimisticId,
-          ),
-        );
-        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
-        if (error instanceof ClientApiError && error.status === 404) {
-          setErrorMessage(error.message);
-        } else {
-          setErrorMessage(getErrorMessage(error));
-        }
-      }
-      return;
-    }
+    setExecutionStatus(null);
 
     if (isGuestMode) {
       const replacePendingAssistant = async (assistantMessage: Message) => {
@@ -963,68 +1129,141 @@ function ChatContent({
       };
 
       if (!showAiDebugTrace && getGuestAiRemaining() <= 0) {
-        const assistantMessage: Message = {
-          id: `guest-limit-${Date.now()}`,
-          role: "assistant",
-          text: GUEST_AI_LIMIT_MESSAGE,
-          createdAt: new Date().toISOString(),
-        };
-        await replacePendingAssistant(assistantMessage);
+        setMessages((current) => current.filter((message) => message.id !== pendingAssistantId));
+        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+        setExecutionStatus({
+          type: "system_status",
+          code: "RATE_LIMITED",
+          message: GUEST_AI_LIMIT_MESSAGE,
+          retryable: false,
+          turnId: optimisticId,
+          inputText: text,
+          isGuest: true,
+          authority: resultAuthority,
+        });
         return;
       }
 
       try {
         const data = await apiRequest<{
-          assistantMessage: ChatMessageResponse;
-          fallbackUsed: boolean;
+          status: "committed" | "failed";
+          assistantMessage?: ChatMessageResponse;
+          systemStatus?: ExecutionSystemStatus;
           debugTrace?: AiDebugTrace;
         }>("/api/chat/guest", {
           method: "POST",
           auth: false,
           body: {
             content: text,
+            turnId: optimisticId,
             debugTrace: showAiDebugTrace,
-            recentMessages: messages.slice(-8).map((message) => ({
+            recentMessages: messages.slice(-24).map((message) => ({
+              id: message.id,
               role: message.role,
               content: message.text,
               promptVersion: message.promptVersion,
+              createdAt: message.createdAt,
+              interactionMoveEnvelope: message.interactionMoveEnvelope,
             })),
           },
         });
         if (!showAiDebugTrace) {
           incrementGuestAiUsage();
         }
+        if (!isCurrentSessionResult()) return;
+        if (data.status === "failed" || !data.assistantMessage) {
+          setMessages((current) => {
+            const next = current.filter((message) => message.id !== pendingAssistantId);
+            writeGuestMessages(next);
+            return next;
+          });
+          setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+          if (data.systemStatus) {
+            const nextStatus = {
+              ...data.systemStatus,
+              inputText: text,
+              isGuest: true,
+              authority: resultAuthority,
+            };
+            applyTurnCompletionResult("guest-submit-failure", resultAuthority, {
+              executionStatus: nextStatus,
+            });
+          }
+          return;
+        }
+        applyTurnCompletionResult("guest-submit-success", resultAuthority, {
+          executionStatus: null,
+        });
+        if (!isCurrentSessionResult()) return;
         await replacePendingAssistant({
           id: data.assistantMessage.id,
           role: "assistant",
           text: data.assistantMessage.content,
           createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
           promptVersion: data.assistantMessage.promptVersion,
+          interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
           debugTrace: data.debugTrace,
         });
       } catch (error) {
-        setMessages((current) =>
-          current.filter(
-            (message) => message.id !== pendingAssistantId && message.id !== optimisticId
-          )
-        );
-        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
-        setErrorMessage(getErrorMessage(error));
+        if (isCurrentSessionResult()) {
+          setMessages((current) =>
+            current.filter(
+              (message) => message.id !== pendingAssistantId && message.id !== optimisticId
+            )
+          );
+          setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+        }
+        applyTurnCompletionResult("guest-submit-transport", resultAuthority, {
+          errorMessage: getErrorMessage(error),
+        });
       }
       return;
     }
 
     try {
       const data = await apiRequest<{
+        status: "committed" | "failed";
         userMessage: ChatMessageResponse;
-        assistantMessage: ChatMessageResponse;
+        assistantMessage?: ChatMessageResponse;
+        systemStatus?: ExecutionSystemStatus;
         debugTrace?: AiDebugTrace;
       }>(`/api/chat/sessions/${sessionId}/messages`, {
         method: "POST",
-        body: { content: text, debugTrace: showAiDebugTrace },
+        body: { content: text, turnId: optimisticId, debugTrace: showAiDebugTrace },
       });
+      if (!isCurrentSessionResult()) return;
+      if (data.status === "failed" || !data.assistantMessage) {
+        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+        setMessages((current) => [
+          ...current.filter(
+            (message) => message.id !== optimisticId && message.id !== pendingAssistantId
+          ),
+          {
+            id: data.userMessage.id,
+            role: "user",
+            text: data.userMessage.content,
+            createdAt: data.userMessage.createdAt ?? now,
+          },
+        ]);
+        if (data.systemStatus) {
+          const nextStatus = {
+            ...data.systemStatus,
+            inputText: text,
+            isGuest: false,
+            authority: resultAuthority,
+          };
+          applyTurnCompletionResult("auth-submit-failure", resultAuthority, {
+            executionStatus: nextStatus,
+          });
+        }
+        return;
+      }
+      applyTurnCompletionResult("auth-submit-success", resultAuthority, {
+        executionStatus: null,
+      });
+      const committedAssistantMessage = data.assistantMessage;
       setTypingMessageIds((current) =>
-        current.filter((id) => id !== pendingAssistantId).concat(data.assistantMessage.id)
+        current.filter((id) => id !== pendingAssistantId).concat(committedAssistantMessage.id)
       );
       setMessages((current) => [
         ...current.filter(
@@ -1038,27 +1277,197 @@ function ChatContent({
           promptVersion: data.userMessage.promptVersion,
         },
         {
+          id: committedAssistantMessage.id,
+          role: "assistant",
+          text: "",
+          createdAt: committedAssistantMessage.createdAt ?? new Date().toISOString(),
+          promptVersion: committedAssistantMessage.promptVersion,
+          interactionMoveEnvelope: committedAssistantMessage.interactionMoveEnvelope,
+          debugTrace: data.debugTrace,
+        },
+      ]);
+      await revealAssistantReply(committedAssistantMessage.id, committedAssistantMessage.content);
+      if (!isCurrentSessionResult()) return;
+      const refreshed = await apiRequest<ChatMessagesListResponse>(
+        `/api/chat/sessions/${sessionId}/messages?pageSize=50`
+      );
+      if (!isCurrentSessionResult()) return;
+      writeChatCache({
+        sessionId,
+        messages: toMessages(refreshed.items),
+        hasMore: refreshed.hasMore,
+        nextCursor: refreshed.nextCursor,
+      });
+    } catch (error) {
+      if (isCurrentSessionResult()) {
+        setMessages((current) =>
+          current.filter(
+            (message) => message.id !== pendingAssistantId && message.id !== optimisticId
+          )
+        );
+        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+      }
+      applyTurnCompletionResult("auth-submit-transport", resultAuthority, {
+        errorMessage: getErrorMessage(error),
+      });
+    }
+  };
+
+  const handleExecutionRetry = async () => {
+    if (greetingStatus?.retryable && sessionId && !isGuestMode) {
+      setGreetingStatus(null);
+      setErrorMessage("");
+      try {
+        const data = await apiRequest<ChatMessagesListResponse>(
+          `/api/chat/sessions/${sessionId}/messages?pageSize=50&retryGreeting=1`
+        );
+        const nextMessages = toMessages(data.items);
+        setMessages(nextMessages);
+        setHasMoreOlderMessages(data.hasMore);
+        setOlderMessagesCursor(data.nextCursor);
+        setGreetingStatus(data.greetingStatus ?? null);
+        writeChatCache({
+          sessionId,
+          messages: nextMessages,
+          hasMore: data.hasMore,
+          nextCursor: data.nextCursor,
+          greetingStatus: data.greetingStatus ?? null,
+        });
+      } catch (error) {
+        setGreetingStatus(greetingStatus);
+        setErrorMessage(getErrorMessage(error));
+      }
+      return;
+    }
+    const pending = executionStatus;
+    if (!pending?.retryable || !sessionId) return;
+    const resultAuthority = pending.authority;
+    const isCurrentSessionResult = () =>
+      canApplyChatSessionResult({
+        current: sessionContextRef.current.authority,
+        result: resultAuthority,
+      });
+    const ownsLatestTurnResult = () =>
+      canApplyChatTurnResult({
+        current: sessionContextRef.current.authority,
+        result: resultAuthority,
+      });
+    if (!ownsLatestTurnResult()) return;
+    setExecutionStatus(null);
+    setErrorMessage("");
+    try {
+      if (pending.isGuest) {
+        const data = await apiRequest<{
+          status: "committed" | "failed";
+          assistantMessage?: ChatMessageResponse;
+          systemStatus?: ExecutionSystemStatus;
+          debugTrace?: AiDebugTrace;
+        }>("/api/chat/guest", {
+          method: "POST",
+          auth: false,
+          body: {
+            content: pending.inputText,
+            turnId: pending.turnId,
+            retry: true,
+            debugTrace: showAiDebugTrace,
+            recentMessages: messages
+              .filter((message) => message.id !== pending.turnId)
+              .slice(-24)
+              .map((message) => ({
+                id: message.id,
+                role: message.role,
+                content: message.text,
+                promptVersion: message.promptVersion,
+                createdAt: message.createdAt,
+                interactionMoveEnvelope: message.interactionMoveEnvelope,
+              })),
+          },
+        });
+        if (!showAiDebugTrace) incrementGuestAiUsage();
+        if (!isCurrentSessionResult()) return;
+        if (data.status === "failed" || !data.assistantMessage) {
+          const nextStatus = {
+            ...(data.systemStatus ?? pending),
+            inputText: pending.inputText,
+            isGuest: true,
+            authority: resultAuthority,
+          };
+          applyTurnCompletionResult("guest-retry-failure", resultAuthority, {
+            executionStatus: nextStatus,
+          });
+          return;
+        }
+        applyTurnCompletionResult("guest-retry-success", resultAuthority, {
+          executionStatus: null,
+        });
+        const assistant: Message = {
           id: data.assistantMessage.id,
           role: "assistant",
           text: "",
           createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
           promptVersion: data.assistantMessage.promptVersion,
+          interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
           debugTrace: data.debugTrace,
-        },
-      ]);
-      await revealAssistantReply(data.assistantMessage.id, data.assistantMessage.content);
-      const refreshed = await apiRequest<ChatMessagesListResponse>(
-        `/api/chat/sessions/${sessionId}/messages?pageSize=50`
-      );
-      writeChatCache({ sessionId, messages: toMessages(refreshed.items) });
+        };
+        setMessages((current) => {
+          const next = [...current, assistant];
+          writeGuestMessages(next);
+          return next;
+        });
+        await revealAssistantReply(assistant.id, data.assistantMessage.content);
+        setMessages((current) => {
+          writeGuestMessages(current);
+          return current;
+        });
+        return;
+      }
+
+      const data = await apiRequest<{
+        status: "committed" | "failed";
+        assistantMessage?: ChatMessageResponse;
+        systemStatus?: ExecutionSystemStatus;
+        debugTrace?: AiDebugTrace;
+      }>(`/api/chat/sessions/${sessionId}/messages`, {
+        method: "POST",
+        body: { retryTurnId: pending.turnId, debugTrace: showAiDebugTrace },
+      });
+      if (!isCurrentSessionResult()) return;
+      if (data.status === "failed" || !data.assistantMessage) {
+        const nextStatus = {
+          ...(data.systemStatus ?? pending),
+          inputText: pending.inputText,
+          isGuest: false,
+          authority: resultAuthority,
+        };
+        applyTurnCompletionResult("auth-retry-failure", resultAuthority, {
+          executionStatus: nextStatus,
+        });
+        return;
+      }
+      applyTurnCompletionResult("auth-retry-success", resultAuthority, {
+        executionStatus: null,
+      });
+      const assistant: Message = {
+        id: data.assistantMessage.id,
+        role: "assistant",
+        text: "",
+        createdAt: data.assistantMessage.createdAt ?? new Date().toISOString(),
+        promptVersion: data.assistantMessage.promptVersion,
+        interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
+        debugTrace: data.debugTrace,
+      };
+      setMessages((current) => [...current, assistant]);
+      await revealAssistantReply(assistant.id, data.assistantMessage.content);
     } catch (error) {
-      setMessages((current) =>
-        current.filter(
-          (message) => message.id !== pendingAssistantId && message.id !== optimisticId
-        )
-      );
-      setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
-      setErrorMessage(getErrorMessage(error));
+      const completion = {
+        executionStatus: pending,
+        errorMessage: getErrorMessage(error),
+      };
+      if (pending.isGuest) {
+        applyTurnCompletionResult("guest-retry-transport", resultAuthority, completion);
+      } else {
+        applyTurnCompletionResult("auth-retry-transport", resultAuthority, completion);
+      }
     }
   };
 
@@ -1117,15 +1526,6 @@ function ChatContent({
           >
             {isDebugLoggingIn ? "登录中" : "debug 登录"}
           </button>
-        ) : null}
-
-        {p2PublicationOptIn ? (
-          <div
-            data-p2-publication-opt-in="1"
-            className="absolute left-[18px] right-[18px] top-[108px] z-20 rounded-md border border-[var(--sage)] bg-[#e7f0ea] px-3 py-2 text-[12px] font-semibold leading-4 text-[var(--sage)]"
-          >
-            P2 预览模式（非正式产品）· 真模型流式：先「临时内容…」再「已确认」· flag 须显式 ENABLE
-          </div>
         ) : null}
 
         <button
@@ -1191,6 +1591,8 @@ function ChatContent({
         ) : (
           <div
             ref={messagesScrollRef}
+            onScroll={handleMessagesScroll}
+            aria-busy={isLoadingOlderMessages}
             className="chat-scrollbar absolute left-[22px] right-[18px] top-[150px] flex max-h-[534px] flex-col gap-2 overflow-y-auto pb-5 pr-3"
           >
             {messages.map((message, index) => (
@@ -1209,39 +1611,6 @@ function ChatContent({
                 >
                   {message.text}
                 </div>
-                {message.role === "assistant"
-                  ? (() => {
-                      const pubFields: PublicationUiFields | null = message.publication
-                        ? {
-                            provisional: message.publication.provisional,
-                            provisionalMarkedTemporary:
-                              message.publication.provisionalMarkedTemporary,
-                            provisionalMarker: message.publication.provisionalMarker,
-                            publicationStatus:
-                              message.publication.publicationStatus ??
-                              message.publication.status ??
-                              null,
-                          }
-                        : null;
-                      const pubState = resolvePublicationUiState(pubFields);
-                      const marker = publicationMarkerLabel(pubState, pubFields);
-                      if (!marker) return null;
-                      return (
-                        <div
-                          data-publication-state={pubState}
-                          className={
-                            pubState === "provisional"
-                              ? "mr-auto mt-1 max-w-[306px] text-[10px] leading-4 text-[var(--muted)]"
-                              : pubState === "failed"
-                                ? "mr-auto mt-1 max-w-[306px] text-[10px] leading-4 text-[var(--muted)]"
-                                : "mr-auto mt-1 max-w-[306px] text-[10px] leading-4 text-[var(--sage)]"
-                          }
-                        >
-                          {marker}
-                        </div>
-                      );
-                    })()
-                  : null}
                 {showAiDebugTrace && message.role === "assistant" && message.debugTrace ? (
                   <details className="mr-auto mt-1 max-w-[306px] rounded-[10px] border border-[var(--line)] bg-white/55 px-3 py-2 text-[11px] leading-[18px] text-[var(--soft-copy)]">
                     <summary className="cursor-pointer select-none font-semibold text-[var(--sage)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--sage)]">
@@ -1290,25 +1659,34 @@ function ChatContent({
           </button>
         </form>
 
+        {executionStatus ?? greetingStatus ? (
+          <div
+            role="status"
+            className="absolute bottom-[82px] left-[18px] right-[18px] flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--page-bg)] px-3 py-2 text-[11px] leading-4 text-[var(--soft-copy)]"
+          >
+            <span>{(executionStatus ?? greetingStatus)?.message}</span>
+            {(executionStatus ?? greetingStatus)?.retryable ? (
+              <button
+                type="button"
+                onClick={handleExecutionRetry}
+                className="ml-3 shrink-0 font-semibold text-[var(--sage)]"
+              >
+                重新生成
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="absolute bottom-2.5 left-1/2 h-1 w-[100px] -translate-x-1/2 rounded-sm bg-[var(--ink)]" />
       </section>
     </main>
   );
 }
 
-export default function ChatClient({
-  initialChat,
-  forceP2PublicationOptIn = false,
-}: {
-  initialChat: InitialChatData;
-  forceP2PublicationOptIn?: boolean;
-}) {
+export default function ChatClient({ initialChat }: { initialChat: InitialChatData }) {
   return (
     <Suspense fallback={null}>
-      <ChatContent
-        initialChat={initialChat}
-        forceP2PublicationOptIn={forceP2PublicationOptIn}
-      />
+      <ChatContent initialChat={initialChat} />
     </Suspense>
   );
 }

@@ -41,6 +41,13 @@ requireSet("SESSION_SECRET");
 if (value("SESSION_SECRET").length > 0 && value("SESSION_SECRET").length < 32) {
   fail("SESSION_SECRET should be at least 32 characters");
 }
+requireSet("ACCOUNT_CANCELLATION_CLEANUP_SECRET");
+if (
+  value("ACCOUNT_CANCELLATION_CLEANUP_SECRET").length > 0 &&
+  value("ACCOUNT_CANCELLATION_CLEANUP_SECRET").length < 32
+) {
+  fail("ACCOUNT_CANCELLATION_CLEANUP_SECRET should be at least 32 characters");
+}
 
 requireSet("WECHAT_APP_ID");
 requireSet("WECHAT_APP_SECRET");

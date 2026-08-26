@@ -1,5 +1,13 @@
 # Response Goal Design
 
+> Status (2026-07-23): this document defines the legacy Clinical ResponseGoal
+> vocabulary and its compatibility/evaluation behavior. Production ordinary
+> chat now has one decision owner, `conversation_os.response_planner`.
+> Response Planner may request Clinical strategy advice for an already
+> established emotional/action need; Clinical Logic no longer runs this
+> selector as a second production decision chain. See
+> `ARCHITECTURE_V1_FINAL.md` and `CONVERSATION_OS_CONTROL_CLOSURE.md`.
+
 ## 1. Why This Document Exists
 
 Clinical Logic Sprint 1 的真实问题不是 Rogers prompt 不够强，而是第一决策对象错了。
@@ -129,6 +137,17 @@ responseIntent: empathic_reflection
 - 不要说“你到底什么意思”。
 - 不要用校准术语。
 
+语义证据边界：
+
+- 在形成解释前，先读取 `ClinicalContext.signals.semanticEvidence`。
+- `sufficient` 表示当前消息本身已有可用语义，或当前回复与会话中明确建立的回答框架兼容；此时可以形成解释。
+- `insufficient` 表示当前只能确认输入本身；此时 `responseIntent=receive`、`questionFunction=none`，停留在观察，不根据消息格式或重复次数推断情绪、意图、分数、活动或会话目的。
+- 相同格式不能决定结果。例如独立出现的 `1` 证据不足，而在“吃了几个？”或“How old are you?”之后出现的 `1`/`34`具有明确回答框架，证据充分。
+- 回答框架只取当前五分钟会话片段里紧邻当前输入的 AI 消息；中间出现其他轮次或会话片段重置后，旧问题不再提供证据。
+- 兼容性需要验证：选择题只能接受已提供的选项，有界量表只能接受范围内数值；普通编号列表、年份区间和末尾标点不能自行建立语义。
+- `不对` 只有在紧邻 AI 消息、明确否定该消息时才形成纠错证据；独立出现时仍不推断纠错对象。
+- AI 自己先前提出、但用户没有确认的猜测，不构成已建立的语义证据。
+
 ### 4.3 reflect
 
 目标：
@@ -249,7 +268,20 @@ Strategy 回答：
 | 帮我梳理下 | summarize | MI summary |
 | 算了，先不说了 | hold_space | Rogers / ACT acceptance space |
 
-Sprint 1 只实现 ResponseGoalSelector dry-run，不实现复杂策略选择。
+### 5.1 Interaction evidence boundary (approved 2026-07-23)
+
+`semanticEvidence` determines whether the content itself may be interpreted. It does not determine whether the user wants interaction, who should take initiative, or whether a pause was requested.
+
+For a `no_topic` turn, the Conversation Layer supplies structured `interaction` evidence to `ClinicalContext`:
+
+- `contentAvailability` is separate from `engagement`.
+- no topic plus `engaged/open` plus `stopIntent=false` selects the existing `help_continue_expression` goal. Its plan uses `responseIntent=initiate_topic`: the assistant offers one light, optional entry and does not demand that the user first name a topic.
+- `hold_space` requires explicit or reliable contextual stop evidence, or separately supplied distress/fatigue evidence. No topic alone is never sufficient.
+- affect is `unknown` unless the current message or reliable context supplies evidence; light punctuation is only supporting tone evidence and cannot imply sadness.
+
+This is a decision contract, not a reply template. The Prompt receives the rendered structured fields only for this bounded interaction path; it must not replace them with a canned response.
+
+The preceding Sprint 1 dry-run limitation is historical. The 2026-07-23 interaction contract renders only the approved `no_topic` and low-interaction ClinicalPlan paths so the production model can follow the decision; it does not add a reply template or extend Voice Layer strategy.
 
 ## 6. ClinicalPlan Revision
 
@@ -264,6 +296,7 @@ interface ClinicalPlan {
   toneConstraint: string[]
   interventionBoundary: string[]
   safetyNotes: string[]
+  interaction: ConversationInteractionSignals
   rationale: string[]
 }
 ```
@@ -288,11 +321,11 @@ RogersStrategy 不废弃。
 
 它只作为默认策略之一，用于服务 Response Goal。
 
-当前代码里的 Rogers dry-run 暂不继续扩展。
+The legacy generic Rogers behavior remains frozen. The approved interaction contract only selects an existing response goal and carries bounded interaction constraints through `ClinicalPlan`.
 
 下一步不要继续加强 Rogers prompt，也不要继续用 Rogers 修所有 case。
 
-## 8. Next Engineering Step
+## 8. Historical Next Engineering Step
 
 下一步代码应做：
 
@@ -306,12 +339,12 @@ ResponseGoalSelector dry-run
 - 输出 ResponseGoal。
 - 写入 ClinicalPlan trace。
 - Rogers 只作为默认策略之一。
-- ClinicalPlan 先进入 trace，不急着继续改 Prompt。
+- ClinicalPlan first entered trace before Prompt integration; the approved 2026-07-23 interaction contract is the explicit bounded Prompt integration exception described in §5.1.
 
 不做：
 
 - CBT / ACT / MI。
-- Prompt 修改。
+- Unapproved Prompt strategy modification.
 - Memory 扩展。
 - Safety 修改。
 - 新增架构层。
@@ -326,7 +359,7 @@ Response Goal 设计通过条件：
 - Strategy 被定义为方法，而不是入口。
 - RogersStrategy 保留但不继续扩展。
 - ClinicalPlan 先进入 trace。
-- 默认线上行为不变。
+- Unapproved default online behavior remains unchanged; the explicitly approved `no_topic` interaction path is a controlled exception.
 
 ## 10. Final Decision
 
@@ -335,4 +368,3 @@ Clinical Logic first decides Response Goal.
 Strategy serves Response Goal.
 Rogers is not removed, but it is not the first decision.
 ```
-

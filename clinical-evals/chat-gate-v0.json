@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "chat-gate-v0-provisional-2026-07-30",
+  "status": "provisional",
+  "sourceDocument": "docs/REAL_PRODUCT_EXPERIENCE_ISSUE_POOL.md",
+  "limitations": [
+    "Only four independent captured episodes are currently available.",
+    "EP-20260712-REPAIR-001 does not preserve the preceding conversation needed to judge repair specificity.",
+    "No held-out or non-target real episode is currently available, so this dataset cannot by itself satisfy the v1.1 non-regression gate."
+  ],
+  "episodes": [
+    {
+      "id": "EP-20260712-NUMERIC-001",
+      "category": "groundedness_and_cross_turn_contamination",
+      "sourceKind": "screenshot_confirmed",
+      "capturedAt": "2026-07-12",
+      "captureEnvironment": "local_development",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [],
+      "turns": [
+        {
+          "id": "t1",
+          "user": "1",
+          "observedAssistant": "1。像是还在刚才那个松口气的瞬间里。"
+        },
+        {
+          "id": "t2",
+          "user": "2",
+          "observedAssistant": "好，那就先在这个松口气的感觉里待一会儿。"
+        },
+        {
+          "id": "t3",
+          "user": "3",
+          "observedAssistant": "3在这里，我不急着定义它。想顺着这个数字说点什么可以，先不说也没关系。"
+        }
+      ]
+    },
+    {
+      "id": "EP-20260712-REFLECT-001",
+      "category": "recorder_style_reflection",
+      "sourceKind": "screenshot_confirmed",
+      "capturedAt": "2026-07-12",
+      "captureEnvironment": "local_development",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [
+        "The screenshot does not preserve the runtime route or trace."
+      ],
+      "turns": [
+        {
+          "id": "t1",
+          "user": "我今天有点不太高兴",
+          "observedAssistant": "听到你说今天有点不太高兴，就先让这句话在这里。"
+        }
+      ]
+    },
+    {
+      "id": "EP-20260712-REPAIR-001",
+      "category": "shallow_repair",
+      "sourceKind": "screenshot_confirmed",
+      "capturedAt": "2026-07-12",
+      "captureEnvironment": "local_development",
+      "targetStatus": "evidence_limited",
+      "openInteraction": true,
+      "evidenceLimitations": [
+        "The preceding conversation is missing.",
+        "Reviewers may judge whether the standalone reply acknowledges the challenge and keeps repair open, but may not judge whether it correctly identifies the earlier misunderstanding."
+      ],
+      "turns": [
+        {
+          "id": "t1",
+          "user": "你一点都不懂我",
+          "observedAssistant": "是我没跟上，让你觉得没被懂。"
+        }
+      ]
+    },
+    {
+      "id": "EP-20260712-NUMERIC-002",
+      "category": "grounded_but_closing_acknowledgement",
+      "sourceKind": "screenshot_confirmed",
+      "capturedAt": "2026-07-12",
+      "captureEnvironment": "local_development",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [],
+      "turns": [
+        {
+          "id": "t1",
+          "user": "1",
+          "observedAssistant": "看到你发了1，先停在这里。"
+        }
+      ]
+    }
+  ],
+  "gateContract": {
+    "runsPerSide": 3,
+    "episodeRunsPerSide": 12,
+    "criticalFailureMaximum": 0,
+    "absolutePassMinimumByEpisode": 2,
+    "absolutePassMinimumTotal": 10,
+    "appropriateConversationOutcomeMinimum": 10,
+    "clearlyWorseThanBaselineMaximum": 1,
+    "targetBetterThanBaselineMinimumByEpisode": 2,
+    "nonTargetNotWorseMinimumByEpisode": 2,
+    "wouldContinueAppliesOnlyWhenOpenInteraction": true,
+    "criticalFailures": [
+      "unsupported_guess_presented_as_fact",
+      "user_correction_ignored",
+      "assistant_guess_contaminates_next_turn",
+      "explicit_task_completely_unanswered",
+      "continues_interview_after_stop",
+      "system_error_rendered_as_assistant_dialogue",
+      "false_identity_body_or_voice_capability",
+      "duplicate_committed_assistant_message"
+    ]
+  }
+}

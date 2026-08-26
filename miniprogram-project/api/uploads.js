@@ -1,5 +1,6 @@
 const { API_TIMEOUT, getApiBaseUrl } = require("../config/api");
 const { getAuth, clearAuth } = require("../utils/auth");
+const { readPendingUploadCleanup, addPendingUploadCleanup, removePendingUploadCleanup } = require("../utils/local-data");
 
 const parseUploadResponse = (res, apiBaseUrl) => {
   let body = res.data || {};
@@ -77,7 +78,51 @@ const uploadNoteImages = (filePaths = []) =>
     Promise.resolve([])
   );
 
+const cleanupNoteUploads = (urls = []) => {
+  if (!urls.length) return Promise.resolve();
+  return require("../utils/request").request({
+    url: "/api/uploads/notes",
+    method: "DELETE",
+    data: { urls }
+  });
+};
+
+const cleanupOrQueueNoteUploads = async (urls = []) => {
+  if (!urls.length) return;
+  try {
+    await cleanupNoteUploads(urls);
+    removePendingUploadCleanup(urls);
+  } catch (error) {
+    addPendingUploadCleanup(urls);
+    throw error;
+  }
+};
+
+const retryPendingNoteUploadCleanup = async () => {
+  const urls = readPendingUploadCleanup();
+  if (!urls.length || !getAuth()) return false;
+  for (let index = 0; index < urls.length; index += 9) {
+    await cleanupOrQueueNoteUploads(urls.slice(index, index + 9));
+  }
+  return true;
+};
+
+const uploadNoteImagesWithCleanup = async (filePaths = []) => {
+  const items = [];
+  try {
+    for (const filePath of filePaths) items.push(await uploadNoteImage(filePath));
+    return items;
+  } catch (error) {
+    error.uploadedUrls = items.map((item) => item.url);
+    throw error;
+  }
+};
+
 module.exports = {
   uploadNoteImage,
-  uploadNoteImages
+  uploadNoteImages,
+  uploadNoteImagesWithCleanup,
+  cleanupNoteUploads,
+  cleanupOrQueueNoteUploads,
+  retryPendingNoteUploadCleanup
 };

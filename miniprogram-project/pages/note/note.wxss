@@ -238,20 +238,6 @@
   line-height: 30rpx;
 }
 
-.dev-media-test {
-  display: block;
-  width: 300rpx;
-  height: 58rpx;
-  margin: 18rpx auto 0;
-  border-radius: 999rpx;
-  background: rgba(113, 135, 123, 0.12);
-  color: #71877b;
-  text-align: center;
-  font-size: 22rpx;
-  font-weight: 700;
-  line-height: 58rpx;
-}
-
 .media-button {
   position: relative;
   width: 332rpx;

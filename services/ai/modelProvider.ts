@@ -246,13 +246,22 @@ export const callModel = async ({
   messages,
   model,
   temperature = 0.7,
+  responseFormat,
 }: {
   messages: AiModelMessage[];
   model: string;
   temperature?: number;
+  responseFormat?: "json_object";
 }): Promise<AiProviderResponse> => {
   const provider = getAiProvider();
   if (provider === "mock") return mockResponse({ messages, model });
+
+  if (responseFormat === "json_object" && provider !== "qwen") {
+    throw new AppError("AI_GENERATION_FAILED", "AI provider 不支持请求的响应格式", 502, {
+      provider,
+      responseFormat,
+    });
+  }
 
   const apiKey =
     provider === "deepseek"
@@ -287,7 +296,12 @@ export const callModel = async ({
                 process.env.QWEN_BASE_URL?.trim() ||
                 process.env.DASHSCOPE_BASE_URL?.trim() ||
                 "https://dashscope.aliyuncs.com/compatible-mode/v1",
-              extraBody: { enable_thinking: false },
+              extraBody: {
+                enable_thinking: false,
+                ...(responseFormat === "json_object" && !model.startsWith("qwen3.7-")
+                  ? { response_format: { type: "json_object" } }
+                  : {}),
+              },
               messages,
               model,
               temperature,
@@ -331,6 +345,9 @@ export const callModel = async ({
     };
   } catch (error) {
     if (error instanceof AppError) throw error;
+    if (controller.signal.aborted) {
+      throw new AppError("AI_GENERATION_FAILED", "AI 服务调用超时", 504);
+    }
     throw new AppError("AI_GENERATION_FAILED", "AI 服务暂时不可用", 502);
   } finally {
     clearTimeout(timer);

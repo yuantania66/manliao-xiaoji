@@ -1,0 +1,1037 @@
+{
+  "schemaVersion": 1,
+  "runnerVersion": "chat-gate-v0-official-entrypoint-runner-v1",
+  "datasetVersion": "chat-gate-v0-provisional-2026-07-30",
+  "datasetSha256": "cbdd6ec0cc2cb311b18c152eb09d0039b82c12db25f3665a6e15454103edeb32",
+  "side": "B0",
+  "sourceId": "B0-20260730T-current-source",
+  "sourceArchiveSha256": "1f7c08785416d2766b478bdd20d561b02556a3afcd2d4d4967788d893e9c0cca",
+  "baseUrl": "http://127.0.0.1:3102",
+  "provider": "qwen",
+  "model": "qwen3.7-max",
+  "startedAt": "2026-07-30T17:00:56.804Z",
+  "completedAt": "2026-07-30T17:02:46.631Z",
+  "repeatCount": 3,
+  "officialEntrypoint": "/api/chat/guest",
+  "evaluationAdapter": "none",
+  "historyAdapter": "none",
+  "episodeRuns": [
+    {
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "category": "groundedness_and_cross_turn_contamination",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [],
+      "runIndex": 1,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-001:r1:t1",
+          "user": "1",
+          "startedAt": "2026-07-30T17:00:56.805Z",
+          "completedAt": "2026-07-30T17:01:03.902Z",
+          "latencyMs": 7095,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r1:t1",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:00:56.984Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r1:t1",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:00:56.984Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        },
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-001:r1:t2",
+          "user": "2",
+          "startedAt": "2026-07-30T17:01:03.902Z",
+          "completedAt": "2026-07-30T17:01:09.169Z",
+          "latencyMs": 5267,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r1:t2",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:01:03.917Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r1:t2",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:01:03.917Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        },
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-001:r1:t3",
+          "user": "3",
+          "startedAt": "2026-07-30T17:01:09.170Z",
+          "completedAt": "2026-07-30T17:01:16.135Z",
+          "latencyMs": 6966,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r1:t3",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:01:09.181Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r1:t3",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:01:09.181Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-REFLECT-001",
+      "category": "recorder_style_reflection",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [
+        "The screenshot does not preserve the runtime route or trace."
+      ],
+      "runIndex": 1,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-REFLECT-001:r1:t1",
+          "user": "我今天有点不太高兴",
+          "startedAt": "2026-07-30T17:01:16.135Z",
+          "completedAt": "2026-07-30T17:01:21.924Z",
+          "latencyMs": 5789,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-REFLECT-001:r1:t1",
+            "role": "assistant",
+            "content": "抱抱你，今天辛苦了。愿意跟我说说是什么事让你不开心吗？",
+            "createdAt": "2026-07-30T17:01:16.144Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-REFLECT-001:r1:t1",
+                "role": "assistant",
+                "content": "抱抱你，今天辛苦了。愿意跟我说说是什么事让你不开心吗？",
+                "createdAt": "2026-07-30T17:01:16.144Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-REPAIR-001",
+      "category": "shallow_repair",
+      "targetStatus": "evidence_limited",
+      "openInteraction": true,
+      "evidenceLimitations": [
+        "The preceding conversation is missing.",
+        "Reviewers may judge whether the standalone reply acknowledges the challenge and keeps repair open, but may not judge whether it correctly identifies the earlier misunderstanding."
+      ],
+      "runIndex": 1,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-REPAIR-001:r1:t1",
+          "user": "你一点都不懂我",
+          "startedAt": "2026-07-30T17:01:21.924Z",
+          "completedAt": "2026-07-30T17:01:27.868Z",
+          "latencyMs": 5944,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-REPAIR-001:r1:t1",
+            "role": "assistant",
+            "content": "抱歉让你有这种感觉，是我没接住你的情绪。你愿意说说最让你失望的是哪一点吗？",
+            "createdAt": "2026-07-30T17:01:21.933Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-REPAIR-001:r1:t1",
+                "role": "assistant",
+                "content": "抱歉让你有这种感觉，是我没接住你的情绪。你愿意说说最让你失望的是哪一点吗？",
+                "createdAt": "2026-07-30T17:01:21.933Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "category": "grounded_but_closing_acknowledgement",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [],
+      "runIndex": 1,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-002:r1:t1",
+          "user": "1",
+          "startedAt": "2026-07-30T17:01:27.868Z",
+          "completedAt": "2026-07-30T17:01:33.230Z",
+          "latencyMs": 5362,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-002:r1:t1",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:01:27.877Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-002:r1:t1",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:01:27.877Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "category": "groundedness_and_cross_turn_contamination",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [],
+      "runIndex": 2,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-001:r2:t1",
+          "user": "1",
+          "startedAt": "2026-07-30T17:01:33.230Z",
+          "completedAt": "2026-07-30T17:01:40.606Z",
+          "latencyMs": 7376,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r2:t1",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:01:33.237Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r2:t1",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:01:33.237Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        },
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-001:r2:t2",
+          "user": "2",
+          "startedAt": "2026-07-30T17:01:40.606Z",
+          "completedAt": "2026-07-30T17:01:45.919Z",
+          "latencyMs": 5314,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r2:t2",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:01:40.613Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r2:t2",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:01:40.613Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        },
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-001:r2:t3",
+          "user": "3",
+          "startedAt": "2026-07-30T17:01:45.919Z",
+          "completedAt": "2026-07-30T17:01:51.067Z",
+          "latencyMs": 5148,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r2:t3",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:01:45.935Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r2:t3",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:01:45.935Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-REFLECT-001",
+      "category": "recorder_style_reflection",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [
+        "The screenshot does not preserve the runtime route or trace."
+      ],
+      "runIndex": 2,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-REFLECT-001:r2:t1",
+          "user": "我今天有点不太高兴",
+          "startedAt": "2026-07-30T17:01:51.067Z",
+          "completedAt": "2026-07-30T17:01:57.362Z",
+          "latencyMs": 6295,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-REFLECT-001:r2:t1",
+            "role": "assistant",
+            "content": "听到你今天不太开心，愿意跟我说说是什么事吗？",
+            "createdAt": "2026-07-30T17:01:51.075Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-REFLECT-001:r2:t1",
+                "role": "assistant",
+                "content": "听到你今天不太开心，愿意跟我说说是什么事吗？",
+                "createdAt": "2026-07-30T17:01:51.075Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-REPAIR-001",
+      "category": "shallow_repair",
+      "targetStatus": "evidence_limited",
+      "openInteraction": true,
+      "evidenceLimitations": [
+        "The preceding conversation is missing.",
+        "Reviewers may judge whether the standalone reply acknowledges the challenge and keeps repair open, but may not judge whether it correctly identifies the earlier misunderstanding."
+      ],
+      "runIndex": 2,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-REPAIR-001:r2:t1",
+          "user": "你一点都不懂我",
+          "startedAt": "2026-07-30T17:01:57.362Z",
+          "completedAt": "2026-07-30T17:02:03.827Z",
+          "latencyMs": 6464,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-REPAIR-001:r2:t1",
+            "role": "assistant",
+            "content": "抱歉让你有这种感觉，我确实还在努力理解你。愿意跟我说说，是哪件事让你觉得我没懂吗？",
+            "createdAt": "2026-07-30T17:01:57.373Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-REPAIR-001:r2:t1",
+                "role": "assistant",
+                "content": "抱歉让你有这种感觉，我确实还在努力理解你。愿意跟我说说，是哪件事让你觉得我没懂吗？",
+                "createdAt": "2026-07-30T17:01:57.373Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "category": "grounded_but_closing_acknowledgement",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [],
+      "runIndex": 2,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-002:r2:t1",
+          "user": "1",
+          "startedAt": "2026-07-30T17:02:03.827Z",
+          "completedAt": "2026-07-30T17:02:10.247Z",
+          "latencyMs": 6420,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-002:r2:t1",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:02:03.831Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-002:r2:t1",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:02:03.831Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "category": "groundedness_and_cross_turn_contamination",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [],
+      "runIndex": 3,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-001:r3:t1",
+          "user": "1",
+          "startedAt": "2026-07-30T17:02:10.247Z",
+          "completedAt": "2026-07-30T17:02:16.844Z",
+          "latencyMs": 6597,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r3:t1",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:02:10.252Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r3:t1",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:02:10.252Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        },
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-001:r3:t2",
+          "user": "2",
+          "startedAt": "2026-07-30T17:02:16.844Z",
+          "completedAt": "2026-07-30T17:02:23.468Z",
+          "latencyMs": 6623,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r3:t2",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:02:16.851Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r3:t2",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:02:16.851Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        },
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-001:r3:t3",
+          "user": "3",
+          "startedAt": "2026-07-30T17:02:23.468Z",
+          "completedAt": "2026-07-30T17:02:28.683Z",
+          "latencyMs": 5216,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r3:t3",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:02:23.475Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-001:r3:t3",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:02:23.475Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-REFLECT-001",
+      "category": "recorder_style_reflection",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [
+        "The screenshot does not preserve the runtime route or trace."
+      ],
+      "runIndex": 3,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-REFLECT-001:r3:t1",
+          "user": "我今天有点不太高兴",
+          "startedAt": "2026-07-30T17:02:28.684Z",
+          "completedAt": "2026-07-30T17:02:34.757Z",
+          "latencyMs": 6073,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-REFLECT-001:r3:t1",
+            "role": "assistant",
+            "content": "听到你这么说，想陪陪你。愿意聊聊是什么事让你不开心吗？",
+            "createdAt": "2026-07-30T17:02:28.690Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-REFLECT-001:r3:t1",
+                "role": "assistant",
+                "content": "听到你这么说，想陪陪你。愿意聊聊是什么事让你不开心吗？",
+                "createdAt": "2026-07-30T17:02:28.690Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-REPAIR-001",
+      "category": "shallow_repair",
+      "targetStatus": "evidence_limited",
+      "openInteraction": true,
+      "evidenceLimitations": [
+        "The preceding conversation is missing.",
+        "Reviewers may judge whether the standalone reply acknowledges the challenge and keeps repair open, but may not judge whether it correctly identifies the earlier misunderstanding."
+      ],
+      "runIndex": 3,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-REPAIR-001:r3:t1",
+          "user": "你一点都不懂我",
+          "startedAt": "2026-07-30T17:02:34.757Z",
+          "completedAt": "2026-07-30T17:02:40.340Z",
+          "latencyMs": 5582,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-REPAIR-001:r3:t1",
+            "role": "assistant",
+            "content": "抱歉让你有这种感觉，我确实还在努力理解你。愿意跟我说说，是哪件事让你觉得我没懂吗？",
+            "createdAt": "2026-07-30T17:02:34.762Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-REPAIR-001:r3:t1",
+                "role": "assistant",
+                "content": "抱歉让你有这种感觉，我确实还在努力理解你。愿意跟我说说，是哪件事让你觉得我没懂吗？",
+                "createdAt": "2026-07-30T17:02:34.762Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "category": "grounded_but_closing_acknowledgement",
+      "targetStatus": "target",
+      "openInteraction": true,
+      "evidenceLimitations": [],
+      "runIndex": 3,
+      "turns": [
+        {
+          "turnId": "gate:B0:EP-20260712-NUMERIC-002:r3:t1",
+          "user": "1",
+          "startedAt": "2026-07-30T17:02:40.340Z",
+          "completedAt": "2026-07-30T17:02:46.630Z",
+          "latencyMs": 6291,
+          "httpStatus": 200,
+          "apiOk": true,
+          "executionStatus": "committed",
+          "assistantMessage": {
+            "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-002:r3:t1",
+            "role": "assistant",
+            "content": "收到。",
+            "createdAt": "2026-07-30T17:02:40.345Z",
+            "promptVersion": "chat-response-plan-v21"
+          },
+          "systemStatus": null,
+          "judge": {
+            "passed": true,
+            "riskLevel": "low",
+            "issues": [],
+            "rewriteRequired": false,
+            "reason": "judge/rewrite disabled; base model output returned directly"
+          },
+          "debugTrace": null,
+          "rawResponse": {
+            "ok": true,
+            "data": {
+              "status": "committed",
+              "assistantMessage": {
+                "id": "guest-ai-gate:B0:EP-20260712-NUMERIC-002:r3:t1",
+                "role": "assistant",
+                "content": "收到。",
+                "createdAt": "2026-07-30T17:02:40.345Z",
+                "promptVersion": "chat-response-plan-v21"
+              },
+              "judge": {
+                "passed": true,
+                "riskLevel": "low",
+                "issues": [],
+                "rewriteRequired": false,
+                "reason": "judge/rewrite disabled; base model output returned directly"
+              },
+              "fallbackUsed": false,
+              "rewriteAttempted": false
+            }
+          },
+          "error": null
+        }
+      ]
+    }
+  ]
+}

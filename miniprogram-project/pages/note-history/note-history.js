@@ -1,10 +1,7 @@
-const { readNotes, writeNotes, dateKey, formatDateLabel } = require("../../utils/local-data");
+const { readNotes } = require("../../utils/local-data");
 const { getDataMode } = require("../../utils/auth");
-const { listNotes } = require("../../api/notes");
+const { listAllNotes } = require("../../api/notes");
 const { getSafeLayout } = require("../../utils/layout");
-
-const MEDIA_SEED_KEY = "xinqingDevMediaNoteSeeded";
-const TEST_IMAGE_URL = "/assets/test-note-photo.svg";
 
 const titleOf = (content, note = {}) => {
   const trimmed = content.trim();
@@ -13,91 +10,6 @@ const titleOf = (content, note = {}) => {
     return "图片小记";
   }
   return trimmed.length > 18 ? `${trimmed.slice(0, 17)}...` : trimmed || "这一刻已经被收下。";
-};
-
-const isDevelopRuntime = () => {
-  try {
-    const account = wx.getAccountInfoSync && wx.getAccountInfoSync();
-    return !account || !account.miniProgram || account.miniProgram.envVersion !== "release";
-  } catch (error) {
-    return true;
-  }
-};
-
-const labelFromDateKey = (value) => {
-  if (!value) return formatDateLabel();
-  const parts = value.split("-").map((part) => Number(part));
-  if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) return formatDateLabel();
-  const date = new Date(parts[0], parts[1] - 1, parts[2]);
-  return formatDateLabel(date);
-};
-
-const seedMediaNotesIfNeeded = (targetDateKey = "") => {
-  if (!isDevelopRuntime()) return false;
-
-  const createdAt = new Date().toISOString();
-  const targetKey = targetDateKey || dateKey();
-  const seededDates = wx.getStorageSync(MEDIA_SEED_KEY) || [];
-  if (Array.isArray(seededDates) && seededDates.includes(targetKey)) return false;
-  if (!Array.isArray(seededDates) && seededDates === targetKey) return false;
-
-  const dateLabel = labelFromDateKey(targetKey);
-  const base = {
-    dateKey: targetKey,
-    dateLabel,
-    createdAt,
-    mood: { name: "晴晴", desc: "轻松", icon: "sunny" }
-  };
-  const testNotes = [
-    {
-      ...base,
-      id: `dev_media_text_${Date.now()}`,
-      content: "媒体测试 1：只发文字的小记。"
-    },
-    {
-      ...base,
-      id: `dev_media_image_${Date.now()}`,
-      content: "",
-      displayTitle: "媒体测试 2：只发图片的小记。",
-      images: [{ url: TEST_IMAGE_URL }]
-    },
-    {
-      ...base,
-      id: `dev_media_image_only_${Date.now()}`,
-      content: "",
-      displayTitle: "媒体测试 3：只放图片的小记。",
-      images: [{ url: TEST_IMAGE_URL }]
-    },
-    {
-      ...base,
-      id: `dev_media_text_image_${Date.now()}`,
-      content: "媒体测试 4：文字和图片放在一起。",
-      images: [{ url: TEST_IMAGE_URL }]
-    },
-    {
-      ...base,
-      id: `dev_media_text_more_image_${Date.now()}`,
-      content: "媒体测试 5：文字和图片放在一起。",
-      images: [{ url: TEST_IMAGE_URL }]
-    },
-    {
-      ...base,
-      id: `dev_media_text_multi_image_${Date.now()}`,
-      content: "媒体测试 6：文字和多张图片放在一起。",
-      images: [{ url: TEST_IMAGE_URL }, { url: TEST_IMAGE_URL }, { url: TEST_IMAGE_URL }]
-    },
-    {
-      ...base,
-      id: `dev_media_multi_image_${Date.now()}`,
-      content: "",
-      displayTitle: "媒体测试 7：多张图片的小记。",
-      images: [{ url: TEST_IMAGE_URL }, { url: TEST_IMAGE_URL }, { url: TEST_IMAGE_URL }]
-    }
-  ];
-
-  writeNotes([...testNotes, ...readNotes()]);
-  wx.setStorageSync(MEDIA_SEED_KEY, Array.isArray(seededDates) ? [...seededDates, targetKey] : [targetKey]);
-  return true;
 };
 
 const normalizeRemoteNote = (note) => ({
@@ -118,7 +30,8 @@ Page({
     isEmpty: true,
     notes: [],
     backTop: 54,
-    statusText: ""
+    statusText: "",
+    isLoading: false
   },
 
   onLoad(options) {
@@ -144,20 +57,24 @@ Page({
   },
 
   refresh() {
+    const generation = (this.refreshGeneration || 0) + 1;
+    this.refreshGeneration = generation;
     const dataMode = getDataMode();
     if (dataMode === "authenticated") {
-      const params = this.data.date ? `?date=${this.data.date}&pageSize=50` : "?pageSize=50";
-      listNotes(params)
-        .then((data) => {
+      this.setData({ isLoading: true, statusText: "正在加载小记…" });
+      listAllNotes(this.data.date ? { date: this.data.date } : {})
+        .then((items) => {
+          if (generation !== this.refreshGeneration) return;
           const keyword = this.data.query.trim();
-          const notes = (data.items || [])
+          const notes = items
             .map(normalizeRemoteNote)
             .filter((note) => !keyword || note.content.includes(keyword) || (note.mood && `${note.mood.name}${note.mood.desc}`.includes(keyword)));
-          this.setData({ notes, isEmpty: notes.length === 0, statusText: "" });
+          this.setData({ notes, isEmpty: notes.length === 0, statusText: "", isLoading: false });
         })
         .catch((error) => {
+          if (generation !== this.refreshGeneration) return;
           const message = error.message || "小记加载失败，请稍后再试";
-          this.setData({ notes: [], isEmpty: true, statusText: message });
+          this.setData({ notes: [], isEmpty: true, statusText: message, isLoading: false });
           wx.showToast({ title: message, icon: "none" });
         })
       return;
@@ -171,12 +88,13 @@ Page({
     this.setData({
       notes: [],
       isEmpty: true,
+      isLoading: false,
       statusText: "请先登录，或在首页选择游客模式。"
     });
   },
 
   refreshLocal() {
-    const seeded = seedMediaNotesIfNeeded(this.data.date);
+    this.refreshGeneration = (this.refreshGeneration || 0) + 1;
     const keyword = this.data.query.trim();
     const notes = readNotes()
       .filter((note) => !this.data.date || note.dateKey === this.data.date)
@@ -185,7 +103,8 @@ Page({
     this.setData({
       notes,
       isEmpty: notes.length === 0,
-      statusText: seeded ? "已生成 7 条媒体测试小记。" : "游客模式，只显示本机小记。"
+      isLoading: false,
+      statusText: "游客模式，只显示本机小记。"
     });
   }
 });

@@ -2,6 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator p5Client {
+  provider = "prisma-client-js"
+  output   = "../.generated/p5-prisma"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -31,13 +36,54 @@ enum MessageStatus {
   REWRITTEN
 }
 
-
 enum AssistantPublicationStatus {
   reserved
   streaming
   committed
   failed_retryable
   failed_terminal
+}
+
+enum AssistantPublicationFailureCode {
+  PLAN_INVALID
+  GENERATION_NONCONFORMANT
+  SAFETY_BLOCKED
+  PROVIDER_ERROR
+  TIMEOUT
+  PERSISTENCE_ERROR
+}
+
+enum GovernanceDeletionStatus {
+  VISIBILITY_REVOKED
+  DERIVATIVES_INVALIDATED
+  RECOMPUTE_MARKED
+  PHYSICAL_DELETE_PENDING
+  COMPLETED
+  FAILED_RETRYABLE
+  FAILED_TERMINAL
+}
+
+enum GovernanceDerivativeKind {
+  MEMORY
+  INDEX
+  PROFILE
+  RELATIONSHIP
+  GROWTH
+  REPLAY
+  SHADOW
+}
+
+enum GovernanceDeletionPhase {
+  VISIBILITY
+  DERIVATIVES
+  RECOMPUTE
+  PHYSICAL_DELETE
+}
+
+enum GovernanceAuditResult {
+  APPLIED
+  REPLAYED
+  FAILED
 }
 
 enum AiSourceType {
@@ -202,6 +248,7 @@ enum EvidenceRole {
 
 enum SemanticMemoryKind {
   RAW_SEGMENT
+  EPISODE_SUMMARY
   TOPIC
   INTEREST
   PREFERENCE
@@ -221,6 +268,35 @@ enum SemanticMemoryStatus {
   MERGED
   USER_CORRECTED
   ARCHIVED
+}
+
+enum P4MinimumMemoryCategory {
+  STABLE_PREFERENCE
+  PERSONAL_FACT
+  IMPORTANT_RELATIONSHIP
+  COMMITMENT_PLAN_GOAL
+  SIGNIFICANT_EVENT
+  UNRESOLVED_TOPIC
+  EXPLICIT_REMEMBER_REQUEST
+}
+
+enum P4MinimumMemoryStatus {
+  ACTIVE
+  SUPERSEDED
+}
+
+enum P4PromotionEligibility {
+  ELIGIBLE
+  INELIGIBLE
+}
+
+enum P4PromotionReason {
+  ALLOWLISTED
+  NOT_ALLOWLISTED
+  HYPOTHESIS
+  SAFETY_DATA
+  SECRET
+  SENSITIVE_WITHOUT_OPT_IN
 }
 
 enum UnderstandingStatus {
@@ -261,6 +337,27 @@ enum RelationshipStatus {
   USER_CORRECTED
   ARCHIVED
   MERGED
+}
+
+enum P6CacheKind {
+  RELATIONSHIP
+  GROWTH
+}
+
+enum P6FixtureClaimKind {
+  FACT
+  HYPOTHESIS
+}
+
+enum P6FixtureDataClass {
+  ORDINARY
+  SAFETY
+  SECRET
+}
+
+enum P6RecomputeStatus {
+  PENDING
+  COMPLETED
 }
 
 enum VersionTargetType {
@@ -348,6 +445,16 @@ model User {
   relationshipVersions   RelationshipVersion[]
   versionHistories       VersionHistory[]
   refinementJobs         RefinementJob[]
+  assistantPublications  AssistantPublication[]
+  governanceDeletionRequests GovernanceDeletionRequest[]
+  governanceSourceEdges GovernanceSourceEdge[]
+  p6AcceptedSnapshots    P6AcceptedMemorySnapshot[]
+  p6Caches               P6RelationshipGrowthCache[]
+  p6RecomputeRequests    P6TargetedRecompute[]
+  p4MinimumMemories      P4MinimumMemory[]
+  p4ProfileCache         P4ProfileCache?
+  p4PromotionArtifacts   P4PromotionEligibilityArtifact[]
+  noteUploads            NoteUpload[]
 }
 
 model Session {
@@ -387,32 +494,142 @@ model ChatSession {
   updatedAt     DateTime      @updatedAt
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages      ChatMessage[]
+  assistantPublications AssistantPublication[]
+  governanceDeletionRequests GovernanceDeletionRequest[]
 
+  @@unique([id, userId])
   @@index([userId, updatedAt])
 }
 
 model ChatMessage {
-  id             String              @id @default(cuid())
-  sessionId      String
-  userId         String
-  role           MessageRole
-  content        String
-  status         MessageStatus       @default(SAVED)
-  aiGenerationId String?
-  createdAt      DateTime            @default(now())
-  session        ChatSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  aiGeneration   AiGeneration?       @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
-  emotionSlices  EmotionSlice[]
-  feedbacks      AiMessageFeedback[]
+  id                  String              @id @default(cuid())
+  sessionId           String
+  userId              String
+  role                MessageRole
+  content             String
+  status              MessageStatus       @default(SAVED)
+  aiGenerationId      String?
+  replyToMessageId    String?             @unique
+  interactionMetadata Json?
+  contentDeletedAt    DateTime?
+  createdAt           DateTime            @default(now())
+  session             ChatSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiGeneration        AiGeneration?       @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
+  replyToMessage      ChatMessage?        @relation("ChatMessageReply", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  assistantReply      ChatMessage?        @relation("ChatMessageReply")
+  reservedPublication  AssistantPublication? @relation("AssistantPublicationUserMessage")
+  committedPublication AssistantPublication? @relation("AssistantPublicationCommittedMessage")
+  governanceDeletionRequests GovernanceDeletionRequest[]
+  governanceSourceEdges GovernanceSourceEdge[]
+  emotionSlices       EmotionSlice[]
+  feedbacks           AiMessageFeedback[]
 
   @@index([sessionId, createdAt])
   @@index([userId, createdAt])
+  @@unique([id, userId, sessionId])
+}
+
+model AssistantPublication {
+  id                 String                     @id @default(cuid())
+  sessionId          String
+  userId             String
+  clientTurnId       String
+  userMessageId      String?                    @unique
+  committedMessageId String?                    @unique
+  status             AssistantPublicationStatus @default(reserved)
+  leaseOwner         String?
+  leaseExpiresAt     DateTime?
+  attempt            Int                        @default(0)
+  draftVersion       Int                        @default(0)
+  draftContent       String                     @default("")
+  finalContent       String?
+  failureCode        AssistantPublicationFailureCode?
+  contentDeletedAt   DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  userMessage        ChatMessage?               @relation("AssistantPublicationUserMessage", fields: [userMessageId], references: [id], onDelete: SetNull)
+  committedMessage   ChatMessage?               @relation("AssistantPublicationCommittedMessage", fields: [committedMessageId], references: [id], onDelete: SetNull)
+  session            ChatSession                 @relation(fields: [sessionId, userId], references: [id, userId], onDelete: Cascade)
+  user               User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, clientTurnId])
+  @@index([sessionId, status])
+  @@index([leaseExpiresAt])
+}
+
+model GovernanceDeletionRequest {
+  id                       String                   @id @default(cuid())
+  userId                   String
+  sessionId                String
+  sourceMessageId          String?                  @unique
+  sourceMessageIdHash      String
+  requestKey               String
+  status                   GovernanceDeletionStatus @default(VISIBILITY_REVOKED)
+  requestedAt              DateTime
+  visibilityRevokedAt      DateTime
+  derivativesInvalidatedAt DateTime?
+  recomputeMarkedAt        DateTime?
+  replayPurgedAt           DateTime?
+  physicalDeletedAt        DateTime?
+  leaseOwner               String?
+  leaseExpiresAt           DateTime?
+  attempt                  Int                      @default(0)
+  failureCode              String?
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  user                     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session                  ChatSession              @relation(fields: [sessionId, userId], references: [id, userId], onDelete: Cascade)
+  sourceMessage            ChatMessage?             @relation(fields: [sourceMessageId, userId, sessionId], references: [id, userId, sessionId], onDelete: Restrict)
+  edges                    GovernanceSourceEdge[]
+  audits                   GovernanceDeletionAudit[]
+
+  @@unique([userId, requestKey])
+  @@unique([id, userId])
+  @@unique([id, userId, sessionId, sourceMessageId])
+  @@unique([sourceMessageId, userId, sessionId])
+  @@index([status, leaseExpiresAt])
+}
+
+model GovernanceSourceEdge {
+  id              String                   @id @default(cuid())
+  userId          String
+  sessionId       String
+  sourceMessageId String
+  requestId       String?
+  targetKind      GovernanceDerivativeKind
+  targetIdHash    String
+  createdAt       DateTime                 @default(now())
+  invalidatedAt   DateTime?
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMessage   ChatMessage              @relation(fields: [sourceMessageId, userId, sessionId], references: [id, userId, sessionId], onDelete: Cascade)
+  request         GovernanceDeletionRequest? @relation(fields: [requestId, userId, sessionId, sourceMessageId], references: [id, userId, sessionId, sourceMessageId], onDelete: Cascade)
+
+  @@unique([sourceMessageId, targetKind, targetIdHash])
+  @@index([userId, sourceMessageId])
+}
+
+model GovernanceDeletionAudit {
+  id            String                  @id @default(cuid())
+  requestId     String
+  requestIdHash String
+  phase         GovernanceDeletionPhase
+  result        GovernanceAuditResult
+  occurredAt    DateTime
+  durationMs    Int
+  effectCount   Int
+  attempt       Int
+  request       GovernanceDeletionRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, phase])
+  @@index([occurredAt])
 }
 
 model Note {
   id                   String   @id @default(cuid())
   userId               String
+  clientRequestId      String   @default(cuid())
+  requestHash          String   @default("")
   content              String
   moodName             String?
   moodIcon             String?
@@ -425,9 +642,38 @@ model Note {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploads              NoteUpload[]
 
+  @@unique([userId, clientRequestId])
   @@index([userId, recordDate])
   @@index([userId, createdAt])
+}
+
+model NoteUpload {
+  id              String   @id
+  userId          String
+  noteId          String?
+  storageKey      String   @unique
+  mimeType        String
+  size            Int
+  accessTokenHash String
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note            Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([noteId])
+}
+
+model AccountCancellationFileDeletion {
+  id            String    @id @default(cuid())
+  storageKey    String    @unique
+  attempts      Int       @default(0)
+  lastErrorCode String?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([completedAt, createdAt])
 }
 
 model Fact {
@@ -643,28 +889,34 @@ model AiMessageFeedback {
 }
 
 model AiGeneration {
-  id            String             @id @default(cuid())
-  userId        String
-  sessionId     String?
-  sourceType    AiSourceType
-  sourceId      String?
-  model         String
-  promptVersion String
-  inputText     String
-  outputText    String
-  rewriteOfId   String?
-  latencyMs     Int?
-  tokenInput    Int?
-  tokenOutput   Int?
-  status        AiGenerationStatus
-  createdAt     DateTime           @default(now())
-  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages      ChatMessage[]
-  judgeResults  AiJudgeResult[]
+  id             String             @id @default(cuid())
+  userId         String
+  sessionId      String?
+  sourceType     AiSourceType
+  sourceId       String?
+  model          String
+  promptVersion  String
+  inputText      String
+  outputText     String
+  rewriteOfId    String?
+  requestId      String?
+  turnId         String?
+  attemptId      String?            @unique
+  executionTrace Json?
+  latencyMs      Int?
+  tokenInput     Int?
+  tokenOutput    Int?
+  status         AiGenerationStatus
+  createdAt      DateTime           @default(now())
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages       ChatMessage[]
+  judgeResults   AiJudgeResult[]
 
   @@index([userId, createdAt])
   @@index([sessionId, createdAt])
   @@index([sourceType, sourceId])
+  @@index([requestId])
+  @@index([turnId])
 }
 
 model AiJudgeResult {
@@ -836,10 +1088,76 @@ model SemanticMemoryVersion {
   user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   semanticMemory   SemanticMemory       @relation("SemanticMemoryVersions", fields: [semanticMemoryId], references: [id], onDelete: Cascade)
   currentFor       SemanticMemory?      @relation("SemanticMemoryCurrentVersion")
+  p4MinimumMemories P4MinimumMemory[]
+  p4PromotionArtifacts P4PromotionEligibilityArtifact[]
 
   @@unique([semanticMemoryId, version])
+  @@unique([id, userId])
   @@index([userId, createdAt])
   @@index([userId, semanticMemoryId])
+}
+
+/// P4 local-only, source-bound minimum memory. Conversation evidence remains authoritative.
+model P4MinimumMemory {
+  id                    String                  @id @default(cuid())
+  userId                String
+  subjectKey            String
+  category              P4MinimumMemoryCategory
+  content               String
+  sourceMemoryVersionId String
+  version               Int
+  isSensitive           Boolean                 @default(false)
+  retrievalVector       Json
+  eligibilityArtifactId String                  @unique
+  sensitiveExpiresAt    DateTime?
+  status                P4MinimumMemoryStatus   @default(ACTIVE)
+  supersededAt          DateTime?
+  createdAt             DateTime                @default(now())
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMemoryVersion   SemanticMemoryVersion   @relation(fields: [sourceMemoryVersionId, userId], references: [id, userId], onDelete: Cascade)
+  eligibilityArtifact   P4PromotionEligibilityArtifact @relation(fields: [eligibilityArtifactId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([userId, subjectKey, version])
+  @@unique([userId, sourceMemoryVersionId])
+  @@unique([eligibilityArtifactId, userId])
+  @@index([userId, status, createdAt])
+}
+
+/// Strict local/synthetic eligibility decision. Runtime callers may reference its id only.
+model P4PromotionEligibilityArtifact {
+  id                    String                  @id @default(cuid())
+  userId                String
+  sourceMemoryVersionId String                  @unique
+  descriptorId          String
+  authorityVersion      String
+  artifactHash          String                  @unique
+  eligibility           P4PromotionEligibility
+  reason                P4PromotionReason
+  category              P4MinimumMemoryCategory?
+  retrievalVector       Json
+  isSensitive           Boolean                 @default(false)
+  consentUtf16Start     Int?
+  consentUtf16End       Int?
+  consentTextHash       String?
+  decisionPayload       Json
+  createdAt             DateTime                @default(now())
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMemoryVersion   SemanticMemoryVersion   @relation(fields: [sourceMemoryVersionId, userId], references: [id, userId], onDelete: Cascade)
+  promotedMemory        P4MinimumMemory?
+
+  @@unique([id, userId])
+  @@index([userId, eligibility, createdAt])
+}
+
+/// Rebuildable current-only projection. Empty or stale cache must never block chat.
+model P4ProfileCache {
+  userId                 String    @id
+  version                Int
+  sourceMemoryVersionIds Json
+  generatedAt            DateTime
+  payload                Json
+  invalidatedAt          DateTime?
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Understanding {
@@ -1047,6 +1365,64 @@ model RelationshipVersion {
   @@index([userId, relationshipId])
 }
 
+/// P6 local-fixture authority only. Production P4 ingestion is intentionally absent.
+model P6AcceptedMemorySnapshot {
+  id                    String                 @id @default(cuid())
+  userId                String
+  descriptorId          String
+  sourceMemoryVersionId String
+  sourceVersion         Int
+  authorityVersion      String
+  artifactHash          String                 @unique
+  projection            P6CacheKind
+  claimKind             P6FixtureClaimKind
+  dataClass             P6FixtureDataClass
+  content               String
+  accepted              Boolean
+  isCurrent             Boolean
+  deletedAt             DateTime?
+  createdAt             DateTime               @default(now())
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceMemoryVersionId, sourceVersion])
+  @@index([userId, accepted, isCurrent, deletedAt])
+}
+
+/// Current-only optional enhancement cache. It owns no conversational authority.
+model P6RelationshipGrowthCache {
+  id                     String      @id @default(cuid())
+  userId                 String
+  kind                   P6CacheKind
+  version                Int
+  sourceMemoryVersionIds Json
+  cycle                  String
+  payload                Json
+  commitmentHash         String
+  generatedAt            DateTime
+  staleAt                DateTime
+  invalidatedAt          DateTime?
+  user                   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind])
+  @@index([userId, invalidatedAt, staleAt])
+}
+
+/// Local proof of deletion-triggered targeted recompute; P5 production wiring is pending.
+model P6TargetedRecompute {
+  id                    String              @id @default(cuid())
+  userId                String
+  kind                  P6CacheKind
+  sourceMemoryVersionId String
+  reason                String
+  status                P6RecomputeStatus   @default(PENDING)
+  createdAt             DateTime            @default(now())
+  completedAt           DateTime?
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, sourceMemoryVersionId, status])
+  @@index([userId, status, createdAt])
+}
+
 /// Append-only generic version/audit index.
 /// Services must create new rows for changes and must not update/delete existing history rows.
 model VersionHistory {
@@ -1098,31 +1474,3 @@ model RefinementJob {
   @@index([status, createdAt])
   @@index([step, status, createdAt])
 }
-
-/// P2 Assistant Publication — transport/commit authority for one client turn.
-/// Not conversational lifecycle state. Feature-flagged; production default remains V1 writer.
-model AssistantPublication {
-  id                          String                      @id @default(cuid())
-  sessionId                   String
-  clientTurnId                String
-  /// Fixed to "assistant" for the single-winner row; compound unique with session+turn.
-  role                        String                      @default("assistant")
-  status                      AssistantPublicationStatus
-  attempt                     Int                         @default(1)
-  leaseOwner                  String?
-  leaseExpiresAt              DateTime?
-  draftContent                String                      @default("")
-  finalContent                String?
-  failureCode                 String?
-  linkedConversationMessageId String?
-  provisionalMarkedTemporary  Boolean                     @default(true)
-  tombstoneUntil              DateTime?
-  createdAt                   DateTime                    @default(now())
-  updatedAt                   DateTime                    @updatedAt
-
-  @@unique([sessionId, clientTurnId, role])
-  @@index([sessionId, status])
-  @@index([leaseExpiresAt])
-  @@index([tombstoneUntil])
-}
-

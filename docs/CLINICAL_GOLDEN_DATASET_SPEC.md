@@ -1,8 +1,12 @@
 # Clinical Golden Dataset Spec v1
 
+Status: frozen pre-Hill compatibility dataset; not the Hill acceptance contract
+
 ## Purpose
 
-Clinical Golden Dataset is the acceptance baseline for SlowTalk Notes Clinical Logic and prompt behavior.
+Clinical Golden Dataset is the legacy compatibility baseline for the pre-Hill
+SlowTalk chat Clinical Logic and prompt behavior. It does not evaluate the
+separate 小记 recording product.
 
 It is not a training dataset.
 It is not a benchmark for cleverness.
@@ -11,6 +15,17 @@ It is a curated set of cases used to verify whether the system still follows the
 > AI sincerely tries to understand the user, while the user keeps final authority over their own meaning.
 
 Every Prompt change, Clinical Logic change, Voice change, or response-strategy change must be checked against this dataset before it is accepted.
+
+After approval of the Hill v1 contract:
+
+- this dataset remains immutable regression evidence for legacy
+  `ResponseGoal`/Clinical behavior;
+- its single-turn goal labels do not select Hill goals or techniques;
+- passing it cannot prove action—reaction—next-intention responsiveness;
+- intentional Hill migration differences require an explained compatibility
+  decision, not silent rewriting of v1;
+- Hill acceptance belongs to
+  `clinical-evals/hill-helping-trajectories-v1.json` and the approved hard gates.
 
 ## Dataset Location
 
@@ -179,3 +194,7 @@ If a change intentionally fails a v1 case, the owner must explain:
 - which product principle changed,
 - whether a new dataset version is required.
 
+For Hill migration, do not create a `golden-dataset-v1.x` merely to rename old
+`ResponseGoal` values as exploration, insight or action. Reuse realistic input
+material in the multi-turn Hill dataset only when full context, user boundary,
+previous move and reaction expectations are supplied.

@@ -5,6 +5,10 @@ import { failFromError, ok } from "@/lib/api-response";
 import { hashVerificationCode, requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import {
+  cancelAccountData,
+  drainAccountCancellationFiles,
+} from "@/services/auth/accountCancellationService";
 
 const readJson = async (request: Request) => {
   try {
@@ -70,44 +74,15 @@ export async function POST(request: NextRequest) {
       throw new AppError("VALIDATION_ERROR", "请确认注销账号", 400, { field: "confirm" });
     }
 
-    await prisma.$transaction(async (tx) => {
-      if (cancelCodeId) {
-        await tx.verificationCode.update({
-          where: { id: cancelCodeId },
-          data: { consumedAt: new Date() },
-        });
-      }
-
-      await tx.feedback.updateMany({
-        where: { userId: user.id },
-        data: { userId: null },
-      });
-      await tx.aiJudgeResult.deleteMany({ where: { userId: user.id } });
-      await tx.aiGeneration.deleteMany({ where: { userId: user.id } });
-      await tx.chatSession.deleteMany({ where: { userId: user.id } });
-      await tx.note.deleteMany({ where: { userId: user.id } });
-      await tx.session.deleteMany({ where: { userId: user.id } });
-      await tx.verificationCode.deleteMany({
-        where: {
-          OR: [
-            { userId: user.id },
-            ...(user.phone ? [{ phone: user.phone }] : []),
-          ],
-        },
-      });
-      await tx.user.update({
-        where: { id: user.id },
-        data: {
-          phone: null,
-          wechatOpenid: null,
-          nickname: null,
-          avatarUrl: null,
-          status: "CANCELLED",
-        },
-      });
+    const cleanupTaskIds = await cancelAccountData({
+      userId: user.id,
+      phone: user.phone,
+      cancelCodeId,
     });
 
-    return ok({ cancelled: true });
+    const fileCleanupPending = await drainAccountCancellationFiles(cleanupTaskIds);
+
+    return ok({ cancelled: true, fileCleanupPending });
   } catch (error) {
     return failFromError(error);
   }

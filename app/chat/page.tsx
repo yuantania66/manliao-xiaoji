@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
+import { MessageStatus } from "@prisma/client";
 
 import ChatClient, { InitialChatData } from "./chat-client";
+import { extractCommittedAssistantMoveEnvelope } from "@/conversation-os";
 import { hashToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
@@ -54,19 +56,20 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
 
     if (!chatSession) return null;
 
-    await ensureProactiveChatGreeting({
+    const greetingResult = await ensureProactiveChatGreeting({
       sessionId: chatSession.id,
       userId: session.user.id,
       force: true,
     });
 
-    const items = await prisma.chatMessage.findMany({
+    const newestItems = await prisma.chatMessage.findMany({
       where: {
         sessionId: chatSession.id,
         userId: session.user.id,
+        status: { not: MessageStatus.BLOCKED },
       },
-      orderBy: { createdAt: "asc" },
-      take: 50,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 51,
       select: {
         id: true,
         role: true,
@@ -75,13 +78,21 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
         aiGeneration: {
           select: {
             promptVersion: true,
+            executionTrace: true,
           },
         },
       },
     });
+    const hasMore = newestItems.length > 50;
+    const items = newestItems.slice(0, 50).reverse();
 
     return {
       sessionId: chatSession.id,
+      hasMore,
+      nextCursor: hasMore ? items[0]?.id ?? null : null,
+      greetingStatus: greetingResult.status === "retryable_failure"
+        ? greetingResult.systemStatus
+        : null,
       messages: items
         .filter((item) => item.role === "USER" || item.role === "ASSISTANT")
         .map((item) => ({
@@ -90,6 +101,9 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
           text: item.content,
           createdAt: item.createdAt.toISOString(),
           promptVersion: item.aiGeneration?.promptVersion ?? null,
+          interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+            item.aiGeneration?.executionTrace
+          ),
         })),
     };
   } catch {

@@ -60,7 +60,7 @@
     "expectedResponseGoal": "clarify",
     "forbiddenBehavior": ["把 1 解释成情绪评分", "把 1 当作暗号", "强行追问长解释"],
     "expectedClinicalBehavior": "承认看到了这个输入，但不替它下定义；可以轻轻留出校准空间。",
-    "notes": "极短输入。重点是不解释数字。"
+    "notes": "语义证据不足的输入。重点是停留在观察，不根据格式推断意图。"
   },
   {
     "id": "GD-AMB-002",

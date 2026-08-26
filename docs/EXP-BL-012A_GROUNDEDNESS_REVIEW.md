@@ -238,7 +238,37 @@ The reviewer must apply the Decision Owner philosophy: “看用户期待的是�
 - Any production modification is confined to the confirmed layer and receives its own implementation review.
 - 012B and 012C remain out of scope.
 
-## 9. Regression Risks
+## 9. Product Fix Decision (2026-07-13)
+
+The Decision Owner has now authorized a production behavior change broader than the earlier numeric experiment boundary:
+
+```text
+Receive input
+  -> evaluate semantic evidence
+  -> sufficient: interpretation is allowed
+  -> insufficient: remain at observation
+```
+
+Implementation boundary:
+
+- `ClinicalContext.signals.semanticEvidence` owns the structured sufficiency decision.
+- Evidence may come from self-contained current-user meaning or an explicit, semantically compatible answer frame in the active conversation.
+- Active frame means the immediately preceding assistant turn within the current five-minute segment. Intervening turns invalidate older questions.
+- Compatibility is validated, not inferred from shape: choice answers must be offered values, bounded scale answers must be in range, and binary/quantity answers must match their question type.
+- A short `不对` is correction evidence only when it directly follows the assistant assertion it rejects.
+- Atomic decimals, acknowledgements, terminal punctuation variants, and mixed numeric-symbol input remain insufficient without a compatible frame.
+- Message form and repetition are not evidence of user intent.
+- An assistant-authored, unconfirmed hypothesis is not an established answer frame.
+- `ResponseGoalSelector` consumes the signal; Rogers planning maps insufficient evidence to `responseIntent=receive` and `questionFunction=none`.
+- The response guard enforces that plan generically. It may reject unsupported meaning and allow at most one controlled regenerate carrying structured failure reasons. It must not author final chat copy. After a second failure it returns `constraint_failure` system status without interpolating user input. Legacy `guard_rewrite` remains readable for compatibility but is not emitted on the success path.
+- Existing Prompt product text and Voice Layer are unchanged by this enforcement path, aside from an optional regenerate-only constraint developer message assembled from structured failure reasons.
+
+Required positive and negative regression classes:
+
+- positive: quantity, age, scale, numbered choice, binary answer, and self-contained user meaning;
+- negative: atomic input at conversation start, emoji-only input, stale or superseded frames, out-of-range/unoffered answers, and an atomic follow-up to an open meaning question that did not establish an answer frame.
+
+## 10. Regression Risks
 
 - Over-restraint can make the assistant mechanically echo every token.
 - Removing assistant history can break legitimate multi-turn meaning.
@@ -246,14 +276,14 @@ The reviewer must apply the Decision Owner philosophy: “看用户期待的是�
 - Literal bans can cause synonym substitution without grounded improvement.
 - A treatment may look better in one provider sample but fail under repetition.
 
-## 10. Final Decision
+## 11. Final Decision
 
 ```text
-needs more eval
+production decision authorized and implemented
 ```
 
-The failure is confirmed and A0 is complete, but the primary root cause is not. Eval-only A1/A2/A3 adapters are authorized. No production Prompt, history, ClinicalPlan, Selector, or schema change is authorized.
+The earlier `needs more eval` decision was superseded by the Decision Owner's 2026-07-13 task. The confirmed production root cause is the format-specific reply guard that overrode ClinicalPlan and inferred intent from repetition. The approved implementation moves sufficiency into `ClinicalContext.signals.semanticEvidence`, consumes it in Selector/ClinicalPlan, and enforces the resulting observation decision without changing Prompt text.
 
 ## Next Unique Action
 
-Implement A1/A2/A3 as eval-only registered variants in the trajectory runner, then run a repeated comparison and return to this review to select exactly one primary root cause.
+Run the semantic-evidence acceptance suite and the full Architecture v1 launch regression before release.

@@ -11,8 +11,6 @@ const SOFT_PAUSE_PATTERN = /算了|先不说了|不说了|不聊了|暂停|先�
 
 const QUESTION_PATTERN = /[?？]|吗$|呢$/;
 
-const HIGH_AMBIGUITY_PATTERN = /^([0-9０-９]+|[a-zA-Z]|[^\s\p{L}\p{N}]|嗯+|啊+|哦+)$/u;
-
 const isLongDisclosure = (text: string) => {
   const punctuationCount = (text.match(/[，。！？；、,.!?;]/g) ?? []).length;
   return text.length >= 80 || punctuationCount >= 4;
@@ -21,13 +19,22 @@ const isLongDisclosure = (text: string) => {
 export const selectResponseGoal = (context: ClinicalContext): ResponseGoal => {
   const text = normalize(context.conversation.currentUserMessage);
 
+  if (context.signals.interaction.stopIntent) return "hold_space";
   if (context.signals.explicitAdviceRequest) return "support_action";
-  if (context.signals.expressionDifficulty) return "help_continue_expression";
+  if (
+    context.signals.interaction.contentAvailability === "no_topic" &&
+    (context.signals.interaction.engagement === "engaged" || context.signals.interaction.engagement === "open")
+  ) {
+    return context.signals.interaction.affect === "negative" ? "hold_space" : "help_continue_expression";
+  }
+  if (context.signals.expressionDifficulty) {
+    return context.signals.interaction.affect === "negative" ? "hold_space" : "help_continue_expression";
+  }
   if (SUMMARY_REQUEST_PATTERN.test(text)) return "summarize";
   if (SOFT_PAUSE_PATTERN.test(text)) return "hold_space";
   if (HIGH_EMOTION_PATTERN.test(text) && !QUESTION_PATTERN.test(text)) return "hold_space";
   if (isLongDisclosure(text)) return text.length >= 120 ? "summarize" : "reflect";
-  if (context.signals.messageLength === "SHORT" && HIGH_AMBIGUITY_PATTERN.test(text)) return "clarify";
+  if (context.signals.semanticEvidence.status === "insufficient") return "clarify";
   if (isUserCorrection(text)) return "clarify";
 
   return "reflect";

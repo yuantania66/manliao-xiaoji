@@ -1,12 +1,14 @@
 # Architecture v1 Final
 
-## 1. Executive Summary
+## 1. Final decision
 
-This document finalizes Architecture v1 for SlowTalk Notes.
-
-It only consolidates concepts that already exist in the PRD, prior reviews, design documents, and current implementation. It freezes naming, boundaries, and architecture rules. It does not introduce a new product layer, a new component, or a new business capability.
-
-Terms such as `ClinicalContext`, `ResponseGoal`, `Strategy`, `ClinicalPlan`, and `Projection Framework` are unified archival names for existing concepts. They do not represent new implementation in this finalization pass.
+This document is the current Architecture v1 baseline for SlowTalk Notes. The
+2026-07-23 Conversation OS control-closure decision supersedes the former
+runtime rule that made Clinical Logic the default owner of every ordinary
+reply. The 2026-07-31 approved Hill contract keeps that control closure while
+assigning Hill applicability, reaction, readiness, goal, intention and skill to
+Clinical Logic / Helping Logic before final plan assembly. It does not add a
+sixth product layer.
 
 Architecture v1 has exactly five product layers:
 
@@ -16,500 +18,620 @@ Architecture v1 has exactly five product layers:
 4. Memory & Mental Model Layer
 5. Safety & Governance Layer
 
-Runtime objects and runtime flow must not be described as independent product architecture layers.
-
-Final Architecture v1 decision:
-
-- Product architecture remains five-layer.
-- Safety & Governance is a cross-cutting guardrail, not a normal linear pipeline step.
-- Conversation Layer may output facts and approved deterministic signals.
-- Clinical Logic owns `ResponseGoal`, `Strategy`, and `ClinicalPlan`.
-- ClinicalPlan contract must precede Prompt integration.
-- Memory owns long-term understanding and projection internals.
-- Legacy Conversation OS strategy fields are frozen and must not be expanded.
-- Only approved Conversation-derived signals may influence `ResponseGoal`.
-
-## 2. Five-Layer Product Architecture
-
-Architecture v1 consists of:
+The ordinary non-safety final plan writer remains singular:
 
 ```text
-Application Layer
-Conversation Layer
-Clinical Logic Layer
-Memory & Mental Model Layer
-Safety & Governance Layer
+decisionOwner = conversation_os.response_planner
 ```
 
-No other product layer exists in Architecture v1.
+This means one final `ResponsePlan`, not ownership of every domain decision.
+Helping Logic owns the Hill domain; Response Planner owns ordinary conversation
+actions and final assembly. Neither may replace the other.
 
-The following are not architecture layers:
+`ResponsePlan`, `DialogueState`, `ClinicalContext`, `ClinicalStrategyAdvice`,
+Prompt, validator and trace are runtime contracts, not product layers.
 
-- `ClinicalContext`
-- `ResponseGoal`
-- `Strategy`
-- `ClinicalPlan`
-- `Prompt`
-- `Projection Framework`
-- `Conversation State`
-- `Golden Dataset`
-- `Trace`
+Migration status after the Batch 1.5-E frozen gate closed on 2026-08-04:
 
-These may be runtime contracts, internal objects, evaluation assets, or engineering mechanisms, but they must not be promoted into product-layer terminology.
+- the target architecture in this document is approved;
+- current runtime retains the pre-Hill optional Rogers advice path as the only
+  user-visible compatibility behavior;
+- typed Hill input, decision validation and a feature-flagged Shadow call run
+  after Safety and before the final Planner when `HILL_HELPING_SHADOW=true`;
+- the Shadow result is trace-only and is absent from `ResponsePlan`, Surface input
+  and committed conversation state;
+- the Batch 1.5 candidate may pass only a deterministic `uncertain` applicability
+  boundary into the ordinary Planner when `HILL_HELPING_ORDINARY_HANDOFF=true`;
+  the Planner then selects an ordinary action and keeps
+  `behaviorSource=ordinary_conversation`;
+- the Batch 1.5 flag remains off by default and does not enable the full Hill
+  provider, a Hill goal/skill, or committed Helping state;
+- the earlier human blind candidate and preservation candidates 1—6 remain
+  historical failed evidence; the later Planner, Surface-boundary and Validator
+  repairs passed the Batch 1.5-E frozen gate at 60/60 Functional and Machine
+  Validator pass, 0 constraint failures and 5/60 regeneration;
+- Batch 1.5-E is the authoritative stable user-visible baseline and its repair
+  scope is closed;
+- Batch 2 is approved only as an infrastructure slice for cross-turn association,
+  serialization/loading, Shadow reaction trace and atomic commit boundaries;
+  Batch 2A has frozen the v1 formal Helping metadata schema, strict parser and
+  formal/Shadow isolation; Batch 2B has passed fixture-only bounded loading,
+  explicit older-target inclusion and target-bound semantic association without
+  production integration; Batch 2C is now the authoritative Reaction Assessment
+  Contract Gate under `B2-Reaction-Shadow`, frozen as reaction-only, Shadow-only
+  and fixture-only with zero downstream integration. Batch 2C-A now implements
+  the isolated fixture evaluator and regression gate. Batch 2D now freezes the
+  docs-only Atomic Boundary Contract v1 under `B2-Formal-Atomic-Commit`: future
+  formal writes require detached final validated authority, in-transaction real
+  Assistant id binding and winner-only atomic publication. The writer,
+  production runtime, formal reaction state, formal production writes and
+  DB-backed loading remain unimplemented and unauthorized. User-visible Hill behavior remains reserved
+  for a separately accepted Batch 3;
+- Conversation OS Interaction Move Handoff Contract v1 is frozen as the target
+  contract, and its committed-envelope foundation, PHM-A Context/relation
+  projection and PHM-B Planner transition are implemented. PHM-B includes
+  fail-closed activation, multiple-candidate compatibility, positive
+  reciprocal-contact planning and detached exact-preflight authority. It defines
+  proactive greeting completion through immutable
+  committed-event relations, a target-bound User relation, one Planner-selected
+  positive function and validated atomic commit. The stable envelope and
+  Guest/authenticated round-trip foundation, strict adjacent active target and
+  current-turn User relation projection, Planner handoff tuple, detached
+  preflight authority, PHM-C Surface projection and same-plan semantic
+  validation are implemented; completion edges remain pending.
 
-## 3. Runtime Data Flow
+## 2. Runtime control loop
 
-The runtime data flow for normal non-safety chat is:
+Normal chat uses this one traceable loop:
 
 ```text
-Conversation outputs
-  -> ClinicalContext
-  -> ResponseGoal
-  -> Strategy
-  -> ClinicalPlan
-  -> Prompt construction
-  -> LLM generation
-  -> Post-processing / trace / save
+Context Assembly
+  -> Turn Interpretation
+  -> Dialogue State
+  -> Helping Logic / HillHelpingDecision
+  -> Response Planner
+  -> one ResponsePlan
+  -> Surface Realization
+  -> Output Validation
+  -> State Update
 ```
 
-This is runtime data flow, not product architecture layering.
+Safety is a higher-priority cross-cutting gate. When it blocks normal chat it
+must expose an explicit override reason and skip the ordinary planner/surface
+path.
 
-Boundary definitions:
+### 2.1 Context Assembly
 
-- `ClinicalContext` is a cross-layer data contract consumed by Clinical Logic.
-- `ResponseGoal` is the first decision inside Clinical Logic.
-- `Strategy` is the method used to fulfill a `ResponseGoal`.
-- `ClinicalPlan` is the traceable output of Clinical Logic.
-- Prompt construction belongs to the reply generation flow. It is not a sixth product layer.
-- LLM generation is an execution mechanism, not a product architecture layer.
-- Projection Framework is an internal Memory & Mental Model Layer engineering mechanism.
+Context Assembly may provide only the context required for the current turn:
 
-The runtime data flow may change internally as implementation evolves, but it must continue to respect the five-layer product architecture.
+- current user message;
+- bounded adjacent turns;
+- semantic evidence and the immediately active answer frame;
+- interaction evidence;
+- current repair signal and, when present, the targeted assistant turn,
+  challenged proposition and still-open user intent;
+- bounded committed Helping move candidates from the current session, including
+  an explicitly targeted older move when the user replies to it;
+- selected user-confirmed memory, if relevant;
+- Assistant Grounding;
+- confirmed facts and explicitly separated hypotheses;
+- safety signal.
 
-### 3.1 ClinicalPlan Contract Must Precede Prompt Integration
+It must not dump complete history, databases, unrelated memory or raw internal
+trace into the model Prompt.
 
-Architecture rule:
+Prompt History contains a bounded recent window of committed conversation
+events. It never removes committed text because of wording, Prompt version,
+low-information form, or template heuristics. BLOCKED and non-conversation
+events remain internal, while explicit reply linkage preserves answered-turn
+structure through window cropping.
 
-```text
-ClinicalPlan Contract must precede Prompt Integration.
+### 2.2 Turn Interpretation
+
+Turn Interpretation is an evidence-producing step, not a reply planner. It can
+combine `contentMeaning`, multiple `responseRelation` candidates with separate
+confidence values, and a proposed `stateUpdate`. Direct questions, engagement,
+initiative, affect evidence, stop evidence, repair evidence and Grounding
+references remain evidence inputs. The legacy `primaryDialogueAct` and
+`secondarySignals` fields remain trace-compatible evidence only; neither
+Dialogue State nor Response Planner may use them to select strategy.
+
+A meta-conversational correction may quote question-shaped text. Once Context
+Assembly targets that text as a challenged proposition, it is not reopened as
+a new direct question or Grounding obligation.
+
+Stable product/capability boundaries may use deterministic classification.
+Ambiguous pragmatics may use the configured LLM through a structured adapter.
+The adapter may not write a reply, create a ResponsePlan, or override a
+deterministically established direct question or stop request.
+
+Conversation State is the sole extractor for current-turn affect and
+relational-impact evidence. It retains source offsets and original text plus a
+normalized category, intensity and object. Turn Interpretation consumes those
+same spans, and Response Planner may only add the current turn id when it
+projects them into `positiveFunctionContract`; it must not run an independent
+phrase matcher. Execution preflight verifies the projected turn and source
+slice before Surface is called.
+
+### 2.3 Interaction / Dialogue State
+
+The state reducer carries:
+
+- `currentActivity`, including concurrent relational activities;
+- `activeThread`;
+- `commonGround.confirmed / hypothesized / rejected`, with subject, speaker,
+  source turn, evidence and epistemic status on every proposition;
+- turn-scoped `openObligations`;
+- `initiativeOwner`;
+- `lastCommittedAssistantMove` (purpose, claims, assumptions,
+  question/request, expected user contribution, burden, source turn);
+- bounded `CommittedHelpingMove` candidates once the Hill path is active;
+- structured `repairState`.
+
+This state is derived from committed conversation events and committed Assistant
+move metadata. It is reconstructible and cannot replace the bounded recent raw
+conversation window supplied to planning and Surface Realization.
+
+Interaction Move Handoff v1 uses the same reconstructible event boundary but is
+not a new field in Interaction State. A committed Assistant envelope supplies a
+stable Assistant move id and an immutable `opens`, `fulfills` or Safety
+`supersedes` relation. Whether a greeting is active, fulfilled or superseded is
+derived by querying those committed events; no persistent lifecycle status,
+session aggregate, Memory record or User Model field may mirror that result.
+
+An explicit user question becomes a must-answer obligation. Empathy,
+clarification and Clinical advice cannot remove it.
+
+Each obligation is scoped by its source `conversationId + turnId`, records the
+triggering act and target proposition, and transitions from `open` to
+`answered` or `expired` in State Update. It is not implicitly reused by a later
+turn. A correction additionally carries its target turn and rejected
+proposition. Rejected propositions are withdrawn from confirmed/hypothesized
+common ground and may not be explained again.
+
+The state reducer may consume legacy classifiers only as evidence. A single
+intent, content-availability label, or affect label cannot itself become a
+ResponseAction. Multiple response relations can survive into concurrent
+activities.
+
+### 2.4 Helping Logic
+
+Every ordinary non-safety turn produces exactly one traceable
+`HillHelpingDecision` before final plan assembly. A successful decision may be
+`not_applicable`; that routes to ordinary conversation without forcing helping
+language.
+
+Helping Logic owns:
+
+- applicability;
+- reaction to a relevant committed Helping move;
+- readiness and counter-evidence;
+- exploration, insight or action goal;
+- intention and skill;
+- relationship-repair priority;
+- prohibited moves and Helper Self Check.
+
+It cannot erase direct obligations, write final Chinese, read Raw Memory,
+override Safety, or assemble a second ResponsePlan.
+
+During Batch 1-2 Hill Shadow operation, the Hill result is trace-only. The
+Batch 1.5 candidate is the narrow exception for an `uncertain` applicability
+boundary: under its separate default-off flag, the boundary may inform an
+ordinary Planner action, but no Hill goal or skill crosses the boundary and the
+behavior source remains ordinary conversation. A full Shadow result cannot
+affect the `ResponsePlan` or create committed Helping state.
+
+Batch 2C freezes only the contract for a fixture-produced Reaction Assessment
+Shadow trace. `reactionEvidenceKnown` describes whether the current user turn
+contains enough target-bound evidence to classify a reaction; `impactKnown`
+additionally requires explicit user evidence about the move's fit, experience or
+result. Neither value proves objective causality or technique success. No Batch
+2C assessment may enter `HillHelpingPlan`, Response Planner, Initiative, Memory,
+User Model, `ChatMessage.interactionMetadata` or formal persistence.
+
+Batch 2C-A implements that contract only in
+`services/helping/reactionAssessmentFixture.ts`. The module is not exported from
+the production Helping barrel and is consumed only by frozen fixtures. Its gate
+strictly parses candidate/evidence objects, binds them to one Batch 2B-loaded
+`formal_v1` target and the current user turn, validates evidence provenance,
+derives both known flags, and emits fail-closed Shadow envelopes. It has no
+production writer, persistence or user-visible execution path.
+
+### 2.5 Response Planner
+
+Response Planner is the only writer of the final ordinary `ResponsePlan`. It
+owns ordinary conversation actions and assembles, without rewriting, a valid
+Hill decision when Helping is the active behavior source. It creates exactly
+one `ResponsePlan` containing:
+
+- answer obligations;
+- disclosure scope and structured correction evidence;
+- concrete response actions;
+- Assistant Grounding facts;
+- exactly one behavior source;
+- a Hill plan projection when `behaviorSource=hill_helping`;
+- legacy Clinical advice only on an explicitly selected compatibility path;
+- question and closure policies;
+- tone, stance and length guidance;
+- prohibited claims and safety constraints;
+- relevance provenance for every planned action, obligation, disclosure and
+  Grounding fact;
+- plan evidence.
+
+The Planner reads Interaction State and scoped obligations for ordinary action
+selection. It does not read `primaryDialogueAct`, `secondarySignals`,
+`activeInteractionNeeds`, `stillOpenUserIntent`, or scenario classifier labels
+as strategy decisions. It may accept or reject a Hill contract but cannot
+invent, replace or silently omit its goal, intention or skill.
+
+For a proactive greeting handoff, the Planner additionally consumes the
+turn-scoped envelope and target-bound User relation projection frozen in
+`CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md`. It alone selects the
+required handoff function, completion intent and question policy. Greeting
+provenance such as `promptVersion` cannot replace the committed move target or
+prove completion.
+
+The PHM-B implementation makes this boundary total and fail closed. A v1 handoff plan is
+created only when the active committed target, current User turn, target
+function and exact PHM-A evidence spans agree. It maps the frozen relation set
+to one required function or `defer`, preserves higher-priority direct
+obligations and boundaries, and resolves multiple candidates only through the
+compatibility rules in the authoritative handoff contract. It performs no text
+matching and does not reconstruct decisions from `promptVersion`. Before plan
+assembly, production creates a detached, recursively frozen authority snapshot;
+execution preflight exactly compares the nullable handoff tuple, obligations and
+canonical provenance against it.
+
+No module after this point may reinterpret the user, choose a new response
+goal, or select another strategy.
+
+### 2.6 Surface Realization
+
+Surface Realization receives the finalized ResponsePlan and bounded chat
+history. It only writes natural language for that plan. Production surface
+generation must not run legacy Engage, Voice or Clinical ResponseGoal planning.
+It receives no complete Assistant Grounding `availableFacts` block. Relevant
+truth is projected through the current turn's `requiredDisclosure`, while
+`prohibitedClaims` remains a constraint. The Surface projection contains only
+minimal actions, scoped obligations/disclosure, relevant Grounding/Clinical
+facts, question/closure policy, concise tone/length guidance, truth/safety
+constraints and relevance provenance. Classifier traces, plan debug evidence,
+action-specific sample wording and repair templates are not Surface inputs.
+The relevance projection exposes the planned element, its source and turn, plus
+only the current user-message evidence needed to realize that element. Full
+classifier/state evidence remains in the internal trace. Action-level surface
+constraints may rule out unsupported evaluation, generic causal explanation,
+positive reframing or an interview follow-up; they constrain meaning and do
+not prescribe sample wording.
+
+### 2.7 Output Validation
+
+Output Validation is a constraint provider. It may:
+
+- accept the realization;
+- reject an unanswered direct obligation;
+- reject a grounding, closure, question or semantic-evidence violation;
+- request at most one regeneration against the exact same `planId`, with the
+  internal failure code translated into a human-readable correction instruction
+  that cannot alter the plan;
+- return a non-chat `constraint_failure` system status after a second failure.
+
+It may not create a ResponsePlan, select a ResponseGoal, choose a Clinical
+strategy, or author an ordinary fallback/comfort reply.
+
+For Interaction Move Handoff v1, validation must positively verify that the
+candidate realizes the Planner-selected function against the same target and
+User relation. Avoiding a list of disallowed phrases, or Surface self-reporting
+a function id, is not completion evidence. Validation failure may only trigger
+the existing bounded same-plan regeneration; only the final committed Assistant
+event may write a `fulfills` edge.
+
+### 2.8 State Update
+
+State Update records fulfilled obligations and remaining open loops. Only a
+successfully sent `hill_helping` reply may atomically add its
+`CommittedHelpingMove`; Shadow, legacy, rejected, failed or unsent replies may
+not. Batch 2D freezes this future boundary as one authenticated winner-only
+transaction over the Assistant message, strict formal metadata, committed
+execution and session projection; the real Assistant id is bound inside that
+boundary. Guest requires logically isomorphic client-scoped publication but
+does not claim database or cross-process durability. Loader, association and
+Reaction Assessment are post-commit read-only consumers and remain separately
+unauthorized for production. This is a docs-only target contract, not an
+implemented writer. State Update does not re-plan the current reply.
+
+## 3. Five-layer responsibilities
+
+### 3.1 Application Layer
+
+Owns UI, API, session, persistence, settings, privacy, export/delete and debug
+display. It does not decide ordinary reply actions or Clinical strategy.
+
+### 3.2 Conversation Layer
+
+Owns the ordinary control loop and its single Response Planner. It assembles
+the current context, interprets the turn, maintains dialogue state, invokes
+Helping Logic before final planning, finalizes one ResponsePlan and records
+state update.
+
+It does not diagnose, write long-term Memory, or implement a Clinical method.
+
+### 3.3 Clinical Logic Layer
+
+For SlowTalk chat, Clinical Logic exposes the Helping Logic capability defined
+by the approved Hill v1 product contract. Every ordinary non-safety turn reaches
+its applicability boundary; applicable turns receive an evidence-bound Hill
+plan before final ResponsePlan assembly.
+
+Clinical Logic owns Hill applicability, reaction assessment, readiness, goal,
+intention and skill. It does not own ordinary facts or direct obligations,
+cannot write final chat text, and cannot override Safety. The legacy Rogers
+advice, `ClinicalPlan`, `ResponseGoalSelector` and Need Resolution draft are
+compatibility/evaluation contracts only and must not become a second decision
+owner.
+
+### 3.4 Memory & Mental Model Layer
+
+Memory owns long-term evidence, semantic memory, timeline, relationship and
+understanding continuity. It may provide a bounded selected fact or hypothesis
+to Context Assembly. It does not own current-turn response actions and cannot
+bypass the Response Planner to enter the surface Prompt.
+
+### 3.5 Safety & Governance Layer
+
+Safety owns crisis/high-risk blocking, privacy, access control, audit, deletion
+and data-governance boundaries. It may override the ordinary loop, but its
+trace must identify the reason. Safety must not transform an ordinary reply
+into a generic comfort template.
+
+## 4. Evidence and interaction contracts
+
+### 4.1 Semantic evidence
+
+`semanticEvidence` answers only whether current content may be interpreted.
+It considers the current message and an explicit compatible answer frame in
+the active adjacent context.
+
+- A short or atomic message is not meaningful merely because it has a format.
+- A compatible answer to an immediately preceding age, count, scale, choice,
+  yes/no or other supported frame is grounded in that frame.
+- Typed numeric frames take precedence over a generic yes/no shape in the same
+  sentence (for example `How old are you?` -> `34`).
+- An assistant hypothesis is not confirmed user evidence.
+
+### 4.2 Interaction evidence
+
+Content availability, engagement, initiative, affect and stop evidence are
+independent:
+
+- low information is not low engagement;
+- `no_topic` is not stop intent;
+- unknown affect is not negative affect;
+- replying to the assistant is evidence of continued interaction;
+- silence/pause/closure requires explicit current evidence or a reliable active
+  pause context;
+- `no_topic + engaged/open + no stop` transfers light initiative to the
+  assistant rather than selecting silent companionship.
+
+### 4.3 Approved deterministic boundaries
+
+Deterministic rules are limited to stable, reviewable evidence such as explicit
+stop/reopen language, explicit capability/identity questions, active answer
+frame compatibility and the approved interaction fields. Complex pragmatics
+must remain contextual and may use the structured interpretation adapter.
+
+### 4.4 Interaction Move Handoff v1
+
+`docs/CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md` is the
+authoritative proactive greeting completion contract. It freezes:
+
+- a logical committed Assistant move envelope with a stable Assistant event id;
+- an immutable greeting `opens` edge and validated-commit `fulfills` edge;
+- a current-turn User relation projection bound to that Assistant move;
+- preselected required functions for `simple_greeting`, `open_statement` and
+  `light_question`;
+- completion only when the selected positive function passes same-plan semantic
+  validation and the final Assistant event commits;
+- Planner transition priority and Validator non-planning boundaries;
+- one logical envelope and projection contract for Guest and authenticated chat.
+
+Interaction-move rejection is not limited to rejection of a factual
+proposition. Turn Interpretation may identify a contextual challenge to the fit
+of the immediately preceding Assistant move, while the Response Planner alone
+decides whether targeted interaction-move withdrawal is required.
+
+The envelope and handoff edges are Conversation OS event metadata, isolated from
+the Batch 2 Helping/Reaction namespace. The implemented foundation serializes
+the logical envelope as a sibling key in the existing authenticated generation
+trace and as client-scoped Guest event metadata. PHM-A retains a strictly
+validated adjacent `opens` target in Context and derives the target-bound
+current-turn User relation candidates with exact source spans, preserving
+ambiguity without selecting a reply function. These slices add no persistent
+lifecycle state, schema migration, Memory or User Model input. Planner handoff,
+its detached exact-preflight authority, PHM-C same-plan semantic validation and
+PHM-D ordinary committed `fulfills` plus pure completion lookup and PHM-E Safety
+`supersedes` plus pure resolved/active lookup are implemented.
+
+PHM-B implements the Planner transition from that projection. The total mapping
+includes direct-obligation and boundary priority,
+typed fail-closed source/relation pairs, compatible multiple-candidate collapse,
+incompatible-candidate defer and the positive meaning of
+`complete_reciprocal_contact`: accept reciprocal contact as sufficient and
+release the greeting ritual without another greeting, receipt or Assistant
+presence claim. PHM-C Surface realization and positive-function validation are
+implemented; PHM-D owns the separate validated commit-edge projection and pure
+completion lookup.
+
+## 5. Assistant Grounding
+
+`conversation-os/control/assistantGrounding.ts` is the single source for
+assistant identity and capabilities. It separates three responsibilities:
+
+- `availableFacts` is the complete background truth available inside Context
+  and planning. It is not sent wholesale to ordinary Surface Realization and is
+  not a disclosure checklist.
+- `requiredDisclosure` is projected by the existing Response Planner from the
+  current direct-answer obligation. Only facts directly relevant to the
+  current identity, modality, embodiment or capability question are included.
+- `prohibitedClaims` constrains false claims in every turn. It must not be
+  converted into a user-facing disclaimer list.
+
+Plain identity, AI/human identity and clinician identity are separate
+obligations. A plain “你是谁” therefore requires the product name and AI
+assistant identity, while the professional boundary is required only when the
+user asks about it or Safety needs it.
+
+Conventional relational or spatial metaphors remain allowed when they do not
+claim literal embodiment. If the user follows up on an adjacent metaphor, Turn
+Interpretation marks the relationship to the preceding assistant turn and the
+same Response Planner requires both the truthful physical boundary and a brief
+acknowledgement that the earlier wording was figurative.
+
+The proactive greeting consumes the canonical Grounding formatter but remains
+outside the ordinary user-turn planner. Its greeting-only action contract
+selects among a simple greeting, a non-question opening statement, and an
+occasional concrete low-burden question. A question may appear at most once in
+the current three-greeting window; it is not the default shape of a greeting.
+Simple greeting and opening statement are preferences within one non-question
+validation boundary. Server timezone/time is excluded from the external
+greeting Prompt and cannot be used as evidence of user location or local day
+phase.
+The contract rejects permission-to-speak, passive waiting, generic interview
+openings and near-duplicates. The last three greeting texts remain internal
+validation evidence; the external model sees only system-defined move/topic
+labels, not their raw text. Validation rejects both lexical near-duplicates
+and reuse of a recent topic category.
+
+The first User turn after a proactive greeting is owned by the ordinary
+Response Planner. The current runtime's `respond_to_proactive_greeting` action
+and `promptVersion` provenance are compatibility behavior, not the frozen v1
+completion criterion. Under the v1 target, a committed greeting envelope, a
+current User relation bound to that move and one Planner-selected required
+function replace provenance-only detection.
+
+When the greeting is a question, the adjacent User response retains the
+ordinary no-second-interview rule. Current User content, a direct question,
+redirect, interaction-move challenge or pause takes priority over greeting
+ritual and may fulfill the handoff in the same response. Pre-greeting committed
+events remain internal Context and are not projected to Surface unless the
+current User turn explicitly resumes them.
+
+Output Validation must prove the selected positive function. Pure receipt,
+Assistant presence confirmation, echo, a second greeting-only move, a generic
+open door or an unrelated question does not fulfill the contract merely because
+it avoids a prohibited phrase. The Validator cannot create a plan, change the
+target or relation, broaden disclosure or rewrite the reply. Completion exists
+only after the accepted Assistant message and its `fulfills` edge commit.
+
+## 6. Legacy migration
+
+| Previous component | Current authority |
+|---|---|
+| `semanticEvidence` / Active Answer Frame | evidence provider |
+| Conversation State interaction fields | evidence provider |
+| legacy Engage pipeline | retained for compatibility tests; no production surface authority |
+| `responseGoalSelector` / `clinicalPlanService` | compatibility and Clinical evaluation only; no production decision authority |
+| Rogers strategy / current `clinicalStrategy` | temporary `legacy_compat` path; must not run with Hill on the same turn and exits in Batch 6 |
+| Need Resolution draft | historical UX-boundary inventory; not a decision engine |
+| Hill Helping Logic | Batch 1 Shadow remains trace-only; Batch 1.5 may pass only a deterministic `uncertain` applicability boundary to the ordinary Planner under a separate default-off flag |
+| legacy Voice Layer | compatibility only; no production surface authority |
+| `semanticEvidenceReplyGuard` | compatibility constraint tests only; no production output path |
+| ordinary fallback reply | deauthorized from production orchestration |
+| ResponsePlan validator | same-plan validator; no planning authority |
+| Safety | explicit high-priority override with reason |
+
+`guard_rewrite` remains readable only for historical traces. A normal success
+path may emit `llm` or `llm_regenerate`; repeated validation failure emits
+`constraint_failure`.
+
+## 7. Architecture invariants
+
+The target implementation must continuously verify:
+
+1. exactly one production `createResponsePlan` call per ordinary turn;
+2. exactly one ordinary `decisionOwner`;
+3. every non-safety turn has one Hill decision or an explicit Hill failure once
+   Batch 1 is active;
+4. deterministic ordinary boundaries may return `not_applicable` without a
+   model call, but may not ignore an active Helping topic;
+5. Surface Realization receives the finalized ResponsePlan;
+6. validator cannot create or mutate the plan;
+7. ordinary fallback does not create a second goal;
+8. Safety skips the ordinary loop and records a reason;
+9. direct obligations survive mixed emotional and capability turns;
+10. state update records, but does not reinterpret, the result;
+11. when a committed Assistant question expects an answer, the answering turn
+    does not open another interview question by default;
+12. one turn cannot execute both `legacy_compat` and `hill_helping`;
+13. Shadow results do not change ResponsePlan, Surface input, user-visible text
+    or committed Helping state;
+14. only an executed, validated, sent and atomically committed Hill reply
+    creates `CommittedHelpingMove`;
+15. formal Helping failure cannot be converted to `not_applicable` or an
+    ordinary comfort reply.
+16. Batch 2C Reaction Assessment remains `mode=shadow`, `source=fixture` and has
+    zero consumers in Planner, Prompt, Surface, Validator, Initiative, Memory,
+    User Model or formal persistence.
+17. Batch 2D formal commit accepts only detached final validated authority,
+    binds the real Assistant id inside a winner-only atomic boundary and fails
+    closed on loser, identity, serialization or rollback failure; Guest parity
+    is client-scoped logical publication only.
+18. each v1 handoff target uses the stable id of a committed Assistant event;
+    `sourceTurnId`, `planId` and `promptVersion` cannot substitute for it;
+19. a proactive greeting handoff is fulfilled only by a semantically validated
+    final Assistant response whose immutable edge commits against the same
+    source move;
+20. Turn Interpretation supplies target-bound relation evidence, Response
+    Planner alone selects the required function, and Validator cannot change
+    either decision;
+21. Guest and authenticated chat must project the same logical committed
+    envelope, User relation and completion result before v1 can claim runtime
+    conformance;
+22. handoff completion creates no persistent lifecycle state and has zero
+    integration with Memory, Batch 2 or User Model.
+
+Batch 0 keeps the existing source assertions as a pre-Hill baseline. Items 3-4
+and 12-15 become executable gates in their assigned migration batches. Item 16
+is executable for the Batch 2C-A fixture evaluator, but does not claim a
+production Reaction Assessment runtime or authorize downstream integration.
+Item 17 is a docs-only target and does not claim an implemented writer. Item 18,
+the Turn Interpretation/relation portion of Item 20, and the
+envelope-and-relation portion of Item 21 now have executable coverage. Planner
+function selection, detached exact-preflight authority, Surface projection and
+same-plan semantic validation now have executable coverage. Item 19, completion
+parity in Item 21, and completion semantics plus resolved/active lifecycle pure
+queries in Item 22 now have executable coverage and are sealed through PHM-D
+and PHM-E without persistent lifecycle state.
+
+The primary structural checks are:
+
+```bash
+npm run check:conversation-os-control
+npm run check:conversation-os-architecture
+npm run check:ai-orchestration
+npm run check:architecture-v1
 ```
 
-Meaning:
-
-1. Strategy defines behavior.
-2. ClinicalPlan carries behavior.
-3. Prompt only renders ClinicalPlan.
-4. Prompt must not invent Strategy behavior.
-5. A Strategy PR may merge before Prompt integration only when there is a clear downstream Prompt backlog item with owner, dependency, and acceptance criteria.
-6. Architecture v1 does not allow an orphan state where a ClinicalPlan contract is considered complete but no corresponding Prompt integration task exists.
-
-Implications:
-
-- If a user-visible response needs new Strategy behavior, define it in Strategy / ClinicalPlan first.
-- If Prompt integration is required for that behavior to be visible, create a separate Prompt backlog item.
-- Prompt Builder must not add product behavior that cannot be traced back to ClinicalPlan.
-- Prompt changes may render ClinicalPlan fields, but they must not create a parallel Strategy system.
-
-## 4. Safety as Cross-Cutting Governance
-
-Safety & Governance is not a normal step in a straight-line pipeline.
-
-It is a cross-cutting guardrail that can apply at multiple gates, including at least:
-
-- Message / input gate
-- ClinicalPlan / output gate
-- Prompt / generation gate
-- Final response gate
-
-If any Safety gate denies or reroutes the flow:
-
-- Ordinary Clinical Logic must not continue to take effect.
-- Ordinary `ClinicalPlan` must not override the Safety decision.
-- Prompt instructions must not weaken or bypass Safety.
-- Final generated output must not bypass Safety.
-
-Safety always has higher priority than:
-
-- Clinical Logic
-- `ResponseGoal`
-- Strategy
-- `ClinicalPlan`
-- Prompt
-- LLM generation result
-- Memory context
-
-Safety must not be simplified as merely "a step before ResponseGoal" or "a step before Prompt".
-
-## 5. Layer Responsibilities
-
-### Application Layer
-
-Responsibilities:
-
-- User interface.
-- API endpoints.
-- Debug display and product interaction.
-- Login, session, settings, privacy, export, delete, and feedback flows.
-- Displaying user-visible conversation and understanding artifacts.
-
-Does not own:
-
-- Memory Projection.
-- Clinical Strategy.
-- Safety risk judgement.
-- Long-term understanding generation.
-
-### Conversation Layer
-
-Responsibilities:
-
-- Receive user input.
-- Observe / Understand / Update for the current conversation.
-- Maintain realtime conversation mechanics.
-- Output conversation facts and deterministic signals.
-- Assemble trace-relevant conversation context.
-- Call Clinical Logic.
-- Pass data into reply generation.
-
-Does not own:
-
-- `ResponseGoal` decision.
-- Psychological method selection.
-- Long-term memory writes.
-- User diagnosis.
-- Response strategy expansion through legacy Conversation OS fields.
-
-Conversation Layer may output facts and deterministic signals, but it must not convert them into Clinical conclusions.
-
-### Clinical Logic Layer
-
-Responsibilities:
-
-- Consume `ClinicalContext`.
-- Make the first ordinary response decision: `ResponseGoal`.
-- Select a Strategy to fulfill the `ResponseGoal`.
-- Output `ClinicalPlan`.
-- Define question function, tone constraints, intervention boundaries, and safety notes.
-
-Does not own:
-
-- RawMemory access.
-- Memory writes.
-- Safety override.
-- Prompt text as a product layer.
-- Diagnosis, assessment, treatment plan, or clinical report.
-
-Clinical Logic may consume approved Conversation-derived signals, but it cannot modify them.
-
-### Memory & Mental Model Layer
-
-Responsibilities:
-
-- Store and evolve long-term understanding.
-- Maintain Evidence.
-- Maintain Timeline.
-- Maintain Relationship.
-- Maintain Understanding Continuity.
-- Maintain SemanticMemory and other memory-derived context.
-- Provide structured memory context into `ClinicalContext`.
-
-Does not own:
-
-- Current-turn `ResponseGoal`.
-- Clinical Strategy.
-- Safety decision.
-- Prompt construction.
-
-Memory data may support Clinical Logic through `ClinicalContext`, but Memory itself must not directly decide `ResponseGoal`.
-
-### Safety & Governance Layer
-
-Responsibilities:
-
-- Cross-cutting safety gates.
-- Product boundary enforcement.
-- Crisis / high-risk handling.
-- Privacy and data governance.
-- Access control and audit constraints.
-- Delete / forget rights.
-- Training-data isolation.
-
-Does not yield priority to:
-
-- Clinical Logic.
-- Strategy.
-- `ClinicalPlan`.
-- Prompt.
-- LLM output.
-
-Safety decisions must not be bypassed by ordinary chat behavior.
-
-## 6. Approved Conversation Signal Whitelist
-
-Architecture v1 allows only the following Conversation-derived inputs to affect `ResponseGoal`.
-
-### 6.1 `expressionDifficulty`
-
-Type:
-
-- approved decision signal
-
-Allowed effect:
-
-- may drive `help_continue_expression`
-
-Constraints:
-
-- Must remain deterministic.
-- Must remain non-diagnostic.
-- Must indicate expression-start difficulty, not psychological avoidance.
-- Must not imply user pathology.
-- Has passed real-model experience evaluation for the current scope.
-
-### 6.2 `explicitAdviceRequest`
-
-Type:
-
-- approved decision signal
-
-Allowed effect:
-
-- may drive `support_action`
-
-Constraints:
-
-- Must only represent an explicit user request for advice, choice support, wording, action, or next step.
-- Must not be inferred from vague distress alone.
-- Must not transform ordinary emotional expression into an advice request.
-- Must preserve user agency.
-
-### 6.3 `messageLength`
-
-Type:
-
-- supporting feature only
-
-Allowed effect:
-
-- may support a decision only when combined with other approved signals or explicit text conditions.
-
-Constraints:
-
-- Must not independently decide any `ResponseGoal`.
-- Must not create rules such as "short message always means clarify".
-- Must not interpret low-information input as emotion, avoidance, testing, or resistance by itself.
-
-## 7. Prohibited State/Signal Inputs
-
-The following must not influence formal `ResponseGoal` in Architecture v1:
-
-- `conversationState`
-- `opening`
-- `exploring`
-- `deepening`
-- `action`
-- `closing`
-- `relationshipStage`
-- `expressionMode`
-- `rhythm`
-- `presenceMode`
-- `continuity`
-- `sustainedTopic`
-- `sustained_topic`
-- `pauseOrEndIntent`
-- `pause_or_end_intent`
-- `memoryAvailability`
-- `emotionalIntensity`
-
-These prohibited inputs may appear in trace, dry-run observation, debug output, or review documents. They may not enter formal `ResponseGoal` decision logic.
-
-Conversation Layer may output facts and deterministic signals. Clinical Logic may consume only approved signals for `ResponseGoal`. Clinical Logic must not modify Conversation-derived facts or signals.
-
-To add any new signal to the whitelist, all of the following are required:
-
-1. Conversation Layer boundary review.
-2. Deterministic definition.
-3. Golden Dataset regression.
-4. Real-model experience evaluation.
-5. Architecture rule update.
-
-Safety is not part of the signal whitelist system. Safety remains a higher-priority cross-cutting guardrail.
-
-## 8. Legacy Freeze Definition
-
-Legacy Conversation OS freeze does not mean all code is impossible to modify.
-
-It means old strategy-carrier fields must not continue expanding as the future response strategy system.
-
-Strictly prohibited:
-
-- Adding new `EngageMode` dimensions or enum values.
-- Adding new `ExperienceGoal` / compatibility `ResponseGoal` fields.
-- Adding new `QuestionStyle` types.
-- Adding new `VoiceConstraints` strategy fields.
-- Adding `relationshipStage`.
-- Adding `rhythm`, `presenceMode`, `continuity`, or similar strategy dimensions.
-- Letting old Conversation OS strategy fields take on new Response Strategy responsibility.
-- Adding Prompt decisions that depend on legacy strategy fields.
-
-Allowed:
-
-- Bug fixes.
-- Misclassification tightening.
-- Type and null-safety fixes.
-- Wording adjustments that do not change strategy meaning.
-- Compatibility adapters that migrate behavior toward `ClinicalPlan`.
-- Removing confirmed dead code after independent review.
-
-Future response strategy must be expressed through Clinical Logic and `ClinicalPlan`.
-
-## 9. Memory and Projection Boundary
-
-Architecture v1 freezes responsibility boundaries, not final internal implementation granularity.
-
-Memory & Mental Model Layer owns:
-
-- long-term understanding,
-- Evidence,
-- Timeline,
-- Relationship,
-- Understanding Continuity,
-- SemanticMemory,
-- memory-derived context for `ClinicalContext`.
-
-Projection Framework is the current internal engineering implementation for deriving Memory V2 projections.
-
-Projection Framework is:
-
-- not a product capability,
-- not a product architecture layer,
-- not part of Clinical Logic,
-- not a direct ResponseGoal decision system.
-
-Current V1/V2 compatibility paths, Repository / Service granularity, and partially unified legacy paths do not create new layers.
-
-As long as implementation does not cross responsibility boundaries, incomplete internal consolidation does not violate Architecture v1.
-
-Memory can provide structured context into `ClinicalContext`. Memory itself must not directly decide `ResponseGoal`.
-
-## 10. Accepted Architecture Rules
-
-### R1: Reviewed Signal Whitelist Rule
-
-Unreviewed Conversation-derived state or signals must not influence `ResponseGoal`.
-
-Only signals listed in the Approved Conversation Signal Whitelist may influence `ResponseGoal`.
-
-### R2: Safety Priority Rule
-
-Safety & Governance overrides Clinical Logic, Prompt, Memory context, and LLM output.
-
-If Safety denies or reroutes, ordinary Clinical Logic must not take effect.
-
-### R3: Product Layer Rule
-
-Architecture v1 has exactly five product layers.
-
-Runtime contracts, internal objects, prompt construction, projection internals, and eval assets must not be described as product layers.
-
-### R4: Clinical Logic Ownership Rule
-
-Clinical Logic owns ordinary `ResponseGoal`, Strategy, and `ClinicalPlan`.
-
-Conversation Layer may provide facts and approved signals, but it does not decide `ResponseGoal`.
-
-### R5: Memory Boundary Rule
-
-Memory owns long-term understanding and may provide structured context. It must not directly decide ordinary `ResponseGoal`.
-
-### R6: Legacy Freeze Rule
-
-Legacy Conversation OS strategy fields are frozen. They can be maintained for compatibility, bugfixes, and migration, but not expanded for future strategy work.
-
-### R7: Prompt Boundary Rule
-
-Prompt construction is part of reply generation flow, not an architecture layer. Prompt must not become the owner of strategy decisions.
-
-### R8: Feature Flag Rule
-
-Feature flags that affect response behavior must default off unless explicitly approved for local or online rollout.
-
-Unfinished gray-box or dry-run capabilities must remain trace-only until accepted.
-
-## 11. Known Technical Debt
-
-Known Architecture v1 debt:
-
-- Candidate Conversation State vocabulary (`opening / exploring / deepening / action / closing`) exists in dry-run form but is not accepted as formal state.
-- `relationshipStage.opening` remains a known vocabulary debt and must not be mixed with candidate Conversation `opening`.
-- Legacy Conversation OS fields still exist for compatibility and trace continuity.
-- Some V1/V2 Memory paths remain compatible rather than fully unified.
-- Projection Framework internals are still implementation-oriented and may need further repository/service cleanup.
-- `memoryAvailability` and `emotionalIntensity` may appear in trace but are prohibited from influencing `ResponseGoal`.
-- `messageLength` is a supporting feature only and needs guardrails against becoming an independent decision rule.
-
-This debt does not block Architecture v1 finalization as long as the rules above are enforced.
-
-## 12. Allowed and Frozen Development Scope
-
-Allowed under Architecture v1:
-
-- Golden Dataset and experience evaluation.
-- Approved `ResponseGoal` rule correction.
-- `ClinicalContext` contract correction.
-- Safety bugfixes.
-- Compatibility-layer bugfixes.
-- Trace and observability.
-- Small reviewed experience experiments for already approved abilities.
-- Dead-code removal after independent review.
-
-Frozen / not allowed without a new review:
-
-- New Conversation State model.
-- Any unapproved signal influencing `ResponseGoal`.
-- Legacy Conversation OS strategy expansion.
-- New CBT / ACT / MI strategy implementation.
-- Memory schema deepening.
-- Graph-ready implementation.
-- Report / Assessment / Diagnosis / Treatment Plan.
-- Default-enabling feature flags without completed gray release validation.
-
-## 13. Architecture v1 Final Decision
-
-Architecture v1 is finalized as a five-layer product architecture with a separate runtime data flow.
-
-The final product architecture is:
-
-```text
-Application Layer
-Conversation Layer
-Clinical Logic Layer
-Memory & Mental Model Layer
-Safety & Governance Layer
-```
-
-The final ordinary runtime data flow is:
-
-```text
-Conversation outputs
-  -> ClinicalContext
-  -> ResponseGoal
-  -> Strategy
-  -> ClinicalPlan
-  -> Prompt construction
-  -> LLM generation
-```
-
-Safety & Governance remains cross-cutting and higher priority than the ordinary flow.
-
-Architecture v1 does not accept `opening / exploring / deepening / action / closing` as formal Conversation State.
-
-Architecture v1 does accept a reviewed whitelist of deterministic Conversation-derived signals that may influence `ResponseGoal`:
-
-- `expressionDifficulty`
-- `explicitAdviceRequest`
-- `messageLength` only as a supporting feature
-
-All other state/signal inputs are prohibited from influencing `ResponseGoal` until they pass independent boundary review, Golden Dataset regression, real-model experience evaluation, and Architecture rule update.
-
-This document is the final Architecture v1 constraint source unless superseded by a later approved architecture review.
+## 8. Current limitations
+
+- Deterministic stable-boundary patterns remain language-specific and require
+  counterexample review when expanded.
+- The optional model interpretation is best-effort; deterministic obligations
+  and stop evidence remain authoritative when it is unavailable.
+- Legacy modules are still importable for compatibility/eval tests, but static
+  checks prevent them from regaining production decision or override authority.
+- Batch 0 runtime still invokes optional Rogers advice for a narrow set of
+  Planner-selected activities; it does not yet implement the target Hill
+  applicability or cross-turn reaction loop.
+- Interaction Move Handoff v1 has stable proactive and ordinary committed-event
+  envelopes with Guest/authenticated logical round-trip, strict adjacent active
+  target projection, a target-bound current-turn User relation, a PHM-B plan
+  projection and detached exact-preflight authority. A separately marked
+  no-envelope legacy `promptVersion` compatibility path remains. PHM-C Surface
+  projection and same-plan semantic validation plus PHM-D exact frozen-plan
+  committed `fulfills` and `handoffCompleted` lookup plus PHM-E Safety
+  `supersedes` and resolved/active lookup are implemented, so the runtime now
+  claim full v1 conformance.
+- Real-model post-migration A/B output comparison requires a separately scoped
+  external-prompt authorization; local architecture and regression tests do not
+  substitute for that naturalness evidence.

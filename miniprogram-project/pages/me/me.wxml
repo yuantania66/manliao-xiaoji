@@ -7,7 +7,14 @@
     <view class="body">{{membershipText}}</view>
     <navigator url="/pages/settings/settings" class="settings-link" hover-class="none">设置</navigator>
   </view>
-  <button wx:if="{{!isLoggedIn}}" class="primary-button login-button" bindtap="login">登录</button>
+  <view wx:if="{{loginError}}" class="login-error" aria-live="assertive">{{loginError}}</view>
+  <view wx:if="{{!isLoggedIn}}" class="login-panel" role="group" aria-label="微信登录">
+    <checkbox-group class="privacy-confirm" bindchange="togglePrivacy">
+      <label><checkbox value="confirmed" checked="{{privacyConfirmed}}" color="#71877b" />我已阅读并同意</label>
+      <navigator url="/pages/privacy/privacy" class="privacy-link" hover-class="none">《隐私政策》</navigator>
+    </checkbox-group>
+    <button class="primary-button login-button" loading="{{isLoggingIn || isCheckingAuth}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="login">{{isCheckingAuth ? "正在验证..." : (isLoggingIn ? "登录中..." : "微信登录")}}</button>
+  </view>
   <navigator url="/pages/insights/insights" class="insight-entry card" hover-class="none">
     <view class="entry-title">慢聊小记观察</view>
     <view class="entry-copy">从聊天和小记里整理出的主题</view>

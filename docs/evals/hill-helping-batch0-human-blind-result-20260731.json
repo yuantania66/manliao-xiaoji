@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "chat-gate-v0-provisional-2026-07-30",
+  "reviewer": "user-human-review",
+  "reviewedBeforeKeyRead": true,
+  "adjudicationSha256": "5454a9c8a61840af7d9995e836bced04935f19c8216273c0fba5a74c4e64c0e6",
+  "keyCommitment": "32fb60b120f93b916a47c011e5abbd7655bdb67aaca7509c5c37b0512a030e47",
+  "baseline": {
+    "side": "A-repo",
+    "sourceId": "3e34257c392cce79afbd12bfe36a5fbdbe84ab6c"
+  },
+  "candidate": {
+    "side": "H0",
+    "sourceId": "hill-batch0-current-runtime"
+  },
+  "provider": "qwen",
+  "model": "qwen3.7-max",
+  "candidateSummary": {
+    "absolutePasses": 6,
+    "appropriateConversationOutcomes": 6,
+    "wouldContinue": 6,
+    "criticalFailures": 0,
+    "preferred": 3,
+    "clearlyWorse": 4
+  },
+  "baselineSummary": {
+    "absolutePasses": 9,
+    "appropriateConversationOutcomes": 10,
+    "wouldContinue": 9,
+    "criticalFailures": 0,
+    "preferred": 6,
+    "clearlyWorse": 2
+  },
+  "ties": 3,
+  "episodeRows": [
+    {
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "category": "groundedness_and_cross_turn_contamination",
+      "targetStatus": "target",
+      "candidateAbsolutePasses": 0,
+      "baselineAbsolutePasses": 3,
+      "candidateAppropriateOutcomes": 0,
+      "baselineAppropriateOutcomes": 3,
+      "candidatePreferred": 0,
+      "baselinePreferred": 3,
+      "ties": 0
+    },
+    {
+      "episodeId": "EP-20260712-REFLECT-001",
+      "category": "recorder_style_reflection",
+      "targetStatus": "target",
+      "candidateAbsolutePasses": 3,
+      "baselineAbsolutePasses": 1,
+      "candidateAppropriateOutcomes": 3,
+      "baselineAppropriateOutcomes": 1,
+      "candidatePreferred": 2,
+      "baselinePreferred": 0,
+      "ties": 1
+    },
+    {
+      "episodeId": "EP-20260712-REPAIR-001",
+      "category": "shallow_repair",
+      "targetStatus": "evidence_limited",
+      "candidateAbsolutePasses": 3,
+      "baselineAbsolutePasses": 2,
+      "candidateAppropriateOutcomes": 3,
+      "baselineAppropriateOutcomes": 3,
+      "candidatePreferred": 1,
+      "baselinePreferred": 0,
+      "ties": 2
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "category": "grounded_but_closing_acknowledgement",
+      "targetStatus": "target",
+      "candidateAbsolutePasses": 0,
+      "baselineAbsolutePasses": 3,
+      "candidateAppropriateOutcomes": 0,
+      "baselineAppropriateOutcomes": 3,
+      "candidatePreferred": 0,
+      "baselinePreferred": 3,
+      "ties": 0
+    }
+  ],
+  "checks": {
+    "criticalFailureMaximum": true,
+    "eachEpisodeAbsolutePass": false,
+    "absolutePassMinimumTotal": false,
+    "appropriateConversationOutcomeMinimum": false,
+    "clearlyWorseThanBaselineMaximum": false,
+    "eachTargetBetterThanBaseline": false
+  },
+  "applicableChecksPass": false,
+  "evidenceAvailable": {
+    "productionBaselineIdentified": false,
+    "nonTargetRealEpisode": false,
+    "heldOutRealEpisode": false
+  },
+  "fullGatePass": false,
+  "conclusion": "candidate_failed_applicable_thresholds",
+  "rows": [
+    {
+      "reviewId": "S01",
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "category": "groundedness_and_cross_turn_contamination",
+      "targetStatus": "target",
+      "runIndex": 2,
+      "candidateBlindLabel": "X",
+      "baselineBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "none",
+      "notes": ""
+    },
+    {
+      "reviewId": "S02",
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "category": "groundedness_and_cross_turn_contamination",
+      "targetStatus": "target",
+      "runIndex": 3,
+      "candidateBlindLabel": "X",
+      "baselineBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "none",
+      "notes": ""
+    },
+    {
+      "reviewId": "S03",
+      "episodeId": "EP-20260712-REPAIR-001",
+      "category": "shallow_repair",
+      "targetStatus": "evidence_limited",
+      "runIndex": 2,
+      "candidateBlindLabel": "Y",
+      "baselineBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "none",
+      "notes": "X我没法完全体会你的感受这个就在告诉用户，你说啥，我都没办法完全体会，，，，Y好一点，但是这个确实让我不知道该怎么评价"
+    },
+    {
+      "reviewId": "S04",
+      "episodeId": "EP-20260712-REPAIR-001",
+      "category": "shallow_repair",
+      "targetStatus": "evidence_limited",
+      "runIndex": 1,
+      "candidateBlindLabel": "Y",
+      "baselineBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "tie",
+      "clearlyWorse": "none",
+      "notes": ""
+    },
+    {
+      "reviewId": "S05",
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "category": "grounded_but_closing_acknowledgement",
+      "targetStatus": "target",
+      "runIndex": 2,
+      "candidateBlindLabel": "X",
+      "baselineBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "candidate",
+      "notes": ""
+    },
+    {
+      "reviewId": "S06",
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "category": "grounded_but_closing_acknowledgement",
+      "targetStatus": "target",
+      "runIndex": 3,
+      "candidateBlindLabel": "Y",
+      "baselineBlindLabel": "X",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "candidate",
+      "notes": ""
+    },
+    {
+      "reviewId": "S07",
+      "episodeId": "EP-20260712-REFLECT-001",
+      "category": "recorder_style_reflection",
+      "targetStatus": "target",
+      "runIndex": 2,
+      "candidateBlindLabel": "Y",
+      "baselineBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "baseline",
+      "notes": ""
+    },
+    {
+      "reviewId": "S08",
+      "episodeId": "EP-20260712-REFLECT-001",
+      "category": "recorder_style_reflection",
+      "targetStatus": "target",
+      "runIndex": 3,
+      "candidateBlindLabel": "Y",
+      "baselineBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "preference": "candidate",
+      "clearlyWorse": "baseline",
+      "notes": ""
+    },
+    {
+      "reviewId": "S09",
+      "episodeId": "EP-20260712-REPAIR-001",
+      "category": "shallow_repair",
+      "targetStatus": "evidence_limited",
+      "runIndex": 3,
+      "candidateBlindLabel": "X",
+      "baselineBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "tie",
+      "clearlyWorse": "none",
+      "notes": ""
+    },
+    {
+      "reviewId": "S10",
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "category": "groundedness_and_cross_turn_contamination",
+      "targetStatus": "target",
+      "runIndex": 1,
+      "candidateBlindLabel": "X",
+      "baselineBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "candidate",
+      "notes": ""
+    },
+    {
+      "reviewId": "S11",
+      "episodeId": "EP-20260712-REFLECT-001",
+      "category": "recorder_style_reflection",
+      "targetStatus": "target",
+      "runIndex": 1,
+      "candidateBlindLabel": "Y",
+      "baselineBlindLabel": "X",
+      "candidate": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "tie",
+      "clearlyWorse": "none",
+      "notes": ""
+    },
+    {
+      "reviewId": "S12",
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "category": "grounded_but_closing_acknowledgement",
+      "targetStatus": "target",
+      "runIndex": 1,
+      "candidateBlindLabel": "X",
+      "baselineBlindLabel": "Y",
+      "candidate": {
+        "absolutePass": false,
+        "appropriateConversationOutcome": false,
+        "wouldContinue": false,
+        "criticalFailures": []
+      },
+      "baseline": {
+        "absolutePass": true,
+        "appropriateConversationOutcome": true,
+        "wouldContinue": true,
+        "criticalFailures": []
+      },
+      "preference": "baseline",
+      "clearlyWorse": "candidate",
+      "notes": ""
+    }
+  ]
+}

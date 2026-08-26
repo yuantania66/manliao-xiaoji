@@ -28,13 +28,17 @@
     <button class="bottom-item {{activeTab === 'me' ? 'active' : ''}}" data-tab="me" bindtap="switchTab">我的</button>
   </view>
 
-  <view wx:if="{{showEntry}}" class="entry-layer">
+  <view wx:if="{{showEntry}}" class="entry-layer" role="dialog" aria-label="登录或选择游客模式">
     <view class="entry-mask"></view>
     <view class="entry-sheet" style="bottom: {{entryBottom}}px;">
       <view class="entry-title">欢迎来到慢聊小记</view>
       <view class="entry-copy">登录后可以同步记录，也可以先用游客模式体验。</view>
-      <view wx:if="{{entryError}}" class="entry-error">{{entryError}}</view>
-      <button class="primary-button" disabled="{{isLoggingIn}}" bindtap="handleLogin">{{isLoggingIn ? "登录中..." : "登录"}}</button>
+      <view wx:if="{{entryError}}" class="entry-error" aria-live="assertive">{{entryError}}</view>
+      <checkbox-group class="privacy-confirm" bindchange="togglePrivacy">
+        <label><checkbox value="confirmed" checked="{{privacyConfirmed}}" color="#71877b" />我已阅读并同意</label>
+        <navigator url="/pages/privacy/privacy" class="privacy-link" hover-class="none">《隐私政策》</navigator>
+      </checkbox-group>
+      <button class="primary-button" loading="{{isLoggingIn || isCheckingAuth}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="handleLogin">{{isCheckingAuth ? "正在验证..." : (isLoggingIn ? "登录中..." : "微信登录")}}</button>
       <button class="guest-text" bindtap="enterGuest">游客模式</button>
     </view>
   </view>

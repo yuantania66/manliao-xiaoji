@@ -176,6 +176,7 @@ addCheck("note create/list/detail/update/delete", async () => {
         moodName: "晴朗",
         moodIcon: "sunny",
         mediaUrls: [],
+        clientRequestId: `smoke-note-${Date.now()}`,
       }),
     }),
     "create note"
@@ -219,10 +220,27 @@ addCheck("image upload accepts png", async () => {
     "upload note image"
   );
   uploadedUrl = data.items?.[0]?.url || "";
-  if (!uploadedUrl.includes("/uploads/notes/")) throw new Error("upload note image: missing upload URL");
+  if (!uploadedUrl.includes("/api/uploads/notes/")) throw new Error("upload note image: missing upload URL");
 });
 
-addCheck("chat create/send/history/search/calendar", async () => {
+addCheck("image-only note is idempotent and deletes derived data", async () => {
+  const clientRequestId = `smoke-image-note-${Date.now()}`;
+  const payload = { content: "", mediaUrls: [uploadedUrl], clientRequestId };
+  const created = expectOk(await request("/api/notes", { method: "POST", body: JSON.stringify(payload) }), "create image-only note");
+  const replay = expectOk(await request("/api/notes", { method: "POST", body: JSON.stringify(payload) }), "replay image-only note");
+  if (replay.id !== created.id) throw new Error("image-only note: idempotent replay created a duplicate");
+
+  expectStatus(await request("/api/notes", { method: "POST", body: JSON.stringify({ ...payload, content: "different" }) }), 409, "idempotency conflict");
+  const rawCount = await prisma.rawMemory.count({ where: { userId, sourceId: created.id } });
+  if (rawCount !== 0) throw new Error("image-only note: text RawMemory must not be created");
+
+  expectOk(await request(`/api/notes/${created.id}`, { method: "DELETE" }), "delete image-only note");
+  expectStatus(await request(new URL(uploadedUrl).pathname + new URL(uploadedUrl).search), 404, "deleted note upload");
+  if (await prisma.noteUpload.count({ where: { userId, noteId: created.id } })) throw new Error("deleted note: upload row remains");
+  uploadedUrl = "";
+});
+
+if (process.env.LOCAL_API_SMOKE_NOTES_ONLY !== "1") addCheck("chat create/send/history/search/calendar", async () => {
   const session = expectOk(
     await request("/api/chat/sessions", {
       method: "POST",

@@ -76,7 +76,10 @@ export async function POST(request: NextRequest) {
         updatedAt: true,
       },
     });
-    await ensureProactiveChatGreeting({ sessionId: session.id, userId: user.id });
+    const greetingResult = await ensureProactiveChatGreeting({
+      sessionId: session.id,
+      userId: user.id,
+    });
 
     return ok(
       {
@@ -84,6 +87,9 @@ export async function POST(request: NextRequest) {
         title: session.title,
         createdAt: session.createdAt.toISOString(),
         updatedAt: session.updatedAt.toISOString(),
+        greetingStatus: greetingResult.status === "retryable_failure"
+          ? greetingResult.systemStatus
+          : null,
       },
       201
     );

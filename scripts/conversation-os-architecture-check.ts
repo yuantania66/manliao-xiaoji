@@ -5,7 +5,14 @@ import { join } from "node:path";
 const ROOTS = ["app", "services", "conversation-os"];
 const ALLOWED_LLM_CALL_FILES = new Set([
   "services/ai/aiService.ts",
+  "services/ai/turnInterpretationAdapter.ts",
+  "services/helping/hillHelpingDecisionService.ts",
   "services/ai/proactiveGreeting.ts",
+  "services/ai/chatSafety.ts",
+  "services/ai/purposeSubjectOwnershipAuthority.ts",
+  "services/ai/interactionMoveHandoffOutputValidator.ts",
+  "services/ai/plannedFunctionSemanticValidator.ts",
+  "services/memory/episodeSummaryService.ts",
   "services/understanding/extractService.ts",
   "services/experience/experienceExtractorService.ts",
 ]);
@@ -24,7 +31,7 @@ const llmCallFiles = files.filter((file) => readFileSync(file, "utf8").includes(
 for (const file of llmCallFiles) {
   assert(
     ALLOWED_LLM_CALL_FILES.has(file),
-    `Unexpected direct LLM call in ${file}. Normal chat replies must go through conversation-os pipeline.`
+    `Unexpected direct LLM call in ${file}. Every model call requires an explicit architecture owner and bounded role.`
   );
 }
 
@@ -33,16 +40,57 @@ for (const file of files.filter((file) => file.startsWith("app/api/chat/"))) {
   assert(!content.includes("callModel("), `${file} must not call LLM directly.`);
 }
 
+const chatSafety = readFileSync("services/ai/chatSafety.ts", "utf8");
+assert.equal(
+  (chatSafety.match(/callModel\(/g) ?? []).length,
+  1,
+  "Safety semantic triage may have only one structured provider call site."
+);
+
+const purposeSubjectOwnershipAuthority = readFileSync(
+  "services/ai/purposeSubjectOwnershipAuthority.ts",
+  "utf8"
+);
+assert.equal(
+  (purposeSubjectOwnershipAuthority.match(/callModel\(/g) ?? []).length,
+  1,
+  "Purpose Subject-Ownership Authority may have only one bounded structured provider call site."
+);
+assert(
+  purposeSubjectOwnershipAuthority.includes("responseFormat: \"json_object\"") &&
+    purposeSubjectOwnershipAuthority.includes("provider_not_authorized") &&
+    purposeSubjectOwnershipAuthority.includes("current_user_self") &&
+    !purposeSubjectOwnershipAuthority.includes("createResponsePlan(") &&
+    !purposeSubjectOwnershipAuthority.includes("generateChatReply("),
+  "Purpose Subject-Ownership must remain a strict local/eval authority, not Planner or Surface."
+);
+
+const episodeSummaryService = readFileSync("services/memory/episodeSummaryService.ts", "utf8");
+assert.equal(
+  (episodeSummaryService.match(/callModel\(/g) ?? []).length,
+  1,
+  "Episode Summary may have only one bounded structured provider call site."
+);
+assert(
+  episodeSummaryService.includes("committedMessages") &&
+    episodeSummaryService.includes("sourceMessageIds") &&
+    !episodeSummaryService.includes("createResponsePlan(") &&
+    !episodeSummaryService.includes("generateChatReply("),
+  "Episode Summary must remain a committed-message memory writer, not Planner or Surface."
+);
+assert(
+  chatSafety.includes("只做判定，不生成回复") &&
+    !chatSafety.includes("createResponsePlan(") &&
+    !chatSafety.includes("generateChatReply("),
+  "Safety semantic triage must remain a non-writer and must not become Planner or Surface."
+);
+
 const aiService = readFileSync("services/ai/aiService.ts", "utf8");
-const pipelineIndex = aiService.indexOf("runConversationPipeline(");
 const callModelIndex = aiService.indexOf("callModel(");
 
-assert(pipelineIndex >= 0, "generateChatReply must invoke runConversationPipeline().");
 assert(callModelIndex >= 0, "generateChatReply must still delegate language generation to the LLM.");
-assert(
-  pipelineIndex < callModelIndex,
-  "runConversationPipeline() must wrap the normal chat LLM call."
-);
+assert(!aiService.includes("runConversationPipeline("), "Surface Realization must not invoke the legacy Engage decision owner.");
+assert(aiService.includes("responsePlan"), "Surface Realization must receive the one finalized ResponsePlan.");
 
 const callModelCount = (aiService.match(/callModel\(/g) ?? []).length;
 assert.equal(
@@ -51,10 +99,62 @@ assert.equal(
   "Normal chat generation must not add extra direct LLM repair/rewrite calls outside the pipeline."
 );
 
+const helpingDecisionService = readFileSync("services/helping/hillHelpingDecisionService.ts", "utf8");
+assert.equal(
+  (helpingDecisionService.match(/callModel\(/g) ?? []).length,
+  1,
+  "Helping Logic may have only one structured provider call site."
+);
+assert(
+  helpingDecisionService.includes("Output JSON only") &&
+    helpingDecisionService.includes("never write final chat copy"),
+  "Helping Logic provider must be constrained to a structured domain decision, not final copy."
+);
+
+const handoffValidator = readFileSync("services/ai/interactionMoveHandoffOutputValidator.ts", "utf8");
+const plannedFunctionValidator = readFileSync("services/ai/plannedFunctionSemanticValidator.ts", "utf8");
+assert.equal(
+  (plannedFunctionValidator.match(/callModel\(/g) ?? []).length,
+  1,
+  "Planned Function Semantic Validation may have only one structured provider call site."
+);
+assert(
+  plannedFunctionValidator.includes("same-plan semantic verifier") &&
+    plannedFunctionValidator.includes("not a response writer") &&
+    plannedFunctionValidator.includes("provider_failure") &&
+    plannedFunctionValidator.includes("malformed_verdict") &&
+    plannedFunctionValidator.includes("binding_mismatch") &&
+    plannedFunctionValidator.includes("uncertain"),
+  "Planned-function validation must remain an explicit same-plan, non-writer, fail-closed hard verifier with advisory quality findings."
+);
+assert(
+  !plannedFunctionValidator.includes("createResponsePlan(") &&
+    !plannedFunctionValidator.includes("generateChatReply("),
+  "Planned-function validation must not become a second Planner or Surface."
+);
+assert(
+  plannedFunctionValidator.indexOf("inspectPromptBeforeExternalCall(") < plannedFunctionValidator.indexOf("callModel("),
+  "Planned-function validation must inspect its structured prompt before its external model call."
+);
+assert.equal((handoffValidator.match(/callModel\(/g) ?? []).length, 0,
+  "Legacy handoff validation adapter must delegate to the canonical planned-function provider.");
+
+const chatOrchestration = readFileSync("services/ai/chatOrchestrationService.ts", "utf8");
+assert.equal(
+  (chatOrchestration.match(/createResponsePlan\(/g) ?? []).length,
+  1,
+  "The normal chat pipeline must retain exactly one Response Planner call site."
+);
+assert(
+  !helpingDecisionService.includes("createResponsePlan(") &&
+    !helpingDecisionService.includes("generateChatReply("),
+  "Helping Logic must not become a second final Planner or Surface."
+);
+
 const promptBuilder = readFileSync("services/ai/promptBuilder.ts", "utf8");
 assert(
-  promptBuilder.includes("Conversation OS Context"),
-  "LLM prompt composition must receive Conversation OS context."
+  promptBuilder.includes("Conversation OS ResponsePlan"),
+  "LLM prompt composition must receive the single Conversation OS ResponsePlan."
 );
 
 const conversationTypes = readFileSync("conversation-os/types.ts", "utf8");
@@ -70,7 +170,7 @@ const assertFrozenUnion = (typeName: string, expected: string[]) => {
   assert.deepEqual(
     readUnionMembers(conversationTypes, typeName),
     expected,
-    `${typeName} is legacy/frozen/do not extend. Future response strategy must use ClinicalPlan.`
+    `${typeName} is legacy/frozen/do not extend. Production response strategy must use ResponsePlan.`
   );
 };
 
@@ -115,7 +215,7 @@ const voiceConstraintFields = Array.from(voiceConstraintsMatch[1].matchAll(/^\s{
 assert.deepEqual(
   voiceConstraintFields,
   ["source", "styleDirectives", "rhythm", "prohibitedExpressions", "questionDirectives"],
-  "AiVoiceConstraints is legacy/frozen/do not extend. Future response strategy must use ClinicalPlan."
+  "AiVoiceConstraints is legacy/frozen/do not extend. Production response strategy must use ResponsePlan."
 );
 assert(
   voiceConstraintsMatch[1].includes('source: "voice_layer_v1"'),
@@ -126,7 +226,7 @@ console.log(
   JSON.stringify(
     {
       llmCallFiles,
-      normalChatPipeline: "runConversationPipeline -> callModel",
+      normalChatPipeline: "SafetyGate -> ContextAssembly -> TurnInterpretation -> DialogueState -> HelpingLogicShadow -> ResponsePlanner -> SurfaceRealization -> OutputValidation -> StateUpdate",
       frozenLegacyStrategyFields: {
         engageMode: readUnionMembers(conversationTypes, "EngageMode").length,
         experienceGoal: readUnionMembers(conversationTypes, "ExperienceGoal").length,

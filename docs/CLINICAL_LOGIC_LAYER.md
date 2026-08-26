@@ -1,6 +1,83 @@
 # Clinical Logic Layer
 
-## Positioning
+状态：Hill 目标合同已批准；批次 1 Shadow 于 2026-08-01 技术验收通过；Batch 2A `B2-Contract` 与 Batch 2B fixture-only association gate 于 2026-08-04 通过
+
+日期：2026-08-01
+
+## Approved Target Contract
+
+慢聊聊天中的 Clinical Logic Layer 以 Helping Logic 形式实现
+[Hill 助人过程产品契约](./HILL_HELPING_PROCESS_PRODUCT_CONTRACT_V1.md)。
+
+它不是 Planner 按少数情绪关键词选择性调用的措辞建议器。每个普通非 Safety
+话轮都必须到达 Helping 适用性边界，并得到：
+
+```text
+HillHelpingDecision =
+  decided(HillHelpingPlan)
+  | failed(explicit failure)
+```
+
+成功决定可以是 `not_applicable`，此时保持普通聊天。适用时，Helping Logic
+负责：
+
+- 评估相关上一助人行动与当前反应；
+- 判断探索、领悟或行动目标；
+- 检查准备度与反证；
+- 形成意图并选择受合同约束的技术；
+- 处理当前 AI—用户关系修复；
+- 完成 Helper Self Check；
+- 输出证据、禁用动作与重新评估条件。
+
+领域边界：
+
+- Conversation OS 负责事实、共同理解、直接义务、用户控制和普通对话动作；
+- Helping Logic 负责 Hill 领域决定；
+- Response Planner 汇总唯一 `ResponsePlan`，不得改写 Hill 方法；
+- Surface 只表达已确定计划；
+- Validator 只做同计划验证；
+- Safety 可以覆盖普通 Helping；
+- Memory、小记、长期人格和诊断不进入本次迁移。
+
+Hill 是三类流动目标，不是 `exploration -> insight -> action` 的固定状态机。
+行动可以在用户明确请求时直接开始；领悟必须受准备度、证据、协作性和可撤回性
+约束。
+
+目标数据合同、Shadow 隔离、正式失败语义、`CommittedHelpingMove` 和批次顺序
+以
+[第三阶段架构迁移计划](./HILL_HELPING_PROCESS_ARCHITECTURE_MIGRATION_PLAN_V1.md)
+为准。
+
+### Current Batch 1 Runtime Boundary
+
+当前实现已经增加：
+
+- 严格的 `HillHelpingInput`、`HillHelpingPlan`、`HillHelpingDecision` 和
+  Helper Self Check 类型；
+- 来自当前会话 Context、Interpretation、Dialogue State、直接义务、显式用户边界
+  和当前关系证据的输入构建；
+- 无上下文碎片的确定性 `uncertain` 边界，以及无已建立助人话题的确定性身份、能力、
+  词义问题 `not_applicable` 边界；
+- 其余话轮至多一次结构化 Helping provider 调用和严格 schema / goal-intention-skill /
+  用户边界校验；
+- `invalid_input`、`invalid_plan`、`provider_failure`、`timeout` 四类显式失败；
+- 独立 Shadow trace 和 `HILL_HELPING_SHADOW` 开关，默认关闭。
+
+当前实现明确没有：
+
+- 把 Shadow 结果写入 `ResponsePlan`、Surface prompt 或正式会话状态；
+- 让 Helping Logic 选择普通聊天动作；
+- 写入或读取 `CommittedHelpingMove`；
+- 改变用户可见回复；
+- 启用批次 1.5、2 或 3 的能力。
+
+## Legacy v1 Compatibility Inventory
+
+以下内容记录 Batch 0 之前的八策略、`ClinicalContext`、`ClinicalPlan` 和固定调度
+规则，目的是保持历史测试和旧 trace 可解释。它们不是批准的目标产品模型，不得
+继续扩展，也不得与 `HillHelpingPlan` 同轮生效。
+
+### Former Positioning
 
 Clinical Logic Layer 是 Conversation OS 和 LLM 之间的专业助人策略层。
 
@@ -35,7 +112,7 @@ Clinical Logic Layer 不是临床诊断系统。
 - 不提供医疗建议。
 - 不进行疾病评估或治疗承诺。
 
-## Methodology Sources
+## Legacy Methodology Sources
 
 只允许引用成熟助人 / 心理沟通框架。
 
@@ -54,7 +131,7 @@ Clinical Logic Layer 不是临床诊断系统。
 - 不把产品内部分类包装成心理学理论。
 - 不把策略名称直接暴露给用户。
 
-## Strategy Definition Interface
+## Legacy Strategy Definition Interface
 
 ```ts
 interface ClinicalStrategyDefinition {
@@ -81,7 +158,7 @@ interface ClinicalStrategyDefinition {
 风险是什么
 ```
 
-## First Strategy Set
+## Legacy First Strategy Set
 
 第一版策略集合控制在 8 个以内。
 
@@ -457,7 +534,7 @@ type ClinicalStrategy =
 }
 ```
 
-## Strategy Scheduling Input
+## Legacy Strategy Scheduling Input
 
 Clinical Logic Layer 的输入来自 Conversation OS。
 
@@ -484,7 +561,7 @@ interface ClinicalContext {
 - `ambiguityLevel` 用于判断 Clarification / Supportive Pause / Reflection 的边界。
 - `riskSignal` 一旦高危，Safety 层优先于 Clinical Logic。
 
-## Strategy Output
+## Legacy Strategy Output
 
 Clinical Logic Layer 输出策略计划，不输出最终文案。
 
@@ -515,7 +592,7 @@ interface ClinicalPlan {
 - `shouldAskQuestion`：是否允许提问。
 - `questionFunction`：如果提问，问题服务于什么功能。
 
-## Scheduling Principles
+## Legacy Scheduling Principles
 
 1. Safety first.
 
@@ -541,7 +618,9 @@ interface ClinicalPlan {
 
 每个问题必须服务于 clarify、explore_experience、repair_understanding 或 support_user_agency。
 
-## Relationship to Current Conversation OS
+## Legacy Relationship to Current Conversation OS
+
+以下是旧文档当时的迁移建议，仅用于解释兼容字段，不代表当前目标：
 
 当前已有概念重新定位：
 
@@ -563,7 +642,7 @@ Clinical Logic Layer 不做：
 - 安全危机处置。
 - 最终回复文案生成。
 
-## MVP Acceptance Criteria
+## Legacy MVP Acceptance Criteria
 
 Phase 1 的 Clinical Logic Layer 只需要做到：
 
@@ -573,3 +652,16 @@ Phase 1 的 Clinical Logic Layer 只需要做到：
 - 每个策略有明确 when_to_use / when_not_to_use / risks。
 - Safety 高危时不参与普通策略调度。
 - Trace 中能看到策略选择与 rationale。
+
+以上是历史兼容验收，不是 Hill 批次 1 的验收门。批次 1 的实际证据见
+[批次 1 验收报告](./evals/hill-helping-batch1-acceptance.md)。批次 1.5 候选实现的
+自动证据见[批次 1.5 自动验收报告](./evals/hill-helping-batch1-5-automatic-acceptance.md)。
+它只允许 `uncertain` 适用性边界交给普通 Planner，保持
+`behaviorSource=ordinary_conversation`，不启用 Hill 目标、技术或正式助人状态。早期
+人工盲审与候选 1—6 未达到冻结阈值的结果保留为历史证据；后续 Planner、Surface
+边界和 Validator 最小修复已在 Batch 1.5-E 完整冻结门达到 60/60 Functional、60/60
+Machine Validator、0 constraint failure 和 5/60 regeneration，并于 2026-08-04
+标记 `passed_and_closed`。Batch 2 仅获批 infrastructure-only，不启用用户可见 Hill
+行为。Batch 2A 冻结 versioned formal Helping metadata、严格 parser 和
+formal/Shadow 隔离；Batch 2B 只增加 fixture-only 有界加载和 target-bound semantic
+association，尚未接入历史 Helping 决策、reaction/impact 状态或正式生产写入。

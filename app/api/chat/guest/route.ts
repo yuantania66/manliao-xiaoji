@@ -3,6 +3,13 @@ import { NextRequest } from "next/server";
 import { failFromError, ok } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
 import { requireNonEmptyString } from "@/lib/validation";
+import {
+  activeHandoff,
+  buildCommittedResponseMove,
+  buildResponsePlanAssistantMoveEnvelope,
+  buildSafetyAssistantMoveEnvelope,
+  parseCommittedAssistantMoveEnvelope,
+} from "@/conversation-os";
 import { createChatReply } from "@/services/ai/chatOrchestrationService";
 import { AiConversationMessage, AiJudgeResult } from "@/services/ai/types";
 
@@ -13,6 +20,7 @@ type GuestRateLimitRecord = {
 
 type GuestRateLimitGlobal = typeof globalThis & {
   __manliaoGuestAiRateLimit?: Map<string, GuestRateLimitRecord>;
+  __manliaoGuestTurnExecutions?: Map<string, Promise<Record<string, unknown>>>;
 };
 
 const getGuestIpDailyLimit = () => {
@@ -34,6 +42,14 @@ const getRateLimitStore = () => {
     storeGlobal.__manliaoGuestAiRateLimit = new Map();
   }
   return storeGlobal.__manliaoGuestAiRateLimit;
+};
+
+const getGuestTurnExecutionStore = () => {
+  const storeGlobal = globalThis as GuestRateLimitGlobal;
+  if (!storeGlobal.__manliaoGuestTurnExecutions) {
+    storeGlobal.__manliaoGuestTurnExecutions = new Map();
+  }
+  return storeGlobal.__manliaoGuestTurnExecutions;
 };
 
 const getClientIp = (request: NextRequest) => {
@@ -82,22 +98,36 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
   if (!Array.isArray(value)) return [];
 
   return value
-    .slice(-8)
+    .slice(-24)
     .flatMap((item) => {
       if (typeof item !== "object" || item === null) return [];
       const record = item as Record<string, unknown>;
       const role = record.role;
+      const id = record.id;
       const content = record.content;
       const promptVersion = record.promptVersion;
       const aiGenerationId = record.aiGenerationId;
+      const createdAt = record.createdAt;
+      const status = record.status;
+      const parsedEnvelope = parseCommittedAssistantMoveEnvelope(
+        record.interactionMoveEnvelope
+      );
       if (role !== "user" && role !== "assistant" && role !== "system") return [];
       if (typeof content !== "string" || !content.trim()) return [];
+      if (role === "system" || status === "blocked") return [];
       return [
         {
+          id: typeof id === "string" ? id : undefined,
           role,
           content: content.trim().slice(0, 2000),
           promptVersion: typeof promptVersion === "string" ? promptVersion : null,
           aiGenerationId: typeof aiGenerationId === "string" ? aiGenerationId : null,
+          createdAt: typeof createdAt === "string" ? createdAt : undefined,
+          status: status === "saved" || status === "rewritten" || status === "fallback"
+            ? status
+            : undefined,
+          interactionMoveEnvelope:
+            parsedEnvelope.status === "valid" ? parsedEnvelope.envelope : undefined,
         },
       ];
     });
@@ -124,31 +154,118 @@ export async function POST(request: NextRequest) {
   try {
     const body = await readJson(request);
     const content = requireNonEmptyString(body.content, "content", 2000);
+    const suppliedTurnId = typeof body.turnId === "string" ? body.turnId.trim() : "";
+    const turnId = /^[a-zA-Z0-9:_-]{8,160}$/.test(suppliedTurnId)
+      ? suppliedTurnId
+      : `guest-turn-${crypto.randomUUID()}`;
     const recentMessages = normalizeRecentMessages(body.recentMessages);
+    const retrying = body.retry === true;
     const includeDebugTrace = shouldIncludeDebugTrace(request, body);
     const rateLimit = includeDebugTrace ? null : assertGuestIpLimit(request);
-    const createdAt = new Date().toISOString();
-    const reply = await createChatReply({
-      conversationId: "guest-session",
-      userMessage: content,
-      recentMessages,
-      includeDebugTrace,
-    });
-    if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
-
-    return ok({
-      assistantMessage: {
-        id: `guest-ai-${Date.now()}`,
-        role: "assistant",
-        content: reply.generation.text,
-        createdAt,
-        promptVersion: reply.generation.promptVersion,
-      },
-      judge: serializeJudge(reply.judge),
-      fallbackUsed: reply.fallbackUsed,
-      rewriteAttempted: reply.rewriteAttempted,
-      debugTrace: reply.debugTrace,
-    });
+    const store = getGuestTurnExecutionStore();
+    if (store.size > 1000) store.delete(store.keys().next().value ?? "");
+    const existing = store.get(turnId);
+    const execution = existing ?? (async () => {
+      const createdAt = new Date().toISOString();
+      const reply = await createChatReply({
+        conversationId: "guest-session",
+        currentTurnId: turnId,
+        retrying,
+        userMessage: content,
+        recentMessages,
+        includeDebugTrace,
+      });
+      if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
+      if (reply.execution.phase !== "VALIDATED") {
+        if (includeDebugTrace) {
+          console.error("guest chat execution failed", {
+            phase: reply.execution.phase,
+            failure: reply.execution.failure,
+            validationFailures: reply.controlTrace?.validation.flatMap(
+              (validation) => validation.failureReasons
+            ),
+          });
+        }
+        const { toUserSafeExecutionStatus } = await import("@/services/ai/chatExecutionLifecycle");
+        return {
+          status: "failed",
+          systemStatus: toUserSafeExecutionStatus(reply.execution),
+          debugTrace: reply.debugTrace,
+        };
+      }
+      const assistantMoveId = `guest-ai-${turnId}`;
+      const committedMove = buildCommittedResponseMove({
+        plan: reply.controlTrace?.responsePlan,
+        replyText: reply.generation.text,
+        sourceUserTurnId: turnId,
+        planId: reply.execution.planId,
+        requestId: reply.execution.requestId,
+      });
+      const adjacentAssistantId = recentMessages.at(-1)?.id;
+      const interactionMoveEnvelope = reply.finalSource === "safety"
+        ? adjacentAssistantId && activeHandoff(
+            adjacentAssistantId,
+            turnId,
+            [...recentMessages, { id: turnId, role: "user", content }]
+          )
+          ? buildSafetyAssistantMoveEnvelope({
+              assistantMoveId,
+              safetyTraceId: reply.execution.requestId,
+              sourceUserTurnId: turnId,
+              committedMove,
+              sourceAssistantMoveId: adjacentAssistantId,
+            })
+          : null
+        : buildResponsePlanAssistantMoveEnvelope({
+            assistantMoveId,
+            planId: reply.execution.planId,
+            sourceUserTurnId: turnId,
+            committedMove,
+            handoffCommitEvidence: reply.controlTrace
+              ? {
+                  executionPhase: "VALIDATED",
+                  finalAttemptPhase: reply.execution.attempts.at(-1)?.phase ?? null,
+                  executionPlanId: reply.execution.planId,
+                  executionTurnId: reply.execution.turnId,
+                  responsePlan: reply.controlTrace.responsePlan,
+                  finalValidation: reply.execution.attempts.at(-1)?.validation ?? null,
+                }
+              : null,
+          });
+      const committedExecution = {
+        ...reply.execution,
+        phase: "COMMITTED" as const,
+        transitions: [
+          ...reply.execution.transitions,
+          {
+            phase: "COMMITTED" as const,
+            reason: "Validated guest reply committed to the client-scoped conversation event stream.",
+          },
+        ],
+        committedMessageId: assistantMoveId,
+        ...(interactionMoveEnvelope ? { interactionMoveEnvelope } : {}),
+      };
+      if (reply.debugTrace) reply.debugTrace.execution = committedExecution;
+      return {
+        status: "committed",
+        assistantMessage: {
+          id: assistantMoveId,
+          role: "assistant",
+          content: reply.generation.text,
+          createdAt,
+          promptVersion: reply.generation.promptVersion,
+          interactionMoveEnvelope,
+        },
+        judge: serializeJudge(reply.judge),
+        fallbackUsed: reply.fallbackUsed,
+        rewriteAttempted: reply.rewriteAttempted,
+        debugTrace: reply.debugTrace,
+      };
+    })();
+    if (!existing) store.set(turnId, execution);
+    const payload = await execution;
+    if (payload.status === "failed") store.delete(turnId);
+    return ok(payload);
   } catch (error) {
     return failFromError(error);
   }

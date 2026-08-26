@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+import { Prisma } from "@prisma/client";
 import { NextRequest } from "next/server";
 
 import { failFromError, ok } from "@/lib/api-response";
@@ -6,6 +8,7 @@ import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { isValidDateOnly, parsePagination, requireNonEmptyString } from "@/lib/validation";
 import { createRawMemoryFromNote } from "@/services/memory/rawMemoryService";
+import { tokenMatches, uploadIdFromUrl } from "@/app/api/uploads/notes/storage";
 
 const readJson = async (request: Request) => {
   try {
@@ -46,6 +49,17 @@ const parseOptionalString = (value: unknown, field: string, maxLength: number) =
     });
   }
   return trimmed || null;
+};
+
+const parseContent = (value: unknown) => {
+  if (typeof value !== "string") {
+    throw new AppError("VALIDATION_ERROR", "content 必须是字符串", 400, { field: "content" });
+  }
+  const content = value.trim();
+  if (content.length > 500) {
+    throw new AppError("VALIDATION_ERROR", "content 不能超过 500 个字符", 400, { field: "content", maxLength: 500 });
+  }
+  return content;
 };
 
 const parseMediaUrls = (value: unknown) => {
@@ -163,7 +177,8 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireUser(request);
     const body = await readJson(request);
-    const content = requireNonEmptyString(body.content, "content", 500);
+    const content = parseContent(body.content);
+    const clientRequestId = requireNonEmptyString(body.clientRequestId, "clientRequestId", 128);
     const recordDate = parseRecordDate(body.recordDate);
     const moodName = parseOptionalString(body.moodName, "moodName", 20);
     const moodIcon = parseOptionalString(body.moodIcon, "moodIcon", 20);
@@ -182,36 +197,81 @@ export async function POST(request: NextRequest) {
               });
             })();
 
-    const note = await prisma.note.create({
-      data: {
-        userId: user.id,
-        content,
-        recordDate,
-        moodName,
-        moodIcon,
-        mediaUrls,
-        coreEventIds,
-        emotionSliceIds,
-        generatedFromChatIds,
-        isDraft,
-      },
-      select: {
-        id: true,
-        content: true,
-        moodName: true,
-        moodIcon: true,
-        mediaUrls: true,
-        recordDate: true,
-        coreEventIds: true,
-        emotionSliceIds: true,
-        generatedFromChatIds: true,
-        isDraft: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    if (!content && (!mediaUrls || mediaUrls.length === 0)) {
+      throw new AppError("VALIDATION_ERROR", "文字和图片至少需要一项", 400);
+    }
 
-    if (!note.isDraft) {
+    const uploadIds = (mediaUrls ?? []).map(uploadIdFromUrl);
+    if (uploadIds.some((id) => !id) || new Set(uploadIds).size !== uploadIds.length) {
+      throw new AppError("VALIDATION_ERROR", "mediaUrls 包含无效或重复的上传地址", 400, { field: "mediaUrls" });
+    }
+    const requestOrigin = new URL(request.url).origin;
+    if ((mediaUrls ?? []).some((value) => new URL(value, requestOrigin).origin !== requestOrigin)) {
+      throw new AppError("VALIDATION_ERROR", "mediaUrls 必须来自当前服务", 400, { field: "mediaUrls" });
+    }
+
+    const requestHash = createHash("sha256").update(JSON.stringify({
+      content,
+      recordDate: recordDate.toISOString(),
+      moodName,
+      moodIcon,
+      mediaUrls: mediaUrls ?? [],
+      coreEventIds: coreEventIds ?? [],
+      emotionSliceIds: emotionSliceIds ?? [],
+      generatedFromChatIds: generatedFromChatIds ?? [],
+      isDraft,
+    })).digest("hex");
+
+    const existing = await prisma.note.findUnique({
+      where: { userId_clientRequestId: { userId: user.id, clientRequestId } },
+    });
+    if (existing) {
+      if (existing.requestHash !== requestHash) {
+        throw new AppError("CONFLICT", "该保存请求已用于另一份小记", 409);
+      }
+      return ok(serializeNote(existing));
+    }
+
+    let note;
+    try {
+      note = await prisma.$transaction(async (tx) => {
+        if (uploadIds.length) {
+          const ownedUploads = await tx.noteUpload.findMany({
+            where: { id: { in: uploadIds as string[] }, userId: user.id, noteId: null },
+            select: { id: true, accessTokenHash: true },
+          });
+          const uploadById = new Map(ownedUploads.map((upload) => [upload.id, upload]));
+          const tokensMatch = (mediaUrls ?? []).every((url, index) => {
+            const token = new URL(url, requestOrigin).searchParams.get("token") ?? "";
+            const upload = uploadById.get(uploadIds[index] as string);
+            return Boolean(upload && tokenMatches(token, upload.accessTokenHash));
+          });
+          if (ownedUploads.length !== uploadIds.length || !tokensMatch) {
+            throw new AppError("VALIDATION_ERROR", "图片不存在、已被使用或不属于当前用户", 400, { field: "mediaUrls" });
+          }
+        }
+        const created = await tx.note.create({
+          data: { userId: user.id, clientRequestId, requestHash, content, recordDate, moodName, moodIcon, mediaUrls, coreEventIds, emotionSliceIds, generatedFromChatIds, isDraft },
+        });
+        if (uploadIds.length) {
+          const bound = await tx.noteUpload.updateMany({
+            where: { id: { in: uploadIds as string[] }, userId: user.id, noteId: null },
+            data: { noteId: created.id },
+          });
+          if (bound.count !== uploadIds.length) throw new AppError("CONFLICT", "图片已被其他保存请求使用", 409);
+        }
+        return created;
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        const replay = await prisma.note.findUnique({ where: { userId_clientRequestId: { userId: user.id, clientRequestId } } });
+        if (replay?.requestHash === requestHash) return ok(serializeNote(replay));
+        throw new AppError("CONFLICT", "该保存请求已用于另一份小记", 409);
+      }
+      throw error;
+    }
+
+    if (!note.isDraft && note.content.trim()) {
       await createRawMemoryFromNote({
         noteId: note.id,
         metadata: { source: "notes_api_post" },

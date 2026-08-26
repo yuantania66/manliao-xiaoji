@@ -19,15 +19,16 @@ const responseGoalSelectorSource = readFileSync("services/clinical/responseGoalS
 const rogersStrategySource = readFileSync("services/clinical/rogersStrategy.ts", "utf8");
 const legacyAiServiceSource = readFileSync("services/ai/aiService.ts", "utf8");
 
-const safetyBranchIndex = orchestration.indexOf("if (isCrisisInput(userMessage))");
+const safetyBranchIndex = orchestration.indexOf("const safetyTriage = await triageSafety({");
 const clinicalContextIndex = orchestration.indexOf("const clinicalContext = buildClinicalContext");
-const clinicalPlanIndex = orchestration.indexOf("const clinicalPlan = createClinicalPlan");
+const responsePlanIndex = orchestration.indexOf("const plan = createResponsePlan");
 const generateIndex = orchestration.indexOf("generateChatReply({");
 
-assert(safetyBranchIndex >= 0, "Safety gate must remain in createChatReply().");
-assert(clinicalContextIndex > safetyBranchIndex, "Ordinary ClinicalContext must be built after Safety gate.");
-assert(clinicalPlanIndex > clinicalContextIndex, "ClinicalPlan must be created from ClinicalContext.");
-assert(generateIndex > clinicalPlanIndex, "ClinicalPlan must be created before Prompt Builder / LLM generation.");
+assert(safetyBranchIndex >= 0, "Safety triage must remain in createChatReply().");
+assert(responsePlanIndex > safetyBranchIndex, "ResponsePlan must be created after Safety gate.");
+assert(clinicalContextIndex > responsePlanIndex, "ClinicalContext must exist only inside the Planner's optional advice callback.");
+assert(generateIndex > responsePlanIndex, "ResponsePlan must be created before Prompt Builder / LLM generation.");
+assert(!orchestration.includes("createClinicalPlan("), "Production orchestration must not run the legacy Clinical ResponseGoal selector.");
 assert(promptBuilder.includes("CLINICAL_PLAN_PROMPT_ENABLED"), "ClinicalPlan prompt injection must be feature-flagged.");
 assert(
   responseGoalSelectorSource.includes('import { isUserCorrection } from "./userCorrectionSignal";'),
@@ -343,6 +344,21 @@ const numericContext = buildClinicalContext({
 const numericPlan = createClinicalPlan(numericContext);
 assert.equal(numericContext.signals.messageLength, "SHORT", "Pure numeric input must set messageLength=SHORT.");
 assert.equal(numericPlan.responseGoal, "clarify", "Pure numeric input must remain clarify.");
+assert.equal(numericContext.signals.semanticEvidence.status, "insufficient");
+assert.equal(numericPlan.responseIntent, "receive", "Insufficient semantic evidence must remain at observation.");
+assert.equal(numericPlan.questionFunction, "none", "Observation must not force a meaning question.");
+assert(
+  numericPlan.toneConstraint.includes(
+    "remain at observation until the user or active conversation context establishes meaning."
+  ),
+  "Insufficient evidence must carry the observation contract in ClinicalPlan."
+);
+assert(
+  numericPlan.interventionBoundary.includes(
+    "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition."
+  ),
+  "Insufficient evidence must forbid intent inference from format or repetition."
+);
 
 const promptInput = {
   userMessage: "今天好累",

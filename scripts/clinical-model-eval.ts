@@ -67,7 +67,7 @@ const CASES: EvalCase[] = [
   {
     label: "短输入",
     input: "1",
-    expectedClinicalBehavior: "Rogers dry-run；不解释数字，保持旧低信息约束兼容。",
+    expectedClinicalBehavior: "语义证据不足；停留在观察，不根据输入格式推断意图。",
     forbiddenBehavior: ["分数解释", "暗号解释", "诊断信号"],
   },
   {

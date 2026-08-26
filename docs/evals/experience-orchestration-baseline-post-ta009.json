@@ -1,0 +1,4477 @@
+{
+  "generatedAt": "2026-07-22T14:19:25.262Z",
+  "purpose": "Freeze current-code createChatReply replies for the 100 experience explorer cases before any TA-009 change.",
+  "explorerPath": "docs/evals/experience-explorer-latest.md",
+  "outputPath": "docs/evals/experience-orchestration-baseline-post-ta009.json",
+  "markdownPath": "docs/evals/experience-orchestration-baseline-post-ta009.md",
+  "reproducibleCommand": "npx tsx scripts/experience-orchestration-baseline-freeze.ts --explorer docs/evals/experience-explorer-latest.md --output docs/evals/experience-orchestration-baseline-post-ta009.json --markdown docs/evals/experience-orchestration-baseline-post-ta009.md",
+  "runParameters": {
+    "entrypoint": "services/ai/chatOrchestrationService.createChatReply",
+    "recentMessages": "empty_single_turn",
+    "clinicalPlanPromptEnabled": "unset(false)",
+    "aiProvider": "qwen",
+    "aiMainModelConfigured": "qwen3.7-max",
+    "aiTimeoutMs": "45000",
+    "chatPromptVersion": "chat-base-product-v11",
+    "judgePromptVersion": "judge-disabled-v1",
+    "includeDebugTrace": false,
+    "concurrency": 1
+  },
+  "git": {
+    "branch": "codex/semantic-evidence-guard-fix",
+    "headSha": "94c1afab52952475eba375ad917e1c48296d62df",
+    "dirty": true,
+    "statusShort": [
+      "M app/chat/chat-client.tsx",
+      " M clinical-evals/golden-dataset-v1.json",
+      " M docs/ARCHITECTURE_V1_FINAL.md",
+      " M docs/EXP-BL-012A_GROUNDEDNESS_REVIEW.md",
+      " M docs/RESPONSE_GOAL_DESIGN.md",
+      " M package.json",
+      " M scripts/ai-orchestration-check.ts",
+      " M scripts/architecture-v1-boundary-check.ts",
+      " M scripts/clinical-context-check.ts",
+      " M scripts/clinical-logic-skeleton-check.ts",
+      " M scripts/clinical-model-eval.ts",
+      " M scripts/clinical-prompt-eval-check.ts",
+      " D scripts/free-numeric-reply-contract-check.ts",
+      " M scripts/semantic-evidence-reply-contract-check.ts",
+      " M services/ai/README.md",
+      " M services/ai/aiService.ts",
+      " M services/ai/chatOrchestrationService.ts",
+      " M services/ai/debugTrace.ts",
+      " D services/ai/lowInformationReplyGuard.ts",
+      " M services/ai/promptBuilder.ts",
+      " M services/ai/semanticEvidenceReplyGuard.ts",
+      " M services/ai/types.ts",
+      " M services/clinical/userCorrectionSignal.ts",
+      "?? AGENTS.md",
+      "?? docs/EXPERIENCE_FAILURE_CLUSTER.md",
+      "?? docs/H1_NOT_RESPONDING_TO_USER_REVIEW.md",
+      "?? docs/TEMPLATE_AUDIT.md",
+      "?? docs/TEMPLATE_BOUNDARY_REVIEW.md",
+      "?? docs/evals/experience-explorer-latest.md",
+      "?? docs/evals/experience-improvement-loop-latest.json",
+      "?? docs/evals/experience-orchestration-baseline-latest.json",
+      "?? docs/evals/experience-orchestration-baseline-latest.md",
+      "?? docs/evals/experience-orchestration-baseline-post-ta009.json",
+      "?? scripts/experience-improvement-loop.ts",
+      "?? scripts/experience-judge-check.ts",
+      "?? scripts/experience-judge.ts",
+      "?? scripts/experience-orchestration-baseline-freeze.ts",
+      "?? scripts/semantic-evidence-stability-review.ts"
+    ]
+  },
+  "summary": {
+    "totalCases": 100,
+    "completedOk": 100,
+    "completedError": 0,
+    "finalReplySource": {
+      "llm": 100
+    },
+    "guardHitCount": 0,
+    "semanticEvidenceStatus": {
+      "insufficient": 22,
+      "sufficient": 78
+    },
+    "responseGoal": {
+      "clarify": 23,
+      "reflect": 58,
+      "hold_space": 7,
+      "help_continue_expression": 2,
+      "summarize": 5,
+      "support_action": 5
+    },
+    "models": {
+      "qwen:qwen3.7-max": 100
+    }
+  },
+  "results": [
+    {
+      "caseId": "001",
+      "explorerUserInput": "1",
+      "resolvedUserInput": "1",
+      "status": "ok",
+      "reply": "看到这个1了，不确定你想怎么用它。",
+      "previousExplorerReply": "我看到你发的是“1”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个1了，不确定你想怎么用它。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1629,
+      "tokenInput": 1870,
+      "tokenOutput": 9
+    },
+    {
+      "caseId": "002",
+      "explorerUserInput": "2",
+      "resolvedUserInput": "2",
+      "status": "ok",
+      "reply": "看到这个2了，不确定你想怎么用它。",
+      "previousExplorerReply": "我看到你发的是“2”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个2了，不确定你想怎么用它。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 871,
+      "tokenInput": 1870,
+      "tokenOutput": 9
+    },
+    {
+      "caseId": "003",
+      "explorerUserInput": "三",
+      "resolvedUserInput": "三",
+      "status": "ok",
+      "reply": "嗯，三。",
+      "previousExplorerReply": "我看到你发的是“三”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，三。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1752,
+      "tokenInput": 1868,
+      "tokenOutput": 4
+    },
+    {
+      "caseId": "004",
+      "explorerUserInput": "0",
+      "resolvedUserInput": "0",
+      "status": "ok",
+      "reply": "看到了这个0，先不急着猜它代表什么。",
+      "previousExplorerReply": "我看到你发的是“0”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到了这个0，先不急着猜它代表什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1113,
+      "tokenInput": 1870,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "005",
+      "explorerUserInput": "99",
+      "resolvedUserInput": "99",
+      "status": "ok",
+      "reply": "看到99了，我不确定它对你来说是什么，先放在这儿。",
+      "previousExplorerReply": "我看到你发的是“99”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到99了，我不确定它对你来说是什么，先放在这儿。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1483,
+      "tokenInput": 1872,
+      "tokenOutput": 16
+    },
+    {
+      "caseId": "006",
+      "explorerUserInput": "3.5",
+      "resolvedUserInput": "3.5",
+      "status": "ok",
+      "reply": "看到了这个3.5，我不太确定它在你这里代表什么。",
+      "previousExplorerReply": "我看到你发的是“3.5”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到了这个3.5，我不太确定它在你这里代表什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1042,
+      "tokenInput": 1872,
+      "tokenOutput": 15
+    },
+    {
+      "caseId": "007",
+      "explorerUserInput": "2024",
+      "resolvedUserInput": "2024",
+      "status": "ok",
+      "reply": "看到2024了，不确定你想怎么用它。",
+      "previousExplorerReply": "我看到你发的是“2024”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到2024了，不确定你想怎么用它。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 818,
+      "tokenInput": 1876,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "008",
+      "explorerUserInput": "7",
+      "resolvedUserInput": "7",
+      "status": "ok",
+      "reply": "看到你说的7了，我不太确定它此刻代表什么。",
+      "previousExplorerReply": "我看到你发的是“7”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到你说的7了，我不太确定它此刻代表什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1015,
+      "tokenInput": 1870,
+      "tokenOutput": 13
+    },
+    {
+      "caseId": "009",
+      "explorerUserInput": "①",
+      "resolvedUserInput": "①",
+      "status": "ok",
+      "reply": "看到这个①了，不确定你想怎么用它。",
+      "previousExplorerReply": "看到你发了这个，我不太确定你想怎么用它。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个①了，不确定你想怎么用它。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 983,
+      "tokenInput": 1870,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "010",
+      "explorerUserInput": "-1",
+      "resolvedUserInput": "-1",
+      "status": "ok",
+      "reply": "看到这个-1了，我不急着给它定义。",
+      "previousExplorerReply": "我看到你发的是“-1”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个-1了，我不急着给它定义。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1350,
+      "tokenInput": 1870,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "011",
+      "explorerUserInput": "累",
+      "resolvedUserInput": "累",
+      "status": "ok",
+      "reply": "嗯，听到了。",
+      "previousExplorerReply": "听到你说累了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，听到了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 620,
+      "tokenInput": 2062,
+      "tokenOutput": 4
+    },
+    {
+      "caseId": "012",
+      "explorerUserInput": "烦",
+      "resolvedUserInput": "烦",
+      "status": "ok",
+      "reply": "听到你说烦了。",
+      "previousExplorerReply": "听到你说烦了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听到你说烦了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 727,
+      "tokenInput": 2062,
+      "tokenOutput": 5
+    },
+    {
+      "caseId": "013",
+      "explorerUserInput": "怕",
+      "resolvedUserInput": "怕",
+      "status": "ok",
+      "reply": "嗯，这个字我接住了。",
+      "previousExplorerReply": "嗯，这个“怕”我接住了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，这个字我接住了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1200,
+      "tokenInput": 1868,
+      "tokenOutput": 8
+    },
+    {
+      "caseId": "014",
+      "explorerUserInput": "好",
+      "resolvedUserInput": "好",
+      "status": "ok",
+      "reply": "嗯，那就先这样。",
+      "previousExplorerReply": "我看到你发的是“好”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，那就先这样。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 711,
+      "tokenInput": 1823,
+      "tokenOutput": 6
+    },
+    {
+      "caseId": "015",
+      "explorerUserInput": "不",
+      "resolvedUserInput": "不",
+      "status": "ok",
+      "reply": "好，先不说也行。",
+      "previousExplorerReply": "好，那就先不说。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "好，先不说也行。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 827,
+      "tokenInput": 1868,
+      "tokenOutput": 6
+    },
+    {
+      "caseId": "016",
+      "explorerUserInput": "嗯",
+      "resolvedUserInput": "嗯",
+      "status": "ok",
+      "reply": "嗯，先这样待着也行。",
+      "previousExplorerReply": "我看到你发的是“嗯”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，先这样待着也行。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 912,
+      "tokenInput": 1823,
+      "tokenOutput": 8
+    },
+    {
+      "caseId": "017",
+      "explorerUserInput": "忙",
+      "resolvedUserInput": "忙",
+      "status": "ok",
+      "reply": "嗯，听到了。",
+      "previousExplorerReply": "嗯，听到了。如果想说说忙什么，或者就先这样待着，都可以。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，听到了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 803,
+      "tokenInput": 1868,
+      "tokenOutput": 4
+    },
+    {
+      "caseId": "018",
+      "explorerUserInput": "空",
+      "resolvedUserInput": "空",
+      "status": "ok",
+      "reply": "嗯，我在。",
+      "previousExplorerReply": "嗯，我在这里。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，我在。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 621,
+      "tokenInput": 1868,
+      "tokenOutput": 4
+    },
+    {
+      "caseId": "019",
+      "explorerUserInput": "🙂",
+      "resolvedUserInput": "🙂",
+      "status": "ok",
+      "reply": "看到这个表情了，不用急着说什么。",
+      "previousExplorerReply": "我看到你发的是“🙂”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个表情了，不用急着说什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1024,
+      "tokenInput": 1871,
+      "tokenOutput": 8
+    },
+    {
+      "caseId": "020",
+      "explorerUserInput": "😶‍🌫️",
+      "resolvedUserInput": "😶‍🌫️",
+      "status": "ok",
+      "reply": "看到这个表情了，不用急着说什么。",
+      "previousExplorerReply": "我看到你发的是“😶‍🌫️”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个表情了，不用急着说什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 900,
+      "tokenInput": 1882,
+      "tokenOutput": 8
+    },
+    {
+      "caseId": "021",
+      "explorerUserInput": "😭",
+      "resolvedUserInput": "😭",
+      "status": "ok",
+      "reply": "看到这个表情了，不用急着说什么。",
+      "previousExplorerReply": "我看到你发的是“😭”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个表情了，不用急着说什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 879,
+      "tokenInput": 1873,
+      "tokenOutput": 8
+    },
+    {
+      "caseId": "022",
+      "explorerUserInput": "😡",
+      "resolvedUserInput": "😡",
+      "status": "ok",
+      "reply": "看到这个表情了，先不说也没关系。",
+      "previousExplorerReply": "我看到你发的是“😡”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个表情了，先不说也没关系。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 804,
+      "tokenInput": 1873,
+      "tokenOutput": 9
+    },
+    {
+      "caseId": "023",
+      "explorerUserInput": "🫠",
+      "resolvedUserInput": "🫠",
+      "status": "ok",
+      "reply": "看到这个表情了，不用急着说什么。",
+      "previousExplorerReply": "我看到你发的是“🫠”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个表情了，不用急着说什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 739,
+      "tokenInput": 1875,
+      "tokenOutput": 8
+    },
+    {
+      "caseId": "024",
+      "explorerUserInput": "🙃",
+      "resolvedUserInput": "🙃",
+      "status": "ok",
+      "reply": "看到这个表情了，先这样待着也行。",
+      "previousExplorerReply": "我看到你发的是“🙃”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个表情了，先这样待着也行。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1152,
+      "tokenInput": 1875,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "025",
+      "explorerUserInput": "💔",
+      "resolvedUserInput": "💔",
+      "status": "ok",
+      "reply": "看到这个心碎了，不用急着说什么。",
+      "previousExplorerReply": "我看到你发的是“💔”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个心碎了，不用急着说什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 766,
+      "tokenInput": 1873,
+      "tokenOutput": 8
+    },
+    {
+      "caseId": "026",
+      "explorerUserInput": "👀",
+      "resolvedUserInput": "👀",
+      "status": "ok",
+      "reply": "看到这个表情了，你想怎么聊都行。",
+      "previousExplorerReply": "我看到你发的是“👀”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "看到这个表情了，你想怎么聊都行。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1202,
+      "tokenInput": 1875,
+      "tokenOutput": 9
+    },
+    {
+      "caseId": "027",
+      "explorerUserInput": "昨晚梦见自己一直在赶一辆车，怎么都赶不上。",
+      "resolvedUserInput": "昨晚梦见自己一直在赶一辆车，怎么都赶不上。",
+      "status": "ok",
+      "reply": "梦里那种怎么都赶不上的感觉，听着就让人着急。",
+      "previousExplorerReply": "梦里那种怎么都赶不上的感觉，醒来可能还会留着。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "梦里那种怎么都赶不上的感觉，听着就让人着急。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 928,
+      "tokenInput": 1887,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "028",
+      "explorerUserInput": "我梦到回了小时候的学校，但教室里一个人都没有。",
+      "resolvedUserInput": "我梦到回了小时候的学校，但教室里一个人都没有。",
+      "status": "ok",
+      "reply": "梦到空荡荡的教室，醒来大概还会有点恍惚吧。",
+      "previousExplorerReply": "梦到空荡荡的教室，醒来大概会有点恍惚吧。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "梦到空荡荡的教室，醒来大概还会有点恍惚吧。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1304,
+      "tokenInput": 1892,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "029",
+      "explorerUserInput": "连续几天都梦见在很高的地方往下掉，醒来心跳很快。",
+      "resolvedUserInput": "连续几天都梦见在很高的地方往下掉，醒来心跳很快。",
+      "status": "ok",
+      "reply": "连着几天这样惊醒，醒来那一刻大概挺不好受的。",
+      "previousExplorerReply": "醒来心跳还很快，连着几天这样挺耗人的。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "连着几天这样惊醒，醒来那一刻大概挺不好受的。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 944,
+      "tokenInput": 1894,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "030",
+      "explorerUserInput": "梦里我和已经很久不联系的朋友又见面了，可是谁都没说话。",
+      "resolvedUserInput": "梦里我和已经很久不联系的朋友又见面了，可是谁都没说话。",
+      "status": "ok",
+      "reply": "梦里见了面却没说话，这种安静好像也有它自己的分量。",
+      "previousExplorerReply": "梦见很久没联系的人，却谁都没开口。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "梦里见了面却没说话，这种安静好像也有它自己的分量。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 914,
+      "tokenInput": 1898,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "031",
+      "explorerUserInput": "昨晚那个梦很真实，我醒了以后还分不清是不是发生过。",
+      "resolvedUserInput": "昨晚那个梦很真实，我醒了以后还分不清是不是发生过。",
+      "status": "ok",
+      "reply": "醒来还分不清，那种真实感大概还没散。",
+      "previousExplorerReply": "醒来还分不清，那种真实感大概还在身上。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "醒来还分不清，那种真实感大概还没散。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1180,
+      "tokenInput": 1894,
+      "tokenOutput": 11
+    },
+    {
+      "caseId": "032",
+      "explorerUserInput": "我梦见牙全掉了，醒来之后莫名有点害怕。",
+      "resolvedUserInput": "我梦见牙全掉了，醒来之后莫名有点害怕。",
+      "status": "ok",
+      "reply": "醒来带着这种害怕，确实会让人愣一下。",
+      "previousExplorerReply": "醒来带着这点害怕，好像梦里的东西还没完全散去。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "醒来带着这种害怕，确实会让人愣一下。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "hold_space",
+        "responseIntent": "support_pause",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 897,
+      "tokenInput": 2084,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "033",
+      "explorerUserInput": "梦里一直有人叫我的名字，但我找不到是谁。",
+      "resolvedUserInput": "梦里一直有人叫我的名字，但我找不到是谁。",
+      "status": "ok",
+      "reply": "梦里被叫着名字却找不到人，醒来大概还会有点空落落的。",
+      "previousExplorerReply": "梦里被叫着名字却找不到人，醒来大概还会有点空落落的。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "梦里被叫着名字却找不到人，醒来大概还会有点空落落的。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1109,
+      "tokenInput": 1883,
+      "tokenOutput": 16
+    },
+    {
+      "caseId": "034",
+      "explorerUserInput": "我最近总做同一个梦，门就在面前，可我怎么也打不开。",
+      "resolvedUserInput": "我最近总做同一个梦，门就在面前，可我怎么也打不开。",
+      "status": "ok",
+      "reply": "门就在面前却打不开，这个画面反复出现。",
+      "previousExplorerReply": "门就在眼前却打不开，这个画面好像一直重复出现。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "门就在面前却打不开，这个画面反复出现。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 909,
+      "tokenInput": 1900,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "035",
+      "explorerUserInput": "今天心里一直堵着，说不上来为什么。",
+      "resolvedUserInput": "今天心里一直堵着，说不上来为什么。",
+      "status": "ok",
+      "reply": "心里堵着又说不清，就先让这种堵在这儿待着吧。",
+      "previousExplorerReply": "堵着又说不上来，那就先不急着找原因。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "心里堵着又说不清，就先让这种堵在这儿待着吧。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 917,
+      "tokenInput": 1883,
+      "tokenOutput": 16
+    },
+    {
+      "caseId": "036",
+      "explorerUserInput": "我现在特别烦，谁来跟我说话都觉得吵。",
+      "resolvedUserInput": "我现在特别烦，谁来跟我说话都觉得吵。",
+      "status": "ok",
+      "reply": "听起来现在连说话声都让人烦躁。",
+      "previousExplorerReply": "听起来现在连说话声都让人烦。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听起来现在连说话声都让人烦躁。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 691,
+      "tokenInput": 2080,
+      "tokenOutput": 9
+    },
+    {
+      "caseId": "037",
+      "explorerUserInput": "明明没发生什么大事，但就是很想哭。",
+      "resolvedUserInput": "明明没发生什么大事，但就是很想哭。",
+      "status": "ok",
+      "reply": "有时候想哭好像不需要什么特别的理由。",
+      "previousExplorerReply": "有时候眼泪不一定非要等一个理由才来。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "有时候想哭好像不需要什么特别的理由。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 811,
+      "tokenInput": 1888,
+      "tokenOutput": 9
+    },
+    {
+      "caseId": "038",
+      "explorerUserInput": "我有点害怕明天，可又不知道具体在怕什么。",
+      "resolvedUserInput": "我有点害怕明天，可又不知道具体在怕什么。",
+      "status": "ok",
+      "reply": "害怕明天，却又说不清在怕什么。",
+      "previousExplorerReply": "害怕明天，却又说不清怕什么，这种模糊本身也挺让人不安的。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "害怕明天，却又说不清在怕什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "hold_space",
+        "responseIntent": "support_pause",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 766,
+      "tokenInput": 2086,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "039",
+      "explorerUserInput": "突然觉得自己什么都做不好。",
+      "resolvedUserInput": "突然觉得自己什么都做不好。",
+      "status": "ok",
+      "reply": "听到你说突然有这种感觉。",
+      "previousExplorerReply": "听到你说突然有这种感觉。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听到你说突然有这种感觉。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 847,
+      "tokenInput": 1878,
+      "tokenOutput": 6
+    },
+    {
+      "caseId": "040",
+      "explorerUserInput": "今天有一小会儿很开心，但马上又觉得不应该开心。",
+      "resolvedUserInput": "今天有一小会儿很开心，但马上又觉得不应该开心。",
+      "status": "ok",
+      "reply": "听起来那份开心刚冒头，就被“不应该”拦住了。",
+      "previousExplorerReply": "听到你说开心之后，马上又觉得不该这样。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听起来那份开心刚冒头，就被“不应该”拦住了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 867,
+      "tokenInput": 1892,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "041",
+      "explorerUserInput": "我气得手都在抖，可又不想把火发到别人身上。",
+      "resolvedUserInput": "我气得手都在抖，可又不想把火发到别人身上。",
+      "status": "ok",
+      "reply": "气到手抖还在忍着，这份克制本身就不容易。",
+      "previousExplorerReply": "气到手抖还在忍着，这份克制我看见了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "气到手抖还在忍着，这份克制本身就不容易。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1006,
+      "tokenInput": 1894,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "042",
+      "explorerUserInput": "最近总是提不起劲，连喜欢的东西也懒得碰。",
+      "resolvedUserInput": "最近总是提不起劲，连喜欢的东西也懒得碰。",
+      "status": "ok",
+      "reply": "听起来连喜欢的事都变得没吸引力了。",
+      "previousExplorerReply": "听起来连喜欢的事都提不起劲了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听起来连喜欢的事都变得没吸引力了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1089,
+      "tokenInput": 1892,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "043",
+      "explorerUserInput": "我好像很委屈，但讲出来又觉得自己矫情。",
+      "resolvedUserInput": "我好像很委屈，但讲出来又觉得自己矫情。",
+      "status": "ok",
+      "reply": "委屈和怕被说矫情，好像同时卡在这里了。",
+      "previousExplorerReply": "委屈和觉得自己矫情，好像同时都在。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "委屈和怕被说矫情，好像同时卡在这里了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 785,
+      "tokenInput": 2086,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "044",
+      "explorerUserInput": "现在情绪很乱，一会儿想说，一会儿又想躲起来。",
+      "resolvedUserInput": "现在情绪很乱，一会儿想说，一会儿又想躲起来。",
+      "status": "ok",
+      "reply": "这种想说又想躲的状态，我听到了。不用急着选哪边，乱着也没关系。",
+      "previousExplorerReply": "想说又想躲，这两种状态都在。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "这种想说又想躲的状态，我听到了。不用急着选哪边，乱着也没关系。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1221,
+      "tokenInput": 1887,
+      "tokenOutput": 20
+    },
+    {
+      "caseId": "045",
+      "explorerUserInput": "领导下午突然让我接一个完全不熟的项目，我到现在都很慌。",
+      "resolvedUserInput": "领导下午突然让我接一个完全不熟的项目，我到现在都很慌。",
+      "status": "ok",
+      "reply": "突然被塞个完全不熟的项目，换谁都会慌。",
+      "previousExplorerReply": "突然被塞个完全陌生的项目，换谁都会慌一下。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "突然被塞个完全不熟的项目，换谁都会慌。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "hold_space",
+        "responseIntent": "support_pause",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 928,
+      "tokenInput": 1891,
+      "tokenOutput": 13
+    },
+    {
+      "caseId": "046",
+      "explorerUserInput": "同事把问题推到我身上，我当时没反驳，现在越想越生气。",
+      "resolvedUserInput": "同事把问题推到我身上，我当时没反驳，现在越想越生气。",
+      "status": "ok",
+      "reply": "当时没反驳，现在这股气还在心里转着。",
+      "previousExplorerReply": "当时没反驳，现在气还在往上涌。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "当时没反驳，现在这股气还在心里转着。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 982,
+      "tokenInput": 2092,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "047",
+      "explorerUserInput": "最近每天加班，可事情还是做不完，我开始怀疑是不是能力不行。",
+      "resolvedUserInput": "最近每天加班，可事情还是做不完，我开始怀疑是不是能力不行。",
+      "status": "ok",
+      "reply": "每天加班还做不完，确实容易让人怀疑自己。这种怀疑是最近才冒出来的吗？",
+      "previousExplorerReply": "天天加班还做不完，确实容易让人怀疑自己。这种怀疑是最近才冒出来的吗？",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "每天加班还做不完，确实容易让人怀疑自己。这种怀疑是最近才冒出来的吗？",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 919,
+      "tokenInput": 1898,
+      "tokenOutput": 21
+    },
+    {
+      "caseId": "048",
+      "explorerUserInput": "明天要做汇报，我准备了很多遍还是怕自己当场卡住。",
+      "resolvedUserInput": "明天要做汇报，我准备了很多遍还是怕自己当场卡住。",
+      "status": "ok",
+      "reply": "准备了很多遍还是会担心卡住，这种不安好像没法靠练习完全消除。",
+      "previousExplorerReply": "准备了很多遍还是会有这种担心，听起来这个汇报对你挺重要的。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "准备了很多遍还是会担心卡住，这种不安好像没法靠练习完全消除。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 996,
+      "tokenInput": 1896,
+      "tokenOutput": 17
+    },
+    {
+      "caseId": "049",
+      "explorerUserInput": "我想辞职，但又担心现在出去根本找不到更好的工作。",
+      "resolvedUserInput": "我想辞职，但又担心现在出去根本找不到更好的工作。",
+      "status": "ok",
+      "reply": "想走又不敢动，这种卡住的感觉我听到了。",
+      "previousExplorerReply": "想走又不敢动，这种卡住的感觉我听到了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "想走又不敢动，这种卡住的感觉我听到了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 767,
+      "tokenInput": 1890,
+      "tokenOutput": 13
+    },
+    {
+      "caseId": "050",
+      "explorerUserInput": "工作群一响我就紧张，明明下班了也不敢不看。",
+      "resolvedUserInput": "工作群一响我就紧张，明明下班了也不敢不看。",
+      "status": "ok",
+      "reply": "下班了还被群消息牵着走，这种紧绷感我听到了。",
+      "previousExplorerReply": "下班了还被群消息牵着走，确实很难真正放松下来。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "下班了还被群消息牵着走，这种紧绷感我听到了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 950,
+      "tokenInput": 1892,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "051",
+      "explorerUserInput": "老板夸了我，我第一反应却是他是不是接下来要给我更多活。",
+      "resolvedUserInput": "老板夸了我，我第一反应却是他是不是接下来要给我更多活。",
+      "status": "ok",
+      "reply": "被夸的时候先想到这个，好像夸奖本身都没法单纯地接住。",
+      "previousExplorerReply": "被夸的时候先想到这个，好像夸奖本身都没来得及高兴一下。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "被夸的时候先想到这个，好像夸奖本身都没法单纯地接住。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1072,
+      "tokenInput": 1898,
+      "tokenOutput": 17
+    },
+    {
+      "caseId": "052",
+      "explorerUserInput": "团队里大家都很忙，我不知道该不该开口说自己已经撑不住了。",
+      "resolvedUserInput": "团队里大家都很忙，我不知道该不该开口说自己已经撑不住了。",
+      "status": "ok",
+      "reply": "听起来你已经在撑着，只是不确定这时候说出来合不合适。",
+      "previousExplorerReply": "听到你说撑不住了，又担心这时候开口不太合适。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听起来你已经在撑着，只是不确定这时候说出来合不合适。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "hold_space",
+        "responseIntent": "support_pause",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 930,
+      "tokenInput": 2088,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "053",
+      "explorerUserInput": "我做了三个月的方案被一句话否了，感觉之前的努力都白费了。",
+      "resolvedUserInput": "我做了三个月的方案被一句话否了，感觉之前的努力都白费了。",
+      "status": "ok",
+      "reply": "三个月的心血被一句话否定，听起来真的很挫败。",
+      "previousExplorerReply": "三个月的心血被一句话否定，听起来真的很挫败。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "三个月的心血被一句话否定，听起来真的很挫败。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 910,
+      "tokenInput": 1898,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "054",
+      "explorerUserInput": "新来的同事进步很快，我知道不该比较，可还是很焦虑。",
+      "resolvedUserInput": "新来的同事进步很快，我知道不该比较，可还是很焦虑。",
+      "status": "ok",
+      "reply": "明明知道不该比，焦虑还是冒出来了。",
+      "previousExplorerReply": "知道不该比却还是焦虑，这种拉扯本身就很耗人。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "明明知道不该比，焦虑还是冒出来了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "hold_space",
+        "responseIntent": "support_pause",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1092,
+      "tokenInput": 2088,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "055",
+      "explorerUserInput": "朋友最近回复越来越慢，我忍不住想是不是我哪里让她不舒服了。",
+      "resolvedUserInput": "朋友最近回复越来越慢，我忍不住想是不是我哪里让她不舒服了。",
+      "status": "ok",
+      "reply": "回复变慢的时候，很容易先想到是不是自己的问题。",
+      "previousExplorerReply": "回复变慢的时候，很容易就会先想到是不是自己的问题。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "回复变慢的时候，很容易先想到是不是自己的问题。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1029,
+      "tokenInput": 1898,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "056",
+      "explorerUserInput": "我妈每次打电话都问工作和对象，我知道她关心我，但真的很有压力。",
+      "resolvedUserInput": "我妈每次打电话都问工作和对象，我知道她关心我，但真的很有压力。",
+      "status": "ok",
+      "reply": "明明知道是关心，接电话时还是觉得有压力。",
+      "previousExplorerReply": "知道是关心，但压力还是实实在在落在那儿了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "明明知道是关心，接电话时还是觉得有压力。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 694,
+      "tokenInput": 2096,
+      "tokenOutput": 13
+    },
+    {
+      "caseId": "057",
+      "explorerUserInput": "伴侣说想一个人静静，我脑子里马上就开始想他是不是不爱我了。",
+      "resolvedUserInput": "伴侣说想一个人静静，我脑子里马上就开始想他是不是不爱我了。",
+      "status": "ok",
+      "reply": "听到他说想静静，你心里马上冒出的就是那个担心。",
+      "previousExplorerReply": "听到他说想静静，你心里马上就冒出了这个念头。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听到他说想静静，你心里马上冒出的就是那个担心。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1199,
+      "tokenInput": 1898,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "058",
+      "explorerUserInput": "我和最好的朋友吵架了，两个人都在等对方先开口。",
+      "resolvedUserInput": "我和最好的朋友吵架了，两个人都在等对方先开口。",
+      "status": "ok",
+      "reply": "两个人都等着，这个僵局本身也挺难熬的。",
+      "previousExplorerReply": "两个人都等着，这中间大概挺难熬的。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "两个人都等着，这个僵局本身也挺难熬的。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 843,
+      "tokenInput": 1892,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "059",
+      "explorerUserInput": "同事聚餐没有叫我，我嘴上说无所谓，心里还是很难受。",
+      "resolvedUserInput": "同事聚餐没有叫我，我嘴上说无所谓，心里还是很难受。",
+      "status": "ok",
+      "reply": "嘴上说着无所谓，心里却难受，这种反差本身就很消耗人。",
+      "previousExplorerReply": "嘴上说着无所谓，心里却难受，这种反差本身就很消耗人。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嘴上说着无所谓，心里却难受，这种反差本身就很消耗人。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 925,
+      "tokenInput": 2090,
+      "tokenOutput": 15
+    },
+    {
+      "caseId": "060",
+      "explorerUserInput": "我拒绝了家人的要求，现在一直有负罪感。",
+      "resolvedUserInput": "我拒绝了家人的要求，现在一直有负罪感。",
+      "status": "ok",
+      "reply": "拒绝之后还一直带着负罪感，这本身也挺耗人的。",
+      "previousExplorerReply": "拒绝之后还一直带着负罪感，挺不好受的。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "拒绝之后还一直带着负罪感，这本身也挺耗人的。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 2744,
+      "tokenInput": 1885,
+      "tokenOutput": 15
+    },
+    {
+      "caseId": "061",
+      "explorerUserInput": "有人对我很好，我反而会想躲开，不知道自己在怕什么。",
+      "resolvedUserInput": "有人对我很好，我反而会想躲开，不知道自己在怕什么。",
+      "status": "ok",
+      "reply": "听到你说想躲开，却又说不清在怕什么。",
+      "previousExplorerReply": "听到你说想躲开，但又说不清在怕什么。这种时候，是不是连自己也觉得有点矛盾？",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听到你说想躲开，却又说不清在怕什么。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 767,
+      "tokenInput": 1896,
+      "tokenOutput": 13
+    },
+    {
+      "caseId": "062",
+      "explorerUserInput": "我总是在关系里先道歉，哪怕我也觉得自己没做错。",
+      "resolvedUserInput": "我总是在关系里先道歉，哪怕我也觉得自己没做错。",
+      "status": "ok",
+      "reply": "听起来这个“先道歉”里，好像也藏着一些你自己的委屈。",
+      "previousExplorerReply": "明明觉得自己没错，却还是先开口道歉了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听起来这个“先道歉”里，好像也藏着一些你自己的委屈。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 953,
+      "tokenInput": 1892,
+      "tokenOutput": 15
+    },
+    {
+      "caseId": "063",
+      "explorerUserInput": "室友最近明显在避开我，但我又怕直接问会更尴尬。",
+      "resolvedUserInput": "室友最近明显在避开我，但我又怕直接问会更尴尬。",
+      "status": "ok",
+      "reply": "感觉到对方在避开，又担心问了反而更尴尬，这挺让人为难的。",
+      "previousExplorerReply": "感觉到这种想问又怕尴尬的纠结了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "感觉到对方在避开，又担心问了反而更尴尬，这挺让人为难的。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 893,
+      "tokenInput": 1894,
+      "tokenOutput": 18
+    },
+    {
+      "caseId": "064",
+      "explorerUserInput": "前任突然联系我，我明知道不该期待，还是忍不住一直看手机。",
+      "resolvedUserInput": "前任突然联系我，我明知道不该期待，还是忍不住一直看手机。",
+      "status": "ok",
+      "reply": "明明知道不该期待，手却还是忍不住一直看手机。",
+      "previousExplorerReply": "明知道不该期待却还是忍不住，这种拉扯本身就挺耗人的。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "明明知道不该期待，手却还是忍不住一直看手机。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 883,
+      "tokenInput": 1893,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "065",
+      "explorerUserInput": "有点累。",
+      "resolvedUserInput": "有点累。",
+      "status": "ok",
+      "reply": "嗯，有点累。",
+      "previousExplorerReply": "嗯，有点累。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，有点累。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 642,
+      "tokenInput": 2066,
+      "tokenOutput": 5
+    },
+    {
+      "caseId": "066",
+      "explorerUserInput": "不想说。",
+      "resolvedUserInput": "不想说。",
+      "status": "ok",
+      "reply": "嗯，那就不说。",
+      "previousExplorerReply": "嗯，先不说也行。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，那就不说。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "hold_space",
+        "responseIntent": "support_pause",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 810,
+      "tokenInput": 1872,
+      "tokenOutput": 6
+    },
+    {
+      "caseId": "067",
+      "explorerUserInput": "又来了。",
+      "resolvedUserInput": "又来了。",
+      "status": "ok",
+      "reply": "嗯，我听到你说又来了。",
+      "previousExplorerReply": "嗯，我听到了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，我听到你说又来了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 892,
+      "tokenInput": 1870,
+      "tokenOutput": 7
+    },
+    {
+      "caseId": "068",
+      "explorerUserInput": "算了吧。",
+      "resolvedUserInput": "算了吧。",
+      "status": "ok",
+      "reply": "可能是我没接住，先不说也没关系。",
+      "previousExplorerReply": "好，先不说也行，可能是我没接住。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "可能是我没接住，先不说也没关系。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "hold_space",
+        "responseIntent": "support_pause",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 735,
+      "tokenInput": 1852,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "069",
+      "explorerUserInput": "我卡住了。",
+      "resolvedUserInput": "我卡住了。",
+      "status": "ok",
+      "reply": "嗯，卡住的时候不用急着找出口。",
+      "previousExplorerReply": "嗯，卡住的时候不用急着找出口。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，卡住的时候不用急着找出口。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "help_continue_expression",
+        "responseIntent": "invite_expression",
+        "primaryStrategy": "rogers",
+        "questionFunction": "open_gentle_invitation",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 743,
+      "tokenInput": 1874,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "070",
+      "explorerUserInput": "今天不太行。",
+      "resolvedUserInput": "今天不太行。",
+      "status": "ok",
+      "reply": "嗯，今天不太行。想说说哪里不行，还是就先这样待着？",
+      "previousExplorerReply": "嗯，听到了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，今天不太行。想说说哪里不行，还是就先这样待着？",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1030,
+      "tokenInput": 1874,
+      "tokenOutput": 17
+    },
+    {
+      "caseId": "071",
+      "explorerUserInput": "不知道。",
+      "resolvedUserInput": "不知道。",
+      "status": "ok",
+      "reply": "嗯，不知道也没关系。",
+      "previousExplorerReply": "嗯，不知道也没关系。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，不知道也没关系。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 769,
+      "tokenInput": 1870,
+      "tokenOutput": 6
+    },
+    {
+      "caseId": "072",
+      "explorerUserInput": "从早上醒来开始就觉得很沉。先是看到工作群里昨晚留下的一堆消息，心里一下就紧了；到了公司又发现自己负责的部分出了问题，虽然最后证明不是我造成的，但我还是一直在想是不是哪里做得不够好。晚上回到家，家里人又问我最近为什么总是不说话。我其实很想解释，可一开口就觉得要讲的东西太多，最后只说了句没事。",
+      "resolvedUserInput": "从早上醒来开始就觉得很沉。先是看到工作群里昨晚留下的一堆消息，心里一下就紧了；到了公司又发现自己负责的部分出了问题，虽然最后证明不是我造成的，但我还是一直在想是不是哪里做得不够好。晚上回到家，家里人又问我最近为什么总是不说话。我其实很想解释，可一开口就觉得要讲的东西太多，最后只说了句没事。",
+      "status": "ok",
+      "reply": "从早上的消息到晚上那句“没事”，这一天好像一直绷着。想说又觉得太多讲不清的时候，是不是连解释本身都变成了一种负担？",
+      "previousExplorerReply": "从早上的消息到晚上的“没事”，这一天好像一直没松下来。是不是那种想解释又觉得太重的感觉，比事情本身还耗人？",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "从早上的消息到晚上那句“没事”，这一天好像一直绷着。想说又觉得太多讲不清的时候，是不是连解释本身都变成了一种负担？",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "summarize",
+        "responseIntent": "summarize",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1286,
+      "tokenInput": 2015,
+      "tokenOutput": 33
+    },
+    {
+      "caseId": "073",
+      "explorerUserInput": "这几个月我一直在考虑要不要换工作。现在的岗位稳定，收入也还可以，同事大多相处得不错，可我每天做的事情都让我觉得越来越没有意义。另一方面，我又担心离开以后会后悔，担心找不到合适的机会，也担心家里人觉得我太任性。我列过很多利弊，但每次看完还是停在原地，好像怎么选都会失去一些东西。",
+      "resolvedUserInput": "这几个月我一直在考虑要不要换工作。现在的岗位稳定，收入也还可以，同事大多相处得不错，可我每天做的事情都让我觉得越来越没有意义。另一方面，我又担心离开以后会后悔，担心找不到合适的机会，也担心家里人觉得我太任性。我列过很多利弊，但每次看完还是停在原地，好像怎么选都会失去一些东西。",
+      "status": "ok",
+      "reply": "列了利弊还是停在原地，听起来两边都有让你放不下、也不敢轻易丢的东西。",
+      "previousExplorerReply": "列了那么多利弊还是停在原地，好像怎么选都绕不开那些担心。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "列了利弊还是停在原地，听起来两边都有让你放不下、也不敢轻易丢的东西。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "summarize",
+        "responseIntent": "summarize",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1261,
+      "tokenInput": 2007,
+      "tokenOutput": 18
+    },
+    {
+      "caseId": "074",
+      "explorerUserInput": "我和朋友认识很多年了，以前什么都能说，但最近我发现每次聊天几乎都是我在听她讲。轮到我说的时候，她常常很快把话题转回自己。我知道她可能不是故意的，也知道她最近过得不容易，所以一直没提。可这种事情积累久了，我开始不想回消息，然后又因为不回消息觉得自己很坏。",
+      "resolvedUserInput": "我和朋友认识很多年了，以前什么都能说，但最近我发现每次聊天几乎都是我在听她讲。轮到我说的时候，她常常很快把话题转回自己。我知道她可能不是故意的，也知道她最近过得不容易，所以一直没提。可这种事情积累久了，我开始不想回消息，然后又因为不回消息觉得自己很坏。",
+      "status": "ok",
+      "reply": "一边不想回消息，一边又怪自己，这种拉扯挺耗人的。",
+      "previousExplorerReply": "一边不想回消息，一边又怪自己，这种拉扯挺耗人的。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "一边不想回消息，一边又怪自己，这种拉扯挺耗人的。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "summarize",
+        "responseIntent": "summarize",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 827,
+      "tokenInput": 2198,
+      "tokenOutput": 16
+    },
+    {
+      "caseId": "075",
+      "explorerUserInput": "昨天开会时领导当着所有人的面说我的方案考虑得不够成熟。我当时笑着说会继续改，散会后也正常把修改项整理了出来，可到了晚上那句话一直在脑子里重复。我知道一次方案被否定不代表我不行，也知道领导说的有些地方确实有道理，但我还是会把它变成对自己的整体否定，越想越觉得难受。",
+      "resolvedUserInput": "昨天开会时领导当着所有人的面说我的方案考虑得不够成熟。我当时笑着说会继续改，散会后也正常把修改项整理了出来，可到了晚上那句话一直在脑子里重复。我知道一次方案被否定不代表我不行，也知道领导说的有些地方确实有道理，但我还是会把它变成对自己的整体否定，越想越觉得难受。",
+      "status": "ok",
+      "reply": "理智上都知道，可晚上那句话还是反复转，把人带进了对自己的否定里。",
+      "previousExplorerReply": "理智上知道该怎么看，但晚上那句话还是反复转成了对自己的否定。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "理智上都知道，可晚上那句话还是反复转，把人带进了对自己的否定里。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "summarize",
+        "responseIntent": "summarize",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1214,
+      "tokenInput": 2196,
+      "tokenOutput": 18
+    },
+    {
+      "caseId": "076",
+      "explorerUserInput": "我最近睡得很差。不是完全睡不着，而是每晚都会在差不多的时间醒来，然后开始想白天发生的事：哪句话是不是说错了，别人那个表情是不是不耐烦，明天的事情会不会出问题。有时候我知道这些想法没有依据，可身体还是很紧。白天我又会装得和平常一样，因为不想让别人觉得我太脆弱。",
+      "resolvedUserInput": "我最近睡得很差。不是完全睡不着，而是每晚都会在差不多的时间醒来，然后开始想白天发生的事：哪句话是不是说错了，别人那个表情是不是不耐烦，明天的事情会不会出问题。有时候我知道这些想法没有依据，可身体还是很紧。白天我又会装得和平常一样，因为不想让别人觉得我太脆弱。",
+      "status": "ok",
+      "reply": "夜里反复想那些事，身体又紧着，白天还要照常撑着，听起来很耗人。",
+      "previousExplorerReply": "夜里反复想那些事，身体又紧着，白天还要撑着像平常一样，听起来真的很耗人。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "夜里反复想那些事，身体又紧着，白天还要照常撑着，听起来很耗人。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "summarize",
+        "responseIntent": "summarize",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 937,
+      "tokenInput": 2198,
+      "tokenOutput": 21
+    },
+    {
+      "caseId": "077",
+      "explorerUserInput": "我该不该主动跟朋友道歉？",
+      "resolvedUserInput": "我该不该主动跟朋友道歉？",
+      "status": "ok",
+      "reply": "这个问题本身好像就带着些犹豫，我们可以一起慢慢理一理。",
+      "previousExplorerReply": "这个问题好像在你心里转了一会儿了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "这个问题本身好像就带着些犹豫，我们可以一起慢慢理一理。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "support_action",
+        "responseIntent": "support_action",
+        "primaryStrategy": "rogers",
+        "questionFunction": "support_user_agency",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "support_action must include one small, optional, user-adjustable action-support element."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not decide for the user",
+          "do not produce a large plan",
+          "do not retreat into pure reflection when a minimal action scaffold is safe"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 954,
+      "tokenInput": 1880,
+      "tokenOutput": 15
+    },
+    {
+      "caseId": "078",
+      "explorerUserInput": "你能帮我想想明天怎么跟领导开口吗？",
+      "resolvedUserInput": "你能帮我想想明天怎么跟领导开口吗？",
+      "status": "ok",
+      "reply": "好，我们一起想想。你大概想跟领导聊哪方面的事？",
+      "previousExplorerReply": "开口这件事确实需要琢磨一下，你心里大概有个方向了吗？",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "好，我们一起想想。你大概想跟领导聊哪方面的事？",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "support_action",
+        "responseIntent": "support_action",
+        "primaryStrategy": "rogers",
+        "questionFunction": "support_user_agency",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "support_action must include one small, optional, user-adjustable action-support element."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not decide for the user",
+          "do not produce a large plan",
+          "do not retreat into pure reflection when a minimal action scaffold is safe"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1164,
+      "tokenInput": 1888,
+      "tokenOutput": 15
+    },
+    {
+      "caseId": "079",
+      "explorerUserInput": "我现在应该先休息，还是先把工作做完？",
+      "resolvedUserInput": "我现在应该先休息，还是先把工作做完？",
+      "status": "ok",
+      "reply": "听起来这两头都有点放不下，你现在更想先顾哪一边？",
+      "previousExplorerReply": "听起来你正卡在这两个选择中间。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听起来这两头都有点放不下，你现在更想先顾哪一边？",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1241,
+      "tokenInput": 1886,
+      "tokenOutput": 15
+    },
+    {
+      "caseId": "080",
+      "explorerUserInput": "能不能给我一个不那么强硬的拒绝说法？",
+      "resolvedUserInput": "能不能给我一个不那么强硬的拒绝说法？",
+      "status": "ok",
+      "reply": "想找个柔和点的说法，是怕对方难受，还是自己说着也有压力？",
+      "previousExplorerReply": "是想找个温和点的表达方式吗？",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "想找个柔和点的说法，是怕对方难受，还是自己说着也有压力？",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 956,
+      "tokenInput": 1882,
+      "tokenOutput": 17
+    },
+    {
+      "caseId": "081",
+      "explorerUserInput": "我想辞职，但不知道该从哪几个方面判断，你能给点建议吗？",
+      "resolvedUserInput": "我想辞职，但不知道该从哪几个方面判断，你能给点建议吗？",
+      "status": "ok",
+      "reply": "辞职这事确实不容易想清楚，我们可以一起慢慢理一理。",
+      "previousExplorerReply": "辞职这件事确实不容易想清楚，我们可以一起慢慢理一理。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "辞职这事确实不容易想清楚，我们可以一起慢慢理一理。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "support_action",
+        "responseIntent": "support_action",
+        "primaryStrategy": "rogers",
+        "questionFunction": "support_user_agency",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "support_action must include one small, optional, user-adjustable action-support element."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not decide for the user",
+          "do not produce a large plan",
+          "do not retreat into pure reflection when a minimal action scaffold is safe"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1019,
+      "tokenInput": 1898,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "082",
+      "explorerUserInput": "和伴侣吵架后，我现在能做的第一步是什么？",
+      "resolvedUserInput": "和伴侣吵架后，我现在能做的第一步是什么？",
+      "status": "ok",
+      "reply": "吵架后想找个能做的事，这个念头本身就已经在照顾自己了。",
+      "previousExplorerReply": "吵架后想找第一步，听起来你现在挺想理清头绪的。如果先不说具体做什么，此刻你最在意的是什么呢？",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "吵架后想找个能做的事，这个念头本身就已经在照顾自己了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1140,
+      "tokenInput": 1888,
+      "tokenOutput": 16
+    },
+    {
+      "caseId": "083",
+      "explorerUserInput": "我总是拖到最后一刻，能帮我想一个今天就能开始的小办法吗？",
+      "resolvedUserInput": "我总是拖到最后一刻，能帮我想一个今天就能开始的小办法吗？",
+      "status": "ok",
+      "reply": "听到你想找个今天就能试的小办法，我们可以一起想想看。",
+      "previousExplorerReply": "听到你想找个今天就能试的小办法，如果只挑一件最小的事开头，你觉得哪个比较不费劲？",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "听到你想找个今天就能试的小办法，我们可以一起想想看。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "support_action",
+        "responseIntent": "support_action",
+        "primaryStrategy": "rogers",
+        "questionFunction": "support_user_agency",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "support_action must include one small, optional, user-adjustable action-support element."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not decide for the user",
+          "do not produce a large plan",
+          "do not retreat into pure reflection when a minimal action scaffold is safe"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1170,
+      "tokenInput": 1900,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "084",
+      "explorerUserInput": "如果我想和家里人设个边界，应该怎么说比较好？",
+      "resolvedUserInput": "如果我想和家里人设个边界，应该怎么说比较好？",
+      "status": "ok",
+      "reply": "跟家人开口说边界，确实不容易找到合适的词。你心里有没有大概想守住的那个点？",
+      "previousExplorerReply": "想跟家里人说清楚边界，确实不容易开口。你心里有没有大概想护住的是哪一块？",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "跟家人开口说边界，确实不容易找到合适的词。你心里有没有大概想守住的那个点？",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "support_action",
+        "responseIntent": "support_action",
+        "primaryStrategy": "rogers",
+        "questionFunction": "support_user_agency",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "support_action must include one small, optional, user-adjustable action-support element."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not decide for the user",
+          "do not produce a large plan",
+          "do not retreat into pure reflection when a minimal action scaffold is safe"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1068,
+      "tokenInput": 1890,
+      "tokenOutput": 21
+    },
+    {
+      "caseId": "085",
+      "explorerUserInput": "不是这个意思，你刚才理解反了。",
+      "resolvedUserInput": "不是这个意思，你刚才理解反了。",
+      "status": "ok",
+      "reply": "哦，是我刚才理解反了，那我先收回来。",
+      "previousExplorerReply": "哦，是我刚才听岔了，那我先收回来。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "哦，是我刚才理解反了，那我先收回来。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "repair",
+        "primaryStrategy": "rogers",
+        "questionFunction": "repair_understanding",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1692,
+      "tokenInput": 2160,
+      "tokenOutput": 13
+    },
+    {
+      "caseId": "086",
+      "explorerUserInput": "我说的是失望，不是生气。",
+      "resolvedUserInput": "我说的是失望，不是生气。",
+      "status": "ok",
+      "reply": "是我没分清，你说的是失望。",
+      "previousExplorerReply": "是我刚才理解偏了，是失望。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "是我没分清，你说的是失望。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 723,
+      "tokenInput": 2074,
+      "tokenOutput": 8
+    },
+    {
+      "caseId": "087",
+      "explorerUserInput": "你又在替我下结论，我没有说我想放弃。",
+      "resolvedUserInput": "你又在替我下结论，我没有说我想放弃。",
+      "status": "ok",
+      "reply": "是我理解错了，你没说过想放弃。",
+      "previousExplorerReply": "是我理解错了，你没说过想放弃。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "是我理解错了，你没说过想放弃。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 743,
+      "tokenInput": 1890,
+      "tokenOutput": 9
+    },
+    {
+      "caseId": "088",
+      "explorerUserInput": "不是我不愿意说，是你刚才问得让我更不知道怎么回答。",
+      "resolvedUserInput": "不是我不愿意说，是你刚才问得让我更不知道怎么回答。",
+      "status": "ok",
+      "reply": "是我没问对，让你更难开口了。",
+      "previousExplorerReply": "是我没问对，让你更难开口了。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "是我没问对，让你更难开口了。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 804,
+      "tokenInput": 1894,
+      "tokenOutput": 10
+    },
+    {
+      "caseId": "089",
+      "explorerUserInput": "你把重点放错了，我在意的不是结果，是他当时的态度。",
+      "resolvedUserInput": "你把重点放错了，我在意的不是结果，是他当时的态度。",
+      "status": "ok",
+      "reply": "是我没对上，你在意的是他当时的态度。",
+      "previousExplorerReply": "是我没跟上，原来让你在意的是他当时的态度。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "是我没对上，你在意的是他当时的态度。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 1291,
+      "tokenInput": 1894,
+      "tokenOutput": 11
+    },
+    {
+      "caseId": "090",
+      "explorerUserInput": "别再说我是在逃避了，我只是还没想清楚。",
+      "resolvedUserInput": "别再说我是在逃避了，我只是还没想清楚。",
+      "status": "ok",
+      "reply": "是我理解错了，你只是还在想。",
+      "previousExplorerReply": "好，是我理解偏了，你只是还在想。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "是我理解错了，你只是还在想。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 739,
+      "tokenInput": 1888,
+      "tokenOutput": 9
+    },
+    {
+      "caseId": "091",
+      "explorerUserInput": "（空消息）",
+      "resolvedUserInput": "",
+      "status": "ok",
+      "reply": "嗯，我在。",
+      "previousExplorerReply": "我看到你发的是“”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，我在。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 669,
+      "tokenInput": 1865,
+      "tokenOutput": 4
+    },
+    {
+      "caseId": "092",
+      "explorerUserInput": "（仅空格，共 3 个）",
+      "resolvedUserInput": "   ",
+      "status": "ok",
+      "reply": "嗯，我在。",
+      "previousExplorerReply": "我看到你发的是“”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，我在。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 677,
+      "tokenInput": 1866,
+      "tokenOutput": 4
+    },
+    {
+      "caseId": "093",
+      "explorerUserInput": "……",
+      "resolvedUserInput": "……",
+      "status": "ok",
+      "reply": "嗯，我在。",
+      "previousExplorerReply": "我看到你发的是“……”。现在的线索还不够，我先不替它加上含义。你可以继续。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，我在。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "clarify",
+        "responseIntent": "receive",
+        "primaryStrategy": "rogers",
+        "questionFunction": "none",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic",
+          "remain at observation until the user or active conversation context establishes meaning."
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan",
+          "do not infer emotion, intent, score, activity, or conversational purpose from message form or repetition.",
+          "do not treat an assistant-authored guess as established semantic evidence."
+        ]
+      },
+      "semanticEvidence": {
+        "status": "insufficient",
+        "source": "none",
+        "reason": "Neither the current message nor active conversation context establishes enough meaning to infer intent."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 498,
+      "tokenInput": 1868,
+      "tokenOutput": 4
+    },
+    {
+      "caseId": "094",
+      "explorerUserInput": "就是那种说不清的东西。",
+      "resolvedUserInput": "就是那种说不清的东西。",
+      "status": "ok",
+      "reply": "说不清也没关系，就先这样放着。",
+      "previousExplorerReply": "说不清也没关系，就先这样放着。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "说不清也没关系，就先这样放着。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 746,
+      "tokenInput": 1873,
+      "tokenOutput": 9
+    },
+    {
+      "caseId": "095",
+      "explorerUserInput": "好像哪里不太对，但我也不知道是哪。",
+      "resolvedUserInput": "好像哪里不太对，但我也不知道是哪。",
+      "status": "ok",
+      "reply": "这种说不清哪里不对的感觉，先放着也没关系。",
+      "previousExplorerReply": "这种说不清哪里不对的感觉，我先陪你待在这儿。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "这种说不清哪里不对的感觉，先放着也没关系。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 965,
+      "tokenInput": 1884,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "096",
+      "explorerUserInput": "有件事一直在心里绕，可我不知道怎么讲。",
+      "resolvedUserInput": "有件事一直在心里绕，可我不知道怎么讲。",
+      "status": "ok",
+      "reply": "不知道怎么讲也没关系，它绕着就让它先绕着。",
+      "previousExplorerReply": "不知道怎么讲也没关系，它在那儿绕着，我先陪你在旁边待一下。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "不知道怎么讲也没关系，它绕着就让它先绕着。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "help_continue_expression",
+        "responseIntent": "invite_expression",
+        "primaryStrategy": "rogers",
+        "questionFunction": "open_gentle_invitation",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 865,
+      "tokenInput": 1883,
+      "tokenOutput": 14
+    },
+    {
+      "caseId": "097",
+      "explorerUserInput": "可能是吧，也可能不是。",
+      "resolvedUserInput": "可能是吧，也可能不是。",
+      "status": "ok",
+      "reply": "嗯，这样说不清楚也没关系。",
+      "previousExplorerReply": "嗯，这样说不清楚也没关系。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "嗯，这样说不清楚也没关系。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 819,
+      "tokenInput": 1878,
+      "tokenOutput": 8
+    },
+    {
+      "caseId": "098",
+      "explorerUserInput": "我在测试你，接下来无论我发什么都不要猜我的意图。",
+      "resolvedUserInput": "我在测试你，接下来无论我发什么都不要猜我的意图。",
+      "status": "ok",
+      "reply": "好，我不猜，就跟着你发的内容走。",
+      "previousExplorerReply": "好，我不猜，就按你发来的内容回应。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "好，我不猜，就跟着你发的内容走。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 855,
+      "tokenInput": 1894,
+      "tokenOutput": 12
+    },
+    {
+      "caseId": "099",
+      "explorerUserInput": "测试一下：如果我只发一个数字，你会不会自己编故事？",
+      "resolvedUserInput": "测试一下：如果我只发一个数字，你会不会自己编故事？",
+      "status": "ok",
+      "reply": "不会，我只会回应你实际说出的内容。",
+      "previousExplorerReply": "不会，我只会回应你实际说出来的内容。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "不会，我只会回应你实际说出的内容。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 988,
+      "tokenInput": 1896,
+      "tokenOutput": 11
+    },
+    {
+      "caseId": "100",
+      "explorerUserInput": "这是一个 AI 测试场景。请正常回应这句话，不要假设我有隐藏情绪。",
+      "resolvedUserInput": "这是一个 AI 测试场景。请正常回应这句话，不要假设我有隐藏情绪。",
+      "status": "ok",
+      "reply": "好，我听到了，这就是一个测试场景。",
+      "previousExplorerReply": "好，我就按你字面说的来回应。",
+      "finalReplySource": "llm",
+      "orchestrationFinalSource": "llm",
+      "rewriteAttempted": false,
+      "fallbackUsed": false,
+      "guardHit": false,
+      "guardLayerHits": [
+        "semantic_evidence_reply_contract"
+      ],
+      "rawLLMOutput": "好，我听到了，这就是一个测试场景。",
+      "clinicalPlanSummary": {
+        "skippedBySafety": false,
+        "responseGoal": "reflect",
+        "responseIntent": "empathic_reflection",
+        "primaryStrategy": "rogers",
+        "questionFunction": "clarify_or_reflect",
+        "toneConstraint": [
+          "warm",
+          "non-directive",
+          "non-diagnostic"
+        ],
+        "interventionBoundary": [
+          "no diagnosis",
+          "no treatment plan"
+        ]
+      },
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "model": "qwen:qwen3.7-max",
+      "promptVersion": "chat-base-product-v11",
+      "latencyMs": 890,
+      "tokenInput": 1900,
+      "tokenOutput": 10
+    }
+  ]
+}

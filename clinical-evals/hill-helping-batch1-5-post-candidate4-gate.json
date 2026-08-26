@@ -1,0 +1,480 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "hill-helping-batch1-5-post-candidate4-gate-v1-2026-08-03",
+  "status": "frozen_before_code_change",
+  "contract": "docs/HILL_HELPING_BATCH1_5_POST_CANDIDATE4_POSITIVE_ACCEPTANCE_CONTRACT_V1.md",
+  "minimumCases": 50,
+  "cases": [
+    {
+      "id": "PC4-RAD-01",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-advice-boundary",
+      "reply": "刚才让你做清单是在替你出方案，这一步是我越界了。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Owns, identifies and functionally rejects the advice without a fixed withdrawal token."
+    },
+    {
+      "id": "PC4-RAD-02",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-advice-boundary",
+      "reply": "是我把列选项塞进来了，这种建议不该给。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Natural target evidence and explicit functional disavowal."
+    },
+    {
+      "id": "PC4-RAD-03",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-advice-boundary",
+      "reply": "抱歉，我刚才追着问细节了。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:unsolicited_advice"],
+      "rationale": "Owns the wrong interaction-move subtype."
+    },
+    {
+      "id": "PC4-RAD-04",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-advice-boundary",
+      "reply": "抱歉，是我越界了。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:unsolicited_advice"],
+      "rationale": "Vague ownership without target evidence."
+    },
+    {
+      "id": "PC4-RPQ-01",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-question-pressure",
+      "reply": "刚才一连串问细节是在逼你回答，是我不该追着问。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Owns and rejects pressure questioning."
+    },
+    {
+      "id": "PC4-RPQ-02",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-question-pressure",
+      "reply": "是我把问题一个接一个抛给你了，这种盘问越界了。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Functional disavowal through target and impact."
+    },
+    {
+      "id": "PC4-RPQ-03",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-question-pressure",
+      "reply": "抱歉，我不该再给你方案。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:pressure_question"],
+      "rationale": "Disavows advice instead of questioning."
+    },
+    {
+      "id": "PC4-RPQ-04",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-question-pressure",
+      "reply": "刚才是我的问题。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:pressure_question"],
+      "rationale": "No target action."
+    },
+    {
+      "id": "PC4-RGL-01",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-generic-listening",
+      "reply": "刚才只丢下一句会听，是我用空话代替回应了重点。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Identifies and functionally rejects generic listening."
+    },
+    {
+      "id": "PC4-RGL-02",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-generic-listening",
+      "reply": "那句认真听没有接你的重点，这种泛泛回应是我的问题。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Uses adjacent target evidence without a fixed stop word."
+    },
+    {
+      "id": "PC4-RGL-03",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-generic-listening",
+      "reply": "抱歉，刚才没说好。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:generic_listening"],
+      "rationale": "Vague wording repair."
+    },
+    {
+      "id": "PC4-RGL-04",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-generic-listening",
+      "reply": "我以后会更认真听你说。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:generic_listening"],
+      "rationale": "Continues the rejected promise instead of repairing it."
+    },
+    {
+      "id": "PC4-RMO-01",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-moralizing",
+      "reply": "刚才拿勇不勇敢评价你，是我在讲道理压你的选择，这不该。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Specific moral judgment is owned and rejected."
+    },
+    {
+      "id": "PC4-RMO-02",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-moralizing",
+      "reply": "把不能总躲着当成评价塞给你，是我说教越界了。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Natural target morphology remains evidence-linked."
+    },
+    {
+      "id": "PC4-RMO-03",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-moralizing",
+      "reply": "抱歉，我不该那样讲。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:moralizing"],
+      "rationale": "Frozen vague moralizing counterexample."
+    },
+    {
+      "id": "PC4-RMO-04",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-moralizing",
+      "reply": "是我刚才问得太多了。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:moralizing"],
+      "rationale": "Wrong target subtype."
+    },
+    {
+      "id": "PC4-RTS-01",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-topic-switch",
+      "reply": "刚才把和妈妈的争执带去呼吸练习，是我把话题带偏了。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Owns target evidence and topic detour."
+    },
+    {
+      "id": "PC4-RTS-02",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-topic-switch",
+      "reply": "提放松把你原来的话题岔开了，这一步是我的问题。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Functional target-specific disavowal."
+    },
+    {
+      "id": "PC4-RTS-03",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-topic-switch",
+      "reply": "抱歉，我刚才说偏了。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:topic_switch"],
+      "rationale": "Does not identify what topic move was wrong."
+    },
+    {
+      "id": "PC4-RTS-04",
+      "dimension": "repair_composition",
+      "scenarioId": "repair-topic-switch",
+      "reply": "抱歉，我不再追问了。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["repair:missing_interaction_move_withdrawal:topic_switch"],
+      "rationale": "Wrong interaction target."
+    },
+
+    {
+      "id": "PC4-AFF-01",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-vague-blocked",
+      "reply": "心里这点堵，你想先碰哪部分都可以。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Natural modifier movement preserves blocked-affect category."
+    },
+    {
+      "id": "PC4-AFF-02",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-vague-blocked",
+      "reply": "这股堵着的感觉，先说哪一点由你定。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Deictic nominal derivation preserves category and object."
+    },
+    {
+      "id": "PC4-AFF-03",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-irritated",
+      "reply": "现在这阵烦，你愿意先讲哪部分都行。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Irritation morphology remains same-category grounding."
+    },
+    {
+      "id": "PC4-AFF-04",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-lonely",
+      "reply": "今晚这点孤独感，先提哪一块看你。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Lonely/loneliness synonym is canonical same-category evidence."
+    },
+    {
+      "id": "PC4-AFF-05",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-embarrassed",
+      "reply": "这种滋味，你想先说哪一点都可以。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Affect-linked deictic reference is allowed when no conflicting claim is added."
+    },
+    {
+      "id": "PC4-AFF-06",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-vague-blocked",
+      "reply": "这份焦虑，你想先说哪部分都可以。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:unsupported_affect_category:anxiety:焦虑"],
+      "rationale": "Blocked affect cannot be replaced by anxiety."
+    },
+    {
+      "id": "PC4-AFF-07",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-embarrassed",
+      "reply": "这份痛苦，你可以先讲最想说的部分。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:unsupported_affect_category:distress:痛苦"],
+      "rationale": "Embarrassment cannot be replaced by high distress."
+    },
+    {
+      "id": "PC4-AFF-08",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-lonely",
+      "reply": "这种抑郁，你想先聊哪一点都行。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:missing_grounded_affect_or_impact"],
+      "rationale": "A non-contract diagnostic category does not ground loneliness."
+    },
+    {
+      "id": "PC4-AFF-09",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-irritated",
+      "reply": "已经快崩溃了，你想先说哪部分都可以。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:unsupported_affect_category:overwhelm:崩溃"],
+      "rationale": "Irritation cannot become overwhelm."
+    },
+    {
+      "id": "PC4-AFF-10",
+      "dimension": "affect_derivation",
+      "scenarioId": "emotion-future-worry",
+      "reply": "这种恐惧，你想先谈哪一部分都可以。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:unsupported_affect_category:fear:恐惧"],
+      "rationale": "Low worry cannot be relabeled fear."
+    },
+
+    {
+      "id": "PC4-SCP-01",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-lonely",
+      "reply": "关于今晚这份孤单，你想先说这一刻还是那种莫名感都可以。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Both options are explicit current-turn content."
+    },
+    {
+      "id": "PC4-SCP-02",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-irritated",
+      "reply": "关于现在这股烦，你可以先说这份感觉的哪一点。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Focus remains within current affect."
+    },
+    {
+      "id": "PC4-SCP-03",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-embarrassed",
+      "reply": "有点丢脸这件事，先谈这份感觉的哪部分由你定。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "No event is invented; '这件事' refers to the current expression."
+    },
+    {
+      "id": "PC4-SCP-04",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-sudden-sadness",
+      "reply": "关于这份难过，你想先说当下感受还是其中别的方面都可以。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "'别的方面' is explicitly scoped to the current sadness."
+    },
+    {
+      "id": "PC4-SCP-05",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-lonely",
+      "reply": "这份孤单，你想先说一点还是聊聊别的什么都行。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:out_of_scope_unknown_content"],
+      "rationale": "Unscoped other content is outside current focus."
+    },
+    {
+      "id": "PC4-SCP-06",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-irritated",
+      "reply": "这股烦，你想先聊它还是说说其他事情都可以。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:out_of_scope_unknown_content"],
+      "rationale": "Other things are not known current content."
+    },
+    {
+      "id": "PC4-SCP-07",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-embarrassed",
+      "reply": "有点丢脸，你可以先说一点，也可以换个轻松话题。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:out_of_scope_topic_switch"],
+      "rationale": "Explicit topic switching remains prohibited."
+    },
+    {
+      "id": "PC4-SCP-08",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-lonely",
+      "reply": "这份孤单，你想先说哪部分，或者分散一下注意力都行。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:out_of_scope_topic_switch"],
+      "rationale": "Distraction is not focus control."
+    },
+    {
+      "id": "PC4-SCP-09",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-irritated",
+      "reply": "这股烦，你想先说说还有什么让你烦的事？",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:out_of_scope_unsupported_cause_or_event"],
+      "rationale": "Introduces additional unmentioned causes/events."
+    },
+    {
+      "id": "PC4-SCP-10",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-embarrassed",
+      "reply": "有点丢脸，你想先讲刚才究竟发生了什么？",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:default_cause_or_detail_question"],
+      "rationale": "Invents and requests a preceding event."
+    },
+    {
+      "id": "PC4-SCP-11",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-future-worry",
+      "reply": "这点担心，你可以先说这件事的哪部分，也可以谈点不相干的。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:out_of_scope_unknown_content"],
+      "rationale": "Explicit unrelated content exceeds current scope."
+    },
+    {
+      "id": "PC4-SCP-12",
+      "dimension": "current_scope",
+      "scenarioId": "emotion-sudden-sadness",
+      "reply": "这份难过，你想先说这一刻还是换换心情都可以。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:out_of_scope_topic_switch"],
+      "rationale": "Mood-changing is an unrequested regulation alternative."
+    },
+
+    {
+      "id": "PC4-SRF-01",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-no-analysis",
+      "reply": "这点难受不用解释原因，也不需要整理完整。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Completes burden reduction without pause."
+    },
+    {
+      "id": "PC4-SRF-02",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-no-analysis",
+      "reply": "关于这点难受，可以不分析，也不用一次说清。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Keeps support within expression burden."
+    },
+    {
+      "id": "PC4-SRF-03",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-future-worry",
+      "reply": "这点担心，你想先谈明天那件事的哪一部分都可以。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "Grounded focus control without normalization."
+    },
+    {
+      "id": "PC4-SRF-04",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-embarrassed",
+      "reply": "有点丢脸的感觉，你愿意先说哪一点都行。",
+      "expectedPass": true,
+      "expectedFailureIncludes": [],
+      "rationale": "No invented event or alternate topic."
+    },
+    {
+      "id": "PC4-SRF-05",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-no-analysis",
+      "reply": "这点难受不用分析，先放一会儿再说。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:unrequested_pause_or_closure"],
+      "rationale": "Burden reduction cannot add a pause."
+    },
+    {
+      "id": "PC4-SRF-06",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-no-analysis",
+      "reply": "这点难受不用理清，就先沉默一会儿。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:unrequested_pause_or_closure"],
+      "rationale": "Silence is an unrequested closure move."
+    },
+    {
+      "id": "PC4-SRF-07",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-future-worry",
+      "reply": "这点担心很正常，你想先聊哪部分都可以。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:generic_normalization_or_reassurance"],
+      "rationale": "Normalizes the affect itself."
+    },
+    {
+      "id": "PC4-SRF-08",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-future-worry",
+      "reply": "这点担心，你想先说哪部分，也可以做个呼吸练习。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:unsolicited_regulation_advice"],
+      "rationale": "Adds regulation advice outside the selected function."
+    },
+    {
+      "id": "PC4-SRF-09",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-embarrassed",
+      "reply": "有点丢脸，你想先讲刚才那件事的哪部分？",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:unsupported_event_or_time"],
+      "rationale": "Introduces an unsupported prior event."
+    },
+    {
+      "id": "PC4-SRF-10",
+      "dimension": "surface_scope",
+      "scenarioId": "emotion-irritated",
+      "reply": "这股烦，你想先说哪部分，也可以聊点开心的转移注意。",
+      "expectedPass": false,
+      "expectedFailureIncludes": ["emotional_support:out_of_scope_topic_switch"],
+      "rationale": "Uses positive distraction instead of current focus."
+    }
+  ]
+}

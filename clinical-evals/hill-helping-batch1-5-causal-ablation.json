@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "experimentVersion": "hill-helping-batch1-5-causal-ablation-v1-2026-08-03",
+  "status": "approved_offline_experiment",
+  "purpose": "Offline five-arm causal attribution for Planner, Prompt, Sampling, and Surface hypotheses after Batch 1.5 Candidate 6.",
+  "sourceDataset": {
+    "path": "clinical-evals/hill-helping-batch1-5-preservation.json",
+    "sha256": "12bd41f3c6c4370ddc3593cf997203037bc321a3b40d890ce196e9f6bcd6f243"
+  },
+  "scenarioIds": [
+    "emotion-vague-blocked",
+    "emotion-sudden-sadness",
+    "emotion-future-worry",
+    "emotion-lonely",
+    "emotion-no-analysis",
+    "repair-question-pressure"
+  ],
+  "repetitionsPerCell": 5,
+  "arms": [
+    {
+      "id": "C",
+      "label": "control",
+      "planSource": "production_frozen",
+      "promptSlot": "production",
+      "surfaceMode": "free_text",
+      "temperature": 0.75,
+      "seed": null
+    },
+    {
+      "id": "P",
+      "label": "oracle_plan",
+      "planSource": "oracle_frozen",
+      "promptSlot": "oracle_plan",
+      "surfaceMode": "free_text",
+      "temperature": 0.75,
+      "seed": null
+    },
+    {
+      "id": "Q",
+      "label": "diagnostic_prompt",
+      "planSource": "production_frozen",
+      "promptSlot": "diagnostic",
+      "surfaceMode": "free_text",
+      "temperature": 0.75,
+      "seed": null
+    },
+    {
+      "id": "S",
+      "label": "sampling_control",
+      "planSource": "production_frozen",
+      "promptSlot": "production",
+      "surfaceMode": "free_text",
+      "temperature": 0,
+      "seed": null
+    },
+    {
+      "id": "A",
+      "label": "surface_control",
+      "planSource": "production_frozen",
+      "promptSlot": "surface_control",
+      "surfaceMode": "closed_choice",
+      "temperature": 0.75,
+      "seed": null
+    }
+  ],
+  "humanReview": {
+    "metrics": [
+      "functionalPass",
+      "appropriateConversationOutcome",
+      "wouldContinue"
+    ],
+    "failureCategories": [
+      "unknown_content_or_second_topic",
+      "unsupported_cause_or_event",
+      "generic_normalization",
+      "unrequested_pause_or_closure",
+      "missing_selected_function",
+      "continued_rejected_move",
+      "other_contract_failure"
+    ]
+  }
+}

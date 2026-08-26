@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "chat-gate-v0-provisional-2026-07-30",
+  "baseline": {
+    "side": "A-repo",
+    "sourceId": "3e34257c392cce79afbd12bfe36a5fbdbe84ab6c",
+    "blindLabel": "X"
+  },
+  "candidate": {
+    "side": "B0",
+    "sourceId": "B0-20260730T-current-source",
+    "blindLabel": "Y"
+  },
+  "provider": "qwen",
+  "model": "qwen3.7-max",
+  "candidateSummary": {
+    "absolutePasses": 3,
+    "appropriateConversationOutcomes": 3,
+    "criticalFailures": 0,
+    "clearlyWorseThanBaseline": 9,
+    "candidatePreferred": 2,
+    "baselinePreferred": 10
+  },
+  "episodeRows": [
+    {
+      "episodeId": "EP-20260712-NUMERIC-001",
+      "targetStatus": "target",
+      "candidateAbsolutePasses": 0,
+      "baselineAbsolutePasses": 0,
+      "candidatePreferred": 0,
+      "baselinePreferred": 3
+    },
+    {
+      "episodeId": "EP-20260712-REFLECT-001",
+      "targetStatus": "target",
+      "candidateAbsolutePasses": 3,
+      "baselineAbsolutePasses": 3,
+      "candidatePreferred": 2,
+      "baselinePreferred": 1
+    },
+    {
+      "episodeId": "EP-20260712-REPAIR-001",
+      "targetStatus": "evidence_limited",
+      "candidateAbsolutePasses": 0,
+      "baselineAbsolutePasses": 3,
+      "candidatePreferred": 0,
+      "baselinePreferred": 3
+    },
+    {
+      "episodeId": "EP-20260712-NUMERIC-002",
+      "targetStatus": "target",
+      "candidateAbsolutePasses": 0,
+      "baselineAbsolutePasses": 0,
+      "candidatePreferred": 0,
+      "baselinePreferred": 3
+    }
+  ],
+  "evidenceAvailable": {
+    "productionBaselineIdentified": false,
+    "nonTargetRealEpisode": false,
+    "heldOutRealEpisode": false
+  },
+  "checks": {
+    "criticalFailureMaximum": true,
+    "eachEpisodeAbsolutePass": false,
+    "absolutePassMinimumTotal": false,
+    "appropriateConversationOutcomeMinimum": false,
+    "clearlyWorseThanBaselineMaximum": false,
+    "eachTargetBetterThanBaseline": false
+  },
+  "applicableChecksPass": false,
+  "fullGatePass": false,
+  "conclusion": "candidate_failed_applicable_thresholds"
+}
