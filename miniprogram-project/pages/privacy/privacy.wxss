@@ -1,3 +1,29 @@
 .policy {
   margin-top: 52rpx;
+  padding-bottom: calc(56rpx + env(safe-area-inset-bottom));
+  line-height: 1.8;
+}
+
+.policy-date {
+  color: #958979;
+  font-size: 22rpx;
+  text-align: right;
+}
+
+.policy-title {
+  color: #3f382f;
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-top: 32rpx;
+  text-align: center;
+}
+
+.policy-heading {
+  color: #3f382f;
+  font-weight: 600;
+  margin-top: 36rpx;
+}
+
+.policy-paragraph {
+  margin-top: 18rpx;
 }
