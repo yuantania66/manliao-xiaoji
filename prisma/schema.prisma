@@ -665,6 +665,17 @@ model NoteUpload {
   @@index([noteId])
 }
 
+model AccountCancellationFileDeletion {
+  id            String    @id @default(cuid())
+  storageKey    String    @unique
+  attempts      Int       @default(0)
+  lastErrorCode String?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([completedAt, createdAt])
+}
+
 model Fact {
   id              String                  @id @default(cuid())
   userId          String
