@@ -244,7 +244,7 @@ const collectMechanicalReplyFailures = ({
   ) {
     failures.push("assistant_voice:mechanical_receipt_or_presence");
   }
-  if (/(?:一直|正在|就在)?等你(?:来|找我)?(?:聊天|说话)?/u.test(normalized)) {
+  if (/(?:^|[。！？!?]\s*)我(?:一直|正在|就在|还在|在)?等你(?:来|找我)?(?:聊天|说话)?|(?:一直|正在|就在|还在|在)等你(?:来|找我)?(?:聊天|说话)?/u.test(normalized)) {
     failures.push("assistant_grounding:invented_waiting_activity");
   }
   if (plan.responseActions.includes("repair_previous_wording")) {
