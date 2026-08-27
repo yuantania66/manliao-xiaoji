@@ -1,21 +1,30 @@
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
-import { assertComposerHumanBlindReviewResultV1, COMPOSER_HUMAN_BLIND_MAP_PATH, COMPOSER_HUMAN_BLIND_PACK_PATH, COMPOSER_HUMAN_BLIND_RATINGS_PATH, createComposerHumanBlindReviewResultV1, hashHumanBlindValue } from "../lib/composer-human-blind-review-authority";
+import { assertComposerHumanBlindReviewResultV1, COMPOSER_HUMAN_BLIND_MAP_PATH, COMPOSER_HUMAN_BLIND_PACK_PATH, COMPOSER_HUMAN_BLIND_RATINGS_PATH, COMPOSER_HUMAN_BLIND_REVIEWER_AUTH_PATH, createComposerHumanBlindReviewResultV1, hashHumanBlindValue } from "../lib/composer-human-blind-review-authority";
 import { detectAssistantCorrection } from "../conversation-os/control/repairSignal";
 import { triageSafety } from "../services/ai/chatSafety";
 import { assertRepairPairedContextExactV1, buildExactV1BlindInputV1, buildPairedHumanReviewContextV1, HUMAN_BLIND_ORDINARY_SAFETY_FIXTURE_HASH_V1, HUMAN_BLIND_ORDINARY_SAFETY_FIXTURE_V1, HUMAN_REVIEW_REPAIR_CONTEXT_PROJECTION_HASH_V1, HUMAN_REVIEW_REPAIR_CONTEXT_PROJECTION_V1 } from "./composer-human-blind-pack-local";
 import { SYNTHETIC_BASELINE_CASES_V1 } from "./hot-cold-p0-frozen-replay";
 
+const artifactPaths = [COMPOSER_HUMAN_BLIND_PACK_PATH, COMPOSER_HUMAN_BLIND_MAP_PATH, COMPOSER_HUMAN_BLIND_RATINGS_PATH, COMPOSER_HUMAN_BLIND_REVIEWER_AUTH_PATH] as const;
+const originalArtifacts = artifactPaths.map((path) => existsSync(path) ? { path, bytes: readFileSync(path), mode: statSync(path).mode & 0o777 } : { path, bytes: null, mode: 0o600 });
+process.on("exit", () => {
+  for (const artifact of originalArtifacts) {
+    if (artifact.bytes === null) rmSync(artifact.path, { force: true });
+    else writeFileSync(artifact.path, artifact.bytes, { mode: artifact.mode });
+  }
+});
+
 const generated = spawnSync(process.execPath, ["--import", "tsx", "scripts/composer-human-blind-pack-local.ts", "--check-mechanism"], { cwd: process.cwd(), env: { ...process.env, COMPOSER_HUMAN_REVIEWER_ID: "user-authorized-human-reviewer" }, encoding: "utf8" });
 assert.equal(generated.status, 0, generated.stderr);
 const pack = JSON.parse(readFileSync(COMPOSER_HUMAN_BLIND_PACK_PATH, "utf8"));
 const map = JSON.parse(readFileSync(COMPOSER_HUMAN_BLIND_MAP_PATH, "utf8"));
-const authorization = JSON.parse(readFileSync("/private/tmp/composer-human-blind-reviewer-authorization-v1.json", "utf8"));
+const authorization = JSON.parse(readFileSync(COMPOSER_HUMAN_BLIND_REVIEWER_AUTH_PATH, "utf8"));
 assert.equal(authorization.humanConfirmed, false);
 authorization.humanConfirmed = true;
-writeFileSync("/private/tmp/composer-human-blind-reviewer-authorization-v1.json", JSON.stringify(authorization));
+writeFileSync(COMPOSER_HUMAN_BLIND_REVIEWER_AUTH_PATH, JSON.stringify(authorization));
 assert.equal(pack.rows.length, 36); assert.equal(map.rows.length, 36);
 assert(pack.rows.every((row: Record<string, unknown>) => !Object.hasOwn(row, "candidateASource") && !Object.hasOwn(row, "candidateBSource")));
 assert.equal(new Set(pack.rows.map((row: { caseId: string; slot: number }) => `${row.caseId}:${row.slot}`)).size, 36);
