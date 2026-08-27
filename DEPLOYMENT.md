@@ -15,6 +15,18 @@
 - HTTPS 证书：Let's Encrypt，路径 `/etc/letsencrypt/live/manliaoxiaoji.com/`
 - 数据库：本机 PostgreSQL，库名 `manliaoxiaoji`
 
+## 2026-08-27 当前发布
+
+- 生产版本：`dcb5515`（PR #33）
+- 当前目录：`/var/www/manliaoxiaoji/releases/dcb5515`
+- 回滚版本：`/var/www/manliaoxiaoji/releases/e8e109a`
+- Next.js Build ID：`5-sFv3DLAWfG_fKqzMNZ6`
+- 生产数据库：19 个 migration 已应用，无待执行 migration
+- PM2：`manliaoxiaoji` 已切换并重启，`/api/health` 返回 production / database connected
+- 线上 smoke：健康检查、匿名鉴权、微信空参数、游客主动问候、真实 Qwen 合成“你好”均通过
+- 注销文件清理：`manliaoxiaoji-account-cancellation-cleanup.timer` 已启用，最近一次执行成功
+- 小程序预览：合入 main 的体验版编译通过，包体 164.4 KB
+
 ## 已完成
 
 - [x] 独立生产目录已创建，不影响旧的 `xinqing.studio` 测试服务。
@@ -24,17 +36,21 @@
 - [x] Next.js 生产构建通过。
 - [x] PM2 进程 `manliaoxiaoji` 已启动并保存。
 - [x] Nginx HTTP 站点已配置。
-- [ ] DNS / HTTPS 当前需复核：2026-07-02 从本地检查 `manliaoxiaoji.com` 解析失败，直连服务器 IP 带 Host 返回 DNSPod webblock。
-- [x] HTTPS 证书历史记录：Let's Encrypt 曾签发并启用，解除 DNSPod webblock 后需重新验证证书链和跳转。
-- [ ] 生产健康检查当前需复核：域名恢复后确认 `/api/health` 返回 `database: connected`。
+- [x] DNS / HTTPS 已恢复并复核，`https://manliaoxiaoji.com` 可访问。
+- [x] HTTPS 证书已启用；线上 smoke 通过域名 HTTPS 完成。
+- [x] 生产健康检查已复核，`/api/health` 返回 `database: connected`。
 - [x] `/uploads/` 静态文件映射已验证。
 
 ## 待完成
 
 - [ ] HTTPS 生效后，在微信公众平台配置合法域名。
 - [ ] 配置生产数据库备份。
-- [ ] 配置生产 AI Provider，例如 `AI_PROVIDER=deepseek` + `DEEPSEEK_API_KEY`，或 `AI_PROVIDER=zhipu` + `ZHIPU_API_KEY`。
-- [ ] 解除 DNSPod webblock 后运行 `npm run smoke:prod`。
+- [x] 生产 AI Provider 已配置为 Qwen；不记录密钥或 Base URL。真实合成游客问候与聊天已通过。
+- [x] 已运行 `npm run smoke:prod`，3/3 通过。
+- [x] 已配置注销文件清理 secret 与 systemd timer。
+- [ ] 腾讯云短信签名与正文模板尚未配置；当前版本隐藏手机号登录，审核材料明确按微信登录上线。
+- [ ] 完成微信体验版真机人工验收并提交审核。
+- [ ] Composer 第 3 个自然日延迟采样完成前，按已批准的限量上线方案保持 pending 并监控。
 
 ## 常用命令
 
@@ -70,7 +86,7 @@ PROD_ENV_FILE=/var/www/manliaoxiaoji/shared/.env npm run audit:prod-env
 npm run smoke:prod
 ```
 
-`smoke:prod` 会检查生产健康检查、匿名鉴权和微信登录参数校验。2026-07-02 当前失败原因为 `ENOTFOUND manliaoxiaoji.com`，属于域名解析 / DNSPod webblock 阻塞。
+`smoke:prod` 会检查生产健康检查、匿名鉴权和微信登录参数校验。2026-08-27 已在 `dcb5515` 上通过；另以纯合成数据验证了游客主动问候和真实 Qwen “你好”聊天链路，检查输出不含回复正文、密钥或 Base URL。
 
 ## HTTPS 证书命令
 
