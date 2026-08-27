@@ -25,6 +25,7 @@
 - PM2：`manliaoxiaoji` 已切换并重启，`/api/health` 返回 production / database connected
 - 线上 smoke：健康检查、匿名鉴权、微信空参数、游客主动问候、真实 Qwen 合成“你好”均通过
 - 注销文件清理：`manliaoxiaoji-account-cancellation-cleanup.timer` 已启用，最近一次执行成功
+- 数据库备份：`manliaoxiaoji-postgres-backup.timer` 已启用，每日执行；首份备份已通过 `pg_restore --list` 完整性检查
 - 小程序预览：合入 main 的体验版编译通过，包体 164.4 KB
 
 ## 已完成
@@ -43,8 +44,8 @@
 
 ## 待完成
 
-- [ ] HTTPS 生效后，在微信公众平台配置合法域名。
-- [ ] 配置生产数据库备份。
+- [x] 生产域名 `https://manliaoxiaoji.com` 已启用 HTTPS；微信公众平台合法域名仍需在提审前由管理员最终核对。
+- [x] 已配置每日生产数据库备份与生成后完整性检查；当前不自动删除旧备份，保留周期另行确认。
 - [x] 生产 AI Provider 已配置为 Qwen；不记录密钥或 Base URL。真实合成游客问候与聊天已通过。
 - [x] 已运行 `npm run smoke:prod`，3/3 通过。
 - [x] 已配置注销文件清理 secret 与 systemd timer。
