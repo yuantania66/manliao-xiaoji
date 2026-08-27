@@ -73,6 +73,21 @@ const results = cases.map((item) => {
   return result;
 });
 
+const proactiveMessaging = build("你为什么不主动找我聊天呢", [{
+  role: "assistant",
+  content: "你好呀，我在呢。",
+}]);
+assert.equal(proactiveMessaging.interpretation.directQuestions[0]?.kind, "proactive_messaging_capability");
+assert(proactiveMessaging.responsePlan.requiredDisclosure.some((fact) => fact.includes("打开聊天页面")));
+assert(validateResponsePlanOutput({
+  plan: proactiveMessaging.responsePlan,
+  reply: "你打开聊天页面时，我可以先和你打招呼；小程序关闭后，我不能主动推送消息联系你。",
+}).passed);
+assert(!validateResponsePlanOutput({
+  plan: proactiveMessaging.responsePlan,
+  reply: "其实我没法主动发起对话。",
+}).passed);
+
 const identity = results[0];
 assert.equal(identity.context.grounding.source, "assistant_grounding_v3");
 assert.equal(identity.context.grounding.availableFacts.product.name, "慢聊小记");

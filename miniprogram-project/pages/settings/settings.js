@@ -1,9 +1,11 @@
-const { clearAuth } = require("../../utils/auth");
+const { clearAuth, getDataMode } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
 
 Page({
   data: {
-    backTop: 54
+    backTop: 54,
+    dataMode: "none",
+    isAuthenticated: false
   },
 
   onLoad() {
@@ -11,7 +13,13 @@ Page({
     this.setData({ backTop: layout.backTop });
   },
 
+  onShow() {
+    const dataMode = getDataMode();
+    this.setData({ dataMode, isAuthenticated: dataMode === "authenticated" });
+  },
+
   logout() {
+    if (!this.data.isAuthenticated) return;
     clearAuth();
     wx.removeStorageSync("xinqingGuestMode");
     wx.removeStorageSync("xinqingMiniChatMessages");

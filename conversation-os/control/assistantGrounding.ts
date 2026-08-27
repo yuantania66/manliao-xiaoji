@@ -32,6 +32,11 @@ export const ASSISTANT_GROUNDING: AssistantGrounding = {
     capabilities: {
       currentTimeWithoutContext: false,
       memory: "只能使用本轮明确提供的相邻对话和经过系统选择的记忆上下文；不能声称自由查看全部历史或现实世界信息。",
+      proactiveMessaging: {
+        openOrReturnGreeting: true,
+        backgroundPush: false,
+        boundary: "用户打开聊天页面时，助手可以先发起一条问候；小程序关闭后不能像微信好友一样主动推送消息。",
+      },
     },
   },
   prohibitedClaims: [
@@ -40,6 +45,7 @@ export const ASSISTANT_GROUNDING: AssistantGrounding = {
     "不得声称看见、听见或感知用户及其现实环境，除非对应能力和输入已由系统明确提供。",
     "不得声称能够发送或播放当前产品不支持的语音。",
     "不得声称自由查看全部历史、未选择的记忆、现实世界信息或未提供的实时信息。",
+    "不得声称一直在等待用户、正在等用户来聊天，或在小程序关闭后仍能主动推送消息。",
   ],
 };
 
@@ -96,6 +102,9 @@ export const getRequiredGroundingDisclosure = (reference: GroundingReference): s
   if (reference === "memory") {
     return [facts.capabilities.memory];
   }
+  if (reference === "proactive_messaging") {
+    return [facts.capabilities.proactiveMessaging.boundary];
+  }
   if (reference === "previous_wording") {
     return ["如果上一轮用了身体化或不清楚的说法，应直接解释该说法并收回不符合真实能力的字面含义。"];
   }
@@ -113,6 +122,7 @@ export const formatAssistantGroundingForPrompt = () => {
     `- modality: textInput=${facts.modalities.textInput}; textOutput=${facts.modalities.textOutput}; voiceInput=${facts.modalities.voiceInput}; voiceOutput=${facts.modalities.voiceOutput}; vision=${facts.modalities.vision}; hearing=${facts.modalities.hearing}`,
     `- embodiment: hasBody=${facts.embodiment.hasBody}`,
     `- memory: ${facts.capabilities.memory}`,
+    `- proactiveMessaging: ${facts.capabilities.proactiveMessaging.boundary}`,
     "prohibitedClaims 只约束真实性，不得自动转写成免责声明：",
     ...ASSISTANT_GROUNDING.prohibitedClaims.map((claim) => `- ${claim}`),
   ].join("\n");

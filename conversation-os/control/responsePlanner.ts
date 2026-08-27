@@ -564,6 +564,7 @@ export const createResponsePlan = ({
       actions = actions.filter(
         (action) => action !== "acknowledge_without_psychologizing"
       );
+      actions = unique(["offer_neutral_conversation_entry", ...actions]);
     } else if (interactionMoveHandoffPlan?.requiredFunction === "respect_user_boundary") {
       actions = ["respect_pause"];
     } else if (

@@ -4,7 +4,9 @@ const USER_CACHE_KEYS = [
   "xinqingMiniChatMessages",
   "xinqingMiniNotes",
   "xinqingMiniGuestChatMessages",
-  "xinqingMiniGuestNotes"
+  "xinqingMiniGuestNotes",
+  "xinqingInsightsAnalysisAuthorized",
+  "xinqingInsightsAuthorization:v1"
 ];
 
 const isUsableAuth = (auth, now = Date.now()) => {

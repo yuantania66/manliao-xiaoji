@@ -2,6 +2,7 @@ const { formatDateLabel } = require("../../utils/local-data");
 const { getAuth, saveAuth, enterGuest, isGuest } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
 const { loginWithWechat, getMe } = require("../../api/auth");
+const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
 
 const prompts = [
   { title: "今天过得怎么样？", lead: "不用急着说清楚。\n先选一个此刻更需要的方式。" },
@@ -98,6 +99,10 @@ Page({
     this.setData({ privacyConfirmed: event.detail.value.includes("confirmed") });
   },
 
+  openWechatPrivacy() {
+    openWechatPrivacyContract();
+  },
+
   updateSafeLayout() {
     const layout = getSafeLayout();
     this.setData({
@@ -115,6 +120,14 @@ Page({
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.authCheckPending = false;
     this.setData({ isCheckingAuth: false, isLoggingIn: true, entryError: "" });
+    requireWechatPrivacyAuthorization()
+      .then(() => this.loginWithWechatCode())
+      .catch((error) => {
+        this.setData({ isLoggingIn: false, entryError: error.message || "微信隐私授权未完成。" });
+      });
+  },
+
+  loginWithWechatCode() {
     wx.login({
       success: ({ code }) => {
         if (!code) {
@@ -126,6 +139,7 @@ Page({
             saveAuth(auth);
             this.forceEntry = false;
             this.setData({ showEntry: false, entryError: "" });
+            wx.showToast({ title: "微信已连接，云端同步已开启", icon: "none" });
           })
           .catch((error) => {
             this.setData({

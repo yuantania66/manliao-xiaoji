@@ -2,21 +2,43 @@
   margin-top: 22rpx;
 }
 
-.setting-card {
+.account-state {
+  margin-top: 48rpx;
+  padding: 30rpx 36rpx;
+  color: #2d2926;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.account-state text {
+  display: block;
+  margin-top: 8rpx;
+  color: #71877b;
+  font-size: 22rpx;
+  font-weight: 400;
+}
+
+.settings-group {
+  margin-top: 28rpx;
+  padding: 0 36rpx;
+  overflow: hidden;
+}
+
+.setting-row {
   position: relative;
   display: block;
-  margin-top: 28rpx;
-  padding: 34rpx 40rpx;
+  padding: 30rpx 54rpx 30rpx 0;
+  border-bottom: 1rpx solid #eee5dc;
   color: #2d2926;
   font-size: 30rpx;
   font-weight: 700;
 }
 
-.setting-card:first-of-type {
-  margin-top: 64rpx;
+.setting-row:last-child {
+  border-bottom: 0;
 }
 
-.setting-card text {
+.setting-row text {
   display: block;
   margin-top: 12rpx;
   color: #6d665f;
@@ -24,12 +46,16 @@
   font-weight: 400;
 }
 
-.setting-card view {
+.setting-row view {
   position: absolute;
-  right: 34rpx;
-  top: 46rpx;
+  right: 0;
+  top: 42rpx;
   color: #71877b;
   font-size: 40rpx;
+}
+
+.danger-row {
+  color: #9f6b61;
 }
 
 .logout {
@@ -37,14 +63,15 @@
   height: 92rpx;
   margin-top: 42rpx;
   border-radius: 30rpx;
-  background: #fffdf9;
+  border: 2rpx solid rgba(185, 130, 110, 0.24);
+  background: transparent;
   color: #b9826e;
   font-size: 28rpx;
   font-weight: 700;
 }
 
 .version {
-  margin-top: 58rpx;
+  margin: 58rpx 0 calc(env(safe-area-inset-bottom) + 32rpx);
   color: #a49a91;
   text-align: center;
   font-size: 24rpx;

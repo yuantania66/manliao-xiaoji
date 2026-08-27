@@ -6,7 +6,8 @@ const {
   createSession,
   listMessages,
   sendMessage: postMessage,
-  sendGuestMessage: postGuestMessage
+  sendGuestMessage: postGuestMessage,
+  getGuestGreeting
 } = require("../../api/chat");
 
 const TIME_DIVIDER_GAP = 3 * 60 * 1000;
@@ -146,6 +147,8 @@ Page({
 
   typingTimers: [],
   bottomSafe: 23,
+  guestGreetingPending: false,
+  guestGreetingRequestId: 0,
 
   onLoad(options = {}) {
     this.setData({
@@ -163,6 +166,8 @@ Page({
 
   onUnload() {
     this.clearAssistantTypingTimers();
+    this.guestGreetingRequestId += 1;
+    this.guestGreetingPending = false;
   },
 
   updateSafeLayout() {
@@ -267,6 +272,56 @@ Page({
     }, () => {
       this.scrollToInitialTarget(scrollTarget);
     });
+    if (messages.length === 0) this.loadInitialGuestGreeting();
+  },
+
+  loadInitialGuestGreeting() {
+    if (this.guestGreetingPending || readChatMessages().length > 0) return;
+    const requestId = this.guestGreetingRequestId + 1;
+    this.guestGreetingRequestId = requestId;
+    this.guestGreetingPending = true;
+    getGuestGreeting({
+      kind: "initial",
+      recentMessages: [],
+      recentGreetings: []
+    })
+      .then((data) => {
+        if (
+          requestId !== this.guestGreetingRequestId ||
+          getDataMode() !== "guest" ||
+          readChatMessages().length > 0
+        ) return;
+        const assistant = data && data.assistantMessage;
+        if (!assistant || !assistant.id || !assistant.content) {
+          throw new Error("开场问候暂时没有生成");
+        }
+        const greeting = {
+          id: assistant.id,
+          role: "assistant",
+          text: assistant.content,
+          createdAt: assistant.createdAt || nowIso(),
+          promptVersion: assistant.promptVersion || null,
+          interactionMoveEnvelope: assistant.interactionMoveEnvelope || null
+        };
+        writeChatMessages([greeting]);
+        this.setData({
+          messages: this.prepareMessagesForView([withTimeLabel(greeting)]),
+          isEmpty: false,
+          statusText: "游客模式，本地聊天不会同步。",
+          scrollTarget: ""
+        }, () => this.scrollToInitialTarget("chat-bottom"));
+      })
+      .catch(() => {
+        if (requestId !== this.guestGreetingRequestId) return;
+        this.setData({
+          statusText: "游客模式，本地聊天不会同步。你可以直接发消息。"
+        });
+      })
+      .finally(() => {
+        if (requestId === this.guestGreetingRequestId) {
+          this.guestGreetingPending = false;
+        }
+      });
   },
 
   scrollToInitialTarget(target) {
@@ -564,7 +619,9 @@ Page({
         id: message.id,
         role: message.role,
         content: message.text,
-        createdAt: message.createdAt
+        createdAt: message.createdAt,
+        promptVersion: message.promptVersion || null,
+        interactionMoveEnvelope: message.interactionMoveEnvelope || null
       }))
     })
       .then((data) => {
@@ -582,7 +639,9 @@ Page({
           id: data.assistantMessage.id,
           role: "assistant",
           text: data.assistantMessage.content,
-          createdAt: data.assistantMessage.createdAt || nowIso()
+          createdAt: data.assistantMessage.createdAt || nowIso(),
+          promptVersion: data.assistantMessage.promptVersion || null,
+          interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope || null
         };
         const finalMessages = sortByTime([...readChatMessages(), reply]);
         writeChatMessages(finalMessages);

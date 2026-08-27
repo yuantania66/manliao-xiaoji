@@ -3,8 +3,8 @@
 }
 
 .cancel-card {
-  margin-top: 64rpx;
-  padding: 44rpx;
+  margin-top: 44rpx;
+  padding: 36rpx;
 }
 
 .cancel-title {
@@ -25,6 +25,17 @@
   font-weight: 700;
 }
 
+.unavailable-card {
+  text-align: left;
+}
+
+.back-account {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 30rpx;
+}
+
 .cancel-code-input {
   box-sizing: border-box;
   width: 100%;
@@ -42,4 +53,5 @@
   margin-top: 24rpx;
   text-align: center;
   font-size: 24rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 32rpx);
 }

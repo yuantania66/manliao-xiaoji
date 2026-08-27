@@ -17,12 +17,14 @@ import {
   classifyResponseValidationReasons,
   enforceResponsePlan,
   formatResponsePlanRegenerateConstraint,
+  isNeutralConversationLightChoice,
   validateResponsePlanOutput,
 } from "../services/ai/responsePlanValidator";
 import { isCrisisInput } from "../services/ai/chatSafety";
 import { buildInterpretationMessages } from "../services/ai/turnInterpretationAdapter";
 import type { AiConversationMessage } from "../services/ai/types";
 import { PROACTIVE_GREETING_PROMPT_VERSION } from "../lib/proactive-greeting";
+import { preflightResponsePlan } from "../services/ai/chatExecutionLifecycle";
 
 const build = ({
   userMessage,
@@ -613,7 +615,9 @@ assert.equal(
   firstContactHello.responsePlan.interactionMoveHandoffPlan?.requiredFunction,
   "complete_reciprocal_contact"
 );
-assert.deepEqual(firstContactHello.responsePlan.responseActions, []);
+assert.deepEqual(firstContactHello.responsePlan.responseActions, [
+  "offer_neutral_conversation_entry",
+]);
 assert.notEqual(
   firstContactHello.responsePlan.positiveFunctionContract?.action === "establish_assistant_identity"
     ? firstContactHello.responsePlan.positiveFunctionContract.mode
@@ -636,21 +640,89 @@ const firstContactHelloPrompt = buildChatPrompt({
 });
 assert(firstContactHelloPrompt.messages[1]?.content.includes("complete_reciprocal_contact"));
 assert(firstContactHelloPrompt.messages[1]?.content.includes(
-  "responseActions: none"
+  "responseActions: offer_neutral_conversation_entry"
 ));
 assert(firstContactHelloPrompt.messages[1]?.content.includes("questionPolicy: optional_after_answer"));
 assert(firstContactHelloPrompt.messages[1]?.content.includes("surfaceConstraints:"));
-assert(!firstContactHelloPrompt.messages[1]?.content.includes("offer_neutral_conversation_entry"));
+assert(firstContactHelloPrompt.messages[1]?.content.includes("offer_neutral_conversation_entry"));
 assert(!firstContactHelloPrompt.messages[1]?.content.includes("establish_assistant_identity"));
-const naturalFirstContactContinuation = "那我们就随意一点。今天想聊点什么？";
+const naturalFirstContactContinuation = "那我们就随意一点。";
 assert(!naturalFirstContactContinuation.includes("你好"));
 assert(!naturalFirstContactContinuation.includes("小慢"));
 assert(!naturalFirstContactContinuation.includes("AI聊天助手"));
-assert.equal((naturalFirstContactContinuation.match(/[？?]/gu) ?? []).length, 1);
+assert.equal((naturalFirstContactContinuation.match(/[？?]/gu) ?? []).length, 0);
 assert.equal(validateResponsePlanOutput({
   plan: firstContactHello.responsePlan,
   reply: naturalFirstContactContinuation,
 }).passed, true);
+const missingNeutralEntryPreflight = preflightResponsePlan({
+  ...firstContactHello.responsePlan,
+  responseActions: firstContactHello.responsePlan.responseActions.filter(
+    (action) => action !== "offer_neutral_conversation_entry"
+  ),
+});
+assert(missingNeutralEntryPreflight.failureReasons.includes(
+  "reciprocal_handoff_missing_neutral_conversation_entry"
+));
+assert.equal(validateResponsePlanOutput({
+  plan: firstContactHello.responsePlan,
+  reply: "那我们就随意一点。今天想聊点轻松的，还是聊聊此刻在意的事？",
+}).passed, true);
+assert(isNeutralConversationLightChoice(
+  "那我们就随意一点。今天想聊点轻松的，还是聊聊此刻在意的事？"
+));
+for (const burdensomeEntry of [
+  "那我们开始吧。今天想聊点什么？",
+  "那我们开始吧。为什么现在来找我？具体发生了什么？",
+  "那我们开始吧。你想聊什么？为什么？",
+  "那我们开始吧。今天想聊什么？也可以。",
+  "那我们开始吧。你想聊什么，也可以？",
+  "那我们开始吧。最近有什么开心的事，还是？",
+  "那我们开始吧。随便聊聊，或者？",
+]) {
+  assert.equal(validateResponsePlanOutput({
+    plan: firstContactHello.responsePlan,
+    reply: burdensomeEntry,
+  }).passed, false, burdensomeEntry);
+}
+for (const mechanicalReply of [
+  "你好呀，收到你的消息啦。",
+  "嗯嗯，收到。",
+  "收到，我记下了。",
+  "你好呀，我在呢。",
+  "你好呀，小慢在呢。",
+  "在等你找我聊天呀。",
+  "嗯，随时都在。",
+  "嗯，收到啦。",
+]) {
+  const validation = validateResponsePlanOutput({
+    plan: firstContactHello.responsePlan,
+    reply: mechanicalReply,
+  });
+  assert.equal(validation.passed, false, mechanicalReply);
+  assert(validation.failureReasons.some((reason) =>
+    reason === "assistant_voice:mechanical_receipt_or_presence" ||
+    reason === "assistant_grounding:invented_waiting_activity"
+  ), mechanicalReply);
+}
+
+const coldRelationalComplaint = build({
+  userMessage: "你怎么那么冷漠",
+  recentMessages: [{ role: "assistant", content: "嗯嗯，收到。" }],
+  modelPrimary: "correct_assistant",
+});
+assert.equal(coldRelationalComplaint.context.repairSignal, true);
+assert(coldRelationalComplaint.responsePlan.responseActions.includes("repair_previous_wording"));
+for (const failedRepair of [
+  "抱歉让你有这种感觉，我其实一直在认真听你说。",
+  "收到，我记下了。",
+]) {
+  const validation = validateResponsePlanOutput({
+    plan: coldRelationalComplaint.responsePlan,
+    reply: failedRepair,
+  });
+  assert.equal(validation.passed, false, failedRepair);
+}
 
 const proactiveGreetingTurn = build({
   userMessage: "吃了个炒饭",

@@ -15,12 +15,21 @@ Page({
     codeSent: false,
     isSendingCode: false,
     isCancelling: false,
-    statusText: ""
+    statusText: "",
+    accountAvailable: true
   },
 
   onLoad() {
     const layout = getSafeLayout();
     const auth = getAuth();
+    if (!auth) {
+      this.setData({
+        backTop: layout.backTop,
+        accountAvailable: false,
+        statusText: "当前没有可注销的登录账号。"
+      });
+      return;
+    }
     const phone = auth && auth.user && auth.user.phone ? auth.user.phone : "";
     this.setData({
       backTop: layout.backTop,
@@ -31,6 +40,7 @@ Page({
   },
 
   nextStep() {
+    if (!this.data.accountAvailable) return;
     this.setData({ confirmStep: "sms", statusText: "" });
   },
 
