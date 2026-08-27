@@ -3,6 +3,7 @@ const { getSafeLayout } = require("../../utils/layout");
 const { getDataMode } = require("../../utils/auth");
 const { createNote: createRemoteNote } = require("../../api/notes");
 const { uploadNoteImagesWithCleanup, cleanupOrQueueNoteUploads, retryPendingNoteUploadCleanup } = require("../../api/uploads");
+const { createNoteSlip } = require("../../utils/note-slip");
 
 const prompts = [
   { title: "今天想记下什么？", lead: "开心的、不开心的，或者只是一件小事，\n都可以放在这里。" },
@@ -277,25 +278,6 @@ const drawSlipCanvas = (ctx, data) => {
   drawTextBlock(ctx, "慢聊小记", 166, 546, 240, 36, 1, 24, "#71877b", "700");
 };
 
-const getSlip = (content, mediaCount = 0) => {
-  const text = content.replace(/\s+/g, " ").trim();
-  if (!text) {
-    return {
-      quote: mediaCount > 1 ? `今天留下了 ${mediaCount} 张图片。` : "今天留下了一张图片。",
-      caption: "这是你刚刚保存的记录，没有替你添加解释。"
-    };
-  }
-  const characters = Array.from(text);
-  const quote = characters.slice(0, 22).join("") + (characters.length > 22 ? "…" : "");
-  const remainder = characters.slice(22, 58).join("");
-  return {
-    quote,
-    caption: remainder
-      ? `${remainder}${characters.length > 58 ? "…" : ""}`
-      : "来自你刚刚写下的原话。"
-  };
-};
-
 Page({
   data: {
     pageTop: 92,
@@ -325,7 +307,7 @@ Page({
     slipFeedback: "",
     regenerateRemaining: DAILY_REGENERATE_LIMIT,
     regenerateText: getRegenerateText(DAILY_REGENERATE_LIMIT),
-    clientRequestId: createRequestId(),
+    clientRequestId: "",
     qrDots
   },
 
@@ -336,6 +318,7 @@ Page({
       todayLabel: formatDateLabel(),
       prompt: pick(prompts),
       dataMode: getDataMode(),
+      clientRequestId: draft ? draft.clientRequestId : createRequestId(),
       ...(draft ? {
         content: draft.content,
         contentLength: Array.from(draft.content.trim()).length,
@@ -344,7 +327,6 @@ Page({
         hasMedia: draft.mediaItems.length > 0,
         hasContent: Boolean(draft.content.trim() || draft.mediaItems.length),
         selectedMood: draft.selectedMood || null,
-        clientRequestId: draft.clientRequestId
       } : {})
     });
   },
@@ -522,7 +504,7 @@ Page({
         if (dataMode === "authenticated") images.forEach((image) => removePersistedNoteImage(image.url));
         this.draftCommitted = true;
         clearNoteDraft();
-        const slip = getSlip(content, images.length);
+        const slip = createNoteSlip(content, images.length);
         this.setData({
           isSlipOpen: true,
           slip: {
@@ -533,6 +515,7 @@ Page({
           slipFeedback: "",
           regenerateRemaining: DAILY_REGENERATE_LIMIT,
           regenerateText: getRegenerateText(DAILY_REGENERATE_LIMIT),
+          clientRequestId: createRequestId(),
           statusText: dataMode === "guest" ? "游客模式，小记只会保存在本机。" : ""
         });
       })

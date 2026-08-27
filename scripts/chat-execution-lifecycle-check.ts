@@ -33,6 +33,7 @@ import {
 import {
   buildCommittedAssistantMove,
   commitValidatedAssistantMessage,
+  persistExecutionSystemMessage,
 } from "../services/ai/chatReplyService";
 import { ensureProactiveChatGreeting } from "../services/chat/proactiveGreetingService";
 import {
@@ -539,6 +540,31 @@ assert.equal(classifyExecutionError(new Error("provider unavailable")).code, "PR
 const timeoutError = new Error("request timed out");
 timeoutError.name = "AbortError";
 assert.equal(classifyExecutionError(timeoutError).code, "TIMEOUT");
+const safetyUnavailableStatus = toUserSafeExecutionStatus({
+  ...failedExecution,
+  planId: "safety-pre-gate",
+  planPreflight: { passed: false, failureReasons: ["safety_triage_unavailable"] },
+  failure: {
+    code: "SAFETY_BLOCKED",
+    reason: "private safety provider detail",
+    retryable: false,
+  },
+});
+assert.equal(safetyUnavailableStatus.message, "安全检查暂时无法完成，请重试。");
+assert.equal(safetyUnavailableStatus.retryable, true);
+assert(!/120|110|12356|现实危险/.test(safetyUnavailableStatus.message));
+const confirmedSafetyStatus = toUserSafeExecutionStatus({
+  ...failedExecution,
+  failure: {
+    code: "SAFETY_BLOCKED",
+    reason: "confirmed safety boundary",
+    retryable: false,
+  },
+});
+assert.match(confirmedSafetyStatus.message, /120/);
+assert.match(confirmedSafetyStatus.message, /110/);
+assert.match(confirmedSafetyStatus.message, /12356/);
+assert.equal(confirmedSafetyStatus.retryable, false);
 for (const code of [
   "PLAN_INVALID",
   "GENERATION_NONCONFORMANT",
@@ -658,6 +684,10 @@ const loggedRouteSource = await readFile(
   new URL("../app/api/chat/sessions/[sessionId]/messages/route.ts", import.meta.url),
   "utf8"
 );
+const chatReplyServiceSource = await readFile(
+  new URL("../services/ai/chatReplyService.ts", import.meta.url),
+  "utf8"
+);
 const clientSource = await readFile(
   new URL("../app/chat/chat-client.tsx", import.meta.url),
   "utf8"
@@ -666,11 +696,39 @@ assert(!validatorSource.includes("RESPONSE_PLAN_CONSTRAINT_FAILURE_REPLY"));
 assert(!orchestrationSource.includes("本轮回复未通过既定回复计划约束"));
 assert(guestRouteSource.includes('status: "failed"'));
 assert(loggedRouteSource.includes('status: "failed"'));
+assert(loggedRouteSource.includes("systemMessage: reviewedReply.systemMessage ?? null"));
+assert(chatReplyServiceSource.includes("persistExecutionSystemMessage"));
+assert(chatReplyServiceSource.includes("role: MessageRole.SYSTEM"));
 assert(clientSource.includes('type: "system_status"'));
 assert(clientSource.includes("重新生成"));
 
 const fixtureUser = await prisma.user.create({ data: {} });
 try {
+  const durableStatusSession = await prisma.chatSession.create({ data: { userId: fixtureUser.id } });
+  const durableStatus = {
+    ...publicStatus,
+    turnId: "durable-system-status-turn",
+  };
+  const firstDurableStatus = await persistExecutionSystemMessage({
+    userId: fixtureUser.id,
+    sessionId: durableStatusSession.id,
+    systemStatus: durableStatus,
+  });
+  const replayedDurableStatus = await persistExecutionSystemMessage({
+    userId: fixtureUser.id,
+    sessionId: durableStatusSession.id,
+    systemStatus: durableStatus,
+  });
+  assert.equal(firstDurableStatus.id, replayedDurableStatus.id);
+  assert.equal(firstDurableStatus.content, publicStatus.message);
+  assert.equal(firstDurableStatus.role, "system");
+  assert.equal(await prisma.chatMessage.count({
+    where: {
+      sessionId: durableStatusSession.id,
+      role: MessageRole.SYSTEM,
+    },
+  }), 1);
+
   const session = await prisma.chatSession.create({ data: { userId: fixtureUser.id } });
   const proactiveSession = await prisma.chatSession.create({ data: { userId: fixtureUser.id } });
   const failedProactiveSession = await prisma.chatSession.create({ data: { userId: fixtureUser.id } });

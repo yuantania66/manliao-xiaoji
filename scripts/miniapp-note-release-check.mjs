@@ -97,6 +97,8 @@ assert.match(note, /writeNoteDraft\(/);
 assert.match(note, /if \(this\.draftCommitted\) return/);
 assert.match(note, /this\.draftCommitted = true;\s*clearNoteDraft\(\)/);
 assert.match(note, /clientRequestId:\s*this\.data\.clientRequestId/);
+assert.match(note, /clientRequestId:\s*draft \? draft\.clientRequestId : createRequestId\(\)/);
+assert.match(note, /clientRequestId:\s*createRequestId\(\)/);
 assert.match(note, /persistNoteDraftImages\(selected\.map/);
 assert.match(note, /cleanupOrQueueNoteUploads\(cleanupUrls\)/);
 assert.match(note, /retryPendingNoteUploadCleanup\(\)/);
@@ -112,5 +114,42 @@ assert.match(notesApi, /pageSize = 100/);
 assert.match(uploadsApi, /method:\s*"DELETE"/);
 assert.match(uploadsApi, /error\.uploadedUrls/);
 assert.match(uploadsApi, /addPendingUploadCleanup\(urls\)/);
+
+const layout = require("../miniprogram-project/utils/layout.js");
+layout.getSafeLayout = () => ({
+  pageTop: 0,
+  backTop: 0,
+  actionTop: 0,
+  actionRight: 0,
+  panelTop: 0
+});
+let notePageDefinition;
+global.Page = (value) => { notePageDefinition = value; };
+const notePagePath = require.resolve("../miniprogram-project/pages/note/note.js");
+delete require.cache[notePagePath];
+require(notePagePath);
+const createNotePage = () => {
+  const page = { ...notePageDefinition, data: { ...notePageDefinition.data } };
+  page.setData = (next) => Object.assign(page.data, next);
+  return page;
+};
+local.clearNoteDraft();
+const firstNewPage = createNotePage();
+firstNewPage.onLoad();
+const secondNewPage = createNotePage();
+secondNewPage.onLoad();
+assert.notEqual(firstNewPage.data.clientRequestId, secondNewPage.data.clientRequestId);
+assert.match(firstNewPage.data.clientRequestId, /^mini-note-/);
+const stableDraft = { content: "继续写", mediaItems: [], selectedMood: null, clientRequestId: "stable-retry-id" };
+assert.equal(local.writeNoteDraft(stableDraft), true);
+const resumedPage = createNotePage();
+resumedPage.onLoad();
+assert.equal(resumedPage.data.clientRequestId, "stable-retry-id");
+
+const { createNoteSlip } = require("../miniprogram-project/utils/note-slip.js");
+const derived = createNoteSlip("我不知道为什么不想继续这样", 0);
+assert.equal(derived.quote, "先不用急着找到答案。");
+assert.equal(derived.quote.includes("我不知道"), false);
+assert.match(createNoteSlip("", 2).quote, /细节/);
 
 console.log("Miniapp note release check passed.");

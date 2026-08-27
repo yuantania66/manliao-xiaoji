@@ -776,7 +776,8 @@
 .slip-sheet {
   position: absolute;
   left: 36rpx;
-  right: 36rpx;
+  right: auto;
+  width: calc(100% - 72rpx);
   top: calc(env(safe-area-inset-top) + 92rpx);
   bottom: calc(env(safe-area-inset-bottom) + 36rpx);
   box-sizing: border-box;

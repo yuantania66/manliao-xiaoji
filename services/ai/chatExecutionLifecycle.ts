@@ -510,6 +510,12 @@ const USER_SAFE_FAILURE_MESSAGES: Record<ChatExecutionFailureCode, string> = {
   PERSISTENCE_ERROR: "回复未能保存，请重试。",
 };
 
+const isSafetyCheckUnavailable = (execution: ChatExecutionTrace) =>
+  execution.failure?.code === "SAFETY_BLOCKED" &&
+  execution.planId === "safety-pre-gate" &&
+  execution.planPreflight.passed === false &&
+  execution.planPreflight.failureReasons.includes("safety_triage_unavailable");
+
 export const toUserSafeExecutionStatus = (
   execution: ChatExecutionTrace
 ): UserSafeExecutionStatus => {
@@ -517,15 +523,20 @@ export const toUserSafeExecutionStatus = (
     code: "PROVIDER_ERROR" as const,
     retryable: true,
   };
+  const safetyCheckUnavailable = isSafetyCheckUnavailable(execution);
   return {
     type: "system_status",
     code: failure.code,
-    message: USER_SAFE_FAILURE_MESSAGES[failure.code],
-    retryable: failure.code === "PLAN_INVALID" ||
+    message: safetyCheckUnavailable
+      ? "安全检查暂时无法完成，请重试。"
+      : USER_SAFE_FAILURE_MESSAGES[failure.code],
+    retryable: safetyCheckUnavailable
+      ? true
+      : failure.code === "PLAN_INVALID" ||
       failure.code === "GENERATION_NONCONFORMANT" ||
       failure.code === "SAFETY_BLOCKED"
-      ? false
-      : failure.retryable,
+        ? false
+        : failure.retryable,
     turnId: execution.turnId,
   };
 };

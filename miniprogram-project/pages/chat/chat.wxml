@@ -20,12 +20,13 @@
     </view>
   </view>
 
-  <scroll-view class="messages" style="bottom: {{messagesBottom}}px;" scroll-y enhanced show-scrollbar="{{true}}" scroll-with-animation scroll-into-view="{{scrollTarget}}" scroll-top="{{scrollTop}}" bindscroll="onMessagesScroll">
+  <scroll-view class="messages" style="bottom: {{messagesBottom}}px;" scroll-y enhanced show-scrollbar="{{messages.length > 0}}" scroll-with-animation scroll-into-view="{{scrollTarget}}" scroll-top="{{scrollTop}}" bindscroll="onMessagesScroll">
     <view class="messages-content">
       <view wx:if="{{statusText}}" class="mode-notice">{{statusText}}</view>
-      <view wx:if="{{isEmpty}}" class="empty-copy">可以从一点点开始。</view>
+      <view wx:if="{{isGreetingLoading}}" class="greeting-loading" aria-live="polite">正在准备一句问候…</view>
+      <view wx:elif="{{isEmpty}}" class="empty-copy">可以从一点点开始。</view>
       <block wx:for="{{messages}}" wx:key="id">
-        <view id="msg-{{item.id}}" class="message-row {{item.role === 'user' ? 'message-user' : 'message-ai'}} {{item.isSelectedTarget ? 'message-selected' : ''}}">
+        <view id="msg-{{item.id}}" class="message-row {{item.role === 'user' ? 'message-user' : item.role === 'system' ? 'message-system' : 'message-ai'}} {{item.isSelectedTarget ? 'message-selected' : ''}}">
           <view wx:if="{{item.timeLabel}}" class="message-time">{{item.timeLabel}}</view>
           <view class="message-bubble">
             <text wx:for="{{item.parts}}" wx:for-item="part" wx:for-index="partIndex" wx:key="partIndex" class="{{part.highlight ? 'message-highlight' : ''}}">{{part.text}}</text>
@@ -33,12 +34,13 @@
         </view>
       </block>
       <view wx:if="{{isTyping}}" class="typing">...</view>
-      <view id="chat-bottom" class="chat-bottom-anchor"></view>
+      <view wx:if="{{replyStatusText}}" class="reply-status" aria-live="assertive">{{replyStatusText}}</view>
+      <view wx:if="{{messages.length > 0 || isTyping || replyStatusText}}" id="chat-bottom" class="chat-bottom-anchor"></view>
     </view>
   </scroll-view>
 
   <form class="chat-input" style="bottom: {{inputBottom}}px;" bindsubmit="sendMessage">
     <input name="content" value="{{input}}" focus="{{inputFocus}}" adjust-position="{{false}}" confirm-hold="{{true}}" bindkeyboardheightchange="onKeyboardHeightChange" bindinput="onInput" bindconfirm="sendMessage" confirm-type="send" placeholder="说点什么" />
-    <button form-type="submit" disabled="{{!canSend || isSending}}">发送</button>
+    <button form-type="submit" disabled="{{!canSend || isSending || isGreetingLoading}}">发送</button>
   </form>
 </view>

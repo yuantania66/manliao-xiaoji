@@ -117,6 +117,59 @@ const serializeMessage = (message: {
   interactionMoveEnvelope: message.interactionMoveEnvelope ?? null,
 });
 
+export const persistExecutionSystemMessage = async ({
+  userId,
+  sessionId,
+  systemStatus,
+}: {
+  userId: string;
+  sessionId: string;
+  systemStatus: UserSafeExecutionStatus;
+}) => {
+  const id = `system-status:${systemStatus.turnId}`;
+  await prisma.chatMessage.createMany({
+    data: [{
+      id,
+      sessionId,
+      userId,
+      role: MessageRole.SYSTEM,
+      content: systemStatus.message,
+      status: MessageStatus.FALLBACK,
+      interactionMetadata: {
+        schemaVersion: 1,
+        kind: "execution_system_status",
+        code: systemStatus.code,
+        turnId: systemStatus.turnId,
+      },
+    }],
+    skipDuplicates: true,
+  });
+  const message = await prisma.chatMessage.findUniqueOrThrow({
+    where: { id },
+    select: {
+      id: true,
+      sessionId: true,
+      userId: true,
+      role: true,
+      content: true,
+      status: true,
+      aiGenerationId: true,
+      createdAt: true,
+    },
+  });
+  if (
+    message.sessionId !== sessionId ||
+    message.userId !== userId ||
+    message.role !== MessageRole.SYSTEM
+  ) {
+    throw new Error("Persisted execution status does not match its conversation.");
+  }
+  return serializeMessage({
+    ...message,
+    interactionMoveEnvelope: null,
+  });
+};
+
 const saveGeneration = async ({
   userId,
   sessionId,
@@ -424,6 +477,7 @@ export const createReviewedChatReply = async ({
   | {
       outcome: "failed";
       systemStatus: UserSafeExecutionStatus;
+      systemMessage?: ReturnType<typeof serializeMessage>;
       debugTrace?: AiDebugTrace;
       execution: ChatExecutionTrace;
     }
@@ -469,9 +523,16 @@ export const createReviewedChatReply = async ({
     }
 
     if (reply.execution.phase !== "VALIDATED") {
+      const systemStatus = toUserSafeExecutionStatus(reply.execution);
+      const systemMessage = await persistExecutionSystemMessage({
+        userId,
+        sessionId,
+        systemStatus,
+      });
       return {
         outcome: "failed",
-        systemStatus: toUserSafeExecutionStatus(reply.execution),
+        systemStatus,
+        systemMessage,
         debugTrace: reply.debugTrace,
         execution: reply.execution,
       };

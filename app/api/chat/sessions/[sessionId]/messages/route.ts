@@ -268,6 +268,7 @@ export async function POST(
       where: {
         sessionId,
         userId: user.id,
+        role: { in: [MessageRole.USER, MessageRole.ASSISTANT] },
         status: { in: COMMITTED_MESSAGE_STATUSES },
         ...(sourceMessageForHistory
           ? {
@@ -458,6 +459,7 @@ export async function POST(
             createdAt: message.createdAt.toISOString(),
           },
           systemStatus: reviewedReply.systemStatus,
+          systemMessage: reviewedReply.systemMessage ?? null,
           debugTrace: reviewedReply.debugTrace,
         },
         200

@@ -30,6 +30,8 @@ Page({
     isEmpty: true,
     notes: [],
     backTop: 54,
+    actionTop: 98,
+    actionRight: 132,
     statusText: "",
     isLoading: false
   },
@@ -45,7 +47,11 @@ Page({
 
   updateSafeLayout() {
     const layout = getSafeLayout();
-    this.setData({ backTop: layout.backTop });
+    this.setData({
+      backTop: layout.backTop,
+      actionTop: layout.actionTop,
+      actionRight: layout.actionRight
+    });
   },
 
   onShow() {

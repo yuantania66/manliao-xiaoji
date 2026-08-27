@@ -114,6 +114,16 @@ const splitTypingChunks = (text = "") => {
   return chunks;
 };
 
+const createClientTurnId = () =>
+  `mini-auth-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const safeReplyFailureText = (data) => {
+  const message = data && data.systemStatus && data.systemStatus.message;
+  return typeof message === "string" && message.trim()
+    ? message.trim()
+    : "这次回复没能生成，请稍后再试。";
+};
+
 Page({
   data: {
     pageTop: 92,
@@ -139,6 +149,8 @@ Page({
     sessionId: "",
     dataMode: "none",
     statusText: "",
+    replyStatusText: "",
+    isGreetingLoading: false,
     targetSessionId: "",
     targetMessageId: "",
     targetDate: "",
@@ -149,6 +161,7 @@ Page({
   bottomSafe: 23,
   guestGreetingPending: false,
   guestGreetingRequestId: 0,
+  sessionBootstrapPromise: null,
 
   onLoad(options = {}) {
     this.setData({
@@ -186,6 +199,22 @@ Page({
     });
   },
 
+  ensureAuthenticatedSession() {
+    if (this.data.sessionId) return Promise.resolve({ id: this.data.sessionId });
+    if (!this.sessionBootstrapPromise) {
+      this.sessionBootstrapPromise = listSessions()
+        .then((data) => (data.items || [])[0] || createSession())
+        .then((session) => {
+          this.setData({ sessionId: session.id });
+          return session;
+        })
+        .finally(() => {
+          this.sessionBootstrapPromise = null;
+        });
+    }
+    return this.sessionBootstrapPromise;
+  },
+
   onKeyboardHeightChange(event) {
     const height = Math.max(0, Number(event.detail && event.detail.height) || 0);
     const inputBottom = height > 0 ? height + 8 : this.bottomSafe;
@@ -199,23 +228,24 @@ Page({
 
   loadMessages() {
     const dataMode = getDataMode();
-    this.setData({ dataMode, statusText: "", messages: [], isEmpty: true, scrollTarget: "", scrollTop: 0 });
+    this.setData({
+      dataMode,
+      statusText: "",
+      replyStatusText: "",
+      messages: [],
+      isEmpty: true,
+      isGreetingLoading: dataMode === "authenticated",
+      scrollTarget: "",
+      scrollTop: 0
+    });
 
     if (dataMode === "authenticated") {
       const loadSession = this.data.targetSessionId
         ? Promise.resolve({ id: this.data.targetSessionId })
-        : listSessions().then((data) => {
-          const first = (data.items || [])[0];
-          if (!first) {
-            this.setData({ messages: [], isEmpty: true, sessionId: "" });
-            return null;
-          }
-          return first;
-        });
+        : this.ensureAuthenticatedSession();
 
       loadSession
         .then((session) => {
-          if (!session) return null;
           this.setData({ sessionId: session.id });
           return listMessages(session.id);
         })
@@ -225,7 +255,11 @@ Page({
             (data.items || []).map((item) =>
               withTimeLabel({
                 id: item.id,
-                role: item.role === "assistant" ? "assistant" : "user",
+                role: item.role === "assistant"
+                  ? "assistant"
+                  : item.role === "system"
+                    ? "system"
+                    : "user",
                 text: item.content,
                 createdAt: item.createdAt
               })
@@ -235,15 +269,20 @@ Page({
           this.setData({
             messages: this.prepareMessagesForView(messages),
             isEmpty: messages.length === 0,
+            isGreetingLoading: false,
             scrollTarget: ""
           }, () => {
             this.scrollToInitialTarget(scrollTarget);
           });
         })
-        .catch((error) => {
-          const message = error.message || "聊天加载失败，请稍后再试";
-          this.setData({ messages: [], isEmpty: true, statusText: message });
-          wx.showToast({ title: message, icon: "none" });
+        .catch(() => {
+          this.setData({
+            messages: [],
+            isEmpty: true,
+            isGreetingLoading: false,
+            replyStatusText: "聊天暂时无法加载，请稍后重试。"
+          });
+          wx.showToast({ title: "聊天暂时无法加载，请稍后重试。", icon: "none" });
         });
       return;
     }
@@ -256,6 +295,7 @@ Page({
     this.setData({
       messages: [],
       isEmpty: true,
+      isGreetingLoading: false,
       sessionId: "",
       statusText: "请先登录，或在首页选择游客模式。"
     });
@@ -267,6 +307,7 @@ Page({
     this.setData({
       messages: this.prepareMessagesForView(messages),
       isEmpty: messages.length === 0,
+      isGreetingLoading: messages.length === 0,
       scrollTarget: "",
       statusText: "游客模式，本地聊天不会同步。"
     }, () => {
@@ -307,6 +348,7 @@ Page({
         this.setData({
           messages: this.prepareMessagesForView([withTimeLabel(greeting)]),
           isEmpty: false,
+          isGreetingLoading: false,
           statusText: "游客模式，本地聊天不会同步。",
           scrollTarget: ""
         }, () => this.scrollToInitialTarget("chat-bottom"));
@@ -314,7 +356,8 @@ Page({
       .catch(() => {
         if (requestId !== this.guestGreetingRequestId) return;
         this.setData({
-          statusText: "游客模式，本地聊天不会同步。你可以直接发消息。"
+          isGreetingLoading: false,
+          replyStatusText: "欢迎语暂时没能生成，你可以直接发消息。"
         });
       })
       .finally(() => {
@@ -410,6 +453,7 @@ Page({
   },
 
   scrollTo(target) {
+    if (!target || this.data.messages.length === 0) return;
     if (target === "chat-bottom") {
       [80, 260, 650, 1100].forEach((delay, index) => {
         setTimeout(() => {
@@ -523,6 +567,10 @@ Page({
   sendMessage(event = {}) {
     const text = (this.data.input || event.detail && event.detail.value || "").trim();
     if (!text || this.data.isSending) return;
+    if (this.data.isGreetingLoading) {
+      wx.showToast({ title: "聊天正在准备，请稍等一下", icon: "none" });
+      return;
+    }
     if (text.length > 500) {
       wx.showToast({ title: "内容太长了", icon: "none" });
       return;
@@ -543,25 +591,66 @@ Page({
 
   sendRemoteMessage(text) {
     if (this.data.isSending) return;
-    const ensureSession = this.data.sessionId
-      ? Promise.resolve({ id: this.data.sessionId })
-      : createSession().then((session) => {
-          this.setData({ sessionId: session.id });
-          return session;
-        });
+    const turnId = createClientTurnId();
+    const optimisticId = `local-${turnId}`;
+    const optimisticUserMessage = withTimeLabel({
+      id: optimisticId,
+      role: "user",
+      text,
+      createdAt: nowIso()
+    });
+    const ensureSession = this.ensureAuthenticatedSession();
 
-    this.setData({ input: "", canSend: false, isSending: true, isTyping: true });
+    this.setData({
+      input: "",
+      canSend: false,
+      isSending: true,
+      isTyping: true,
+      replyStatusText: "",
+      messages: this.prepareMessagesForView(this.data.messages.concat(optimisticUserMessage)),
+      isEmpty: false,
+      scrollTarget: ""
+    }, () => this.scrollTo("chat-bottom"));
     this.refocusInput();
     ensureSession
-      .then((session) => postMessage(session.id, text))
+      .then((session) => postMessage(session.id, text, turnId))
       .then((data) => {
-        const current = this.data.messages;
+        if (!data || !data.userMessage) {
+          throw new Error("invalid_chat_response");
+        }
         const userMessage = withTimeLabel({
           id: data.userMessage.id,
           role: "user",
           text: data.userMessage.content,
           createdAt: data.userMessage.createdAt
         });
+        const reconciled = this.data.messages.map((message) =>
+          message.id === optimisticId ? userMessage : message
+        );
+        if (data.status === "failed") {
+          const persistedStatus = data.systemMessage && data.systemMessage.id && data.systemMessage.content
+            ? withTimeLabel({
+                id: data.systemMessage.id,
+                role: "system",
+                text: data.systemMessage.content,
+                createdAt: data.systemMessage.createdAt || nowIso()
+              })
+            : null;
+          const durableMessages = persistedStatus
+            ? reconciled.filter((message) => message.id !== persistedStatus.id).concat(persistedStatus)
+            : reconciled;
+          this.setData({
+            messages: this.prepareMessagesForView(sortByTime(durableMessages)),
+            isSending: false,
+            isTyping: false,
+            replyStatusText: persistedStatus ? "" : safeReplyFailureText(data),
+            scrollTarget: ""
+          }, () => this.scrollTo("chat-bottom"));
+          return;
+        }
+        if (data.status !== "committed" || !data.assistantMessage || !data.assistantMessage.id || !data.assistantMessage.content) {
+          throw new Error("invalid_chat_response");
+        }
         const assistantMessage = {
           id: data.assistantMessage.id,
           role: "assistant",
@@ -572,19 +661,20 @@ Page({
           ...assistantMessage,
           text: ""
         });
-        const nextMessages = current.concat([userMessage, assistantPlaceholder]);
+        const nextMessages = reconciled.concat(assistantPlaceholder);
         this.setData({
           messages: this.prepareMessagesForView(nextMessages),
           isEmpty: false,
+          replyStatusText: "",
           scrollTarget: ""
         }, () => {
           this.scrollTo("chat-bottom");
           this.animateAssistantMessage(assistantMessage);
         });
       })
-      .catch((error) => {
-        const message = error.message || "发送失败，请稍后再试";
-        this.setData({ input: text, canSend: true, isSending: false, isTyping: false, statusText: message });
+      .catch(() => {
+        const message = "发送状态暂时无法确认，请稍后重进页面查看。";
+        this.setData({ isSending: false, isTyping: false, replyStatusText: message });
         this.refocusInput();
         wx.showToast({ title: message, icon: "none" });
       })
@@ -604,6 +694,7 @@ Page({
       canSend: false,
       isSending: true,
       isTyping: true,
+      replyStatusText: "",
       messages: this.prepareMessagesForView(nextMessages.map(withTimeLabel)),
       isEmpty: false,
       scrollTarget: ""
@@ -622,15 +713,30 @@ Page({
         createdAt: message.createdAt,
         promptVersion: message.promptVersion || null,
         interactionMoveEnvelope: message.interactionMoveEnvelope || null
-      }))
+      })).filter((message) => message.role !== "system")
     })
       .then((data) => {
         if (data.status === "failed") {
-          throw new Error(
-            data.systemStatus && data.systemStatus.message
-              ? data.systemStatus.message
-              : "这次回复没能生成，请重试"
-          );
+          const systemMessage = {
+            id: `system-status:${userMessage.id}`,
+            role: "system",
+            text: safeReplyFailureText(data),
+            createdAt: nowIso()
+          };
+          const failedMessages = sortByTime([
+            ...readChatMessages().filter((message) => message.id !== systemMessage.id),
+            systemMessage
+          ]);
+          writeChatMessages(failedMessages);
+          this.setData({
+            messages: this.prepareMessagesForView(failedMessages.map(withTimeLabel)),
+            isEmpty: false,
+            isSending: false,
+            isTyping: false,
+            replyStatusText: "",
+            scrollTarget: ""
+          }, () => this.scrollTo("chat-bottom"));
+          return;
         }
         if (!data.assistantMessage || !data.assistantMessage.content) {
           throw new Error("这次回复没能生成，请重试");
@@ -654,20 +760,33 @@ Page({
           messages: this.prepareMessagesForView(visibleMessages.map(withTimeLabel)),
           isEmpty: false,
           statusText: "",
+          replyStatusText: "",
           scrollTarget: ""
         }, () => {
           this.scrollTo("chat-bottom");
           this.animateAssistantMessage(reply);
         });
       })
-      .catch((error) => {
-        const message = error.message || "发送失败，请稍后再试";
+      .catch(() => {
+        const systemMessage = {
+          id: `system-status:${userMessage.id}`,
+          role: "system",
+          text: "这次回复没能生成，请稍后再试。",
+          createdAt: nowIso()
+        };
+        const failedMessages = sortByTime([
+          ...readChatMessages().filter((message) => message.id !== systemMessage.id),
+          systemMessage
+        ]);
+        writeChatMessages(failedMessages);
         this.setData({
+          messages: this.prepareMessagesForView(failedMessages.map(withTimeLabel)),
+          isEmpty: false,
           isSending: false,
           isTyping: false,
-          statusText: message
+          replyStatusText: ""
         });
-        wx.showToast({ title: message, icon: "none" });
+        wx.showToast({ title: "这次回复没能生成，请稍后再试。", icon: "none" });
       });
   }
 });

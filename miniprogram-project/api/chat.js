@@ -14,11 +14,11 @@ const listMessages = (sessionId) =>
     url: `/api/chat/sessions/${sessionId}/messages?pageSize=50`
   });
 
-const sendMessage = (sessionId, content) =>
+const sendMessage = (sessionId, content, turnId) =>
   request({
     url: `/api/chat/sessions/${sessionId}/messages`,
     method: "POST",
-    data: { content }
+    data: { content, turnId }
   });
 
 const sendGuestMessage = ({ content, turnId, recentMessages }) =>
