@@ -1,27 +1,33 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 
 import { extractObservationWords } from "../services/insights/observationService";
 import { assertInsightsConsent, createInsightsConsent } from "../services/insights/consentAuthority";
+
+const require = createRequire(import.meta.url);
+const { createNoteSlip } = require("../miniprogram-project/utils/note-slip.js");
 
 const read = (path: string) => readFileSync(path, "utf8");
 
 const noteJs = read("miniprogram-project/pages/note/note.js");
 const noteWxml = read("miniprogram-project/pages/note/note.wxml");
 const noteWxss = read("miniprogram-project/pages/note/note.wxss");
-for (const inventedCopy of [
-  "有些话先放这里。",
-  "不急着整理，它已经被温柔地留下。",
-  "你不必一直撑着。",
-  "今天已经够努力了",
-]) {
-  assert(!noteJs.includes(inventedCopy), inventedCopy);
-}
-assert.match(noteJs, /来自你刚刚写下的原话/);
+const reflectiveSlip = createNoteSlip("我也不知道我为什么要这样对你，我也不想继续这样。", 0);
+assert.equal(reflectiveSlip.quote, "先不用急着找到答案。");
+assert.match(reflectiveSlip.caption, /不想继续.*希望接下来/);
+assert.equal(reflectiveSlip.quote.includes("我也不知道"), false);
+const imageSlip = createNoteSlip("", 2);
+assert.match(imageSlip.quote, /这些画面/);
+assert.match(imageSlip.quote, /细节/);
+assert.match(noteJs, /createNoteSlip/);
 assert.match(noteJs, /换个版式/);
 assert.doesNotMatch(noteWxml, /分享给朋友/);
 assert.match(noteWxml, /scroll-view scroll-y class="slip-sheet"/);
 assert.match(noteWxss, /safe-area-inset-bottom/);
+assert.match(noteWxss, /width:\s*calc\(100% - 72rpx\)/);
+const noteHistoryWxml = read("miniprogram-project/pages/note-history/note-history.wxml");
+assert.match(noteHistoryWxml, /top: \{\{actionTop\}\}px; right: \{\{actionRight\}\}px/);
 
 const appJson = JSON.parse(read("miniprogram-project/app.json"));
 assert.equal(appJson.__usePrivacyCheck__, true);
@@ -69,5 +75,21 @@ for (const rejected of [
 const words = extractObservationWords(["工作 工作 周末散步", "周末散步让我放松"]);
 assert.equal(words.find((item) => item.word === "工作")?.count, 2);
 assert(words.some((item) => item.word.includes("周末") || item.word.includes("散步")));
+const lowInformationWords = extractObservationWords([
+  "你好，好吧，我也不知道为什么。",
+  "你好，我也不想说，不知道。",
+  "你是小慢吗？好吧。",
+]);
+for (const word of ["你好", "好吧", "我也", "不知道", "不想", "你是", "为什么"]) {
+  assert.equal(lowInformationWords.some((item) => item.word === word), false, word);
+}
+const meaningfulWords = extractObservationWords([
+  "周末去公园散步，上班以后也想去公园。",
+  "这个周末继续散步，上班以后去公园。",
+  "一次性的项目进度。",
+]);
+assert.equal(meaningfulWords.find((item) => item.word === "公园")?.count, 3);
+assert.equal(meaningfulWords.find((item) => item.word === "上班")?.count, 2);
+assert.equal(meaningfulWords.some((item) => item.word === "项目进度"), false);
 
 console.log("Miniapp real-device release check passed.");

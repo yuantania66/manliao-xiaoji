@@ -1,6 +1,6 @@
 <view class="page note-history-page">
   <navigator url="/pages/note/note" class="back history-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
-  <navigator url="/pages/note/note" class="add-link" hover-class="none">+ 记一下</navigator>
+  <navigator url="/pages/note/note" class="add-link" style="top: {{actionTop}}px; right: {{actionRight}}px;" hover-class="none">+ 记一下</navigator>
   <view class="title">我的小记</view>
   <view class="body intro">{{introText}}</view>
   <view class="search-box">⌕<input value="{{query}}" bindinput="onInput" placeholder="查找小记内容" /></view>

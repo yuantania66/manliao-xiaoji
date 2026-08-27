@@ -88,6 +88,12 @@ Safety Response 不应该：
 - 让用户只依赖 AI。
 - 把危机处理成普通陪伴对话。
 
+Safety 检查自身的技术故障不等于检测到用户存在现实危险。只有执行轨迹明确为
+`safety-pre-gate` 且失败原因为 `safety_triage_unavailable` 时，系统仍须 fail
+closed、停止本轮普通聊天，但只向用户显示“安全检查暂时无法完成，请重试。”，
+不得附带 120、110 或 12356。其他 Safety 阻断仍保留危机帮助信息；已经形成有效
+Safety 决定时继续进入 Safety Response。
+
 ## Safety Escalation
 
 建议流程：

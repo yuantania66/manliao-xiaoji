@@ -177,6 +177,7 @@ export const ensureProactiveChatGreeting = async ({
   const hasAnyCommittedMessage = Boolean(await prisma.chatMessage.findFirst({
     where: {
       userId,
+      role: { in: [MessageRole.USER, MessageRole.ASSISTANT] },
       status: { not: MessageStatus.BLOCKED },
     },
     select: { id: true },
@@ -186,6 +187,7 @@ export const ensureProactiveChatGreeting = async ({
     where: {
       sessionId,
       userId,
+      role: { in: [MessageRole.USER, MessageRole.ASSISTANT] },
       status: { not: MessageStatus.BLOCKED },
     },
     orderBy: { createdAt: "desc" },

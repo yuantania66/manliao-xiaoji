@@ -23,8 +23,8 @@
     <view wx:if="{{isLoading}}" class="observation-state" aria-live="polite">正在整理你的记录…</view>
     <view wx:elif="{{errorText}}" class="observation-state error-card" aria-live="assertive">{{errorText}}<button bindtap="changeRange" data-key="{{range}}">重新加载</button></view>
     <view wx:elif="{{words.length === 0}}" class="observation-state card">
-      <view class="empty-title">这段时间还没有足够的文字记录</view>
-      <text>写下或聊过一些内容后，这里才会出现真实统计。</text>
+      <view class="empty-title">这段时间还没有反复出现的内容词</view>
+      <text>同一个有意义的词出现至少两次后，才会显示在这里。</text>
     </view>
     <view wx:if="{{!isLoading && !errorText && words.length > 0}}" class="word-grid">
       <view wx:for="{{words}}" wx:key="word" class="word">

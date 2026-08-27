@@ -4,6 +4,9 @@ const STOP_WORDS = new Set([
   "这个", "那个", "这样", "就是", "还是", "然后", "因为", "所以", "但是", "如果",
   "今天", "现在", "已经", "可以", "没有", "什么", "怎么", "觉得", "一下", "一个",
   "我们", "你们", "他们", "自己", "真的", "可能", "应该", "不是", "比较", "有点",
+  "你好", "您好", "好吧", "好的", "收到", "嗯嗯", "我也", "你也", "他也", "你是",
+  "我是", "为什么", "不知道", "不想", "不会", "不能", "不太", "没事", "没啥",
+  "其实", "只是", "或者", "是否", "哪里", "哪个", "怎样", "感觉", "的话",
 ]);
 
 export const extractObservationWords = (texts: string[]) => {
@@ -19,6 +22,7 @@ export const extractObservationWords = (texts: string[]) => {
     }
   }
   return [...counts.entries()]
+    .filter(([, count]) => count >= 2)
     .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "zh-CN"))
     .slice(0, 8)
     .map(([word, count]) => ({ word, count }));

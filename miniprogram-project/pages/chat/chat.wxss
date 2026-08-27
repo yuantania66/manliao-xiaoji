@@ -139,6 +139,26 @@
   line-height: 66rpx;
 }
 
+.greeting-loading {
+  margin-top: 220rpx;
+  width: 640rpx;
+  color: #8f877f;
+  font-size: 28rpx;
+  line-height: 48rpx;
+}
+
+.reply-status {
+  box-sizing: border-box;
+  max-width: 588rpx;
+  margin: 6rpx 0 18rpx;
+  padding: 18rpx 24rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 253, 249, 0.78);
+  color: #9a6b5f;
+  font-size: 22rpx;
+  line-height: 34rpx;
+}
+
 .message-row {
   box-sizing: border-box;
   width: 100%;
@@ -166,6 +186,10 @@
   align-items: stretch;
 }
 
+.message-system {
+  align-items: stretch;
+}
+
 .message-bubble {
   max-width: 588rpx;
   border-radius: 35rpx;
@@ -186,6 +210,16 @@
   align-self: flex-start;
   background: #fffdf9;
   color: #6d665f;
+}
+
+.message-system .message-bubble {
+  align-self: flex-start;
+  max-width: 588rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 253, 249, 0.78);
+  color: #9a6b5f;
+  font-size: 22rpx;
+  line-height: 34rpx;
 }
 
 .message-highlight {
