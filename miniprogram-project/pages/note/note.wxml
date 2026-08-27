@@ -140,7 +140,7 @@
 
   <view wx:if="{{isSlipOpen}}" class="slip-layer">
     <view class="slip-mask"></view>
-    <view class="slip-sheet">
+    <scroll-view scroll-y class="slip-sheet" enhanced show-scrollbar="false">
       <view class="eyebrow">小笺</view>
       <view class="slip-close" bindtap="closeSlip"></view>
       <view class="slip-card {{slipStyle}}">
@@ -172,13 +172,12 @@
         <view class="slip-brand">慢聊小记</view>
       </view>
       <view class="slip-actions">
-        <button class="secondary-button share-button">分享给朋友</button>
         <button class="primary-button image-button" loading="{{isSavingImage}}" disabled="{{isSavingImage}}" bindtap="saveImage">保存图片</button>
       </view>
       <view wx:if="{{regenerateRemaining > 0}}" class="regenerate-button" bindtap="regenerateSlip">{{regenerateText}}</view>
       <view wx:else class="regenerate-button regenerate-button-disabled">{{regenerateText}}</view>
       <view class="feedback">{{slipFeedback}}</view>
-    </view>
+    </scroll-view>
   </view>
   <canvas canvas-id="slipCanvas" class="slip-canvas"></canvas>
 </view>

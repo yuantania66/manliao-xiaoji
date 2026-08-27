@@ -15,12 +15,13 @@ export type GroundingReference =
   | "assistant_name" | "identity" | "ai_identity" | "clinician_identity" | "body" | "body_metaphor"
   | "physical_presence" | "physical_presence_metaphor"
   | "voice_input" | "voice_output" | "vision" | "hearing"
-  | "time" | "memory" | "previous_wording" | "none";
+  | "time" | "memory" | "proactive_messaging" | "previous_wording" | "none";
 
 export type DirectQuestionKind =
   | "assistant_name" | "identity" | "ai_identity" | "clinician_identity"
   | "body_capability" | "voice_input" | "voice_output" | "perception_capability"
-  | "time_capability" | "memory_capability" | "definition" | "reason_or_contradiction" | "other";
+  | "time_capability" | "memory_capability" | "proactive_messaging_capability"
+  | "definition" | "reason_or_contradiction" | "other";
 
 export type DirectQuestion = {
   text: string;
@@ -269,7 +270,11 @@ export type AssistantGrounding = {
     assistant: { displayName: "小慢"; kind: "AI聊天助手"; isAi: true; isClinician: false; roleBoundary: string };
     modalities: { textInput: true; textOutput: true; voiceInput: false; voiceOutput: false; vision: false; hearing: false };
     embodiment: { hasBody: false; canSit: false; canSleep: false; canHug: false; canTouch: false; boundary: string };
-    capabilities: { currentTimeWithoutContext: false; memory: string };
+    capabilities: {
+      currentTimeWithoutContext: false;
+      memory: string;
+      proactiveMessaging: { openOrReturnGreeting: true; backgroundPush: false; boundary: string };
+    };
   };
   prohibitedClaims: string[];
 };

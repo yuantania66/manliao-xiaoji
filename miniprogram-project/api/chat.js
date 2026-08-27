@@ -29,6 +29,14 @@ const sendGuestMessage = ({ content, turnId, recentMessages }) =>
     data: { content, turnId, recentMessages }
   });
 
+const getGuestGreeting = ({ kind = "initial", recentMessages = [], recentGreetings = [] } = {}) =>
+  request({
+    url: "/api/chat/guest/greeting",
+    method: "POST",
+    auth: false,
+    data: { kind, recentMessages, recentGreetings }
+  });
+
 const searchMessages = (query) =>
   request({
     url: `/api/chat/search?q=${encodeURIComponent(query)}`
@@ -40,5 +48,6 @@ module.exports = {
   listMessages,
   sendMessage,
   sendGuestMessage,
+  getGuestGreeting,
   searchMessages
 };

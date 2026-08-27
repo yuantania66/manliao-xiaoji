@@ -38,6 +38,7 @@
         <label><checkbox value="confirmed" checked="{{privacyConfirmed}}" color="#71877b" />我已阅读并同意</label>
         <navigator url="/pages/privacy/privacy" class="privacy-link" hover-class="none">《隐私政策》</navigator>
       </checkbox-group>
+      <button class="wechat-privacy-link" bindtap="openWechatPrivacy">查看微信隐私保护指引</button>
       <button class="primary-button" loading="{{isLoggingIn || isCheckingAuth}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="handleLogin">{{isCheckingAuth ? "正在验证..." : (isLoggingIn ? "登录中..." : "微信登录")}}</button>
       <button class="guest-text" bindtap="enterGuest">游客模式</button>
     </view>

@@ -37,6 +37,19 @@
   top: 96rpx;
 }
 
+.connection-status {
+  position: absolute;
+  left: 168rpx;
+  top: 142rpx;
+  color: #8f8881;
+  font-size: 21rpx;
+  line-height: 32rpx;
+}
+
+.connection-status.connected {
+  color: #5f7c6d;
+}
+
 .settings-link {
   position: absolute;
   right: 40rpx;
@@ -76,6 +89,18 @@
 .privacy-link {
   margin-left: 6rpx;
   color: #71877b;
+  text-decoration: underline;
+}
+
+.wechat-privacy-link {
+  width: auto;
+  margin: 10rpx 0 0;
+  padding: 0;
+  background: transparent;
+  color: #71877b;
+  text-align: left;
+  font-size: 22rpx;
+  line-height: 34rpx;
   text-decoration: underline;
 }
 

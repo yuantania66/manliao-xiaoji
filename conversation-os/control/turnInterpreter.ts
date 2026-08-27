@@ -32,6 +32,9 @@ const directQuestionFromText = (text: string): DirectQuestion | null => {
   if (/(?:看得见|看得到|看到|看见|能看|会看).{0,6}(?:我|这里|照片|环境)?/u.test(text)) return { text, kind: "perception_capability", evidence: ["explicit visual-perception capability question"] };
   if (/(?:现在几点|几点了|知道时间|当前时间)/u.test(text)) return { text, kind: "time_capability", evidence: ["explicit current-time capability question"] };
   if (/(?:记得|记住|还记不记得|记忆).{0,12}(?:我|之前|以前|聊天|事情)?/u.test(text)) return { text, kind: "memory_capability", evidence: ["explicit memory capability question"] };
+  if (/(?:主动).{0,10}(?:找我|联系我|发消息|说话|聊天|打招呼)|(?:关掉|退出|关闭).{0,10}(?:还能|会不会|能不能).{0,8}(?:发消息|找我|联系我)/u.test(text)) {
+    return { text, kind: "proactive_messaging_capability", evidence: ["explicit proactive-messaging capability question"] };
+  }
   const embodiedAction = text.match(/(?:会|能|可以).{0,4}(坐|睡觉|睡|抱|拥抱|碰|触碰|走|躺)/u)?.[1];
   if (embodiedAction) {
     const subject =
@@ -102,6 +105,7 @@ const groundingReferenceForQuestion = (question: DirectQuestion | null, context:
   if (question.kind === "perception_capability") return "vision";
   if (question.kind === "time_capability") return "time";
   if (question.kind === "memory_capability") return "memory";
+  if (question.kind === "proactive_messaging_capability") return "proactive_messaging";
   if (question.kind === "definition" || question.kind === "reason_or_contradiction") return "previous_wording";
   return "none";
 };

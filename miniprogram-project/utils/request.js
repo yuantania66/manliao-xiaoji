@@ -1,7 +1,7 @@
 const { API_TIMEOUT, getApiBaseUrl } = require("../config/api");
 const { getAuth, clearAuth } = require("./auth");
 
-const request = ({ url, method = "GET", data, auth = true }) =>
+const request = ({ url, method = "GET", data, auth = true, headers = {} }) =>
   new Promise((resolve, reject) => {
     const apiBaseUrl = getApiBaseUrl();
     if (!apiBaseUrl) {
@@ -11,7 +11,8 @@ const request = ({ url, method = "GET", data, auth = true }) =>
 
     const storedAuth = getAuth();
     const header = {
-      "content-type": "application/json"
+      "content-type": "application/json",
+      ...headers
     };
 
     if (auth && storedAuth && storedAuth.token) {

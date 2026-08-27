@@ -133,6 +133,44 @@ const HANDOFF_ACTIONS = new Set([
   "offer_neutral_conversation_entry",
 ]);
 
+const neutralChoiceAlternativeKinds = (value: string) => ({
+  casual: /(?:随便|随意|轻松|闲聊|聊(?:上)?两句|聊点轻松)/u.test(value),
+  present: /(?:此刻|现在|眼下|心里|在意|想说|想到|正想着)/u.test(value),
+});
+
+export const isNeutralConversationLightChoice = (reply: string) => {
+  const normalized = normalize(reply);
+  if ((normalized.match(/[？?]/gu) ?? []).length !== 1) return false;
+  const questionEnd = normalized.search(/[？?]/u);
+  if (questionEnd < 0) return false;
+  const beforeQuestion = normalized.slice(0, questionEnd);
+  const previousBoundary = Math.max(
+    beforeQuestion.lastIndexOf("。"),
+    beforeQuestion.lastIndexOf("！"),
+    beforeQuestion.lastIndexOf("!")
+  );
+  const questionClause = beforeQuestion.slice(previousBoundary + 1).trim();
+  let alternatives: [string, string] | null = null;
+  const binaryConnector = questionClause.match(/还是|或者/u);
+  if (binaryConnector && binaryConnector.index !== undefined) {
+    alternatives = [
+      questionClause.slice(0, binaryConnector.index).trim(),
+      questionClause.slice(binaryConnector.index + binaryConnector[0].length).trim(),
+    ];
+  } else {
+    const alsoConnector = questionClause.match(/[，,、]\s*也可以/u);
+    if (alsoConnector && alsoConnector.index !== undefined) {
+      alternatives = [
+        questionClause.slice(0, alsoConnector.index).trim(),
+        questionClause.slice(alsoConnector.index + alsoConnector[0].length).trim(),
+      ];
+    }
+  }
+  if (!alternatives || alternatives.some((value) => value.length < 2)) return false;
+  const [left, right] = alternatives.map(neutralChoiceAlternativeKinds);
+  return (left.casual && right.present) || (left.present && right.casual);
+};
+
 const collectOrdinaryHandoffFailures = ({
   plan,
   reply,
@@ -162,10 +200,63 @@ const collectOrdinaryHandoffFailures = ({
   }
   if (
     handoffAction === "continue_established_frame" ||
-    handoffAction === "continue_established_thread" ||
-    handoffAction === "offer_neutral_conversation_entry"
+    handoffAction === "continue_established_thread"
   ) {
     if (/[？?]/u.test(normalized)) failures.push("ordinary_handoff:question_forbidden_for_selected_move");
+  }
+  if (handoffAction === "offer_neutral_conversation_entry") {
+    const reciprocalEntry =
+      plan.interactionMoveHandoffPlan?.requiredFunction ===
+        "complete_reciprocal_contact" &&
+      plan.questionPolicy.mode !== "none";
+    if (!reciprocalEntry && /[？?]/u.test(normalized)) {
+      failures.push("ordinary_handoff:question_forbidden_for_selected_move");
+    }
+    if (
+      reciprocalEntry &&
+      /(?:为什么|怎么会|发生了什么|具体|详细|解释|说说原因|讲讲经过)/u.test(normalized)
+    ) {
+      failures.push("ordinary_handoff:neutral_entry_demands_explanation");
+    }
+    if (
+      reciprocalEntry &&
+      /[？?]/u.test(normalized) &&
+      !isNeutralConversationLightChoice(normalized)
+    ) {
+      failures.push("ordinary_handoff:neutral_entry_requires_light_choice");
+    }
+  }
+  return failures;
+};
+
+const collectMechanicalReplyFailures = ({
+  plan,
+  reply,
+}: {
+  plan: ResponsePlan;
+  reply: string;
+}) => {
+  const normalized = normalize(reply);
+  const failures: string[] = [];
+  if (
+    /^(?:你好呀?[，,。！!\s]*)?(?:嗯嗯?|哦|好(?:的)?|知道了|明白了|收到(?:了|啦|你的消息啦?)?|我记下了|听到了|看到了)(?:[，,。！!\s]*(?:收到(?:了|啦)?|我记下了|我在(?:呢)?|随时都在))?[。！!\s]*$/u.test(normalized) ||
+    /^(?:你好呀?[，,。！!\s]*)?(?:小慢[，,。！!\s]*)?(?:我?在(?:呢)?|随时都在|在等你(?:找我)?聊天(?:呀)?)[。！!\s]*$/u.test(normalized)
+  ) {
+    failures.push("assistant_voice:mechanical_receipt_or_presence");
+  }
+  if (/(?:^|[。！？!?]\s*)我(?:一直|正在|就在|还在|在)?等你(?:来|找我)?(?:聊天|说话)?|(?:一直|正在|就在|还在|在)等你(?:来|找我)?(?:聊天|说话)?/u.test(normalized)) {
+    failures.push("assistant_grounding:invented_waiting_activity");
+  }
+  if (plan.responseActions.includes("repair_previous_wording")) {
+    if (/(?:抱歉|对不起)(?:让你|如果让你)(?:有这种感觉|觉得|误会)/u.test(normalized)) {
+      failures.push("repair:non_owning_apology");
+    }
+    if (/^(?:嗯嗯?|哦|好(?:的)?|知道了|明白了|收到(?:了)?)[，,。！!\s]*(?:我记下了|我会认真听|我在(?:呢)?)?[。！!\s]*$/u.test(normalized)) {
+      failures.push("repair:generic_receipt");
+    }
+    if (/(?:其实|但|不过).{0,12}(?:我)?(?:一直|确实)(?:在)?(?:认真)?(?:听|理解)/u.test(normalized)) {
+      failures.push("repair:self_defense");
+    }
   }
   return failures;
 };
@@ -759,6 +850,14 @@ const obligationSatisfied = (reply: string, obligation: ResponsePlan["answerObli
   if (obligation.kind === "perception_capability") return /不能看|看不见|看不到|没法看|无法看|只能.{0,4}文字/u.test(reply);
   if (obligation.kind === "time_capability") return /不知道.{0,6}(?:实时|当前|现在).{0,4}时间|没有.{0,6}(?:实时|当前).{0,4}时间|需要.{0,6}(?:提供|告诉).{0,4}时间/u.test(reply);
   if (obligation.kind === "memory_capability") return /只能.{0,12}(?:当前|提供|选取|聊天)|不一定记得|不会.{0,8}全部|有限/u.test(reply);
+  if (obligation.kind === "proactive_messaging_capability") {
+    const statesOpenOrReturnGreeting =
+      /(?:打开|回到|进入).{0,28}(?:先.{0,10}(?:问候|打招呼)|(?:问候|打招呼).{0,10}(?:先|主动))/u.test(reply);
+    const statesNoBackgroundPush =
+      /(?:关闭|关掉|退出|离开).{0,24}(?:不能|没法|不会).{0,12}(?:主动)?(?:推送|发消息|联系)/u.test(reply) ||
+      /(?:不能|没法|不会).{0,24}(?:关闭|关掉|退出|离开).{0,12}(?:推送|发消息|联系)/u.test(reply);
+    return statesOpenOrReturnGreeting && statesNoBackgroundPush;
+  }
   if (obligation.kind === "definition") return /意思是|指的是|是指|说的是|就是说|就是/u.test(reply) && !/^[^。！!]{0,30}[？?]$/u.test(reply);
   if (obligation.kind === "reason_or_contradiction") return /因为|其实|刚才|我说的|只能|文字|指的是/u.test(reply) && !/^[^。！!]{0,30}[？?]$/u.test(reply);
   return Boolean(reply) && !/^[^。！!]{0,30}[？?]$/u.test(reply);
@@ -812,6 +911,7 @@ export const validateResponsePlanOutput = ({ plan, reply }: { plan: ResponsePlan
   }
   failureReasons.push(...collectOrdinaryAcknowledgementFailures({ plan, reply: text }));
   failureReasons.push(...collectOrdinaryHandoffFailures({ plan, reply: text }));
+  failureReasons.push(...collectMechanicalReplyFailures({ plan, reply: text }));
   if (plan.positiveFunctionContract?.action === "offer_emotional_support") {
     failureReasons.push(...collectUnsupportedAffectClaimFailures({ plan, reply: text }));
   }
@@ -853,6 +953,15 @@ export const validateResponsePlanOutput = ({ plan, reply }: { plan: ResponsePlan
 };
 
 const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
+  if (failure === "assistant_voice:mechanical_receipt_or_presence") {
+    return "删除“收到、我在、随时都在”或只重复问候的客服式收条。按当前 ResponsePlan 完成一个具体会话功能：允许提问时给出一个容易回答的自然话头；禁止提问时则贴住用户本轮内容并向前推进，不要只宣布在线。";
+  }
+  if (failure === "assistant_grounding:invented_waiting_activity") {
+    return "不要声称一直在等用户、正在等用户来聊天。只描述当前真实动作，例如正在回复这条消息；再按 ResponsePlan 继续当前对话。";
+  }
+  if (failure === "repair:generic_receipt") {
+    return "删除“收到、记下了、我会听”式收条；明确指出并撤回助手上一轮造成问题的具体措辞或互动动作。";
+  }
   if (failure === "ordinary_handoff:no_new_conversation_function") {
     return "删除纯收件、纯在场或泛泛开放式话术；实现 ResponsePlan 已选定的普通交接动作，为下一轮增加一个可识别的会话功能。";
   }

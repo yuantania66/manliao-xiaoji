@@ -2,10 +2,16 @@
   <navigator url="/pages/me/me" class="back fixed-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
   <view class="eyebrow">我的</view>
   <view class="title">设置</view>
-  <view class="body intro">这里放着隐私、注销和反馈相关的内容。</view>
-  <navigator url="/pages/privacy/privacy" class="setting-card card" hover-class="none">隐私政策<text>查看数据如何被保存与使用</text><view>›</view></navigator>
-  <navigator url="/pages/cancel/cancel" class="setting-card card" hover-class="none">账号注销<text>了解注销前需要确认的事项</text><view>›</view></navigator>
-  <navigator url="/pages/feedback/feedback" class="setting-card card" hover-class="none">意见反馈<text>把问题或建议告诉我们</text><view>›</view></navigator>
-  <button class="logout" bindtap="logout">退出登录</button>
+  <view class="body intro">管理隐私、账号和反馈。</view>
+  <view class="account-state card">
+    <view>{{isAuthenticated ? "微信账号已连接" : dataMode === "guest" ? "游客模式" : "尚未登录"}}</view>
+    <text>{{isAuthenticated ? "云端同步已开启" : dataMode === "guest" ? "内容仅保存在本机" : "登录后可使用云端同步"}}</text>
+  </view>
+  <view class="settings-group card">
+    <navigator url="/pages/privacy/privacy" class="setting-row" hover-class="none">隐私政策<text>查看数据如何被保存与使用</text><view>›</view></navigator>
+    <navigator url="/pages/feedback/feedback" class="setting-row" hover-class="none">意见反馈<text>把问题或建议告诉我们</text><view>›</view></navigator>
+    <navigator wx:if="{{isAuthenticated}}" url="/pages/cancel/cancel" class="setting-row danger-row" hover-class="none">账号注销<text>注销账号并清理云端数据</text><view>›</view></navigator>
+  </view>
+  <button wx:if="{{isAuthenticated}}" class="logout" bindtap="logout">退出微信账号</button>
   <view class="version">慢聊小记 v2.0.0<br />慢慢聊，轻轻记。</view>
 </view>

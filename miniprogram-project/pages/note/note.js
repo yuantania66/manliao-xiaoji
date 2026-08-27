@@ -51,7 +51,7 @@ const pickSlipStyle = (currentStyle = "") => {
 };
 
 const getRegenerateText = (remaining) => {
-  return `换一张小笺 · 剩余 ${remaining} 次`;
+  return `换个版式 · 剩余 ${remaining} 次`;
 };
 
 const CANVAS_WIDTH = 540;
@@ -277,41 +277,23 @@ const drawSlipCanvas = (ctx, data) => {
   drawTextBlock(ctx, "慢聊小记", 166, 546, 240, 36, 1, 24, "#71877b", "700");
 };
 
-const getSlip = (content, mood) => {
-  const text = content.trim();
-  if (text.includes("累") || text.includes("忙")) {
-    return pick([
-      { quote: "你不必一直撑着。", caption: "今天已经够努力了，先把自己放回柔软处。" },
-      { quote: "慢一点也可以。", caption: "不是所有事情，都需要在今天被完成。" },
-      { quote: "先把自己放回来。", caption: "忙乱里也可以留一小块地方给自己。" }
-    ]);
+const getSlip = (content, mediaCount = 0) => {
+  const text = content.replace(/\s+/g, " ").trim();
+  if (!text) {
+    return {
+      quote: mediaCount > 1 ? `今天留下了 ${mediaCount} 张图片。` : "今天留下了一张图片。",
+      caption: "这是你刚刚保存的记录，没有替你添加解释。"
+    };
   }
-  if (text.includes("难过") || text.includes("委屈") || text.includes("崩溃")) {
-    return pick([
-      { quote: "难过不是退步。", caption: "它只是提醒你，有些地方需要被轻轻照顾。" },
-      { quote: "这不是你的错。", caption: "有些感受出现时，只是想被好好看见。" },
-      { quote: "先靠岸一会儿。", caption: "风大的时候，不必急着继续往前。" }
-    ]);
-  }
-  if (text.includes("开心") || text.includes("顺利") || text.includes("喜欢")) {
-    return pick([
-      { quote: "把这点亮光留住。", caption: "好的时刻也值得被认真收藏。" },
-      { quote: "今天有一束光。", caption: "它不需要很大，也足够被记下来。" },
-      { quote: "这份喜欢很珍贵。", caption: "愿它在以后某天，也能轻轻照亮你。" }
-    ]);
-  }
-  if (mood && mood.name === "暴雨") {
-    return pick([
-      { quote: "崩溃也不是失败。", caption: "雨很大的时候，先找一处能停靠的地方。" },
-      { quote: "先躲一会儿雨。", caption: "等呼吸回来，再决定下一步也不迟。" },
-      { quote: "你已经很用力了。", caption: "撑不住的时候，停下来也是一种保护。" }
-    ]);
-  }
-  return pick([
-    { quote: "这一刻已经被收下。", caption: "不用写得很完整，能留下来就很好。" },
-    { quote: "有些话先放这里。", caption: "不急着整理，它已经被温柔地留下。" },
-    { quote: "这也是今天的一部分。", caption: "轻轻记下，就已经很好了。" }
-  ]);
+  const characters = Array.from(text);
+  const quote = characters.slice(0, 22).join("") + (characters.length > 22 ? "…" : "");
+  const remainder = characters.slice(22, 58).join("");
+  return {
+    quote,
+    caption: remainder
+      ? `${remainder}${characters.length > 58 ? "…" : ""}`
+      : "来自你刚刚写下的原话。"
+  };
 };
 
 Page({
@@ -540,7 +522,7 @@ Page({
         if (dataMode === "authenticated") images.forEach((image) => removePersistedNoteImage(image.url));
         this.draftCommitted = true;
         clearNoteDraft();
-        const slip = getSlip(content, this.data.selectedMood);
+        const slip = getSlip(content, images.length);
         this.setData({
           isSlipOpen: true,
           slip: {
@@ -586,20 +568,8 @@ Page({
       return;
     }
 
-    const content = this.data.content.trim() || this.data.slip.quote || "这一刻";
-
-    const current = this.data.slip || {};
-    let slip = getSlip(content, this.data.selectedMood);
-    for (let index = 0; index < 4 && slip.quote === current.quote && slip.caption === current.caption; index += 1) {
-      slip = getSlip(content, this.data.selectedMood);
-    }
-
     const regenerateRemaining = Math.max(0, this.data.regenerateRemaining - 1);
     this.setData({
-      slip: {
-        ...slip,
-        shortCaption: slip.caption.length > 18 ? `${slip.caption.slice(0, 17)}...` : slip.caption
-      },
       slipStyle: pickSlipStyle(this.data.slipStyle),
       regenerateRemaining,
       regenerateText: getRegenerateText(regenerateRemaining),

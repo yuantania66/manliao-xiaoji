@@ -3,6 +3,12 @@
   <view class="eyebrow">设置</view>
   <view class="title">账号注销</view>
   <view class="body intro">注销会触发二次验证，确认后所有数据都会被清空。</view>
+  <view wx:if="{{!accountAvailable}}" class="card cancel-card unavailable-card">
+    <view class="cancel-title">当前没有已登录账号</view>
+    <view class="body">请返回“我的”页面登录后再管理账号。</view>
+    <navigator url="/pages/me/me" class="primary-button back-account" hover-class="none">返回我的</navigator>
+  </view>
+  <block wx:else>
   <view class="card cancel-card">
     <view class="cancel-title">注销后会发生什么</view>
     <view class="body">账号资料、登录状态、云端同步记录会被清空。本机小记、聊天记录、心情日历和慢聊小记观察也会被清空。</view>
@@ -30,4 +36,5 @@
     {{isCancelling ? "注销中" : "确认注销"}}
   </button>
   <view class="muted tip">{{statusText || "二次验证用于避免误触。确认后不可恢复。"}}</view>
+  </block>
 </view>

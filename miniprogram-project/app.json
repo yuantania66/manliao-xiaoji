@@ -22,5 +22,6 @@
     "backgroundColor": "#fbf7f0"
   },
   "style": "v2",
+  "__usePrivacyCheck__": true,
   "sitemapLocation": "sitemap.json"
 }

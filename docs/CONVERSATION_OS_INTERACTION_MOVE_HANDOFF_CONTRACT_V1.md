@@ -607,7 +607,7 @@ projects the following complete tuple without reinterpreting the User text:
 | `answers_move` with `ask_one_bounded_low_burden_question` | `continue_from_user_answer` | `fulfill` | `none` | receive and continue from the answer; no second interview question |
 | `continues_from_move` with `ask_one_bounded_low_burden_question` | `continue_from_user_answer` | `fulfill` | `none` | continue only from answer content supported by the current turn |
 | `continues_from_move` with either non-question greeting function | `continue_user_introduced_content` | `fulfill` | `optional_after_completion` | continue only current-turn content supported by the relation evidence |
-| `reciprocates_move` with either non-question greeting function | `complete_reciprocal_contact` | `fulfill` | `optional_after_completion` | the handoff function may stand alone; an ordinary continuation is optional and requires independent current-turn support |
+| `reciprocates_move` with either non-question greeting function | `complete_reciprocal_contact` | `fulfill` | `optional_after_completion` | require `offer_neutral_conversation_entry`; after completing reciprocal contact it may ask at most one light choice question |
 | `unclear`, or a relation/source-function pair not listed above | `defer_handoff_completion` | `defer` | `none` | preserve ordinary low-burden handling; no action may claim completion |
 
 `reciprocates_move` after a question greeting and `answers_move` after a
@@ -616,8 +616,13 @@ typed fail-closed boundary, not a wording rule.
 
 `questionPolicy=optional_after_completion` means that a question is permitted
 only after the selected positive function has been realized and only when an
-existing ordinary-plan action independently supports it. It never requires a
-question and cannot be used to manufacture conversation content.
+existing ordinary-plan action independently supports it. For
+`complete_reciprocal_contact`, that action is
+`offer_neutral_conversation_entry`: it may offer one low-burden choice between
+casual conversation and something already on the User's mind. It may not ask
+for reasons, details or an explanation, and it may not open a second question.
+The question remains optional and cannot be used to manufacture personal
+content.
 
 ### 14.4 Multiple-candidate compatibility
 

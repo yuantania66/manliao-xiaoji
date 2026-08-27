@@ -1,6 +1,7 @@
 const { getAuth, saveAuth } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
 const { loginWithWechat, getMe } = require("../../api/auth");
+const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
 
 const getMembershipDays = (createdAt) => {
   if (!createdAt) return null;
@@ -21,6 +22,7 @@ Page({
     pageTop: 92,
     isLoggedIn: false,
     membershipText: "内容仅保存在本机",
+    connectionText: "未连接微信账号",
     isCheckingAuth: false,
     isLoggingIn: false,
     loginError: "",
@@ -34,7 +36,8 @@ Page({
     const auth = getAuth();
     this.setData({
       isLoggedIn: Boolean(auth),
-      membershipText: getMembershipText(auth)
+      membershipText: getMembershipText(auth),
+      connectionText: auth ? "微信账号已连接 · 云端同步已开启" : "未连接微信账号"
     });
     if (auth) this.reconcileAuth();
   },
@@ -50,7 +53,7 @@ Page({
     getMe()
       .then(() => {
         if (this.authCheckId !== checkId || !getAuth()) return;
-        this.setData({ isLoggedIn: true, membershipText: getMembershipText(getAuth()) });
+        this.setData({ isLoggedIn: true, membershipText: getMembershipText(getAuth()), connectionText: "微信账号已连接 · 云端同步已开启" });
       })
       .catch(() => {
         if (this.authCheckId !== checkId) return;
@@ -58,6 +61,7 @@ Page({
         this.setData({
           isLoggedIn: Boolean(stillStored),
           membershipText: getMembershipText(stillStored),
+          connectionText: stillStored ? "微信账号已连接 · 云端同步已开启" : "未连接微信账号",
           loginError: stillStored
             ? "暂时无法验证登录状态，请检查网络后重试。"
             : "登录状态已失效，请重新登录。"
@@ -75,6 +79,10 @@ Page({
     this.setData({ privacyConfirmed: event.detail.value.includes("confirmed") });
   },
 
+  openWechatPrivacy() {
+    openWechatPrivacyContract();
+  },
+
   updateSafeLayout() {
     const layout = getSafeLayout();
     this.setData({ pageTop: layout.pageTop });
@@ -90,6 +98,14 @@ Page({
     this.authCheckPending = false;
     this.setData({ isCheckingAuth: false, isLoggingIn: true, loginError: "" });
 
+    requireWechatPrivacyAuthorization()
+      .then(() => this.loginWithWechatCode())
+      .catch((error) => {
+        this.setData({ isLoggingIn: false, loginError: error.message || "微信隐私授权未完成。" });
+      });
+  },
+
+  loginWithWechatCode() {
     wx.login({
       success: ({ code }) => {
         if (!code) {
@@ -102,6 +118,7 @@ Page({
             this.setData({
               isLoggedIn: true,
               membershipText: getMembershipText(auth),
+              connectionText: "微信账号已连接 · 云端同步已开启",
               loginError: ""
             });
           })

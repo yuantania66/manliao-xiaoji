@@ -12,6 +12,9 @@ global.wx = {
   removeStorageSync: (key) => storage.delete(key),
   getAccountInfoSync: () => ({ miniProgram: { envVersion: runtimeEnvVersion } }),
   login: () => {},
+  getPrivacySetting: ({ success }) => success({ needAuthorization: false }),
+  requirePrivacyAuthorize: ({ success }) => success(),
+  openPrivacyContract: ({ success }) => success && success(),
   getMenuButtonBoundingClientRect: () => ({ top: 24, bottom: 56, right: 360 }),
   getWindowInfo: () => ({ screenHeight: 844, safeArea: { bottom: 810 } })
 };
@@ -122,6 +125,7 @@ let loginCalls = 0;
 loginImpl = () => { loginCalls += 1; return Promise.resolve(validAuth); };
 wx.login = ({ success }) => success({ code: "" });
 emptyCodeHome.handleLogin();
+await tick();
 assert.equal(loginCalls, 0);
 assert.match(emptyCodeHome.data.entryError, /有效登录凭证/);
 
@@ -138,6 +142,7 @@ me.data.privacyConfirmed = true;
 wx.login = ({ success }) => success({ code: "real-code" });
 loginImpl = () => Promise.reject(new Error("登录失败"));
 me.login();
+await tick();
 await tick();
 assert.equal(storage.get("xinqingGuestMode"), undefined);
 assert.equal(me.data.isLoggedIn, false);

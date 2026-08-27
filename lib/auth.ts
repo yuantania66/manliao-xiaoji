@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { NextRequest } from "next/server";
 import { VerificationScene } from "@prisma/client";
 
@@ -22,6 +22,17 @@ export const getSessionExpiresAt = () => {
 
 export const hashToken = (token: string) =>
   createHash("sha256").update(`${getSessionSecret()}:${token}`).digest("hex");
+
+export const signServerValue = (value: string) =>
+  createHmac("sha256", getSessionSecret()).update(value).digest("base64url");
+
+export const verifyServerValueSignature = (value: string, signature: string) => {
+  const expected = signServerValue(value);
+  const expectedBuffer = Buffer.from(expected);
+  const signatureBuffer = Buffer.from(signature);
+  if (expectedBuffer.length !== signatureBuffer.length) return false;
+  return timingSafeEqual(expectedBuffer, signatureBuffer);
+};
 
 export const hashVerificationCode = ({
   phone,

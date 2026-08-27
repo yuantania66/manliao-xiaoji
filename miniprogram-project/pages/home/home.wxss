@@ -193,6 +193,18 @@
   text-decoration: underline;
 }
 
+.wechat-privacy-link {
+  width: auto;
+  margin: 10rpx 0 0;
+  padding: 0;
+  background: transparent;
+  color: #71877b;
+  text-align: left;
+  font-size: 22rpx;
+  line-height: 34rpx;
+  text-decoration: underline;
+}
+
 .entry-sheet .primary-button[disabled] {
   background: #d8d1c9;
 }

@@ -48,10 +48,12 @@
 }
 
 .range-row button {
+  flex: 1;
+  min-width: 0;
   height: 68rpx;
   border-radius: 34rpx;
   background: #fffdf9;
-  padding: 0 38rpx;
+  padding: 0 12rpx;
   color: #71877b;
   font-size: 24rpx;
   font-weight: 700;
@@ -66,7 +68,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 32rpx;
-  margin-top: 68rpx;
+  margin-top: 40rpx;
 }
 
 .word {
@@ -78,21 +80,38 @@
   align-items: center;
   font-size: 28rpx;
   font-weight: 700;
-}
-
-.positive {
-  background: #ddebf3;
-  color: #5f8290;
-}
-
-.neutral {
   background: #f8ecc8;
   color: #9b8349;
 }
 
-.negative {
-  background: #f4e4d3;
-  color: #b9826e;
+.observation-state {
+  box-sizing: border-box;
+  margin-top: 44rpx;
+  padding: 36rpx;
+  color: #6d665f;
+  font-size: 25rpx;
+  line-height: 42rpx;
+}
+
+.observation-state button {
+  width: auto;
+  margin: 18rpx 0 0;
+  padding: 0;
+  background: transparent;
+  color: #71877b;
+  font-size: 24rpx;
+}
+
+.empty-title {
+  margin-bottom: 10rpx;
+  color: #2d2926;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.error-card {
+  margin-top: 28rpx;
+  color: #9f6b61;
 }
 
 .quote-card {
