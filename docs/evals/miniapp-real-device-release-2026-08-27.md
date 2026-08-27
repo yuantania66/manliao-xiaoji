@@ -42,11 +42,11 @@
 - focused ESLint: PASS（0 warnings）
 - production build: PASS；`/api/insights` included
 - Prisma schema / 19 migrations consistency: PASS（fresh isolated PostgreSQL）
-- WeChat DevTools preview compile: PASS（168.8 KB；2026-08-27 18:35 生成包含聊天一致性与 Safety 提示修复的新体验二维码）
+- WeChat DevTools preview compile: PASS（168.8 KB；2026-08-27 19:12 从生产同版本 `5625262` 的纯净归档生成最终真机回归二维码）
 
 ## Current release gate
 
-本地计划、Prompt、确定性 Validator 与语义 Validator 已对齐；本切片真实 Qwen 合成回放已通过。此前 PR #33 与生产版本 `dcb5515` 的线上检查保持为历史证据；本次第二轮真机修复仍仅位于本地发布工作树，已生成新的体验二维码，但尚未合入或部署。关闭小程序后的后台推送仍不属于当前能力，不得据此宣称已经完成。
+本地计划、Prompt、确定性 Validator 与语义 Validator 已对齐；本切片真实 Qwen 合成回放已通过。PR #35 已合入 `main`，生产已切换到 `5625262`，PM2、内部与 HTTPS 健康检查、生产 smoke、游客主动问候和真实 Qwen 合成“你好”均通过；`dcb5515` 保留为回滚版本。关闭小程序后的后台推送仍不属于当前能力，不得据此宣称已经完成。
 
 ## Boundaries
 
