@@ -17,16 +17,16 @@
 
 ## 2026-08-27 当前发布
 
-- 生产版本：`dcb5515`（PR #33）
-- 当前目录：`/var/www/manliaoxiaoji/releases/dcb5515`
-- 回滚版本：`/var/www/manliaoxiaoji/releases/e8e109a`
-- Next.js Build ID：`5-sFv3DLAWfG_fKqzMNZ6`
+- 生产版本：`5625262`（PR #35）
+- 当前目录：`/var/www/manliaoxiaoji/releases/5625262`
+- 回滚版本：`/var/www/manliaoxiaoji/releases/dcb5515`
+- Next.js Build ID：`rVl17Osnb2jkIOailx9bJ`
 - 生产数据库：19 个 migration 已应用，无待执行 migration
 - PM2：`manliaoxiaoji` 已切换并重启，`/api/health` 返回 production / database connected
 - 线上 smoke：健康检查、匿名鉴权、微信空参数、游客主动问候、真实 Qwen 合成“你好”均通过
 - 注销文件清理：`manliaoxiaoji-account-cancellation-cleanup.timer` 已启用，最近一次执行成功
 - 数据库备份：`manliaoxiaoji-postgres-backup.timer` 已启用，每日执行；首份备份已通过 `pg_restore --list` 完整性检查
-- 小程序预览：合入 main 的体验版编译通过，包体 164.4 KB
+- 小程序预览：从生产同版本 `5625262` 的纯净归档编译通过，包体 168.8 KB
 
 ## 已完成
 
@@ -87,7 +87,7 @@ PROD_ENV_FILE=/var/www/manliaoxiaoji/shared/.env npm run audit:prod-env
 npm run smoke:prod
 ```
 
-`smoke:prod` 会检查生产健康检查、匿名鉴权和微信登录参数校验。2026-08-27 已在 `dcb5515` 上通过；另以纯合成数据验证了游客主动问候和真实 Qwen “你好”聊天链路，检查输出不含回复正文、密钥或 Base URL。
+`smoke:prod` 会检查生产健康检查、匿名鉴权和微信登录参数校验。2026-08-27 已在 `5625262` 上通过；另以纯合成数据验证了游客主动问候和真实 Qwen “你好”聊天链路，检查输出不含回复正文、密钥或 Base URL。
 
 ## HTTPS 证书命令
 
