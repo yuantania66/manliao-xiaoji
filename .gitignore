@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.generated/
 out/
 _snapshots/
 tsconfig.tsbuildinfo

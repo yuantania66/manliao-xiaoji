@@ -10,6 +10,14 @@ const loginWithWechat = (code) =>
     data: { code }
   });
 
+const loginWithWechatPhone = ({ wechatCode, phoneCode }) =>
+  request({
+    url: "/api/auth/wechat-phone",
+    method: "POST",
+    auth: false,
+    data: { wechatCode, phoneCode }
+  });
+
 const getMe = () =>
   request({
     url: "/api/auth/me"
@@ -79,6 +87,7 @@ const cancelAccount = ({ code, wechatCode } = {}) =>
 
 module.exports = {
   loginWithWechat,
+  loginWithWechatPhone,
   getMe,
   updateMe,
   uploadProfileAvatar,

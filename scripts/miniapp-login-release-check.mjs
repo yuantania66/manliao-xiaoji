@@ -15,6 +15,8 @@ global.wx = {
   getPrivacySetting: ({ success }) => success({ needAuthorization: false }),
   requirePrivacyAuthorize: ({ success }) => success(),
   openPrivacyContract: ({ success }) => success && success(),
+  redirectTo: () => {},
+  showToast: () => {},
   getMenuButtonBoundingClientRect: () => ({ top: 24, bottom: 56, right: 360 }),
   getWindowInfo: () => ({ screenHeight: 844, safeArea: { bottom: 810 } })
 };
@@ -25,7 +27,11 @@ const homePath = require.resolve("../miniprogram-project/pages/home/home.js");
 const mePath = require.resolve("../miniprogram-project/pages/me/me.js");
 const auth = require(authPath);
 const future = new Date(Date.now() + 60_000).toISOString();
-const validAuth = { token: "valid-token", expiresAt: future, user: { createdAt: new Date().toISOString() } };
+const validAuth = {
+  token: "valid-token",
+  expiresAt: future,
+  user: { id: "user-a", phone: "13800000000", nickname: null, avatarUrl: null, createdAt: new Date().toISOString() }
+};
 
 assert.equal(auth.isUsableAuth(validAuth), true);
 for (const invalid of [null, {}, [], { token: "x" }, { token: "local_demo_x", expiresAt: future }, { token: "x", expiresAt: "bad" }, { token: "x", expiresAt: new Date(0).toISOString() }]) {
@@ -57,10 +63,10 @@ runtimeEnvVersion = "develop";
 assert.equal(apiConfig.getApiBaseUrl(), "http://attacker.invalid");
 
 let getMeImpl = () => Promise.resolve({ user: validAuth.user });
-let loginImpl = () => Promise.resolve(validAuth);
+let phoneLoginImpl = () => Promise.resolve(validAuth);
 const api = require(apiPath);
 api.getMe = () => getMeImpl();
-api.loginWithWechat = (code) => loginImpl(code);
+api.loginWithWechatPhone = (codes) => phoneLoginImpl(codes);
 
 const loadPage = (path) => {
   let definition;
@@ -119,33 +125,92 @@ assert.equal(home.data.showEntry, false);
 assert.equal(storage.get("xinqingGuestMode"), true);
 
 storage.clear();
-const emptyCodeHome = loadPage(homePath);
-emptyCodeHome.data.privacyConfirmed = true;
-let loginCalls = 0;
-loginImpl = () => { loginCalls += 1; return Promise.resolve(validAuth); };
-wx.login = ({ success }) => success({ code: "" });
-emptyCodeHome.handleLogin();
-await tick();
-assert.equal(loginCalls, 0);
-assert.match(emptyCodeHome.data.entryError, /有效登录凭证/);
-
 const unconfirmedHome = loadPage(homePath);
 let wxLoginCalls = 0;
 wx.login = () => { wxLoginCalls += 1; };
-unconfirmedHome.handleLogin();
+unconfirmedHome.preparePhoneLogin();
 assert.equal(wxLoginCalls, 0);
+assert.equal(unconfirmedHome.data.phoneLoginReady, false);
 assert.match(unconfirmedHome.data.entryError, /隐私政策/);
+
+const preparedHome = loadPage(homePath);
+preparedHome.data.privacyConfirmed = true;
+preparedHome.preparePhoneLogin();
+await tick();
+assert.equal(preparedHome.data.phoneLoginReady, true);
+assert.equal(wxLoginCalls, 0, "preparing privacy must not request a phone or login code");
+
+let phoneLoginCalls = 0;
+phoneLoginImpl = () => { phoneLoginCalls += 1; return Promise.resolve(validAuth); };
+preparedHome.handlePhoneNumber({ detail: {} });
+assert.equal(phoneLoginCalls, 0);
+assert.match(preparedHome.data.entryError, /取消手机号授权/);
+
+let redirectedTo = "";
+wx.redirectTo = ({ url }) => { redirectedTo = url; };
+wx.login = ({ success }) => success({ code: "wechat-login-code" });
+preparedHome.handlePhoneNumber({ detail: { code: "phone-code" } });
+await tick();
+await tick();
+assert.equal(phoneLoginCalls, 1);
+assert.equal(auth.getAuth().user.phone, "13800000000");
+assert.equal(redirectedTo, "/pages/me/me?completeProfile=1");
+
+storage.clear();
+const emptyCodeHome = loadPage(homePath);
+emptyCodeHome.data.phoneLoginReady = true;
+phoneLoginCalls = 0;
+wx.login = ({ success }) => success({ code: "" });
+emptyCodeHome.handlePhoneNumber({ detail: { code: "phone-code" } });
+await tick();
+assert.equal(phoneLoginCalls, 0);
+assert.match(emptyCodeHome.data.entryError, /有效登录凭证/);
+
+storage.clear();
+const stalePrivacyHome = loadPage(homePath);
+stalePrivacyHome.data.privacyConfirmed = true;
+let resolvePrivacySetting;
+wx.getPrivacySetting = ({ success }) => { resolvePrivacySetting = success; };
+stalePrivacyHome.preparePhoneLogin();
+stalePrivacyHome.enterGuest();
+resolvePrivacySetting({ needAuthorization: false });
+await tick();
+assert.equal(stalePrivacyHome.data.phoneLoginReady, false);
+assert.equal(stalePrivacyHome.data.isLoggingIn, false);
+wx.getPrivacySetting = ({ success }) => success({ needAuthorization: false });
+
+storage.clear();
+const staleHome = loadPage(homePath);
+staleHome.data.phoneLoginReady = true;
+let resolvePhoneLogin;
+phoneLoginImpl = () => new Promise((resolve) => { resolvePhoneLogin = resolve; });
+wx.login = ({ success }) => success({ code: "wechat-login-code" });
+staleHome.handlePhoneNumber({ detail: { code: "phone-code" } });
+staleHome.enterGuest();
+resolvePhoneLogin(validAuth);
+await tick();
+assert.equal(auth.getAuth(), null);
+assert.equal(auth.isGuest(), true);
+assert.equal(staleHome.data.isLoggingIn, false);
 
 storage.clear();
 const me = loadPage(mePath);
 me.data.privacyConfirmed = true;
-wx.login = ({ success }) => success({ code: "real-code" });
-loginImpl = () => Promise.reject(new Error("登录失败"));
-me.login();
+me.preparePhoneLogin();
 await tick();
+assert.equal(me.data.phoneLoginReady, true);
+phoneLoginImpl = () => Promise.reject(new Error("登录失败"));
+me.handlePhoneNumber({ detail: { code: "phone-code" } });
 await tick();
 assert.equal(storage.get("xinqingGuestMode"), undefined);
 assert.equal(me.data.isLoggedIn, false);
 assert.match(me.data.loginError, /登录失败/);
+
+phoneLoginImpl = () => Promise.resolve(validAuth);
+me.handlePhoneNumber({ detail: { code: "phone-code-2" } });
+await tick();
+await tick();
+assert.equal(me.data.isLoggedIn, true);
+assert.equal(me.data.profileEditing, true, "missing profile must open after phone login");
 
 console.log("Miniapp login release check passed.");

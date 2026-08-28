@@ -3,14 +3,14 @@
   <view class="eyebrow">设置</view>
   <view class="title">隐私政策</view>
   <view class="body policy">
-    <view class="policy-date">更新及生效日期：2026 年 8 月 26 日</view>
+    <view class="policy-date">更新及生效日期：2026 年 8 月 28 日</view>
     <view class="policy-title">慢聊小记小程序隐私政策</view>
 
     <view class="policy-paragraph">慢聊小记重视你的个人信息与隐私保护。本政策适用于你使用小记、慢慢说、心情日历、慢聊小记观察、账号及意见反馈等功能时的信息处理活动。慢聊小记不是心理治疗或诊断服务。</view>
 
     <view class="policy-heading">一、我们收集和使用的信息</view>
     <view class="policy-paragraph">我们会处理你主动提交的小记文字、聊天内容、心情与天气标记、你选择上传的图片及意见反馈，用于记录展示、历史回看、生成回复和慢聊小记观察、处理反馈及保障服务运行。</view>
-    <view class="policy-paragraph">使用微信登录时，我们会处理微信提供的登录凭证并保存对应的账号标识，用于识别账号和维持登录状态。我们不会把微信登录凭证作为小记或聊天内容使用。</view>
+    <view class="policy-paragraph">当你主动选择手机号登录时，我们会处理微信提供的登录凭证、你在微信系统界面选择的手机号，并保存对应的账号标识，用于创建或识别账号、维持登录状态和账号安全。拒绝提供手机号时不会登录，你仍可使用游客模式。上述登录信息不会作为小记或聊天内容使用。</view>
 
     <view class="policy-heading">二、图片和设备权限</view>
     <view class="policy-paragraph">只有当你主动点击“添加图片”时，我们才会调用微信的媒体选择能力，读取你本次选择或拍摄的图片。你可以拒绝授权，拒绝不会影响纯文字小记、游客聊天等无需图片的功能。</view>

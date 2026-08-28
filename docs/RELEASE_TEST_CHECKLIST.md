@@ -47,6 +47,7 @@ npm run check:release:required
 | `check:account-cancel-mini-client` | 小程序当前账号缓存精确清理、失败与本地重试 |
 | `check:profile-avatar-e2e` | 私有头像上传、绑定、替换与注销清理合同 |
 | `check:profile-avatar-mini-client` | 小程序资料跳过、账号隔离缓存与私有头像下载 |
+| `check:wechat-phone-login-e2e` | 微信手机号换取、登录/注册、绑定冲突与并发隔离 |
 
 ### 2.2 既有综合门 `check:launch`
 
@@ -91,6 +92,8 @@ npm run check:release:required
 
 头像端到端门使用 `PROFILE_AVATAR_TEST_DATABASE_URL` 指向明确命名的隔离 test/ci 数据库。它必须通过真实路由和真实图片解码验证私有上传、用途隔离、A/B 所有权、部分资料更新、事务回滚、并发替换、旧文件持久清理及注销失效；源码字符串扫描不能作为通过证据。
 
+微信手机号登录门使用 `WECHAT_PHONE_LOGIN_TEST_DATABASE_URL` 指向明确命名的隔离 test/ci 数据库。它必须通过真实路由验证新账号创建、既有手机号/微信账号绑定、同一账号重复登录、冲突拒绝和并发同号隔离；Mock 只能替代微信网络响应，不能替代路由、事务和数据库断言。
+
 ## 4. 真实模型门
 
 真实模型门不进入本地确定性入口，避免凭据、网络、成本和模型漂移让本地门产生伪确定性。发布涉及相应语义时必须执行：
@@ -128,7 +131,7 @@ npm run check:release:required
 小程序发布必须完成：
 
 - 微信开发者工具编译、预览，无阻断错误；
-- 体验版 HTTPS 合法域名、真实 `code2Session` 和授权登录；
+- 体验版 HTTPS 合法域名、真实 `code2Session`、`getPhoneNumber` 系统授权和手机号登录；
 - iOS 与 Android 各至少一台真机；
 - 新建/恢复会话、发送重试、弱网、断网、重复点击、前后台切换；
 - 小记创建、编辑、删除、图片上传、历史、搜索和日历；

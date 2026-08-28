@@ -1,13 +1,13 @@
 const { getAuth, saveAuth, updateCachedUser } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
 const {
-  loginWithWechat,
   getMe,
   updateMe,
   uploadProfileAvatar,
   discardProfileAvatar,
   downloadProfileAvatar
 } = require("../../api/auth");
+const { authenticateWithWechatPhone } = require("../../utils/wechat-phone-login");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
 
 const getMembershipDays = (createdAt) => {
@@ -34,6 +34,7 @@ Page({
     isLoggingIn: false,
     loginError: "",
     privacyConfirmed: false,
+    phoneLoginReady: false,
     activeTab: "me",
     switchingTab: false,
     profileEditing: false,
@@ -42,6 +43,10 @@ Page({
     avatarLocalPath: "",
     avatarPreview: "",
     isSavingProfile: false
+  },
+
+  onLoad(options) {
+    this.completeProfileAfterLogin = options.completeProfile === "1";
   },
 
   onShow() {
@@ -54,7 +59,11 @@ Page({
       profileNickname: auth?.user?.nickname || "",
       originalProfileNickname: auth?.user?.nickname || "",
       avatarLocalPath: "",
-      avatarPreview: ""
+      avatarPreview: "",
+      profileEditing: Boolean(auth && (
+        this.data.profileEditing ||
+        (this.completeProfileAfterLogin && (!auth.user.nickname || !auth.user.avatarUrl))
+      ))
     });
     if (auth?.user?.avatarUrl) {
       const userId = auth.user.id;
@@ -117,7 +126,9 @@ Page({
   },
 
   togglePrivacy(event) {
-    this.setData({ privacyConfirmed: event.detail.value.includes("confirmed") });
+    const privacyConfirmed = event.detail.value.includes("confirmed");
+    if (!privacyConfirmed) this.loginAttemptId = (this.loginAttemptId || 0) + 1;
+    this.setData({ privacyConfirmed, ...(privacyConfirmed ? {} : { phoneLoginReady: false }) });
   },
 
   openWechatPrivacy() {
@@ -129,7 +140,7 @@ Page({
     this.setData({ pageTop: layout.pageTop });
   },
 
-  login() {
+  preparePhoneLogin() {
     if (this.data.isLoggingIn) return;
     if (!this.data.privacyConfirmed) {
       this.setData({ loginError: "请先阅读并同意隐私政策。" });
@@ -137,47 +148,59 @@ Page({
     }
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.authCheckPending = false;
+    const attemptId = (this.loginAttemptId || 0) + 1;
+    this.loginAttemptId = attemptId;
     this.setData({ isCheckingAuth: false, isLoggingIn: true, loginError: "" });
 
     requireWechatPrivacyAuthorization()
-      .then(() => this.loginWithWechatCode())
+      .then(() => {
+        if (this.loginAttemptId === attemptId) {
+          this.setData({ phoneLoginReady: true, isLoggingIn: false });
+        }
+      })
       .catch((error) => {
-        this.setData({ isLoggingIn: false, loginError: error.message || "微信隐私授权未完成。" });
+        if (this.loginAttemptId === attemptId) {
+          this.setData({ isLoggingIn: false, loginError: error.message || "微信隐私授权未完成。" });
+        }
       });
   },
 
-  loginWithWechatCode() {
-    wx.login({
-      success: ({ code }) => {
-        if (!code) {
-          this.setData({ isLoggingIn: false, loginError: "微信未返回有效登录凭证，请重试。" });
-          return;
+  handlePhoneNumber(event) {
+    if (!this.data.phoneLoginReady || this.data.isLoggingIn) return;
+    const phoneCode = event.detail && event.detail.code;
+    if (!phoneCode) {
+      this.setData({ loginError: "你已取消手机号授权，可以稍后再试。" });
+      return;
+    }
+    const attemptId = (this.loginAttemptId || 0) + 1;
+    this.loginAttemptId = attemptId;
+    const startingUserId = getAuth()?.user?.id || "";
+    this.setData({ isLoggingIn: true, loginError: "" });
+    authenticateWithWechatPhone(phoneCode)
+      .then((auth) => {
+        if (this.loginAttemptId !== attemptId || (getAuth()?.user?.id || "") !== startingUserId) return;
+        saveAuth(auth);
+        this.completeProfileAfterLogin = false;
+        this.setData({
+          isLoggedIn: true,
+          membershipText: getMembershipText(auth),
+          connectionText: "手机号已验证 · 云端同步已开启",
+          loginError: "",
+          phoneLoginReady: false,
+          profileEditing: !auth.user.nickname || !auth.user.avatarUrl,
+          profileNickname: auth.user.nickname || "",
+          originalProfileNickname: auth.user.nickname || "",
+          avatarLocalPath: ""
+        });
+      })
+      .catch((error) => {
+        if (this.loginAttemptId === attemptId) {
+          this.setData({ loginError: error.message || "登录失败，请稍后重试。" });
         }
-        loginWithWechat(code)
-          .then((auth) => {
-            saveAuth(auth);
-            this.setData({
-              isLoggedIn: true,
-              membershipText: getMembershipText(auth),
-              connectionText: "微信账号已连接 · 云端同步已开启",
-              loginError: "",
-              profileEditing: !auth.user.nickname || !auth.user.avatarUrl,
-              profileNickname: auth.user.nickname || "",
-              originalProfileNickname: auth.user.nickname || "",
-              avatarLocalPath: ""
-            });
-          })
-          .catch((error) => {
-            this.setData({ loginError: error.message || "登录失败，请稍后重试。" });
-          })
-          .finally(() => {
-            this.setData({ isLoggingIn: false });
-          });
-      },
-      fail: () => {
-        this.setData({ isLoggingIn: false, loginError: "微信登录失败，请稍后重试。" });
-      }
-    });
+      })
+      .finally(() => {
+        if (this.loginAttemptId === attemptId) this.setData({ isLoggingIn: false });
+      });
   },
 
   chooseAvatar(event) {
@@ -252,6 +275,7 @@ Page({
   skipProfile() {
     if (this.data.isSavingProfile) return;
     const auth = getAuth();
+    this.completeProfileAfterLogin = false;
     this.setData({
       profileEditing: false,
       profileNickname: auth?.user?.nickname || "",
@@ -297,6 +321,7 @@ Page({
   },
 
   onUnload() {
+    this.loginAttemptId = (this.loginAttemptId || 0) + 1;
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.profileSaveId = (this.profileSaveId || 0) + 1;
     if (this.tabSwitchTimer) clearTimeout(this.tabSwitchTimer);

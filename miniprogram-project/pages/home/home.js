@@ -1,7 +1,8 @@
 const { formatDateLabel } = require("../../utils/local-data");
 const { getAuth, saveAuth, enterGuest, isGuest } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
-const { loginWithWechat, getMe } = require("../../api/auth");
+const { getMe } = require("../../api/auth");
+const { authenticateWithWechatPhone } = require("../../utils/wechat-phone-login");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
 
 const prompts = [
@@ -40,6 +41,7 @@ Page({
     isLoggingIn: false,
     entryError: "",
     privacyConfirmed: false,
+    phoneLoginReady: false,
     activeTab: "home",
     switchingTab: false
   },
@@ -96,7 +98,9 @@ Page({
   },
 
   togglePrivacy(event) {
-    this.setData({ privacyConfirmed: event.detail.value.includes("confirmed") });
+    const privacyConfirmed = event.detail.value.includes("confirmed");
+    if (!privacyConfirmed) this.loginAttemptId = (this.loginAttemptId || 0) + 1;
+    this.setData({ privacyConfirmed, ...(privacyConfirmed ? {} : { phoneLoginReady: false }) });
   },
 
   openWechatPrivacy() {
@@ -111,7 +115,7 @@ Page({
     });
   },
 
-  handleLogin() {
+  preparePhoneLogin() {
     if (this.data.isLoggingIn) return;
     if (!this.data.privacyConfirmed) {
       this.setData({ entryError: "请先阅读并同意隐私政策。" });
@@ -119,54 +123,71 @@ Page({
     }
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.authCheckPending = false;
+    const attemptId = (this.loginAttemptId || 0) + 1;
+    this.loginAttemptId = attemptId;
     this.setData({ isCheckingAuth: false, isLoggingIn: true, entryError: "" });
     requireWechatPrivacyAuthorization()
-      .then(() => this.loginWithWechatCode())
+      .then(() => {
+        if (this.loginAttemptId === attemptId) {
+          this.setData({ phoneLoginReady: true, isLoggingIn: false });
+        }
+      })
       .catch((error) => {
-        this.setData({ isLoggingIn: false, entryError: error.message || "微信隐私授权未完成。" });
+        if (this.loginAttemptId === attemptId) {
+          this.setData({ isLoggingIn: false, entryError: error.message || "微信隐私授权未完成。" });
+        }
       });
   },
 
-  loginWithWechatCode() {
-    wx.login({
-      success: ({ code }) => {
-        if (!code) {
-          this.setData({ isLoggingIn: false, entryError: "微信未返回有效登录凭证，请重试。" });
-          return;
+  handlePhoneNumber(event) {
+    if (!this.data.phoneLoginReady || this.data.isLoggingIn) return;
+    const phoneCode = event.detail && event.detail.code;
+    if (!phoneCode) {
+      this.setData({ entryError: "你已取消手机号授权，可以稍后再试。" });
+      return;
+    }
+    const attemptId = (this.loginAttemptId || 0) + 1;
+    this.loginAttemptId = attemptId;
+    const startingUserId = getAuth()?.user?.id || "";
+    this.setData({ isLoggingIn: true, entryError: "" });
+    authenticateWithWechatPhone(phoneCode)
+      .then((auth) => {
+        if (this.loginAttemptId !== attemptId || (getAuth()?.user?.id || "") !== startingUserId) return;
+        saveAuth(auth);
+        this.forceEntry = false;
+        this.setData({ showEntry: false, phoneLoginReady: false, entryError: "" });
+        if (!auth.user.nickname || !auth.user.avatarUrl) {
+          wx.redirectTo({ url: "/pages/me/me?completeProfile=1" });
+        } else {
+          wx.showToast({ title: "登录成功，云端同步已开启", icon: "none" });
         }
-        loginWithWechat(code)
-          .then((auth) => {
-            saveAuth(auth);
-            this.forceEntry = false;
-            this.setData({ showEntry: false, entryError: "" });
-            wx.showToast({ title: "微信已连接，云端同步已开启", icon: "none" });
-          })
-          .catch((error) => {
-            this.setData({
-              entryError: error.message === "网络暂时不可用"
-                ? "登录服务暂不可用，可以先用游客模式体验。"
-                : (error.message || "登录失败，可以先用游客模式体验。")
-            });
-          })
-          .finally(() => {
-            this.setData({ isLoggingIn: false });
-          });
-      },
-      fail: () => {
+      })
+      .catch((error) => {
+        if (this.loginAttemptId !== attemptId) return;
         this.setData({
-          isLoggingIn: false,
-          entryError: "微信登录失败，可以先用游客模式体验。"
+          entryError: error.message === "网络暂时不可用"
+            ? "登录服务暂不可用，可以先用游客模式体验。"
+            : (error.message || "登录失败，可以先用游客模式体验。")
         });
-      }
-    });
+      })
+      .finally(() => {
+        if (this.loginAttemptId === attemptId) this.setData({ isLoggingIn: false });
+      });
   },
 
   enterGuest() {
+    this.loginAttemptId = (this.loginAttemptId || 0) + 1;
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.authCheckPending = false;
     this.forceEntry = false;
     enterGuest();
-    this.setData({ showEntry: false, isCheckingAuth: false, entryError: "" });
+    this.setData({
+      showEntry: false,
+      isCheckingAuth: false,
+      isLoggingIn: false,
+      phoneLoginReady: false,
+      entryError: ""
+    });
   },
 
   goChat() {
@@ -194,6 +215,7 @@ Page({
   },
 
   onUnload() {
+    this.loginAttemptId = (this.loginAttemptId || 0) + 1;
     this.authCheckId = (this.authCheckId || 0) + 1;
     if (this.tabSwitchTimer) clearTimeout(this.tabSwitchTimer);
   }
