@@ -30,7 +30,7 @@
 
   <view wx:if="{{showEntry}}" class="entry-layer" role="dialog" aria-label="登录或选择游客模式">
     <view class="entry-mask"></view>
-    <view class="entry-sheet" style="bottom: {{entryBottom}}px;">
+    <view wx:if="{{!phoneLoginReady}}" class="entry-sheet" style="bottom: {{entryBottom}}px;">
       <view class="entry-title">欢迎来到慢聊小记</view>
       <view class="entry-copy">可以直接使用微信登录，也可以用微信绑定手机号登录。也可以先用游客模式体验。</view>
       <view wx:if="{{entryError}}" class="entry-error" aria-live="assertive">{{entryError}}</view>
@@ -40,9 +40,15 @@
       </checkbox-group>
       <button class="wechat-privacy-link" bindtap="openWechatPrivacy">查看微信隐私保护指引</button>
       <button class="primary-button" loading="{{isLoggingIn}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="loginWithWechatAccount">微信登录</button>
-      <button wx:if="{{phoneLoginReady}}" class="primary-button" open-type="getPhoneNumber" bindgetphonenumber="handlePhoneNumber" loading="{{isLoggingIn}}" disabled="{{isLoggingIn}}">{{isLoggingIn ? "登录中..." : "使用微信手机号继续"}}</button>
-      <button wx:else class="primary-button" loading="{{isLoggingIn || isCheckingAuth}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="preparePhoneLogin">{{isCheckingAuth ? "正在验证..." : (isLoggingIn ? "准备中..." : "手机号登录")}}</button>
+      <button class="primary-button" loading="{{isLoggingIn || isCheckingAuth}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="preparePhoneLogin">{{isCheckingAuth ? "正在验证..." : (isLoggingIn ? "准备中..." : "手机号登录")}}</button>
       <button class="guest-text" bindtap="enterGuest">游客模式</button>
+    </view>
+    <view wx:else class="entry-sheet phone-confirm-sheet" style="bottom: {{entryBottom}}px;">
+      <view class="entry-title">创建或登录慢聊小记账号</view>
+      <view class="entry-copy">继续后将打开微信手机号授权界面。只有你主动选择并允许后，我们才会通过微信取得并处理该手机号，用于创建或登录账号。</view>
+      <view wx:if="{{entryError}}" class="entry-error" aria-live="assertive">{{entryError}}</view>
+      <button class="primary-button" open-type="getPhoneNumber" bindgetphonenumber="handlePhoneNumber" loading="{{isLoggingIn}}" disabled="{{isLoggingIn}}">{{isLoggingIn ? "登录中..." : "继续"}}</button>
+      <button class="secondary-button phone-cancel-button" bindtap="cancelPhoneLogin" disabled="{{isLoggingIn}}">取消</button>
     </view>
   </view>
 </view>

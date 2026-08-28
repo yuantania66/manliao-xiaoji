@@ -34,6 +34,12 @@ for (const label of ["微信登录", "手机号登录"]) {
   assert.match(meWxml, new RegExp(label));
 }
 assert.match(homeWxml, /游客模式/);
+for (const markup of [homeWxml, meWxml]) {
+  assert.match(markup, /创建或登录慢聊小记账号/);
+  assert.match(markup, /继续后将打开微信手机号授权界面。只有你主动选择并允许后，我们才会通过微信取得并处理该手机号，用于创建或登录账号。/);
+  assert.match(markup, /open-type="getPhoneNumber"[\s\S]*?>{{isLoggingIn \? "登录中\.\.\." : "继续"}}<\/button>/);
+  assert.match(markup, /bindtap="cancelPhoneLogin"[\s\S]*?>取消<\/button>/);
+}
 assert.match(privacyWxml, /选择微信登录.*登录凭证和对应的账号标识/);
 assert.match(privacyWxml, /微信登录不会自动获取你的手机号、头像或昵称/);
 assert.match(privacyWxml, /选择手机号登录.*微信系统界面选择的手机号/);
@@ -136,9 +142,13 @@ assert.equal(auth.getAuth().token, validAuth.token, "401 from an unauthenticated
 let getMeImpl = () => Promise.resolve({ user: validAuth.user });
 let phoneLoginImpl = () => Promise.resolve(validAuth);
 let wechatLoginImpl = () => Promise.resolve(validAuth);
+let phoneApiCalls = 0;
 const api = require(apiPath);
 api.getMe = () => getMeImpl();
-api.loginWithWechatPhone = (codes) => phoneLoginImpl(codes);
+api.loginWithWechatPhone = (codes) => {
+  phoneApiCalls += 1;
+  return phoneLoginImpl(codes);
+};
 api.loginWithWechat = (code) => wechatLoginImpl(code);
 
 const loadPage = (path) => {
@@ -216,6 +226,23 @@ preparedHome.preparePhoneLogin();
 await tick();
 assert.equal(preparedHome.data.phoneLoginReady, true);
 assert.equal(wxLoginCalls, 0, "preparing privacy must not request a phone or login code");
+assert.equal(phoneApiCalls, 0, "showing phone confirmation must not call phone login API");
+assert.equal(auth.getAuth(), null);
+
+storage.clear();
+const cancelledPhoneHome = loadPage(homePath);
+cancelledPhoneHome.data.privacyConfirmed = true;
+wx.getPrivacySetting = ({ success }) => success({ needAuthorization: false });
+cancelledPhoneHome.preparePhoneLogin();
+await tick();
+assert.equal(cancelledPhoneHome.data.phoneLoginReady, true);
+cancelledPhoneHome.cancelPhoneLogin();
+assert.equal(cancelledPhoneHome.data.phoneLoginReady, false);
+assert.equal(cancelledPhoneHome.data.isLoggingIn, false);
+assert.equal(auth.getAuth(), null);
+assert.equal(auth.isGuest(), false);
+assert.equal(wxLoginCalls, 0, "cancelling phone confirmation must not call wx.login");
+assert.equal(phoneApiCalls, 0, "cancelling phone confirmation must not call phone login API");
 
 storage.clear();
 const staleWechatPrivacyHome = loadPage(homePath);
@@ -411,10 +438,26 @@ assert.equal(staleHome.data.isLoggingIn, false);
 storage.clear();
 const me = loadPage(mePath);
 me.data.privacyConfirmed = true;
+let mePrepareWxLoginCalls = 0;
+wx.login = () => { mePrepareWxLoginCalls += 1; };
+const phoneApiCallsBeforeMePrepare = phoneApiCalls;
+me.preparePhoneLogin();
+await tick();
+assert.equal(me.data.phoneLoginReady, true);
+assert.equal(mePrepareWxLoginCalls, 0);
+assert.equal(phoneApiCalls, phoneApiCallsBeforeMePrepare);
+assert.equal(auth.getAuth(), null);
+me.cancelPhoneLogin();
+assert.equal(me.data.phoneLoginReady, false);
+assert.equal(me.data.isLoggingIn, false);
+assert.equal(mePrepareWxLoginCalls, 0);
+assert.equal(phoneApiCalls, phoneApiCallsBeforeMePrepare);
+assert.equal(auth.getAuth(), null);
 me.preparePhoneLogin();
 await tick();
 assert.equal(me.data.phoneLoginReady, true);
 phoneLoginImpl = () => Promise.reject(new Error("登录失败"));
+wx.login = ({ success }) => success({ code: "wechat-login-code" });
 me.handlePhoneNumber({ detail: { code: "phone-code" } });
 await tick();
 assert.equal(storage.get("xinqingGuestMode"), undefined);

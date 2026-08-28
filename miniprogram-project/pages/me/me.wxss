@@ -121,6 +121,36 @@
   text-decoration: underline;
 }
 
+.phone-confirm-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+
+.phone-confirm-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(91, 83, 77, 0.28);
+}
+
+.phone-confirm-sheet {
+  position: absolute;
+  left: 44rpx;
+  right: 44rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 48rpx);
+  padding: 42rpx;
+  border-radius: 40rpx;
+  background: #fffdf9;
+}
+
+.phone-confirm-sheet .login-error {
+  margin: 24rpx 0 0;
+}
+
+.phone-cancel-button {
+  margin-top: 20rpx;
+}
+
 .insight-entry {
   position: relative;
   height: 128rpx;

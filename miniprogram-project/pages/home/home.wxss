@@ -216,3 +216,11 @@
   line-height: 36rpx;
   text-align: center;
 }
+
+.phone-confirm-sheet {
+  padding-bottom: 34rpx;
+}
+
+.phone-cancel-button {
+  margin-top: 20rpx;
+}

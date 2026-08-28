@@ -166,6 +166,11 @@ Page({
       });
   },
 
+  cancelPhoneLogin() {
+    this.loginAttemptId = (this.loginAttemptId || 0) + 1;
+    this.setData({ phoneLoginReady: false, isLoggingIn: false, loginError: "" });
+  },
+
   loginWithWechatAccount() {
     if (this.data.isLoggingIn) return;
     if (!this.data.privacyConfirmed) {
