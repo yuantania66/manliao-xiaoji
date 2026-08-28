@@ -9,7 +9,7 @@
         "kind": "product_self_test",
         "capturedAt": "2026-07-12",
         "evidence": ["screenshot"],
-        "captureEnvironment": "pending_confirmation"
+        "captureEnvironment": "local_development"
       },
       "purpose": "Prevent unsupported meaning from being assigned and carried across consecutive numeric turns.",
       "initialMessages": [],
@@ -70,7 +70,7 @@
         "kind": "product_self_test",
         "capturedAt": "2026-07-12",
         "evidence": ["screenshot"],
-        "captureEnvironment": "pending_confirmation"
+        "captureEnvironment": "local_development"
       },
       "purpose": "Preserve the screenshot-confirmed recorder-like emotional reply without overstating a cross-turn rut.",
       "initialMessages": [],
@@ -101,7 +101,7 @@
         "kind": "product_self_test",
         "capturedAt": "2026-07-12",
         "evidence": ["screenshot"],
-        "captureEnvironment": "pending_confirmation"
+        "captureEnvironment": "local_development"
       },
       "purpose": "Preserve the responsibility-taking but experientially shallow reply without inferring an unobserved structural route from screenshot text alone.",
       "initialMessages": [],
