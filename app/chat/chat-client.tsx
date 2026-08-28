@@ -34,6 +34,10 @@ import {
   guestProactiveGreetingKind,
   parseGuestRecentGreetings,
 } from "@/lib/guest-proactive-greeting";
+import {
+  loadGuestGreetingAfterHistoryReady,
+  reconcileGuestGreetingMessages,
+} from "@/lib/guest-chat-bootstrap";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
 
 type Message = {
@@ -792,14 +796,31 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         setIsGuestMode(true);
         setSessionId(GUEST_SESSION_ID);
         shouldAutoScrollToBottomRef.current = true;
-        const guestLoad = await readOrSeedGuestMessages();
-        setMessages(guestLoad.messages);
+        const cachedGuestMessages = readGuestMessages();
+        const guestLoad = await loadGuestGreetingAfterHistoryReady({
+          onHistoryReady: () => {
+            setMessages(cachedGuestMessages);
+            setHasMoreOlderMessages(false);
+            setOlderMessagesCursor(null);
+            setIsLoadingMessages(false);
+          },
+          loadGreeting: readOrSeedGuestMessages,
+        });
+        if (cancelled) return;
+        setMessages((current) => {
+          const reconciled = reconcileGuestGreetingMessages({
+            baseline: cachedGuestMessages,
+            current,
+            loaded: guestLoad.messages,
+          });
+          if (reconciled.changedDuringGreeting) {
+            writeGuestMessages(reconciled.messages);
+          }
+          return reconciled.messages;
+        });
         setErrorMessage(guestLoad.greetingFailed
           ? "欢迎语暂时没生成，可以直接发消息或刷新重试。"
           : "");
-        setHasMoreOlderMessages(false);
-        setOlderMessagesCursor(null);
-        setIsLoadingMessages(false);
         return;
       }
 

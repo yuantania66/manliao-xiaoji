@@ -858,14 +858,12 @@ assert.equal(
   "complete_reciprocal_contact"
 );
 assertNoFirstContactIdentityAuthority(firstGreetingReply.responsePlan);
-assert.deepEqual(firstGreetingReply.responsePlan.responseActions, [
-  "offer_neutral_conversation_entry",
-]);
+assert.deepEqual(firstGreetingReply.responsePlan.responseActions, []);
 assert.equal(firstGreetingReply.responsePlan.questionPolicy.mode, "optional_after_answer");
 assert.equal(
   validateResponsePlanOutput({
     plan: firstGreetingReply.responsePlan,
-    reply: "那我们就随意一点。今天想聊点轻松的，还是聊聊此刻在意的事？",
+    reply: "那我们就随意一点。今天想聊点什么？",
   }).passed,
   true,
   "A reciprocal continuation can let the user choose a topic without reopening identity."

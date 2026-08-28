@@ -60,10 +60,7 @@ export const cancelAccountData = async ({
     });
   }
 
-  await tx.feedback.updateMany({
-    where: { userId },
-    data: { userId: null, content: "[account_cancelled]", contact: null, userAgent: null },
-  });
+  await tx.feedback.deleteMany({ where: { userId } });
   const uploads = await tx.noteUpload.findMany({
     where: { userId },
     select: { storageKey: true },
@@ -80,6 +77,5 @@ export const cancelAccountData = async ({
     where: { OR: [{ userId }, ...(phone ? [{ phone }] : [])] },
   });
   await tx.user.delete({ where: { id: userId } });
-  await tx.user.create({ data: { status: "CANCELLED" } });
   return cleanupTasks.map((task) => task.id);
 });

@@ -9,9 +9,9 @@ const ALLOWED_LLM_CALL_FILES = new Set([
   "services/helping/hillHelpingDecisionService.ts",
   "services/ai/proactiveGreeting.ts",
   "services/ai/chatSafety.ts",
-  "services/ai/purposeSubjectOwnershipAuthority.ts",
   "services/ai/interactionMoveHandoffOutputValidator.ts",
   "services/ai/plannedFunctionSemanticValidator.ts",
+  "services/ai/purposeSubjectOwnershipAuthority.ts",
   "services/memory/episodeSummaryService.ts",
   "services/understanding/extractService.ts",
   "services/experience/experienceExtractorService.ts",
@@ -34,6 +34,33 @@ for (const file of llmCallFiles) {
     `Unexpected direct LLM call in ${file}. Every model call requires an explicit architecture owner and bounded role.`
   );
 }
+
+const chatSafetyRepeatedCheck = readFileSync("services/ai/chatSafety.ts", "utf8");
+assert.equal(
+  (chatSafetyRepeatedCheck.match(/callModel\(/g) ?? []).length,
+  1,
+  "Safety semantic triage may have only one structured provider call site."
+);
+assert(
+  chatSafetyRepeatedCheck.includes("只做判定，不生成回复") &&
+    !chatSafetyRepeatedCheck.includes("createResponsePlan(") &&
+    !chatSafetyRepeatedCheck.includes("generateChatReply("),
+  "Safety semantic triage must remain a non-writer and must not become Planner or Surface."
+);
+
+const episodeSummaryServiceRepeatedCheck = readFileSync("services/memory/episodeSummaryService.ts", "utf8");
+assert.equal(
+  (episodeSummaryServiceRepeatedCheck.match(/callModel\(/g) ?? []).length,
+  1,
+  "Episode Summary may have only one bounded structured provider call site."
+);
+assert(
+  episodeSummaryServiceRepeatedCheck.includes("committedMessages") &&
+    episodeSummaryServiceRepeatedCheck.includes("sourceMessageIds") &&
+    !episodeSummaryServiceRepeatedCheck.includes("createResponsePlan(") &&
+    !episodeSummaryServiceRepeatedCheck.includes("generateChatReply("),
+  "Episode Summary must remain a committed-message memory writer, not Planner or Surface."
+);
 
 for (const file of files.filter((file) => file.startsWith("app/api/chat/"))) {
   const content = readFileSync(file, "utf8");

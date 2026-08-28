@@ -16,12 +16,13 @@ const parseMonth = (value: string | null) => {
     throw new AppError("VALIDATION_ERROR", "month 必须是 YYYY-MM", 400, { field: "month" });
   }
 
-  const start = new Date(`${month}-01T00:00:00.000Z`);
-  if (Number.isNaN(start.getTime())) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  if (monthNumber < 1 || monthNumber > 12) {
     throw new AppError("VALIDATION_ERROR", "month 无效", 400, { field: "month" });
   }
 
-  const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1));
+  const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const end = new Date(Date.UTC(year, monthNumber, 1));
   return { month, start, end };
 };
 
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
     const notes = await prisma.note.findMany({
       where: {
         userId: user.id,
+        isDraft: false,
         recordDate: {
           gte: start,
           lt: end,

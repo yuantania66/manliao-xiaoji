@@ -8,7 +8,13 @@ const API_BASE_URLS = {
   prod: "https://manliaoxiaoji.com"
 };
 
-const DEFAULT_API_ENV = "prod";
+const getRuntimeVersion = () => {
+  try {
+    return wx.getAccountInfoSync().miniProgram.envVersion;
+  } catch (error) {
+    return "release";
+  }
+};
 const API_TIMEOUT = 15000;
 
 const getStorageValue = (key) => {
@@ -19,7 +25,10 @@ const getStorageValue = (key) => {
   }
 };
 
-const getApiEnv = () => getStorageValue(API_ENV_KEY) || DEFAULT_API_ENV;
+const getApiEnv = () => {
+  if (getRuntimeVersion() !== "develop") return "prod";
+  return getStorageValue(API_ENV_KEY) || "lan";
+};
 
 const getRuntimeEnvVersion = () => {
   try {
@@ -41,7 +50,6 @@ module.exports = {
   API_ENV_KEY,
   API_BASE_URL_KEY,
   API_BASE_URLS,
-  DEFAULT_API_ENV,
   API_TIMEOUT,
   getRuntimeEnvVersion,
   getApiEnv,

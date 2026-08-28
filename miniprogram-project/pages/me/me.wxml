@@ -2,11 +2,20 @@
   <view class="eyebrow">慢聊小记</view>
   <view class="title">{{isLoggedIn ? "我的慢聊小记" : "欢迎来到慢聊小记"}}</view>
   <view class="profile-card card-sage">
-    <view class="avatar">晴</view>
-    <view class="profile-title">{{isLoggedIn ? "我的慢聊小记" : "游客模式"}}</view>
+    <image wx:if="{{avatarPreview}}" class="avatar avatar-image" src="{{avatarPreview}}" mode="aspectFill" />
+    <view wx:else class="avatar">晴</view>
+    <view class="profile-title">{{isLoggedIn ? (profileNickname || "我的慢聊小记") : "游客模式"}}</view>
     <view class="body">{{membershipText}}</view>
     <view class="connection-status {{isLoggedIn ? 'connected' : ''}}">{{connectionText}}</view>
     <navigator url="/pages/settings/settings" class="settings-link" hover-class="none">设置</navigator>
+    <button wx:if="{{isLoggedIn && !profileEditing}}" class="profile-edit-link" bindtap="editProfile">编辑资料</button>
+  </view>
+  <view wx:if="{{isLoggedIn && profileEditing}}" class="profile-editor card">
+    <view class="entry-title">完善个人资料（可跳过）</view>
+    <button open-type="chooseAvatar" bindchooseavatar="chooseAvatar" loading="{{isSavingProfile}}">选择头像</button>
+    <input type="nickname" maxlength="30" value="{{profileNickname}}" bindinput="inputNickname" placeholder="输入昵称" />
+    <button class="primary-button" bindtap="saveProfile" disabled="{{isSavingProfile || !profileNickname || (!avatarLocalPath && profileNickname === originalProfileNickname)}}">保存</button>
+    <button bindtap="skipProfile" disabled="{{isSavingProfile}}">暂时跳过</button>
   </view>
   <view wx:if="{{loginError}}" class="login-error" aria-live="assertive">{{loginError}}</view>
   <view wx:if="{{!isLoggedIn}}" class="login-panel" role="group" aria-label="微信登录">

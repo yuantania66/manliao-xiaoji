@@ -80,10 +80,9 @@ type CreateChatReplyInput = {
   helpingShadowEnabled?: boolean;
   helpingOrdinaryHandoffEnabled?: boolean;
   helpingDecisionProvider?: HillHelpingDecisionProvider;
+  purposeSubjectOwnershipProvider?: PurposeSubjectOwnershipProvider;
   /** Test seam. Production uses configured Qwen json_object Safety triage. */
   safetySemanticProvider?: SafetySemanticProvider;
-  /** Local/eval seam only. Production must not send real User text to this authority without separate approval. */
-  purposeSubjectOwnershipProvider?: PurposeSubjectOwnershipProvider;
   /** Test seam. Production omits this and uses the fail-closed default semantic provider. */
   plannedFunctionSemanticProvider?: PlannedFunctionSemanticProvider;
   /** @deprecated Use plannedFunctionSemanticProvider. */
@@ -200,8 +199,8 @@ export const createChatReply = async ({
   helpingShadowEnabled,
   helpingOrdinaryHandoffEnabled,
   helpingDecisionProvider,
-  safetySemanticProvider,
   purposeSubjectOwnershipProvider,
+  safetySemanticProvider,
   plannedFunctionSemanticProvider,
   interactionMoveHandoffSemanticProvider,
   inspectHelpingPrompt,

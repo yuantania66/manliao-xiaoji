@@ -95,6 +95,37 @@ type ProactiveGreetingHandoffFunction =
   | "withdraw_or_repair_targeted_move"
   | "respect_user_boundary"
 
+type ProactiveMoveIntentV1 =
+  | {
+      move: "simple_greeting"
+      requiredFunction: "initiate_reciprocal_contact"
+      realization: { kind: "reciprocal_contact" }
+      expectedUserContribution: "none"
+      userBurden: "none"
+    }
+  | {
+      move: "open_statement"
+      requiredFunction: "offer_self_contained_conversation_entry"
+      realization: {
+        kind: "self_contained_entry"
+        topic: string
+        proposition: string
+      }
+      expectedUserContribution: "none"
+      userBurden: "none"
+    }
+  | {
+      move: "light_question"
+      requiredFunction: "ask_one_bounded_low_burden_question"
+      realization: {
+        kind: "bounded_question"
+        topic: string
+        question: string
+      }
+      expectedUserContribution: "answer"
+      userBurden: "low"
+    }
+
 type CommittedAssistantMoveEnvelopeV1 = {
   schemaVersion: 1
 
@@ -141,10 +172,26 @@ type CommittedAssistantMoveEnvelopeV1 = {
       }
     | null
 }
+
+type ProactiveGreetingAssistantMoveEnvelopeV2 = {
+  schemaVersion: 2
+  assistantMoveId: string
+  origin: { kind: "proactive_greeting"; generationId: string }
+  committedMove: ProactiveGreetingCommittedMove
+  handoff: {
+    kind: "proactive_greeting"
+    edge: "opens"
+    greetingFunction: ProactiveGreetingRequiredFunction
+  }
+  proactiveIntent: ProactiveMoveIntentV1
+}
 ```
 
 This is a logical Conversation OS event envelope. This freeze does not select a
-physical database layout.
+physical database layout. Newly committed proactive greetings use the v2 shape.
+Existing v1 proactive envelopes remain readable legacy events and are never
+rewritten or synthesized from text. Ordinary response-plan, fulfillment and
+Safety envelopes retain v1.
 
 ### 4.2 Envelope invariants
 
@@ -157,6 +204,15 @@ physical database layout.
   projection does not change the current runtime or Batch 2 metadata schema.
 - A proactive greeting has `origin.kind=proactive_greeting` and exactly one
   `handoff.edge=opens` function selected before generation.
+- A new proactive greeting has `schemaVersion=2` and exactly one strict
+  `proactiveIntent`. Its move/function must equal the `purpose` and handoff
+  projections; `open_statement.proposition` must be the sole projected claim;
+  `light_question.question` must be the projected question text; contribution
+  and burden must agree exactly.
+- Intent and verdict parsers require exact keys, exact discriminants and bounded
+  non-empty semantic strings. They do not coerce, default, strip Markdown fences
+  or extract a JSON substring. A malformed v2 envelope is invalid and cannot
+  fall back to v1 parsing.
 - A planned handoff reply has `origin.kind=response_plan` and may write
   `fulfills` only for the target frozen in that same plan.
 - A Safety response has `origin.kind=safety_override` and may write only the
@@ -200,6 +256,28 @@ type ProactiveGreetingRequiredFunction =
 The required function comes from the greeting move selected before Surface
 generation. It must not be reconstructed from punctuation, final wording or a
 text classifier.
+
+For new events, selection reads only valid committed v2
+`proactiveIntent.move`. `open_statement` and `light_question` receive a free-text
+semantic topic plus their actual proposition or bounded question before
+Surface. Surface receives the frozen intent and cannot change those values. A
+separate strict Qwen JSON verdict must echo the exact intent and candidate, cite
+an exact candidate span and positively establish faithful realization,
+self-containment, semantic clarity, an anchored communicative point, Grounding,
+contribution/burden compliance, no contradictory
+move and—where applicable—current-turn proposition delivery and semantic topic
+distinctness. Teasers, deferred reveals and appended questions therefore fail
+the positive contract even when their punctuation looks compatible. Clear
+poetic language remains valid when its proposition is understandable and offers
+a concrete point that can be discussed; empty atmosphere, dangling reference
+and pseudo-profound but uninterpretable content fail. These are semantic verdict
+fields, not production regexes, phrase lists or topic enums.
+
+Move/topic history also comes only from valid committed v2 intents. Legacy v1
+or text-only greetings remain eligible for exact/near visible-text duplicate
+comparison but cannot supply move or topic identity. No punctuation classifier,
+keyword topic category, wording whitelist or fixed Chinese fallback is an
+authority in this path.
 
 A `light_question` opens an answer opportunity, not a requirement that the user
 cooperate. Declining, redirecting, asking another question or requesting a pause
@@ -259,6 +337,13 @@ lifecycle record.
   Interpretation supplies evidence and ambiguity; it does not choose the reply.
 - A direct question, new content, redirect, boundary or rejection is not reduced
   to a generic active-thread continuation merely because it follows a greeting.
+- A clarification, direct question about or proposition challenge to a prior
+  committed Assistant expression carries an exact `targetTurnId`, unchanged
+  `targetProposition`, and typed `targetOperation` (`explain`, `answer` or
+  `repair_or_withdraw`). The model projection is accepted only when the target
+  proposition exists in that exact committed Assistant event. The current User
+  question can remain the obligation's `question`, but can never be substituted
+  for its target proposition. Missing or mismatched claim bindings fail closed.
 - `challenges_move_fit` covers rejection of an interaction move as unnecessary,
   repetitive, pressuring or mismatched. It does not require rejection of a
   concrete factual proposition.
@@ -322,6 +407,11 @@ Additional rules:
 - Planner consumes the committed envelope projection, not `promptVersion`.
 - Current User content, questions and boundaries outrank completion of a greeting
   ritual and may fulfill the handoff in the same response.
+- When a User turn only acknowledges a completed committed move, no active
+  handoff, obligation or new content remains, and Interaction State proposes idle, Planner removes
+  `take_light_topic_initiative`, retains a concise acknowledgement and emits
+  `closurePolicy=allow_idle`. Any direct question, repair, distress/action
+  request, active continuation or new thread forbids that arbitration.
 - `complete_reciprocal_contact` completes the mutual contact once and releases
   the greeting exchange. It is not another greeting-only move, a receipt notice,
   an Assistant availability/presence statement or a request for the user to keep
@@ -517,15 +607,16 @@ interaction-move lifecycle states.
 The committed-envelope foundation now implements:
 
 - stable `assistantMoveId` identity equal to the committed Assistant event id;
-- strict v1 envelope parsing and the `interactionMoveEnvelope` sibling metadata
-  namespace;
-- proactive greeting `opens` envelopes derived from the move selected before
-  generation;
+- strict v1 legacy/ordinary parsing plus exact proactive v2 intent parsing in
+  the `interactionMoveEnvelope` sibling metadata namespace;
+- proactive greeting v2 `opens` envelopes derived from one intent selected
+  before Surface and positively validated against the accepted candidate;
 - ordinary validated response-plan envelopes with `handoff=null` or a
   target-bound committed `fulfills` edge;
 - atomic authenticated message/envelope commit through the existing generation
   trace, with no schema migration;
-- Guest return, cache and next-request round-trip of the same logical envelope;
+- Auth reads structured history from the existing generation trace; Guest
+  return, cache and next-request round-trip preserve the same logical envelope;
 - zero envelope for rejected candidates, generation failure, retry losers and
   rolled-back persistence attempts.
 
@@ -607,7 +698,7 @@ projects the following complete tuple without reinterpreting the User text:
 | `answers_move` with `ask_one_bounded_low_burden_question` | `continue_from_user_answer` | `fulfill` | `none` | receive and continue from the answer; no second interview question |
 | `continues_from_move` with `ask_one_bounded_low_burden_question` | `continue_from_user_answer` | `fulfill` | `none` | continue only from answer content supported by the current turn |
 | `continues_from_move` with either non-question greeting function | `continue_user_introduced_content` | `fulfill` | `optional_after_completion` | continue only current-turn content supported by the relation evidence |
-| `reciprocates_move` with either non-question greeting function | `complete_reciprocal_contact` | `fulfill` | `optional_after_completion` | require `offer_neutral_conversation_entry`; after completing reciprocal contact it may ask at most one light choice question |
+| `reciprocates_move` with either non-question greeting function | `complete_reciprocal_contact` | `fulfill` | `optional_after_completion` | the handoff function may stand alone; after completion, one low-pressure invitation may let the User choose what to discuss without adding an ordinary action |
 | `unclear`, or a relation/source-function pair not listed above | `defer_handoff_completion` | `defer` | `none` | preserve ordinary low-burden handling; no action may claim completion |
 
 `reciprocates_move` after a question greeting and `answers_move` after a
@@ -615,14 +706,12 @@ non-question greeting are unsupported pairs and therefore defer. This is a
 typed fail-closed boundary, not a wording rule.
 
 `questionPolicy=optional_after_completion` means that a question is permitted
-only after the selected positive function has been realized and only when an
-existing ordinary-plan action independently supports it. For
-`complete_reciprocal_contact`, that action is
-`offer_neutral_conversation_entry`: it may offer one low-burden choice between
-casual conversation and something already on the User's mind. It may not ask
-for reasons, details or an explanation, and it may not open a second question.
-The question remains optional and cannot be used to manufacture personal
-content.
+only after the selected positive function has been realized. It normally also
+requires an independently supported ordinary-plan action. The narrow
+`complete_reciprocal_contact` exception may instead ask at most one low-pressure
+question that lets the User choose what to discuss. It never requires a
+question and does not authorize an Assistant-selected topic, an explanation
+demand or an interview sequence.
 
 ### 14.4 Multiple-candidate compatibility
 
@@ -667,7 +756,9 @@ It does not require the User to introduce a topic, answer a question or continue
 the conversation.
 
 The plan may add an independently grounded ordinary continuation after that
-postcondition, but lack of a new topic is not a planning failure. A second
+postcondition. It may also end naturally or ask one low-pressure question that
+lets the User choose what to discuss; this invitation is optional and does not
+make a reply mandatory. Lack of a new topic is not a planning failure. A second
 greeting-only move, receipt, echo, Assistant availability statement or generic
 open door does not realize this positive function. PHM-B freezes this semantic
 postcondition but leaves its Surface realization and same-plan positive
@@ -761,7 +852,7 @@ transactions create no completion edge.
 
 `handoffCompleted(sourceAssistantMoveId, committedEvents)` is a pure query. Its
 input precondition is the caller's committed-event projection; each candidate
-envelope is still passed through the strict v1 parser, and only an exact
+envelope is still passed through the strict versioned parser, and only an exact
 `fulfills` target match returns true. The query writes no lifecycle state or
 aggregate. Safety supersession and the remaining pure queries are implemented
 separately by PHM-E.
@@ -776,6 +867,6 @@ turn, validated request trace and exact source Assistant move. With no active
 target, Safety retains a null envelope.
 
 `handoffSuperseded`, `handoffResolved` and `activeHandoff` pass every envelope
-candidate through the strict v1 parser and fail closed for malformed, blocked,
+candidate through the strict versioned parser and fail closed for malformed, blocked,
 mismatched, stale, non-adjacent or mistargeted evidence. They write no lifecycle
 state or aggregate; schema, migrations, Memory and User Model remain unchanged.

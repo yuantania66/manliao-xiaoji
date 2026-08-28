@@ -186,13 +186,19 @@ function HandHeart() {
 }
 
 export default function ChatCalendarPage() {
-  const [month, setMonth] = useState(getCurrentMonth);
+  const [month, setMonth] = useState("");
   const [activeDates, setActiveDates] = useState<Set<string>>(new Set());
   const [dateSessionIds, setDateSessionIds] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
+    setMonth(getCurrentMonth());
+  }, []);
+
+  useEffect(() => {
+    if (!month) return;
+
     let cancelled = false;
     const cached = readCalendarCache(month);
     const localCalendar = readLocalChatCalendar(month);
@@ -251,6 +257,8 @@ export default function ChatCalendarPage() {
   }, [month]);
 
   const calendarCells = useMemo(() => {
+    if (!month) return [];
+
     const leadingBlanks = getLeadingBlanks(month);
     const dayCount = getMonthDays(month);
     return [
@@ -293,17 +301,19 @@ export default function ChatCalendarPage() {
             type="button"
             aria-label="上个月"
             className="absolute left-[20px] top-[27px] h-6 w-[18px] text-[22px] leading-6 text-[var(--muted)]"
+            disabled={!month}
             onClick={() => setMonth((value) => shiftMonth(value, -1))}
           >
             ‹
           </button>
           <div className="absolute left-[80px] top-[27px] h-[22px] w-[168px] text-center text-base font-semibold leading-[22px]">
-            {formatMonthTitle(month)}
+            {month ? formatMonthTitle(month) : "\u00a0"}
           </div>
           <button
             type="button"
             aria-label="下个月"
             className="absolute left-[302px] top-[27px] h-6 w-[18px] text-[22px] leading-6 text-[var(--muted)]"
+            disabled={!month}
             onClick={() => setMonth((value) => shiftMonth(value, 1))}
           >
             ›
@@ -316,7 +326,7 @@ export default function ChatCalendarPage() {
           </div>
           <div className="absolute left-[23px] top-[94px] h-px w-[286px] bg-[var(--line)]" />
 
-          <div className="absolute left-5 top-[112px] grid w-[306px] grid-cols-7 gap-y-[17px]">
+          <div className="absolute left-5 top-[112px] grid w-[306px] grid-cols-7 gap-y-[10px]">
             {calendarCells.map(({ key, day, date }) => {
               if (!day || !date) {
                 return <div key={key} className="h-[35px]" />;
@@ -358,13 +368,13 @@ export default function ChatCalendarPage() {
             })}
           </div>
 
-          <p className="absolute left-5 top-[364px] h-[18px] w-[295px] text-xs leading-[18px] text-[var(--muted)]">
+          <p className="absolute left-5 top-[386px] h-[18px] w-[295px] text-xs leading-[18px] text-[var(--muted)]">
             {isLoading
               ? "正在加载真实聊天日历。"
               : errorMessage || "点开有爱心的日期，回到那一段聊天。"}
           </p>
 
-          <div className="absolute left-5 top-[410px] h-12 w-[306px] rounded-[10px] bg-[#f7f2ec] px-5 py-[13px] text-[11px] leading-[17px] text-[var(--body)]">
+          <div className="absolute left-5 top-[412px] h-12 w-[306px] rounded-[10px] bg-[#f7f2ec] px-5 py-[13px] text-[11px] leading-[17px] text-[var(--body)]">
             有手写爱心的日期，代表那天聊过天。
             <br />
             点开日期，可以回到当天慢慢看。

@@ -24,6 +24,10 @@ import {
   collapseConsecutiveGuestGreetings,
   parseGuestRecentGreetings,
 } from "../lib/guest-proactive-greeting";
+import {
+  loadGuestGreetingAfterHistoryReady,
+  reconcileGuestGreetingMessages,
+} from "../lib/guest-chat-bootstrap";
 
 const intents = {
   simple: {
@@ -753,7 +757,54 @@ assert(
   "Guest retry history must preserve committed message ids."
 );
 
-void reservedIntentBoundaryChecks.then(() => {
+const guestBootstrapRaceChecks = (async () => {
+  type TestMessage = { id: string; role: "user" | "assistant" };
+  let resolveGreeting!: (value: { messages: TestMessage[] }) => void;
+  const deferredGreeting = new Promise<{ messages: TestMessage[] }>((resolve) => {
+    resolveGreeting = resolve;
+  });
+  const baseline: TestMessage[] = [];
+  let current = baseline;
+  let isHistoryLoading = true;
+  let persisted: TestMessage[] | null = null;
+
+  const pendingLoad = loadGuestGreetingAfterHistoryReady({
+    onHistoryReady: () => {
+      current = baseline;
+      isHistoryLoading = false;
+    },
+    loadGreeting: () => deferredGreeting,
+  });
+
+  assert.equal(isHistoryLoading, false, "history must be ready while greeting is still pending");
+  current = [
+    { id: "user-during-greeting", role: "user" },
+    { id: "reply-during-greeting", role: "assistant" },
+  ];
+  resolveGreeting({ messages: [{ id: "late-greeting", role: "assistant" }] });
+  const loaded = await pendingLoad;
+  const reconciled = reconcileGuestGreetingMessages({
+    baseline,
+    current,
+    loaded: loaded.messages,
+  });
+  if (reconciled.changedDuringGreeting) persisted = reconciled.messages;
+
+  assert.equal(reconciled.changedDuringGreeting, true);
+  assert.deepEqual(reconciled.messages, current);
+  assert.deepEqual(persisted, current);
+  assert(!reconciled.messages.some((message) => message.id === "late-greeting"));
+
+  const unchanged = reconcileGuestGreetingMessages({
+    baseline,
+    current: baseline,
+    loaded: loaded.messages,
+  });
+  assert.equal(unchanged.changedDuringGreeting, false);
+  assert.deepEqual(unchanged.messages, loaded.messages);
+})();
+
+void Promise.all([reservedIntentBoundaryChecks, guestBootstrapRaceChecks]).then(() => {
   console.log(JSON.stringify({
     strictIntentVariants: Object.keys(intents).length,
     invalidIntentCategories: invalidIntentCases.length + 2,

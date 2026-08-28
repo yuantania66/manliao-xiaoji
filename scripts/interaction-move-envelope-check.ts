@@ -184,34 +184,24 @@ assert.deepEqual(fulfillmentEnvelope.handoff, {
   sourceAssistantMoveId: "assistant-greeting-source",
   realizedFunction: "complete_reciprocal_contact",
 });
-const advisoryHandoffPlan: ResponsePlan = {
-  ...handoffPlan,
-  planId: "plan-advisory-content-1",
-  interactionMoveHandoffPlan: {
-    ...handoffPlan.interactionMoveHandoffPlan!,
-    selectedRelation: "opens_or_redirects_thread",
-    requiredFunction: "continue_user_introduced_content",
-    questionPolicy: "optional_after_completion",
-  },
-};
 const advisoryHandoffEnvelope = buildResponsePlanAssistantMoveEnvelope({
   assistantMoveId: "assistant-response-advisory-1",
-  planId: advisoryHandoffPlan.planId,
+  planId: handoffPlan.planId,
   sourceUserTurnId: "user-turn-1",
   committedMove,
   handoffCommitEvidence: {
     executionPhase: "VALIDATED",
     finalAttemptPhase: "VALIDATED",
-    executionPlanId: advisoryHandoffPlan.planId,
+    executionPlanId: handoffPlan.planId,
     executionTurnId: "user-turn-1",
-    responsePlan: advisoryHandoffPlan,
+    responsePlan: handoffPlan,
     finalValidation: {
       passed: true,
       failureReasons: ["planned_function_semantic:handoff_not_satisfied"],
       hardFailureReasons: [],
       advisoryFailureReasons: ["planned_function_semantic:handoff_not_satisfied"],
       rewriteRequired: true,
-      checkedPlanId: advisoryHandoffPlan.planId,
+      checkedPlanId: handoffPlan.planId,
       planChanged: false,
     },
   },

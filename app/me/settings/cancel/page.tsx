@@ -3,11 +3,16 @@
 import { useState } from "react";
 
 import { apiRequest } from "@/lib/client-api";
-import { clearAuth, getStoredAuth } from "@/lib/client-auth";
+import {
+  clearCancelledAccount,
+  getCancellationUserSnapshot,
+  shouldRequestCloudAccountCancellation,
+} from "@/lib/client-auth";
 
 import { SettingsShell } from "../settings-shell";
 
 export default function AccountCancelPage() {
+  const [storedUser] = useState(getCancellationUserSnapshot);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmStep, setConfirmStep] = useState<"risk" | "sms">("risk");
   const [cleared, setCleared] = useState(false);
@@ -16,8 +21,11 @@ export default function AccountCancelPage() {
   const [error, setError] = useState("");
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [cloudCancelled, setCloudCancelled] = useState(false);
+  const [mediaCleanupPending, setMediaCleanupPending] = useState(false);
   const [devCodeHint, setDevCodeHint] = useState("");
-  const phone = getStoredAuth()?.user?.phone ?? "";
+  const showDevCode = process.env.NEXT_PUBLIC_SHOW_DEV_CANCEL_CODE === "true";
+  const phone = storedUser?.phone ?? "";
   const maskedPhone = phone ? `${phone.slice(0, 3)}****${phone.slice(-4)}` : "未绑定手机号";
   const needsCode = Boolean(phone);
 
@@ -46,6 +54,10 @@ export default function AccountCancelPage() {
 
   const cancelAccount = async () => {
     if (isCancelling) return;
+    if (!storedUser?.id) {
+      setError("当前账号信息不完整，请重新登录后再试");
+      return;
+    }
     if (needsCode && !codeSent) {
       setError("请先发送验证码");
       return;
@@ -57,21 +69,23 @@ export default function AccountCancelPage() {
 
     setIsCancelling(true);
     setError("");
+    let cloudCancellationCompleted = cloudCancelled;
     try {
-      await apiRequest<{ cancelled: boolean }>("/api/auth/cancel", {
-        method: "POST",
-        body: needsCode ? { code: verifyCode } : { confirm: true },
-      });
-      clearAuth();
-      try {
-        window.localStorage.clear();
-      } catch {
-        // Ignore storage failures after the server-side cancellation succeeds.
+      if (shouldRequestCloudAccountCancellation(cloudCancelled)) {
+        const result = await apiRequest<{ cancelled: boolean; mediaCleanup: "complete" | "pending" }>("/api/auth/cancel", {
+          method: "POST",
+          body: needsCode ? { code: verifyCode } : {},
+        });
+        setMediaCleanupPending(result.mediaCleanup === "pending");
+        cloudCancellationCompleted = true;
+        setCloudCancelled(true);
       }
+      clearCancelledAccount(storedUser.id);
       setCleared(true);
+      setCloudCancelled(false);
       setIsConfirming(false);
     } catch (cancelError) {
-      setError(getErrorMessage(cancelError));
+      setError(cloudCancellationCompleted ? "云端账号已注销但本机清理未完成" : getErrorMessage(cancelError));
     } finally {
       setIsCancelling(false);
     }
@@ -105,7 +119,11 @@ export default function AccountCancelPage() {
           }
         }}
       >
-        {cleared ? "账号与数据已清空" : "注销账号"}
+        {cleared
+          ? mediaCleanupPending
+            ? "账号已注销，媒体清理待完成"
+            : "账号与数据已清空"
+          : "注销账号"}
       </button>
       <p className="absolute left-[42px] top-[606px] w-[306px] text-center text-[11px] leading-[18px] text-[var(--muted)]">
         二次验证用于避免误触。确认后不可恢复。
@@ -133,16 +151,20 @@ export default function AccountCancelPage() {
                   注销后，账号、聊天、小记、图片视频记录、心情日历和本机缓存都会被清空。
                 </p>
                 <p className="mt-3 text-xs leading-5 text-[#b9826e]">
-                  这些内容清空后不可恢复。下一步会进行手机验证码确认。
+                  {needsCode
+                    ? "这些内容清空后不可恢复。下一步会进行手机验证码确认。"
+                    : "这些内容清空后不可恢复。未绑定手机号时需在微信小程序重新授权确认。"}
                 </p>
               </>
             ) : (
               <>
-                <h2 className="text-lg font-semibold leading-7">手机验证码确认</h2>
+                <h2 className="text-lg font-semibold leading-7">
+                  {needsCode ? "手机验证码确认" : "微信身份确认"}
+                </h2>
                 <p className="mt-3 text-xs leading-5 text-[var(--body)]">
                   {needsCode
                     ? `注销前需要向绑定手机 ${maskedPhone} 发送验证码。验证通过后，将立即清空账号与所有数据。`
-                    : "当前账号未绑定手机。确认后，将立即清空账号与所有数据。"}
+                    : "当前账号未绑定手机号，请在微信小程序中重新验证身份后注销。"}
                 </p>
                 {needsCode ? (
                   <>
@@ -180,8 +202,8 @@ export default function AccountCancelPage() {
                   }
                 >
                   {error ||
-                    devCodeHint ||
-                    (needsCode ? (codeSent ? "验证码已发送" : "请先发送验证码") : "无需短信验证码")}
+                    (showDevCode ? devCodeHint : "") ||
+                    (needsCode ? (codeSent ? "验证码已发送" : "请先发送验证码") : "请前往微信小程序完成注销")}
                 </p>
               </>
             )}
@@ -197,7 +219,7 @@ export default function AccountCancelPage() {
               className={
                 confirmStep === "risk"
                   ? "absolute right-6 bottom-6 h-11 w-[130px] rounded-[18px] bg-[#c86f5f] text-[13px] font-semibold text-[var(--card-warm)]"
-                  : (!needsCode || (codeSent && verifyCode.length === 6)) && !isCancelling
+                  : (cloudCancelled || (needsCode && codeSent && verifyCode.length === 6)) && !isCancelling
                   ? "absolute right-6 bottom-6 h-11 w-[130px] rounded-[18px] bg-[#c86f5f] text-[13px] font-semibold text-[var(--card-warm)]"
                   : "absolute right-6 bottom-6 h-11 w-[130px] rounded-[18px] bg-[#d8d1c9] text-[13px] font-semibold text-[var(--card-warm)]"
               }
@@ -209,10 +231,11 @@ export default function AccountCancelPage() {
                   setError("");
                   return;
                 }
-                cancelAccount();
+                if (cloudCancelled || needsCode) cancelAccount();
               }}
+              disabled={confirmStep === "sms" && (isCancelling || (!cloudCancelled && (!needsCode || !codeSent || verifyCode.length !== 6)))}
             >
-              {confirmStep === "risk" ? "下一步" : isCancelling ? "注销中" : "确认注销"}
+              {confirmStep === "risk" ? "下一步" : isCancelling ? "注销中" : cloudCancelled ? "重试本机清理" : "确认注销"}
             </button>
           </section>
         </>

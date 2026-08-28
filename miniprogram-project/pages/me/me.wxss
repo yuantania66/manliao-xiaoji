@@ -22,6 +22,10 @@
   line-height: 96rpx;
 }
 
+.avatar-image { display: block; }
+.profile-editor { margin-top: 24rpx; padding: 32rpx; }
+.profile-editor input { margin: 20rpx 0; padding: 20rpx; background: #fff; border-radius: 12rpx; }
+
 .profile-title {
   position: absolute;
   left: 168rpx;
@@ -57,6 +61,19 @@
   color: #71877b;
   font-size: 26rpx;
   font-weight: 700;
+}
+
+.profile-edit-link {
+  position: absolute;
+  right: 40rpx;
+  top: 88rpx;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #71877b;
+  font-size: 22rpx;
+  line-height: 34rpx;
 }
 
 .login-button {

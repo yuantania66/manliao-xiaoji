@@ -5,6 +5,7 @@ import { failFromError, ok } from "@/lib/api-response";
 import { hashVerificationCode, requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { getWechatOpenId } from "@/lib/wechat-auth";
 import {
   cancelAccountData,
   drainAccountCancellationFiles,
@@ -69,9 +70,15 @@ export async function POST(request: NextRequest) {
     const cancelCodeId = user.phone
       ? await verifyCancelCode({ phone: user.phone, code: parseCode(body.code) })
       : null;
-
-    if (!user.phone && body.confirm !== true) {
-      throw new AppError("VALIDATION_ERROR", "请确认注销账号", 400, { field: "confirm" });
+    if (!user.phone) {
+      const wechatCode = typeof body.wechatCode === "string" ? body.wechatCode.trim() : "";
+      if (!wechatCode) {
+        throw new AppError("VALIDATION_ERROR", "请在微信小程序中重新验证身份后注销", 400, { field: "wechatCode" });
+      }
+      const verifiedOpenid = await getWechatOpenId(wechatCode);
+      if (!user.wechatOpenid || verifiedOpenid !== user.wechatOpenid) {
+        throw new AppError("FORBIDDEN", "微信身份与当前账号不一致", 403);
+      }
     }
 
     const cleanupTaskIds = await cancelAccountData({
@@ -82,7 +89,11 @@ export async function POST(request: NextRequest) {
 
     const fileCleanupPending = await drainAccountCancellationFiles(cleanupTaskIds);
 
-    return ok({ cancelled: true, fileCleanupPending });
+    return ok({
+      cancelled: true,
+      mediaCleanup: fileCleanupPending > 0 ? "pending" : "complete",
+      fileCleanupPending,
+    });
   } catch (error) {
     return failFromError(error);
   }

@@ -1,5 +1,5 @@
 const { getSafeLayout } = require("../../utils/layout");
-const { getAuth, clearAuth } = require("../../utils/auth");
+const { getAuth, clearCancelledAccount } = require("../../utils/auth");
 const { sendCode, cancelAccount: cancelRemoteAccount } = require("../../api/auth");
 
 const maskPhone = (phone = "") => phone ? `${phone.slice(0, 3)}****${phone.slice(-4)}` : "未绑定手机号";
@@ -16,7 +16,10 @@ Page({
     isSendingCode: false,
     isCancelling: false,
     statusText: "",
-    accountAvailable: true
+    accountAvailable: true,
+    userId: "",
+    cloudCancelled: false,
+    mediaCleanupPending: false
   },
 
   onLoad() {
@@ -35,7 +38,8 @@ Page({
       backTop: layout.backTop,
       phone,
       maskedPhone: maskPhone(phone),
-      needsCode: Boolean(phone)
+      needsCode: Boolean(phone),
+      userId: auth && auth.user ? auth.user.id : ""
     });
   },
 
@@ -72,6 +76,15 @@ Page({
 
   cancelAccount() {
     if (this.data.isCancelling) return;
+    if (this.data.mediaCleanupPending && !this.data.cloudCancelled) return;
+    if (!this.data.userId) {
+      this.setData({ statusText: "当前账号信息不完整，请重新登录后再试" });
+      return;
+    }
+    if (this.data.cloudCancelled) {
+      this.performCancel();
+      return;
+    }
     if (this.data.needsCode && !this.data.codeSent) {
       this.setData({ statusText: "请先发送验证码" });
       return;
@@ -93,19 +106,39 @@ Page({
 
   performCancel() {
     this.setData({ isCancelling: true, statusText: "正在注销..." });
-    cancelRemoteAccount(
-      this.data.needsCode
-        ? { code: this.data.code }
-        : { confirm: true }
-    )
-      .then(() => {
-        clearAuth();
-        wx.clearStorageSync();
-        wx.showToast({ title: "已注销", icon: "none" });
-        setTimeout(() => wx.reLaunch({ url: "/pages/home/home?entry=1" }), 600);
+    let cloudCancellationCompleted = this.data.cloudCancelled;
+    const verifyIdentity = this.data.cloudCancelled
+      ? Promise.resolve(null)
+      : this.data.needsCode
+      ? Promise.resolve({ code: this.data.code })
+      : new Promise((resolve, reject) => wx.login({
+          success: ({ code }) => code ? resolve({ wechatCode: code }) : reject(new Error("微信身份验证失败")),
+          fail: reject
+        }));
+    verifyIdentity
+      .then((credentials) => credentials ? cancelRemoteAccount(credentials) : null)
+      .then((result) => {
+        if (result && result.mediaCleanup === "pending") {
+          this.setData({ mediaCleanupPending: true });
+        }
+        if (!cloudCancellationCompleted) {
+          cloudCancellationCompleted = true;
+          this.setData({ cloudCancelled: true });
+        }
+        clearCancelledAccount(this.data.userId);
+        this.setData({ cloudCancelled: false });
+        if (this.data.mediaCleanupPending) {
+          this.setData({ statusText: "账号已注销，媒体清理待完成" });
+          wx.showToast({ title: "账号已注销，媒体清理待完成", icon: "none" });
+        } else {
+          wx.showToast({ title: "已注销", icon: "none" });
+          setTimeout(() => wx.reLaunch({ url: "/pages/home/home?entry=1" }), 600);
+        }
       })
       .catch((error) => {
-        const message = error.message || "注销失败，请稍后再试";
+        const message = cloudCancellationCompleted
+          ? "云端账号已注销但本机清理未完成"
+          : error.message || "注销失败，请稍后再试";
         this.setData({ statusText: message });
         wx.showToast({ title: message, icon: "none" });
       })

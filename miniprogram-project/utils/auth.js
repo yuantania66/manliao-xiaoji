@@ -8,6 +8,10 @@ const USER_CACHE_KEYS = [
   "xinqingInsightsAnalysisAuthorized",
   "xinqingInsightsAuthorization:v1"
 ];
+const GUEST_CACHE_KEYS = new Set([
+  "xinqingMiniGuestChatMessages",
+  "xinqingMiniGuestNotes"
+]);
 
 const isUsableAuth = (auth, now = Date.now()) => {
   if (!auth || typeof auth !== "object" || Array.isArray(auth)) return false;
@@ -41,10 +45,41 @@ const saveAuth = (auth) => {
   app.globalData.token = auth.token || "";
 };
 
+const updateCachedUser = (expectedUserId, user) => {
+  const auth = getAuth();
+  if (!auth || !user || auth.user.id !== expectedUserId || user.id !== expectedUserId) {
+    throw new Error("账号已切换，请重试");
+  }
+  const updated = { ...auth, user: { ...auth.user, ...user } };
+  wx.setStorageSync(AUTH_KEY, updated);
+  const app = getApp();
+  app.globalData.user = updated.user;
+  return updated;
+};
+
 const clearAuth = () => {
   wx.removeStorageSync(AUTH_KEY);
   wx.removeStorageSync(GUEST_KEY);
   USER_CACHE_KEYS.forEach((key) => wx.removeStorageSync(key));
+  const app = getApp();
+  app.globalData.user = null;
+  app.globalData.token = "";
+};
+
+const clearCancelledAccount = (userId) => {
+  if (!userId) throw new Error("当前账号标识不可用");
+  wx.removeStorageSync(AUTH_KEY);
+  const accountCacheKeys = USER_CACHE_KEYS.filter((key) => !GUEST_CACHE_KEYS.has(key));
+  accountCacheKeys.forEach((key) => wx.removeStorageSync(key));
+  if (userId) {
+    [`xinqingMiniChatMessages:${userId}`, `xinqingMiniNotes:${userId}`]
+      .forEach((key) => wx.removeStorageSync(key));
+  }
+  const remainingKeys = new Set([AUTH_KEY, ...accountCacheKeys, `xinqingMiniChatMessages:${userId}`, `xinqingMiniNotes:${userId}`]);
+  const storedKeys = wx.getStorageInfoSync().keys || [];
+  if (storedKeys.some((key) => remainingKeys.has(key))) {
+    throw new Error("本机账号数据清理失败");
+  }
   const app = getApp();
   app.globalData.user = null;
   app.globalData.token = "";
@@ -74,7 +109,9 @@ const getDataMode = () => {
 module.exports = {
   getAuth,
   saveAuth,
+  updateCachedUser,
   clearAuth,
+  clearCancelledAccount,
   enterGuest,
   isGuest,
   isAuthenticated,

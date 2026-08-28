@@ -1,0 +1,4 @@
+interface:
+  display_name: "心晴交付团队"
+  short_description: "为心晴 2.0 安全选择、约束并协调专业交付角色"
+  default_prompt: "Use $xinqing-delivery-team to assemble the smallest safe team for this delivery slice."

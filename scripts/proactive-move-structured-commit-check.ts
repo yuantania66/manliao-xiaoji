@@ -106,7 +106,7 @@ const firstContactIntent = {
   realization: {
     kind: "self_contained_entry" as const,
     topic: "assistant first-contact identity and low-pressure entry",
-    proposition: "你好，我是小慢。不用先想好完整话题，从此刻最想说的一句话开始就可以。",
+    proposition: "你好，我是小慢，一个AI聊天助手。你可以在这里随便聊，也可以和我一起慢慢理清一些事情；不用先想好完整话题，想到什么就从什么开始。",
   },
   expectedUserContribution: "none" as const,
   userBurden: "none" as const,
@@ -118,17 +118,6 @@ const openIntent = {
     kind: "self_contained_entry" as const,
     topic: "cloud shapes",
     proposition: "云的形状常常让熟悉的天空显得像一张不断改写的草稿。",
-  },
-  expectedUserContribution: "none" as const,
-  userBurden: "none" as const,
-};
-const repairIntent = {
-  move: "open_statement" as const,
-  requiredFunction: "offer_self_contained_conversation_entry" as const,
-  realization: {
-    kind: "self_contained_entry" as const,
-    topic: "small routines",
-    proposition: "把常用物品放回固定位置，常常能替下一次行动省下一点力气。",
   },
   expectedUserContribution: "none" as const,
   userBurden: "none" as const,
@@ -312,7 +301,7 @@ const main = async () => {
     assert(!serialized.includes("interactionMoveEnvelope"));
   };
 
-  const authSurface = "你好，我是小慢。还没想好聊什么也没关系，可以先从此刻的一句话开始。";
+  const authSurface = firstContactIntent.realization.proposition;
   enqueue(
     "auth-success",
     authSurface,
@@ -356,7 +345,7 @@ const main = async () => {
   assertQueueDrained("auth-malformed-intent");
   assert.deepEqual(await counts(), beforeMalformed);
 
-  const rejectedIntent = {
+  const rejectedOpenIntent = {
     ...openIntent,
     realization: {
       ...openIntent.realization,
@@ -364,36 +353,44 @@ const main = async () => {
       proposition: "一张旧票根有时会把某段旅程的细节重新带回眼前。",
     },
   };
+  const rejectedLightIntent = {
+    ...lightIntent,
+    realization: {
+      ...lightIntent.realization,
+      topic: "rejected bounded question",
+      question: "要不要先猜猜我准备问什么？",
+    },
+  };
   const rejectedSurfaceOne = "我有件事想晚一点再告诉你。";
   const rejectedSurfaceTwo = "先猜猜我准备分享什么。";
   const beforeRejected = await counts();
   enqueue(
     "auth-validator-rejection",
-    JSON.stringify(rejectedIntent),
+    JSON.stringify(rejectedLightIntent),
     rejectedSurfaceOne,
-    verdict({ intent: rejectedIntent, candidate: rejectedSurfaceOne, accept: false, topicDistinct: null }),
+    verdict({ intent: rejectedLightIntent, candidate: rejectedSurfaceOne, accept: false, topicDistinct: null }),
     rejectedSurfaceTwo,
-    verdict({ intent: rejectedIntent, candidate: rejectedSurfaceTwo, accept: false, topicDistinct: null }),
-    JSON.stringify(rejectedIntent),
+    verdict({ intent: rejectedLightIntent, candidate: rejectedSurfaceTwo, accept: false, topicDistinct: null }),
+    JSON.stringify(rejectedLightIntent),
     rejectedSurfaceOne,
-    verdict({ intent: rejectedIntent, candidate: rejectedSurfaceOne, accept: false, topicDistinct: null }),
+    verdict({ intent: rejectedLightIntent, candidate: rejectedSurfaceOne, accept: false, topicDistinct: null }),
     rejectedSurfaceTwo,
-    verdict({ intent: rejectedIntent, candidate: rejectedSurfaceTwo, accept: false, topicDistinct: null })
+    verdict({ intent: rejectedLightIntent, candidate: rejectedSurfaceTwo, accept: false, topicDistinct: null })
   );
   assert.equal((await invokeAuth()).status, "retryable_failure");
   assertQueueDrained("auth-validator-rejection");
   assert.deepEqual(await counts(), beforeRejected);
 
   const loser = "我想分享一个关于日常习惯的小想法。";
-  const winner = repairIntent.realization.proposition;
+  const winner = lightIntent.realization.question;
   const beforeRepair = await counts();
   enqueue(
     "auth-single-winner-repair",
-    JSON.stringify(repairIntent),
+    JSON.stringify(lightIntent),
     loser,
-    verdict({ intent: repairIntent, candidate: loser, accept: false, topicDistinct: null }),
+    verdict({ intent: lightIntent, candidate: loser, accept: false, topicDistinct: null }),
     winner,
-    verdict({ intent: repairIntent, candidate: winner, accept: true, topicDistinct: null })
+    verdict({ intent: lightIntent, candidate: winner, accept: true, topicDistinct: true })
   );
   const repairedMessage = requireCommittedAuthMessage(
     await invokeAuth(),
@@ -419,23 +416,26 @@ const main = async () => {
   if (parsedRepairEnvelope.status !== "valid") throw new Error("Repair winner envelope must parse");
   assert.equal(parsedRepairEnvelope.envelope.schemaVersion, 2);
   if (parsedRepairEnvelope.envelope.schemaVersion !== 2) throw new Error("Repair winner must be v2");
-  assert.deepEqual(parsedRepairEnvelope.envelope.proactiveIntent, repairIntent);
-  assert.deepEqual(parsedRepairEnvelope.envelope.committedMove.claims, [{
-    text: repairIntent.realization.proposition,
-    subject: "conversation",
-    provenance: ["proactiveIntent.realization.proposition"],
-  }]);
+  assert.deepEqual(parsedRepairEnvelope.envelope.proactiveIntent, lightIntent);
+  assert.deepEqual(parsedRepairEnvelope.envelope.committedMove.claims, []);
+  assert.deepEqual(parsedRepairEnvelope.envelope.committedMove.questionOrRequest, {
+    kind: "question",
+    text: lightIntent.realization.question,
+  });
 
   enqueue(
     "guest-auth-parity",
-    JSON.stringify(repairIntent),
+    JSON.stringify(lightIntent),
     winner,
-    verdict({ intent: repairIntent, candidate: winner, accept: true, topicDistinct: null })
+    verdict({ intent: lightIntent, candidate: winner, accept: true, topicDistinct: true })
   );
   const guestSuccess = await invokeGuest({
     kind: "return",
     recentMessages: [],
-    recentGreetings: [],
+    recentGreetings: [{
+      text: authMessage.content,
+      interactionMoveEnvelope: parsedAuthEnvelope.envelope,
+    }],
   });
   assertQueueDrained("guest-auth-parity");
   assert.equal(guestSuccess.status, 200);
@@ -489,12 +489,11 @@ const main = async () => {
     localMessageCount: 1,
     recentGreetings: [],
   }), "return");
-  const guestQuestionSurface = lightIntent.realization.question;
   enqueue(
     "guest-structured-history",
-    JSON.stringify(lightIntent),
-    guestQuestionSurface,
-    verdict({ intent: lightIntent, candidate: guestQuestionSurface, accept: true, topicDistinct: true })
+    JSON.stringify(openIntent),
+    openIntent.realization.proposition,
+    verdict({ intent: openIntent, candidate: openIntent.realization.proposition, accept: true, topicDistinct: true })
   );
   const guestSecond = await invokeGuest({
     kind: "return",
@@ -510,7 +509,7 @@ const main = async () => {
   if (parsedSecondGuestEnvelope.status !== "valid") throw new Error("Second Guest envelope must parse");
   assert.equal(parsedSecondGuestEnvelope.envelope.schemaVersion, 2);
   if (parsedSecondGuestEnvelope.envelope.schemaVersion !== 2) throw new Error("Second Guest envelope must be v2");
-  assert.deepEqual(parsedSecondGuestEnvelope.envelope.proactiveIntent, lightIntent);
+  assert.deepEqual(parsedSecondGuestEnvelope.envelope.proactiveIntent, openIntent);
 
   enqueue("guest-malformed-intent", "{", "still-not-json");
   const guestMalformed = await invokeGuest({
@@ -523,11 +522,11 @@ const main = async () => {
 
   enqueue(
     "guest-validator-rejection",
-    JSON.stringify(rejectedIntent),
+    JSON.stringify(rejectedOpenIntent),
     rejectedSurfaceOne,
-    verdict({ intent: rejectedIntent, candidate: rejectedSurfaceOne, accept: false, topicDistinct: null }),
+    verdict({ intent: rejectedOpenIntent, candidate: rejectedSurfaceOne, accept: false, topicDistinct: null }),
     rejectedSurfaceTwo,
-    verdict({ intent: rejectedIntent, candidate: rejectedSurfaceTwo, accept: false, topicDistinct: null })
+    verdict({ intent: rejectedOpenIntent, candidate: rejectedSurfaceTwo, accept: false, topicDistinct: null })
   );
   const guestRejected = await invokeGuest({
     kind: "return",
@@ -596,12 +595,12 @@ const main = async () => {
   `);
   triggerCreated = true;
 
-  const rollbackSurface = lightIntent.realization.question;
+  const rollbackSurface = openIntent.realization.proposition;
   enqueue(
     "auth-late-transaction-rollback",
-    JSON.stringify(lightIntent),
+    JSON.stringify(openIntent),
     rollbackSurface,
-    verdict({ intent: lightIntent, candidate: rollbackSurface, accept: true, topicDistinct: true })
+    verdict({ intent: openIntent, candidate: rollbackSurface, accept: true, topicDistinct: true })
   );
   assert.equal((await invokeAuth()).status, "retryable_failure");
   assertQueueDrained("auth-late-transaction-rollback");

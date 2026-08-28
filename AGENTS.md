@@ -1,3 +1,7 @@
+# Global AI Workflow
+
+Follow the global token-efficiency rules at `/Users/yuanyuanyuan/ai-workflow/rules/token-efficient-agent.md` together with this project's rules. Project-specific rules below are not replaced by the global defaults.
+
 # Mission
 
 Your role is to implement the user's product faithfully.

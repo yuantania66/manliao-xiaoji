@@ -102,10 +102,14 @@ export async function DELETE(request: NextRequest) {
     }
     const ids = body.urls.map((value) => typeof value === "string" ? uploadIdFromUrl(value) : null);
     if (ids.some((id) => !id)) throw new AppError("VALIDATION_ERROR", "urls 包含无效上传地址", 400);
-    const uploads = await prisma.noteUpload.findMany({ where: { id: { in: ids as string[] }, userId: user.id, noteId: null } });
+    const uploads = await prisma.noteUpload.findMany({
+      where: { id: { in: ids as string[] }, userId: user.id, noteId: null, purpose: "NOTE_MEDIA" },
+    });
     if (uploads.length !== new Set(ids).size) throw new AppError("NOT_FOUND", "上传文件不存在或不可清理", 404);
     await Promise.all(uploads.map((upload) => removeNoteUploadFile(upload.storageKey)));
-    await prisma.noteUpload.deleteMany({ where: { id: { in: ids as string[] }, userId: user.id, noteId: null } });
+    await prisma.noteUpload.deleteMany({
+      where: { id: { in: ids as string[] }, userId: user.id, noteId: null, purpose: "NOTE_MEDIA" },
+    });
     return ok({ deleted: uploads.length });
   } catch (error) {
     return failFromError(error);

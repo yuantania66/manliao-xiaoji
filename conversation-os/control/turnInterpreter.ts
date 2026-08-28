@@ -728,7 +728,6 @@ export const mergeModelInterpretation = (
       ? model.primaryDialogueAct
       : deterministic.primaryDialogueAct;
   const acceptedModelCandidates = modelRelationCandidates(model, context);
-  const ordinaryPostureProposal = modelOrdinaryPostureProposal(model);
   const claimAnswerBindingFailed = rejectedCommittedClaimAnswerBinding({
     model,
     context,
@@ -815,7 +814,6 @@ export const mergeModelInterpretation = (
     ? (deterministic.directQuestions.length > 0
         ? deterministic.directQuestions.map((question) => ({
             ...question,
-            subjectOwnership: "committed_assistant_claim" as const,
             kind: modelAnswerTarget.targetOperation === "explain"
               ? "definition" as const
               : question.kind,
@@ -833,7 +831,6 @@ export const mergeModelInterpretation = (
             kind: modelAnswerTarget.targetOperation === "explain"
               ? "definition" as const
               : "other" as const,
-            subjectOwnership: "committed_assistant_claim" as const,
             targetTurnId: modelAnswerTarget.targetTurnId,
             targetProposition: modelAnswerTarget.targetProposition,
             evidence: [
@@ -882,6 +879,7 @@ export const mergeModelInterpretation = (
   };
   const ambiguous = candidates.length > 1 &&
     candidates[0].confidence - candidates[1].confidence <= 0.2;
+  const ordinaryPostureProposal = modelOrdinaryPostureProposal(model);
   return {
     ...deterministic,
     contentMeaning: {

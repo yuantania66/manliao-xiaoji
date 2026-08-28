@@ -74,7 +74,7 @@ type AuthUser = {
 };
 
 export default function Home() {
-  const [todayLabel, setTodayLabel] = useState(formatLocalDate(new Date()));
+  const [todayLabel, setTodayLabel] = useState("");
   const [prompt, setPrompt] = useState(homePrompts[0]);
   const [chatCopy, setChatCopy] = useState(chatCopies[0]);
   const [noteCopy, setNoteCopy] = useState(noteCopies[0]);
@@ -141,7 +141,7 @@ export default function Home() {
 
         <div className="px-[22px] pt-[62px]">
           <p className="h-[18px] text-xs leading-[18px] text-[var(--muted)]">
-            {todayLabel}
+            {todayLabel || "\u00a0"}
           </p>
           <h1 className="mt-[25px] text-[30px] font-semibold leading-[42px] tracking-normal">
             {prompt.title}

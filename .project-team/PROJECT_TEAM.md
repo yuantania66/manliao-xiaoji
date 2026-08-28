@@ -16,9 +16,13 @@
 2. 架构基线：[`docs/ARCHITECTURE_V1_FINAL.md`](../docs/ARCHITECTURE_V1_FINAL.md)
 3. 产品架构：[`docs/PRODUCT_ARCHITECTURE_V1.md`](../docs/PRODUCT_ARCHITECTURE_V1.md)
 4. 安全与治理：[`docs/SAFETY_GOVERNANCE_LAYER.md`](../docs/SAFETY_GOVERNANCE_LAYER.md)
-5. 工程约束：[`AGENTS.md`](../AGENTS.md)
-6. 历史交付账本：[`PROJECT_TEAM.md`](../PROJECT_TEAM.md)
-7. 部署现状：[`DEPLOYMENT.md`](../DEPLOYMENT.md) 与 [`LAUNCH_READINESS_2026-07-02.md`](../LAUNCH_READINESS_2026-07-02.md)
+5. Hill 助人过程契约：[`docs/HILL_HELPING_PROCESS_PRODUCT_CONTRACT_V1.md`](../docs/HILL_HELPING_PROCESS_PRODUCT_CONTRACT_V1.md)
+6. Hill × 产品优先级对照：[`docs/HILL_HELPING_PRODUCT_PRIORITY_MAP_V1.md`](../docs/HILL_HELPING_PRODUCT_PRIORITY_MAP_V1.md)
+7. 工程约束：[`AGENTS.md`](../AGENTS.md)
+8. 历史交付账本：[`PROJECT_TEAM.md`](../PROJECT_TEAM.md)
+9. 部署现状：[`DEPLOYMENT.md`](../DEPLOYMENT.md) 与 [`LAUNCH_READINESS_2026-07-02.md`](../LAUNCH_READINESS_2026-07-02.md)
+
+Cursor、Codex 与其他代理共享同一 git 工作树：产品/架构真源在 `docs/`，当前切片与证据台账在 `.project-team/`，不另建平行目录。
 
 如文档之间或文档与实现之间存在冲突，角色必须停止并报告证据，不得自行选择有利口径。
 

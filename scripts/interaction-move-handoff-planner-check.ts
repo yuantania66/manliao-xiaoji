@@ -463,7 +463,7 @@ for (const greetingMove of ["simple_greeting", "open_statement"] as const) {
   );
   assert.deepEqual(
     deterministicPlan.responseActions,
-    ["offer_neutral_conversation_entry"]
+    []
   );
   assert.notEqual(
     deterministicPlan.positiveFunctionContract?.action === "establish_assistant_identity"
@@ -545,17 +545,13 @@ assert.deepEqual(
   ),
   ["unclear"]
 );
-const targetlessReciprocalPlan = createPlanForInterpretation(
-  reproducedReciprocalContext,
-  targetlessReciprocalInterpretation
-);
 assert.equal(
-  targetlessReciprocalPlan.interactionMoveHandoffPlan?.requiredFunction,
+  createPlanForInterpretation(
+    reproducedReciprocalContext,
+    targetlessReciprocalInterpretation
+  ).interactionMoveHandoffPlan?.requiredFunction,
   "defer_handoff_completion"
 );
-assert(!targetlessReciprocalPlan.responseActions.includes(
-  "offer_neutral_conversation_entry"
-));
 
 for (const invalidCandidate of [
   {
@@ -828,10 +824,7 @@ assert.deepEqual(tuple(responsePlan.interactionMoveHandoffPlan), {
   completionIntent: "fulfill",
   questionPolicy: "optional_after_completion",
 });
-assert.deepEqual(responsePlan.responseActions, ["offer_neutral_conversation_entry"]);
-assert(responsePlan.relevanceProvenance.some((item) =>
-  item.planElement === "responseAction:offer_neutral_conversation_entry"
-));
+assert.deepEqual(responsePlan.responseActions, []);
 assert(!responsePlan.relevanceProvenance.some((item) =>
   item.planElement === "responseAction:acknowledge_without_psychologizing"
 ));
@@ -873,10 +866,7 @@ assert.equal(
   independentlySupportedPlan.interactionMoveHandoffPlan?.requiredFunction,
   "complete_reciprocal_contact"
 );
-assert.deepEqual(independentlySupportedPlan.responseActions, [
-  "offer_neutral_conversation_entry",
-  "offer_action_support",
-]);
+assert.deepEqual(independentlySupportedPlan.responseActions, ["offer_action_support"]);
 assert(independentlySupportedPlan.relevanceProvenance.some((item) =>
   item.planElement === "responseAction:offer_action_support" &&
   item.sourceTurnId === context.currentTurnId &&

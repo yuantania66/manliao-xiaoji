@@ -89,7 +89,7 @@ fallback。Safety 是独立高优先级覆盖。身份与能力事实还散落�
 | Clinical | optional policy provider | 只在 Planner 请求时给策略建议 |
 | Response Planner | **唯一非安全 decision owner** | 每轮只写一个 ResponsePlan |
 | Surface Realization | surface realizer | 只实现既定计划 |
-| Output Validation | validator | 同 plan 接受/拒绝/最多重生成一次，不重规划 |
+| Output Validation | validator | 区分 hard gate 与 quality advisory；同 plan 最多内部重生成一次，不重规划、不把普通质量修正交给用户 |
 | State Update | recorder | 记录义务完成情况，不重规划 |
 | Safety | explicit override | 规划前阻断并记录原因 |
 
@@ -113,7 +113,8 @@ createChatReply
        -> generateChatReply                     [Surface only]
        -> validateResponsePlanOutput
        -> same-plan regenerate at most once
-       -> constraint_failure on second failure
+       -> hard failure on second candidate: constraint_failure
+       -> advisory-only second candidate: validated winner + advisory trace
   -> ConversationControlTrace / State Update
   -> persist
 ```
@@ -136,8 +137,9 @@ closurePolicy=forbid_closure
 decisionOwner=conversation_os.response_planner
 ```
 
-`没关系，那我们就先这样待着。` 会因 `premature_closure` 被拒绝；validator
-只能要求按同一计划重新表达，不能改成陪伴/收口计划。
+`没关系，那我们就先这样待着。` 命中 `premature_closure` 时属于质量建议；validator
+会要求按同一计划内部重新表达，不能改成陪伴/收口计划。第二候选若只剩质量建议，
+仍可进入 `VALIDATED`，不会把“重新生成”交给用户。
 
 `primaryDialogueAct` 仍可出现在兼容 trace 中，但不再被 Planner 读取。
 Planner 的动作只能来自更新后的 Interaction State，并为每个动作、义务和
@@ -154,6 +156,39 @@ Planner 的动作只能来自更新后的 Interaction State，并为每个动作
 
 每轮 `clinicalInvoked=false`、`questionPolicy=none`、先直接回答。若 surface
 用反问或继续维持身体/临床身份，validator 以同一 `planId` 拒绝。
+
+当前身份合同已进一步拆分：`product.name=慢聊小记`，
+`assistant.displayName=小慢`。`你叫什么名字` 只由 `assistant_name`
+obligation 回答“小慢”；`你是谁` 可组合“小慢”和 AI assistant kind，但产品名
+不能冒充助手称呼。用户对相邻、已提交 identity claim 的延续只能通过
+exact-bound `affirm` 关系获得 `establish_assistant_identity` action；普通确认、
+direct answer、pause 和拒绝不会因此全局获得追问权限。
+
+首次空会话欢迎提交一个包含“小慢”自我介绍与低压力入口的结构化
+`open_statement` intent；回访不重复自我介绍。Guest 连续生成失败会释放
+dedupe reservation、只重试一次并显示可见失败；Auth 同样保留一次恢复机会。
+Auth 首次/回访从该用户跨会话的 committed Message 判断，Guest 则把
+structured greeting history 或 local messages 视为回访证据；空的新 session 不等于
+首次。Auth ensure 结果显式区分 `committed / not_due / retryable_failure`，后者由
+page、sessions/messages API 传入既有 Chat execution-status 区域。首次身份
+positive function 的 canonical name、exact binding 与问题策略由确定性层检查；
+无论是否有 handoff，统一 Planned Function Semantic Validator 都按 frozen identity
+contract 验证“小慢”自我介绍和自然低压力入口。只有“我是小慢。”或身份后立刻收尾
+不能通过，identity continuation 也必须绑定并自然延续相邻 committed claim，不使用中文
+完成短语词表分类。
+model relation fail closed 时不伪造 `complete_reciprocal_contact`：exact initial intent、
+目标前无 User、当前无/低内容，并且没有 direct question、repair、boundary、Safety
+或 pause 时，可独立授权 `establish_assistant_identity`；unclear handoff 仍保持 defer。
+所有失败都保持零 Assistant 事件提交，不增加固定 fallback 或持久 lifecycle state。
+
+统一语义提交门在 `interactionMoveHandoffPlan` 或 `positiveFunctionContract` 任一存在时
+执行一次 strict `json_object` provider 调用。handoff 与 positive function 是独立 nullable
+verdict：不存在的分支必须为 null，存在分支必须 exact-bind 并各自提供候选回复中的 exact
+UTF-16 evidence，两支同时存在时取 AND。三类 positive function union（identity 三 mode、
+emotional 四 support function、repair 三 mode）均由该门验收；malformed、extra/missing key、
+binding/evidence mismatch、uncertain 与 provider failure 全部 fail closed。该 verdict 不能
+重规划或授予问题权限；首次候选和同 plan regenerate 复用同一个 frozen plan，旧 handoff
+Validator 只作兼容委托，不形成第二生产逻辑或第二模型调用。
 
 ## 6. 旧逻辑迁移
 
@@ -275,3 +310,34 @@ npm run conversation-os:control-baseline -- --authorized-post
 
 完整 launch 仅保留既有非阻断 warning：projection registry 的未使用 stub，
 以及 miniapp media/seed guard 的 prelaunch 识别提示；没有错误。
+
+## 11. Hard Gate / Quality Advisory 边界（2026-08-10）
+
+`ResponseValidationResult.passed` 现在只表示 hard-gate commit eligibility，不再表示
+回复已经达到全部聊天质量偏好。Validator 仍会把质量问题作为具体内部反馈交给
+同一个 frozen `ResponsePlan` 做一次 Surface 重写；第二候选若只有 advisory，成为
+`VALIDATED` winner，并在 trace 中保留未解决建议，不向用户显示普通质量型“重新生成”。
+
+继续 fail-closed 的范围包括：Safety、当前 turn/plan 与义务绑定、Assistant 身份和
+硬事实、用户已拒绝命题、repair/boundary/answer 责任、strict semantic JSON/binding/
+evidence、未知 failure code、immutable envelope 及 Auth transaction。标点/问题数量、
+closure 词表、ordinary acknowledgement/handoff/topic-entry 词表，以及主动欢迎语的
+清晰度、锚点、自足性、重复度等属于 quality advisory。
+
+普通 handoff 的 `continue_from_user_answer`、`continue_user_introduced_content`
+若第二候选仍只有 semantic advisory，可以提交可见回复，但 envelope 必须写
+`handoff=null`，不得伪造 `fulfills`。`complete_reciprocal_contact` 的功能未满足、
+重复问候/在线/可用替代以及超过一个语义问题均为 hard failure；
+`answer_current_obligation`、
+`withdraw_or_repair_targeted_move`、`respect_user_boundary` 仍是 hard function。该边界没有
+新增持久 lifecycle state；resolved/active 继续由 committed immutable edges 纯查询得出。
+
+## 12. Safety 双通道与结构性失败呈现（2026-08-10）
+
+Safety 仍是普通 Conversation OS 之前的显式 override。明确 imminent 表达由规范化快通道处理；其余生产 Qwen 回合用 strict `json_object` 做只读语义分诊。模型只选择风险、当前性、类别和当前用户原文中的 exact evidence text；代码验证唯一绑定并计算内部位置。malformed、binding/evidence 错绑、语义不一致、4xx 或未知异常首次失败即返回 `SAFETY_BLOCKED`；只有 timeout、429、5xx 可重试一次，第二次任何失败都阻断。它不会让“不知道”伪装成安全，也不会进入 Planner。
+
+经验证的 Safety 路由使用代码所有、按类别和紧迫度区分的中国大陆回复：先承认危险，再直接提供 `120 / 110 / 12356` 和当前动作。模型不能生成号码。Safety winner 继续使用既有 immutable `supersedes` edge；没有新增持久 lifecycle state，`resolved/active` 继续纯查询。
+
+`PLAN_INVALID` 与耗尽同计划内部修正后的 hard `GENERATION_NONCONFORMANT` 不再向用户展示无效的“重新生成”：user-safe status 说明是系统计划不一致或已尝试修正仍无法可靠完成，并设 `retryable=false`。瞬时 provider、timeout、persistence 失败仍可重试；客户端无需新增状态机。
+
+该 Safety 切片已通过 Subject-Ownership Closure 封存：deterministic bypass 只保留无主体标记、整条消息为已实施行动的输入；意图和带 Unicode 标点/符号的主体歧义输入在规范化前统一进入 semantic triage。明确第三方归属放行，无归属危险引文 fail closed；真实 Qwen 22/22，独立工程与 Safety/Privacy 复审均 PASS。

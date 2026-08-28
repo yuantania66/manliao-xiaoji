@@ -189,6 +189,16 @@ turn. A correction additionally carries its target turn and rejected
 proposition. Rejected propositions are withdrawn from confirmed/hypothesized
 common ground and may not be explained again.
 
+When a User clarification, direct follow-up or proposition challenge addresses
+a prior committed Assistant claim, the optional model interpreter must bind the
+relation to the exact committed Assistant turn, exact unchanged claim text and
+one typed operation: `explain`, `answer` or `repair_or_withdraw`. The binding is
+accepted only when that claim exists on the targeted committed event. The
+resulting answer obligation targets the Assistant claim, never the current User
+question itself; a repair withdraws that exact claim. Missing, paraphrased or
+cross-turn claim bindings fail closed and cannot authorize disowning a committed
+intent as though no expression had been made.
+
 The state reducer may consume legacy classifiers only as evidence. A single
 intent, content-availability label, or affect label cannot itself become a
 ResponseAction. Multiple response relations can survive into concurrent
@@ -241,8 +251,8 @@ production writer, persistence or user-visible execution path.
 
 Response Planner is the only writer of the final ordinary `ResponsePlan`. It
 owns ordinary conversation actions and assembles, without rewriting, a valid
-Hill decision when Helping is the active behavior source. It creates exactly
-one `ResponsePlan` containing:
+Hill decision when Helping is the active behavior source. Each planning attempt
+creates a complete `ResponsePlan` containing:
 
 - answer obligations;
 - disclosure scope and structured correction evidence;
@@ -264,6 +274,13 @@ selection. It does not read `primaryDialogueAct`, `secondarySignals`,
 as strategy decisions. It may accept or reject a Hill contract but cannot
 invent, replace or silently omit its goal, intention or skill.
 
+Context Assembly may also provide a bounded list of evidence-backed conversation
+episode candidates. The Planner may select at most one when it is relevant to
+the current turn, or select none for direct questions, repair, pause,
+low-information or low-relevance turns. Selecting an episode adds context and
+provenance only; it does not replace the current response action or promote a
+stored hypothesis into fact.
+
 For a proactive greeting handoff, the Planner additionally consumes the
 turn-scoped envelope and target-bound User relation projection frozen in
 `CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md`. It alone selects the
@@ -281,6 +298,29 @@ matching and does not reconstruct decisions from `promptVersion`. Before plan
 assembly, production creates a detached, recursively frozen authority snapshot;
 execution preflight exactly compares the nullable handoff tuple, obligations and
 canonical provenance against it.
+
+Plan preflight may return exactly one turn-local recovery directive before
+Surface runs. This boundary is deliberately narrow: only a sole
+`missing_emotional_support_evidence_spans` failure on a plan that contains both
+`offer_emotional_support` and its matching contract is recoverable. The
+directive marks that action unavailable and sends the same frozen Context,
+Interpretation, Dialogue State and detached authority back through the single
+Response Planner callsite once. The Planner creates a new plan object and
+recomputes actions, Clinical need, behavior source, positive-function contract,
+question/closure policies and provenance; orchestration does not filter or
+patch the rejected plan. If no other responsibility remains, the recovered
+ordinary plan may acknowledge or explore without asserting an unsupported
+emotion, while an already selected episode memory remains optional context.
+
+Every mixed failure, authority/provenance/handoff mismatch, wrong-turn or
+malformed evidence failure remains fail closed. A failed recovery preflight
+cannot request a third planning attempt. Only the final preflight-valid plan is
+sent to Surface and Validator; the rejected plan produces no text, event or
+state update. The directive and both preflight results exist only in the
+request trace and are never written as conversation lifecycle state. This
+single pre-Surface Planner recovery is distinct from Output Validation's one
+same-plan Surface regeneration: Planner recovery may select a new plan, while
+Surface regeneration must keep the final `planId` unchanged.
 
 No module after this point may reinterpret the user, choose a new response
 goal, or select another strategy.
@@ -303,6 +343,11 @@ classifier/state evidence remains in the internal trace. Action-level surface
 constraints may rule out unsupported evaluation, generic causal explanation,
 positive reframing or an interview follow-up; they constrain meaning and do
 not prescribe sample wording.
+
+When the Planner selects an episode memory, Surface receives only its compact
+summary fields and never the full historical transcript or unselected
+candidates. Surface may use that material naturally, but cannot expose the
+memory structure or state an unconfirmed historical link as a certain cause.
 
 ### 2.7 Output Validation
 
@@ -377,6 +422,17 @@ understanding continuity. It may provide a bounded selected fact or hypothesis
 to Context Assembly. It does not own current-turn response actions and cannot
 bypass the Response Planner to enter the surface Prompt.
 
+Conversation episode summaries reuse `SemanticMemory` with append-only
+`SemanticMemoryVersion` records and source-message Evidence links. A committed
+Assistant reply triggers a failure-isolated refresh; the stable projection is
+identified by ChatSession while each last committed message identifies an
+idempotent version operation. Summary JSON strictly separates confirmed facts
+from hypotheses and binds every source id to a committed message in that
+session. This is a Memory projection, not persistent conversation lifecycle
+state. Retrieval ranks a small number of other-session summaries from current
+people, topics, emotions, compact text overlap and recency before Context
+Assembly; it does not inject full chat history into Surface.
+
 ### 3.5 Safety & Governance Layer
 
 Safety owns crisis/high-risk blocking, privacy, access control, audit, deletion
@@ -430,6 +486,9 @@ authoritative proactive greeting completion contract. It freezes:
 - a current-turn User relation projection bound to that Assistant move;
 - preselected required functions for `simple_greeting`, `open_statement` and
   `light_question`;
+- one exact-schema, turn-local `ProactiveMoveIntentV1` carried unchanged from
+  selection through Surface, semantic validation and proactive-envelope v2
+  commit;
 - completion only when the selected positive function passes same-plan semantic
   validation and the final Assistant event commits;
 - Planner transition priority and Validator non-planning boundaries;
@@ -439,6 +498,13 @@ Interaction-move rejection is not limited to rejection of a factual
 proposition. Turn Interpretation may identify a contextual challenge to the fit
 of the immediately preceding Assistant move, while the Response Planner alone
 decides whether targeted interaction-move withdrawal is required.
+
+The proactive `opens` writer now emits logical envelope v2. It projects the
+accepted intent into `purpose`, `claims` or `questionOrRequest`, expected User
+contribution, burden and `handoff.greetingFunction`, and the strict parser
+requires exact cross-field agreement. Logical v1 proactive envelopes remain
+legacy read-only events; malformed v2 data never falls back to v1. Ordinary
+response-plan and Safety envelopes retain schema version 1.
 
 The envelope and handoff edges are Conversation OS event metadata, isolated from
 the Batch 2 Helping/Reaction namespace. The implemented foundation serializes
@@ -476,10 +542,14 @@ assistant identity and capabilities. It separates three responsibilities:
 - `prohibitedClaims` constrains false claims in every turn. It must not be
   converted into a user-facing disclaimer list.
 
-Plain identity, AI/human identity and clinician identity are separate
-obligations. A plain “你是谁” therefore requires the product name and AI
-assistant identity, while the professional boundary is required only when the
-user asks about it or Safety needs it.
+Product identity and Assistant identity are separate Grounding facts. The
+current product name is `慢聊小记`; the stable Assistant display name is
+`小慢`. `你叫什么名字` opens an `assistant_name` obligation and requires only
+the Assistant display name. A plain `你是谁` requires `小慢` plus the AI
+assistant kind. The product name never satisfies an Assistant-name obligation,
+and the professional boundary is required only when the user asks about it or
+Safety needs it. A future product rename or split changes product configuration,
+not the Assistant identity contract.
 
 Conventional relational or spatial metaphors remain allowed when they do not
 claim literal embodiment. If the user follows up on an adjacent metaphor, Turn
@@ -488,19 +558,60 @@ same Response Planner requires both the truthful physical boundary and a brief
 acknowledgement that the earlier wording was figurative.
 
 The proactive greeting consumes the canonical Grounding formatter but remains
-outside the ordinary user-turn planner. Its greeting-only action contract
-selects among a simple greeting, a non-question opening statement, and an
-occasional concrete low-burden question. A question may appear at most once in
-the current three-greeting window; it is not the default shape of a greeting.
-Simple greeting and opening statement are preferences within one non-question
-validation boundary. Server timezone/time is excluded from the external
-greeting Prompt and cannot be used as evidence of user location or local day
-phase.
-The contract rejects permission-to-speak, passive waiting, generic interview
-openings and near-duplicates. The last three greeting texts remain internal
-validation evidence; the external model sees only system-defined move/topic
-labels, not their raw text. Validation rejects both lexical near-duplicates
-and reuse of a recent topic category.
+outside the ordinary user-turn planner. On an empty initial conversation it
+commits an `open_statement` first-contact intent containing a brief `小慢`
+self-introduction and one self-contained low-pressure conversation entry. This
+is a frozen semantic intent, not a fixed visible fallback; Surface may phrase it
+naturally and the strict semantic verdict must accept it before commit. Return
+greetings never inherit this first-contact identity requirement. The broader
+action contract selects among a simple greeting, a non-question opening statement, and an
+occasional concrete low-burden question. Move identity comes only from valid
+committed v2 intents. Legacy greeting strings contribute only visible-text
+similarity evidence; punctuation, wording, provenance and keyword categories
+cannot manufacture a move or topic. A question may appear at most once in the
+current three-structured-greeting window; it is not the default shape.
+
+For `open_statement`, the structured intent contains a free-text `topic` and the
+actual `proposition` to deliver. Surface receives that frozen intent and may
+phrase it naturally but cannot replace it or append a User obligation. A
+separate Qwen exact-JSON semantic verdict binds the unchanged intent and exact
+candidate, cites an exact candidate span, and positively verifies current-turn
+delivery, semantic clarity, an anchored communicative point, self-containment,
+burden, Grounding and absence of a contradictory move or deferred reveal. A
+clear poetic comparison may pass; empty atmosphere, dangling reference and
+pseudo-profound but uninterpretable content fail. `light_question` similarly binds one free-text topic
+and bounded question. Malformed, uncertain, mismatched or negative results fail
+closed; there is no fixed-text fallback, wording whitelist, topic enum or
+production semantic regex. Exact and near-visible-text comparison remains only
+a duplicate-text guard.
+
+Planner closure is resolved before Surface. When the current User turn only
+acknowledges a completed committed move, has no active handoff, open obligation or new content,
+and Interaction State permits idle, `allow_idle` removes any lower-confidence
+topic-initiative hedge. The plan retains a concise acknowledgement action and
+can commit a natural short ending. A direct question, repair, distress/action
+request, continuation or newly opened thread disables that arbitration.
+
+Authenticated selection reads committed envelopes from the existing
+`aiGeneration.executionTrace`; Guest caches and returns the same logical
+committed envelope with its visible text. The accepted message and v2 intent
+projection publish atomically. Draft intents, rejected Surface candidates,
+retry losers and failures publish neither. This is immutable event metadata,
+not persistent lifecycle state, and requires no Prisma migration.
+
+Greeting delivery treats a fail-closed generation result as a retryable delivery
+failure rather than as an intentional empty welcome. Guest delivery releases
+its session dedupe reservation, makes at most one bounded request retry, and
+shows a visible failure state if both attempts fail. Authenticated delivery has
+the same single recovery opportunity and returns an explicit
+`committed | not_due | retryable_failure` result to the page and session/message
+APIs; `retryable_failure` is rendered in the existing Chat execution-status
+area. Authenticated `initial` versus `return` is derived from committed
+`ChatMessage` events across that user, not from whether the newly opened session
+is empty. Guest treats either local messages or structured greeting history as
+return evidence. Failed attempts publish no Assistant
+message, generation envelope or lifecycle state; there is no fixed greeting
+fallback.
 
 The first User turn after a proactive greeting is owned by the ordinary
 Response Planner. The current runtime's `respond_to_proactive_greeting` action
@@ -508,6 +619,27 @@ and `promptVersion` provenance are compatibility behavior, not the frozen v1
 completion criterion. Under the v1 target, a committed greeting envelope, a
 current User relation bound to that move and one Planner-selected required
 function replace provenance-only detection.
+
+The first-contact identity action is authorized by the committed v2 initial
+intent itself (`open_statement` plus
+`offer_self_contained_conversation_entry` and its first-contact semantic topic),
+not by a legacy `simple_greeting` fixture. Its positive-function validator
+keeps canonical-name, exact binding and question policy checks deterministic.
+The canonical Planned Function Semantic Validator runs whenever either an
+interaction-move handoff or a positive-function contract exists. It receives
+the frozen first-contact identity contract even when no handoff exists and
+requires both the display name and a natural, low-pressure conversation entry;
+a bare “我是小慢。” or a closing/settling move is insufficient. Identity
+continuation is bound to the exact committed identity claim and is judged by
+the same semantic boundary rather than a phrase list.
+
+If model relation interpretation fails closed, the Planner does not invent a
+`complete_reciprocal_contact` result. The exact committed first-contact intent,
+absence of any User turn before its target, low/absent current topic content,
+and absence of direct-question, repair, boundary, Safety or pause evidence can
+independently authorize `establish_assistant_identity`. An unclear handoff stays
+`defer_handoff_completion`; ordinary return intents and paused turns do not gain
+this authority.
 
 When the greeting is a question, the adjacent User response retains the
 ordinary no-second-interview rule. Current User content, a direct question,
@@ -522,6 +654,32 @@ open door or an unrelated question does not fulfill the contract merely because
 it avoids a prohibited phrase. The Validator cannot create a plan, change the
 target or relation, broaden disclosure or rewrite the reply. Completion exists
 only after the accepted Assistant message and its `fulfills` edge commit.
+
+### 4.5 Planned Function Semantic Validation Boundary
+
+Every ordinary candidate whose frozen `ResponsePlan` contains either
+`interactionMoveHandoffPlan` or `positiveFunctionContract` enters one canonical
+strict-JSON semantic call. The response contains independent nullable `handoff`
+and `positiveFunction` verdicts; an absent contract requires `null`, a present
+contract requires an exact-bound verdict with its own exact UTF-16 candidate
+evidence, and both present branches must pass. `uncertain`, malformed or extra
+keys, binding/evidence mismatch and provider failure all fail closed.
+
+The positive branch covers all identity modes, all four emotional-support
+functions and all three repair modes. It accepts or rejects the frozen plan but
+cannot replan, rewrite, change targets, or grant question permission. Safety,
+Grounding, structural preflight and question policy remain independent. The
+`complete_reciprocal_contact` branch is fail-closed at commit eligibility: a
+semantic `not_satisfied`/`uncertain` result or more than one semantic question
+is hard failure, while the existing advisory policy for ordinary content
+continuation remains unchanged. This prevents a correct model rejection from
+being converted into a committable second greeting, presence or availability
+reply. The
+first candidate and one regeneration share the same recursively frozen plan and
+the same gate; two failures create no Assistant event or handoff `fulfills`
+edge. The compatibility handoff Validator delegates to this canonical boundary
+and performs no second provider call. No Chinese completion phrase list or
+persistent lifecycle state is introduced.
 
 ## 6. Legacy migration
 
@@ -548,7 +706,8 @@ path may emit `llm` or `llm_regenerate`; repeated validation failure emits
 
 The target implementation must continuously verify:
 
-1. exactly one production `createResponsePlan` call per ordinary turn;
+1. exactly one production `createResponsePlan` callsite and decision owner per
+   ordinary turn, with at most one exact preflight-directed recovery attempt;
 2. exactly one ordinary `decisionOwner`;
 3. every non-safety turn has one Hill decision or an explicit Hill failure once
    Batch 1 is active;
@@ -635,3 +794,60 @@ npm run check:architecture-v1
 - Real-model post-migration A/B output comparison requires a separately scoped
   external-prompt authorization; local architecture and regression tests do not
   substitute for that naturalness evidence.
+
+## 9. Safety Semantic Triage and Failure Transparency (2026-08-10)
+
+`createChatReply` now preserves the existing Safety-first position but replaces
+the raw-regex-only decision with a dual channel. A normalized, narrow imminent
+fast path handles explicit current danger; configured production Qwen evaluates
+every other user turn with minimal adjacent committed context and a strict
+`json_object` contract. The model has classification authority only. Code owns
+routing, response text and all emergency numbers.
+
+The provider wire contract uses exact keys and exact evidence `{text}` selected
+from the current User message. Code requires each evidence fragment to be
+non-empty, unique and byte-for-byte present before deriving internal UTF-16
+offsets. Malformed output, binding/evidence mismatch, semantic inconsistency,
+provider 4xx and unknown errors become non-retryable `SAFETY_BLOCKED` on the
+first failure. Only timeout, 429 and provider 5xx may receive one same-input
+infrastructure retry; any second failure is blocked before ordinary planning.
+The redacted attempt trace records only failure category and retry disposition.
+It does not create an Assistant event.
+
+Validated Safety decisions select category/urgency-specific, code-owned China
+mainland responses with `120`, `110` and `12356`. Safety winners retain the
+existing immutable `supersedes` commit edge. No persistent Safety lifecycle
+state, schema, Memory/User Model integration or resolved/active write was added.
+
+`PLAN_INVALID` and exhausted hard `GENERATION_NONCONFORMANT` failures remain
+fail-closed but are now user-non-retryable: the status explains the system-side
+failure category without leaking plan ids, validator names or raw reasons.
+Provider, timeout and persistence failures remain retryable.
+
+This slice is sealed with the Subject-Ownership Closure. Deterministic bypass is
+limited to marker-free, whole-message, already-executed observable danger. Any
+intent or original Unicode punctuation/symbol that can carry quotation, aside,
+code or attribution semantics is evaluated before destructive normalization and
+sent to semantic triage. Explicit third-party ownership is non-current; ambiguous
+unattributed danger remains fail-closed. The real Qwen gate passes 22/22, both
+independent reviews pass, and no speaker keyword list or persistent state was added.
+
+## 10. Simplified Runtime V2 migration target (2026-08-11)
+
+`docs/HOT_COLD_PATH_V1_CONTRACT.md` is now the frozen target boundary for a
+future Hot/Cold split, and `docs/composer-shadow-v1.md` freezes its first
+evidence-producing P1 slice. This is a migration target, not a claim that the
+current V1 control loop in §2 has changed.
+
+The target preserves synchronous, authoritative User/Assistant conversation
+records and one committed Assistant winner while moving Memory, relationship,
+action and growth derivation to failure-isolated optional cold paths. It keeps
+Safety, canonical hard facts, immutable event edges and pure active/resolved
+queries, and continues to prohibit persistent conversation/handoff lifecycle
+state.
+
+P1 is replay-first, zero-authority Composer Shadow work. It may observe real
+Qwen structured output and model-side first-complete-segment latency, but may
+not write Message, winner, event, Memory or session state, affect V1 timing or
+status, or claim the end-to-end first-safe-segment SLO. The current V1 remains
+the only production writer until a separately authorized migration gate passes.

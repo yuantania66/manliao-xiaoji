@@ -25,6 +25,25 @@ export const uploadIdFromUrl = (value: string) => {
 };
 
 export const removeNoteUploadFile = async (storageKey: string) => {
+  if (
+    process.env.APP_ENV !== "production" &&
+    process.env.ACCOUNT_CANCEL_TEST_FAIL_FILE_DELETE_ONCE === "1"
+  ) {
+    delete process.env.ACCOUNT_CANCEL_TEST_FAIL_FILE_DELETE_ONCE;
+    const error = new Error("account_cancel_test_file_delete_failure") as NodeJS.ErrnoException;
+    error.code = "EACCES";
+    throw error;
+  }
+  if (
+    process.env.APP_ENV !== "production" &&
+    process.env.PROFILE_AVATAR_TEST_FAIL_FILE_DELETE_ONCE === "1" &&
+    /\/profile\//u.test(storageKey)
+  ) {
+    delete process.env.PROFILE_AVATAR_TEST_FAIL_FILE_DELETE_ONCE;
+    const error = new Error("profile_avatar_test_file_delete_failure") as NodeJS.ErrnoException;
+    error.code = "EACCES";
+    throw error;
+  }
   await unlink(path.join(getNoteUploadRoot(), storageKey)).catch((error: NodeJS.ErrnoException) => {
     if (error.code !== "ENOENT") throw error;
   });

@@ -1,89 +1,99 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+import { apiRequest, ClientApiError } from "@/lib/client-api";
 
 const weeks = ["一", "二", "三", "四", "五", "六", "日"];
-type Weather = "sun" | "partly" | "cloud" | "rain" | "storm" | "fog" | "rainbow";
+const moodIcons: Record<string, string> = {
+  sun: "☀️",
+  sunny: "☀️",
+  sunCloud: "🌤️",
+  partly: "⛅",
+  cloud: "☁️",
+  rain: "🌧️",
+  storm: "⛈️",
+  fog: "🌫️",
+  rainbow: "🌈",
+  moon: "🌙",
+};
 
-const noteDays = new Set([2, 4, 8, 11, 16, 18, 23, 27, 30]);
-const weatherDays = new Map<number, Weather>([
-  [2, "partly"],
-  [4, "sun"],
-  [8, "rain"],
-  [11, "fog"],
-  [16, "cloud"],
-  [18, "rainbow"],
-  [23, "storm"],
-  [27, "partly"],
-]);
+type CalendarDay = {
+  date: string;
+  count: number;
+  noteIds: string[];
+  moods: Array<{ name: string | null; icon: string | null }>;
+};
+type LoadState = "loading" | "ready" | "guest" | "error";
 
-function MiniWeather({ type }: { type: Weather }) {
-  if (type === "sun") {
-    return (
-      <svg viewBox="0 0 24 24" className="mx-auto h-6 w-6" aria-hidden="true">
-        <circle cx="12" cy="12" r="4" fill="#d6b47b" />
-        {[0, 45, 90, 135, 180, 225, 270, 315].map((degree) => (
-          <line
-            key={degree}
-            x1="12"
-            y1="2.5"
-            x2="12"
-            y2="5"
-            stroke="#d6b47b"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            transform={`rotate(${degree} 12 12)`}
-          />
-        ))}
-      </svg>
-    );
-  }
+const getShanghaiMonth = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+  }).format(new Date());
 
-  if (type === "fog") {
-    return (
-      <svg viewBox="0 0 24 24" className="mx-auto h-6 w-6" aria-hidden="true">
-        <path d="M4 8h16M3 12h18M6 16h12" stroke="#a8a19a" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
-  }
+const shiftMonth = (month: string, offset: number) => {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const date = new Date(Date.UTC(year, monthNumber - 1 + offset, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+};
 
-  if (type === "rainbow") {
-    return (
-      <svg viewBox="0 0 24 24" className="mx-auto h-6 w-6" aria-hidden="true" fill="none">
-        <path d="M4 17a8 8 0 0 1 16 0" stroke="#b9826e" strokeWidth="2" strokeLinecap="round" />
-        <path d="M7 17a5 5 0 0 1 10 0" stroke="#d6b47b" strokeWidth="2" strokeLinecap="round" />
-        <path d="M10 17a2 2 0 0 1 4 0" stroke="#71877b" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  const cloud = type === "storm" ? "#6e7780" : type === "partly" ? "#71877b" : "#b9c8c6";
-  const showSun = type === "partly";
-  const showRain = type === "rain" || type === "storm";
-
-  return (
-    <svg viewBox="0 0 24 24" className="mx-auto h-6 w-6" aria-hidden="true">
-      {showSun ? <circle cx="8" cy="8" r="3" fill="#d6b47b" /> : null}
-      <rect x="5" y="11" width="17" height="7" rx="3.5" fill={cloud} />
-      <circle cx="12" cy="10" r="5" fill={cloud} />
-      <circle cx="7.5" cy="13" r="3.5" fill={cloud} />
-      {showRain
-        ? [7, 12, 17].map((x) => (
-            <line
-              key={x}
-              x1={x}
-              y1="22"
-              x2={x + 3}
-              y2="19"
-              stroke={type === "storm" ? "#d6b47b" : "#7d9ba8"}
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          ))
-        : null}
-    </svg>
-  );
-}
+const formatMoodIcon = (icon: string | null) => {
+  if (!icon) return "•";
+  return moodIcons[icon] ?? icon;
+};
 
 export default function NoteCalendarPage() {
+  const [month, setMonth] = useState<string | null>(null);
+  const [days, setDays] = useState<CalendarDay[]>([]);
+  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    setMonth(getShanghaiMonth());
+  }, []);
+
+  useEffect(() => {
+    if (!month) return;
+
+    let cancelled = false;
+    setLoadState("loading");
+    setErrorMessage("");
+
+    apiRequest<{ month: string; days: CalendarDay[] }>(`/api/notes/calendar?month=${month}`)
+      .then((data) => {
+        if (cancelled) return;
+        setDays(data.days);
+        setLoadState("ready");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setDays([]);
+        if (error instanceof ClientApiError && error.status === 401) {
+          setLoadState("guest");
+          return;
+        }
+        setErrorMessage(error instanceof Error ? error.message : "日历暂时加载失败");
+        setLoadState("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [month]);
+
+  const calendar = useMemo(() => {
+    if (!month) return { year: 0, monthNumber: 0, daysInMonth: 0, leadingEmptyDays: 0 };
+    const [year, monthNumber] = month.split("-").map(Number);
+    const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    const leadingEmptyDays = (new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay() + 6) % 7;
+    return { year, monthNumber, daysInMonth, leadingEmptyDays };
+  }, [month]);
+
+  const dayMap = useMemo(() => new Map(days.map((day) => [day.date, day])), [days]);
+
   return (
     <main className="min-h-svh bg-[var(--page-bg)] text-[var(--ink)] md:grid md:place-items-center md:p-8">
       <section className="phone-frame relative mx-auto h-svh min-h-[844px] w-full max-w-[390px] overflow-hidden bg-[var(--page-bg)] md:h-[844px] md:rounded-[30px] md:shadow-[0_30px_80px_rgba(45,41,38,0.14)]">
@@ -102,19 +112,31 @@ export default function NoteCalendarPage() {
           心情日历
         </h1>
         <p className="absolute left-[22px] top-[140px] h-[22px] w-[344px] text-[13px] leading-[22px] text-[var(--body)]">
-          点开有天气的日期，可以回看那天的小记。
+          点开有心情标记的日期，可以回看那天的小记。
         </p>
 
         <section className="absolute left-[22px] top-[210px] h-[500px] w-[346px] rounded-[20px] bg-[var(--card-warm)]">
-          <div className="absolute left-[20px] top-[27px] h-6 w-[18px] text-[22px] leading-6 text-[var(--muted)]">
+          <button
+            type="button"
+            onClick={() => setMonth((value) => (value ? shiftMonth(value, -1) : value))}
+            disabled={!month}
+            className="absolute left-[14px] top-[21px] h-9 w-9 text-[22px] leading-6 text-[var(--muted)]"
+            aria-label="查看上个月"
+          >
             ‹
-          </div>
+          </button>
           <div className="absolute left-[80px] top-[27px] h-[22px] w-[168px] text-center text-base font-semibold leading-[22px]">
-            2026 年 6 月
+            {month ? `${calendar.year} 年 ${calendar.monthNumber} 月` : "正在确认月份…"}
           </div>
-          <div className="absolute left-[302px] top-[27px] h-6 w-[18px] text-[22px] leading-6 text-[var(--muted)]">
+          <button
+            type="button"
+            onClick={() => setMonth((value) => (value ? shiftMonth(value, 1) : value))}
+            disabled={!month}
+            className="absolute left-[294px] top-[21px] h-9 w-9 text-[22px] leading-6 text-[var(--muted)]"
+            aria-label="查看下个月"
+          >
             ›
-          </div>
+          </button>
 
           <div className="absolute left-[26px] top-20 grid w-[286px] grid-cols-7 text-center text-[10px] leading-[14px] text-[var(--muted)]">
             {weeks.map((week) => (
@@ -124,24 +146,28 @@ export default function NoteCalendarPage() {
           <div className="absolute left-[23px] top-[94px] h-px w-[286px] bg-[var(--line)]" />
 
           <div className="absolute left-5 top-[112px] grid w-[306px] grid-cols-7 gap-y-[17px]">
-            {Array.from({ length: 30 }, (_, index) => {
+            {Array.from({ length: calendar.leadingEmptyDays }, (_, index) => (
+              <div key={`empty-${index}`} className="h-[35px]" aria-hidden="true" />
+            ))}
+            {Array.from({ length: calendar.daysInMonth }, (_, index) => {
               const day = index + 1;
-              const hasNote = noteDays.has(day);
-              const weather = weatherDays.get(day);
+              const date = `${month}-${String(day).padStart(2, "0")}`;
+              const noteDay = dayMap.get(date);
+              const latestMood = noteDay?.moods.at(-1) ?? null;
               const dayCell = (
                 <div
                   className={
-                    hasNote
+                    noteDay
                       ? "flex h-[35px] w-8 flex-col items-center justify-start rounded-[9px] bg-[#f7f2ec] text-center"
                       : "flex h-[35px] w-8 flex-col items-center justify-start text-center"
                   }
                 >
-                  <div className="flex h-5 w-8 items-center justify-center">
-                    {weather ? <MiniWeather type={weather} /> : null}
+                  <div className="flex h-5 w-8 items-center justify-center text-base leading-5">
+                    {noteDay ? formatMoodIcon(latestMood?.icon ?? null) : null}
                   </div>
                   <div
                     className={
-                      hasNote
+                      noteDay
                         ? "text-[11px] font-semibold leading-[15px] text-[var(--sage)]"
                         : "text-[11px] leading-[15px] text-[var(--body)]"
                     }
@@ -152,11 +178,11 @@ export default function NoteCalendarPage() {
               );
 
               return (
-                <div key={day} className="flex h-[35px] justify-center">
-                  {hasNote ? (
+                <div key={date} className="flex h-[35px] justify-center">
+                  {noteDay ? (
                     <Link
-                      href={`/note/history?date=2026-06-${String(day).padStart(2, "0")}`}
-                      aria-label={`查看 2026 年 6 月 ${day} 日的小记`}
+                      href={`/note/history?date=${date}`}
+                      aria-label={`查看 ${calendar.year} 年 ${calendar.monthNumber} 月 ${day} 日的小记`}
                       className="block"
                     >
                       {dayCell}
@@ -169,14 +195,22 @@ export default function NoteCalendarPage() {
             })}
           </div>
 
-          <p className="absolute left-5 top-[382px] h-[18px] w-[295px] text-xs leading-[18px] text-[var(--muted)]">
-            点开有天气的日期，回到那一天的小记。
-          </p>
-
-          <div className="absolute left-5 top-[428px] h-12 w-[306px] rounded-[10px] bg-[#f7f2ec] px-5 py-[13px] text-[11px] leading-[17px] text-[var(--body)]">
-            有天气标记的日期，代表那天写过小记。
-            <br />
-            点开日期，可以回到当天慢慢看。
+          <div
+            className="absolute left-5 top-[424px] w-[306px] text-center text-xs leading-5 text-[var(--muted)]"
+            aria-live="polite"
+          >
+            {loadState === "loading" ? "正在加载这个月的小记…" : null}
+            {loadState === "guest" ? (
+              <>
+                请先登录，再查看只属于你的小记。
+                <Link href="/me" className="mt-1 block font-semibold text-[var(--sage)]">
+                  返回登录
+                </Link>
+              </>
+            ) : null}
+            {loadState === "error" ? errorMessage || "日历暂时加载失败，请稍后再试。" : null}
+            {loadState === "ready" && days.length === 0 ? "这个月还没有写下小记。" : null}
+            {loadState === "ready" && days.length > 0 ? "有心情标记的日期，代表那天写过小记。" : null}
           </div>
         </section>
 

@@ -23,6 +23,7 @@
 
 - [Hill Helping Skills 6th Edition Gap Audit](./evals/hill-helping-skills-v6-gap-audit.md)
 - [第二阶段验收报告](./evals/hill-helping-phase2-acceptance.md)
+- [Hill《助人技术》× 慢聊产品优先级对照 v1](./HILL_HELPING_PRODUCT_PRIORITY_MAP_V1.md)
 
 ## 1. 契约目的
 

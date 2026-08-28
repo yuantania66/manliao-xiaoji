@@ -3,81 +3,108 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const INSIGHTS_AUTH_KEY = "xinqingInsightsAnalysisAuthorized";
+import { apiRequest, ClientApiError } from "@/lib/client-api";
 
 type InsightRange = "7d" | "30d" | "90d";
-type InsightSentiment = "positive" | "neutral" | "negative";
+type InsightWord = { word: string; count: number };
+type LoadState = "idle" | "loading" | "ready" | "guest" | "error";
+type IdentityState = "checking" | "logged" | "guest" | "error";
 
-const ranges = [
+const ranges: Array<{ key: InsightRange; label: string }> = [
   { key: "7d", label: "最近7天" },
   { key: "30d", label: "最近30天" },
   { key: "90d", label: "最近90天" },
 ];
 
-const insightWordsByRange: Record<
-  InsightRange,
-  Array<{ word: string; count: string; sentiment: InsightSentiment }>
-> = {
-  "7d": [
-    { word: "工作", count: "3 次", sentiment: "positive" },
-    { word: "松弛", count: "2 次", sentiment: "positive" },
-    { word: "加班", count: "2 次", sentiment: "negative" },
-    { word: "想念", count: "1 次", sentiment: "neutral" },
-    { word: "散步", count: "1 次", sentiment: "positive" },
-    { word: "委屈", count: "1 次", sentiment: "negative" },
-  ],
-  "30d": [
-    { word: "工作", count: "6 次", sentiment: "neutral" },
-    { word: "疲惫", count: "5 次", sentiment: "negative" },
-    { word: "期待", count: "3 次", sentiment: "positive" },
-    { word: "关系", count: "2 次", sentiment: "neutral" },
-    { word: "成长", count: "2 次", sentiment: "positive" },
-    { word: "焦虑", count: "2 次", sentiment: "negative" },
-  ],
-  "90d": [
-    { word: "调整", count: "11 次", sentiment: "positive" },
-    { word: "工作", count: "9 次", sentiment: "negative" },
-    { word: "家人", count: "7 次", sentiment: "neutral" },
-    { word: "计划", count: "6 次", sentiment: "positive" },
-    { word: "边界", count: "5 次", sentiment: "neutral" },
-    { word: "自责", count: "4 次", sentiment: "negative" },
-  ],
-};
-
-const sentimentToneClass: Record<InsightSentiment, string> = {
-  positive: "bg-[#ddebf3] text-[#5f8290]",
-  neutral: "bg-[#f8ecc8] text-[#9b8349]",
-  negative: "bg-[#f4e4d3] text-[#b9826e]",
-};
-
-const getStoredInsightsAuthorization = () => {
-  try {
-    return window.localStorage?.getItem(INSIGHTS_AUTH_KEY) === "true";
-  } catch {
-    return false;
-  }
-};
-
-const storeInsightsAuthorization = () => {
-  try {
-    window.localStorage?.setItem(INSIGHTS_AUTH_KEY, "true");
-  } catch {
-    // Some embedded browsers disable localStorage; keep the in-page authorization.
-  }
-};
+const wordToneClasses = [
+  "bg-[#ddebf3] text-[#5f8290]",
+  "bg-[#f8ecc8] text-[#9b8349]",
+  "bg-[#f4e4d3] text-[#b9826e]",
+];
 
 export default function InsightsPage() {
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [consentToken, setConsentToken] = useState("");
+  const [userId, setUserId] = useState("");
+  const [identityState, setIdentityState] = useState<IdentityState>("checking");
   const [selectedRange, setSelectedRange] = useState<InsightRange>("30d");
-
-  const insightWords = insightWordsByRange[selectedRange];
+  const [words, setWords] = useState<InsightWord[]>([]);
+  const [loadState, setLoadState] = useState<LoadState>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    setIsAuthorized(getStoredInsightsAuthorization());
+    let cancelled = false;
+    apiRequest<{ user: { id: string } }>("/api/auth/me")
+      .then(({ user }) => {
+        if (cancelled) return;
+        setUserId(user.id);
+        setIsAuthorized(false);
+        setIdentityState("logged");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setUserId("");
+        setIsAuthorized(false);
+        setIdentityState(
+          error instanceof ClientApiError && error.status === 401 ? "guest" : "error"
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const authorizeInsights = () => {
-    storeInsightsAuthorization();
+  useEffect(() => {
+    if (!isAuthorized || identityState !== "logged") return;
+
+    let cancelled = false;
+    setLoadState("loading");
+    setErrorMessage("");
+
+    apiRequest<{ user: { id: string } }>("/api/auth/me")
+      .then(({ user }) => {
+        if (cancelled) return null;
+        if (user.id !== userId) {
+          setUserId(user.id);
+          setIsAuthorized(false);
+          setWords([]);
+          setLoadState("idle");
+          return null;
+        }
+        return apiRequest<{ words: InsightWord[] }>(
+          `/api/insights?range=${selectedRange}`,
+          { headers: { "x-insights-consent": consentToken } }
+        );
+      })
+      .then((data) => {
+        if (cancelled || !data) return;
+        setWords(data.words);
+        setLoadState("ready");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setWords([]);
+        if (error instanceof ClientApiError && error.status === 401) {
+          setIdentityState("guest");
+          setUserId("");
+          setIsAuthorized(false);
+          setLoadState("guest");
+          return;
+        }
+        setErrorMessage(error instanceof Error ? error.message : "观察暂时加载失败");
+        setLoadState("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [consentToken, identityState, isAuthorized, selectedRange, userId]);
+
+  const authorizeInsights = async () => {
+    if (!userId) return;
+    const consent = await apiRequest<{ consentToken: string }>("/api/insights", { method: "POST" });
+    setConsentToken(consent.consentToken);
     setIsAuthorized(true);
   };
 
@@ -92,7 +119,29 @@ export default function InsightsPage() {
           ‹ 返回
         </Link>
 
-        {!isAuthorized ? (
+        {identityState === "checking" ? (
+          <p className="absolute left-[22px] top-[180px] w-[346px] text-center text-xs leading-6 text-[var(--muted)]">
+            正在确认登录状态…
+          </p>
+        ) : identityState === "guest" ? (
+          <section className="absolute left-[22px] top-[150px] w-[346px] rounded-[20px] bg-[var(--card-warm)] px-6 py-8 text-center">
+            <h1 className="text-xl font-semibold leading-8">请先登录</h1>
+            <p className="mt-3 text-xs leading-6 text-[var(--body)]">
+              登录后才能授权整理只属于你的聊天和小记。
+            </p>
+            <Link
+              href="/me"
+              className="mt-6 block h-11 rounded-[22px] bg-[var(--sage)] text-xs font-semibold leading-[44px] text-white"
+            >
+              返回登录
+            </Link>
+          </section>
+        ) : identityState === "error" ? (
+          <section className="absolute left-[22px] top-[150px] w-[346px] rounded-[20px] bg-[var(--card-warm)] px-6 py-8 text-center">
+            <h1 className="text-xl font-semibold leading-8">暂时无法加载观察</h1>
+            <p className="mt-3 text-xs leading-6 text-[var(--body)]">请稍后再试。</p>
+          </section>
+        ) : !isAuthorized ? (
           <>
             <p className="absolute left-[22px] top-[100px] h-[18px] w-[120px] text-xs font-semibold leading-[18px] text-[var(--sage)]">
               授权确认
@@ -142,7 +191,7 @@ export default function InsightsPage() {
               <p>它不是判断，也不是答案。</p>
             </div>
             <p className="absolute left-[22px] top-[196px] w-[315px] text-[11px] leading-4 text-[var(--muted)]">
-              颜色来自记录里的情绪语气，不是词本身。
+              颜色仅用于区分词语。
             </p>
 
             <p className="absolute left-[22px] top-[222px] h-[18px] w-[120px] text-xs font-semibold leading-[18px] text-[var(--sage)]">
@@ -154,7 +203,7 @@ export default function InsightsPage() {
                 <button
                   key={range.key}
                   type="button"
-                  onClick={() => setSelectedRange(range.key as InsightRange)}
+                  onClick={() => setSelectedRange(range.key)}
                   className={
                     selectedRange === range.key
                       ? "h-[34px] rounded-[17px] bg-[var(--sage)] px-[23px] text-xs font-semibold leading-4 text-white"
@@ -167,20 +216,44 @@ export default function InsightsPage() {
               ))}
             </div>
 
-            <section className="absolute left-[22px] top-[318px] grid w-[326px] grid-cols-2 gap-x-[34px] gap-y-4">
-              {insightWords.map((item) => (
-                <div
-                  key={item.word}
-                  className={`flex h-12 w-[146px] items-center justify-between rounded-[15px] px-4 ${sentimentToneClass[item.sentiment]}`}
-                >
-                  <span className="text-sm font-semibold leading-[18px] text-[var(--ink)]">
-                    {item.word}
-                  </span>
-                  <span className="text-right text-xs font-normal leading-4">
-                    {item.count}
-                  </span>
+            <section
+              className="absolute left-[22px] top-[318px] grid w-[326px] grid-cols-2 gap-x-[34px] gap-y-4"
+              aria-live="polite"
+            >
+              {loadState === "loading" ? (
+                <p className="col-span-2 py-8 text-center text-xs text-[var(--muted)]">正在整理…</p>
+              ) : null}
+              {loadState === "guest" ? (
+                <div className="col-span-2 rounded-[18px] bg-[var(--card-warm)] px-5 py-6 text-center text-xs leading-6 text-[var(--body)]">
+                  请先登录，再查看只属于你的观察。
+                  <Link href="/me" className="mt-2 block font-semibold text-[var(--sage)]">
+                    返回登录
+                  </Link>
                 </div>
-              ))}
+              ) : null}
+              {loadState === "error" ? (
+                <p className="col-span-2 rounded-[18px] bg-[var(--card-warm)] px-5 py-6 text-center text-xs leading-6 text-[var(--body)]">
+                  {errorMessage || "观察暂时加载失败，请稍后再试。"}
+                </p>
+              ) : null}
+              {loadState === "ready" && words.length === 0 ? (
+                <p className="col-span-2 rounded-[18px] bg-[var(--card-warm)] px-5 py-6 text-center text-xs leading-6 text-[var(--body)]">
+                  这段时间还没有足够的聊天或小记可以整理。
+                </p>
+              ) : null}
+              {loadState === "ready"
+                ? words.map((item, index) => (
+                    <div
+                      key={item.word}
+                      className={`flex h-12 w-[146px] items-center justify-between rounded-[15px] px-4 ${wordToneClasses[index % wordToneClasses.length]}`}
+                    >
+                      <span className="max-w-[82px] truncate text-sm font-semibold leading-[18px] text-[var(--ink)]">
+                        {item.word}
+                      </span>
+                      <span className="text-right text-xs font-normal leading-4">{item.count} 次</span>
+                    </div>
+                  ))
+                : null}
             </section>
 
             <section className="absolute left-[22px] top-[545px] h-[104px] w-[346px] rounded-[18px] bg-[var(--card-warm)] px-[22px] pt-[22px]">
@@ -190,7 +263,7 @@ export default function InsightsPage() {
                 也许只是因为最近它们离你比较近。”
               </p>
               <p className="mt-4 text-[11px] leading-4 text-[var(--body)]">
-                可以切换时间范围，看这些词是慢慢淡了，还是还在身边。
+                可以切换时间范围，看看出现次数有没有变化。
               </p>
             </section>
           </>

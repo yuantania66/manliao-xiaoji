@@ -1,6 +1,6 @@
 # 批次 1.5 ResponsePlan 正向功能合同 V1
 
-状态：2026-08-02 待用户验收；冻结后方可修改代码
+状态：2026-08-09 已冻结并由 Planned Function Semantic Validation Boundary 实施
 
 ## 1. 范围与边界
 
@@ -50,6 +50,12 @@ Surface 只实现 ResponsePlan 已选择的正向功能。它不能：
 
 Validator 只判断计划功能是否完成和边界是否违反。它不能重新规划，也不能把固定词
 是否出现当成功能本身。
+
+实现采用唯一的 Planned Function Semantic Validation Boundary：只要 frozen
+`ResponsePlan` 含 handoff 或 positive-function contract 就调用一次 strict JSON 语义门。
+handoff 与 positive function 各自 exact-bind、各自提供 exact UTF-16 candidate evidence，
+并在两支同时存在时取 AND；不存在的分支必须为 null。旧 handoff Validator 仅为兼容
+委托，不保留第二套判断或第二次模型调用。
 
 ## 3. `offer_emotional_support` 正向合同
 
@@ -155,6 +161,12 @@ Validator 后续实现必须满足：
 - 拒绝只有空泛承担、没有处理修复目标的回复；
 - 一个输出可以同时报告多个真实功能失败，但不能用错误失败码掩盖真正原因；
 - regeneration 仍使用同一个 ResponsePlan，不得重新解释或另选目标。
+
+以上合同现由通用 positive-function verdict 覆盖，包括 identity 三种 mode、本节四种
+support function 与 repair 三种 mode。malformed、extra/missing key、binding/evidence
+mismatch、uncertain 和 provider failure 均 fail closed。该 verdict 不能改变 Safety、
+Grounding、结构 preflight 或 question policy，也不能授予提问权限；正向功能是否完成不再
+由中文完成短语或正则词表证明。
 
 ## 6. 实现前验收门
 
