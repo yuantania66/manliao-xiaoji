@@ -7,7 +7,7 @@ const {
   discardProfileAvatar,
   downloadProfileAvatar
 } = require("../../api/auth");
-const { authenticateWithWechatPhone } = require("../../utils/wechat-phone-login");
+const { authenticateWithWechatPhone, getWechatPhoneCode } = require("../../utils/wechat-phone-login");
 const { authenticateWithWechat } = require("../../utils/wechat-login");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
 
@@ -53,6 +53,10 @@ Page({
   onShow() {
     this.updateSafeLayout();
     const auth = getAuth();
+    const userId = auth?.user?.id || "";
+    const userChanged = this.visibleUserId !== undefined && this.visibleUserId !== userId;
+    this.visibleUserId = userId;
+    if (userChanged) this.profileSaveId = (this.profileSaveId || 0) + 1;
     this.setData({
       isLoggedIn: Boolean(auth),
       membershipText: getMembershipText(auth),
@@ -61,7 +65,9 @@ Page({
       originalProfileNickname: auth?.user?.nickname || "",
       avatarLocalPath: "",
       avatarPreview: "",
-      profileEditing: Boolean(auth && (
+      isSavingProfile: userChanged ? false : this.data.isSavingProfile,
+      loginError: userChanged ? "" : this.data.loginError,
+      profileEditing: Boolean(auth && !userChanged && (
         this.data.profileEditing ||
         (this.completeProfileAfterLogin && (!auth.user.nickname || !auth.user.avatarUrl))
       ))
@@ -143,6 +149,10 @@ Page({
 
   preparePhoneLogin() {
     if (this.data.isLoggingIn) return;
+    if (getAuth()) {
+      this.setData({ phoneLoginReady: false, isLoggingIn: false, loginError: "当前已有登录账号，无需再次登录。" });
+      return;
+    }
     if (!this.data.privacyConfirmed) {
       this.setData({ loginError: "请先阅读并同意隐私政策。" });
       return;
@@ -151,12 +161,19 @@ Page({
     this.authCheckPending = false;
     const attemptId = (this.loginAttemptId || 0) + 1;
     this.loginAttemptId = attemptId;
+    this.phoneLoginAttemptId = attemptId;
+    const startingUserId = getAuth()?.user?.id || "";
     this.setData({ isCheckingAuth: false, isLoggingIn: true, loginError: "" });
 
     requireWechatPrivacyAuthorization()
       .then(() => {
-        if (this.loginAttemptId === attemptId) {
+        if (this.loginAttemptId !== attemptId) return;
+        if (this.data.privacyConfirmed && (getAuth()?.user?.id || "") === startingUserId) {
+          this.phoneLoginAttemptId = attemptId;
+          this.phoneLoginStartingUserId = startingUserId;
           this.setData({ phoneLoginReady: true, isLoggingIn: false });
+        } else {
+          this.setData({ phoneLoginReady: false, isLoggingIn: false });
         }
       })
       .catch((error) => {
@@ -168,6 +185,8 @@ Page({
 
   cancelPhoneLogin() {
     this.loginAttemptId = (this.loginAttemptId || 0) + 1;
+    this.phoneLoginAttemptId = null;
+    this.phoneLoginStartingUserId = null;
     this.setData({ phoneLoginReady: false, isLoggingIn: false, loginError: "" });
   },
 
@@ -220,13 +239,24 @@ Page({
 
   handlePhoneNumber(event) {
     if (!this.data.phoneLoginReady || this.data.isLoggingIn) return;
-    const phoneCode = event.detail && event.detail.code;
-    if (!phoneCode) {
-      this.setData({ loginError: "你已取消手机号授权，可以稍后再试。" });
+    if (
+      this.phoneLoginAttemptId !== this.loginAttemptId ||
+      !this.data.privacyConfirmed ||
+      (getAuth()?.user?.id || "") !== this.phoneLoginStartingUserId
+    ) {
+      this.setData({ phoneLoginReady: false, isLoggingIn: false });
+      return;
+    }
+    let phoneCode;
+    try {
+      phoneCode = getWechatPhoneCode(event.detail);
+    } catch (error) {
+      this.setData({ loginError: error.message });
       return;
     }
     const attemptId = (this.loginAttemptId || 0) + 1;
     this.loginAttemptId = attemptId;
+    this.phoneLoginAttemptId = attemptId;
     const startingUserId = getAuth()?.user?.id || "";
     this.setData({ isLoggingIn: true, loginError: "" });
     authenticateWithWechatPhone(phoneCode)
@@ -271,27 +301,37 @@ Page({
     const auth = getAuth();
     if (!auth || this.data.isSavingProfile) return;
     const userId = auth.user.id;
+    const authToken = auth.token;
     const nickname = this.data.profileNickname.trim();
     const nicknameChanged = nickname !== this.data.originalProfileNickname;
     const avatarLocalPath = this.data.avatarLocalPath;
-    if (!nickname || (!nicknameChanged && !avatarLocalPath)) return;
+    if (nicknameChanged && !nickname) {
+      this.setData({ loginError: "昵称不能为空；也可以保留原昵称或只选择头像。" });
+      return;
+    }
+    if (!nicknameChanged && !avatarLocalPath) {
+      this.setData({ loginError: "请先选择头像或修改昵称，也可以暂时跳过。" });
+      return;
+    }
     const operationId = (this.profileSaveId || 0) + 1;
     this.profileSaveId = operationId;
     this.setData({ isSavingProfile: true, loginError: "" });
     let uploadedId = "";
+    let committed = false;
     const upload = avatarLocalPath ? uploadProfileAvatar(avatarLocalPath) : Promise.resolve(null);
     upload
       .then((uploaded) => {
+        uploadedId = uploaded ? uploaded.uploadId : "";
         if (this.profileSaveId !== operationId || getAuth()?.user?.id !== userId) {
           throw new Error("账号已切换，已停止保存");
         }
-        uploadedId = uploaded ? uploaded.uploadId : "";
         return updateMe({
           ...(nicknameChanged ? { nickname } : {}),
           ...(uploaded ? { avatarUploadId: uploaded.uploadId } : {})
         });
       })
       .then(({ user }) => {
+        committed = true;
         if (this.profileSaveId !== operationId || getAuth()?.user?.id !== userId || user.id !== userId) return;
         let cacheWarning = "";
         try {
@@ -315,9 +355,9 @@ Page({
         }
       })
       .catch((error) => {
+        if (uploadedId && !committed) discardProfileAvatar(uploadedId, authToken).catch(() => undefined);
         if (this.profileSaveId === operationId && getAuth()?.user?.id === userId) {
           this.setData({ loginError: error.message || "资料保存失败" });
-          if (uploadedId) discardProfileAvatar(uploadedId).catch(() => undefined);
         }
       })
       .finally(() => {

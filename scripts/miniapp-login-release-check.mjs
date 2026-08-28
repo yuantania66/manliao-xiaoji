@@ -383,11 +383,43 @@ resolveWechatLogin(validAuth);
 await tick();
 assert.equal(auth.getAuth().user.id, "user-b", "late WeChat response must not overwrite a switched account");
 
+storage.clear();
+auth.saveAuth(switchedAuth);
+let loggedPrepareWxCalls = 0;
+wx.login = () => { loggedPrepareWxCalls += 1; };
+const phoneCallsBeforeLoggedPrepare = phoneApiCalls;
+for (const loggedPage of [loadPage(homePath), loadPage(mePath)]) {
+  loggedPage.data.privacyConfirmed = true;
+  loggedPage.preparePhoneLogin();
+  assert.equal(loggedPage.data.phoneLoginReady, false);
+}
+assert.equal(loggedPrepareWxCalls, 0);
+assert.equal(phoneApiCalls, phoneCallsBeforeLoggedPrepare);
+assert.equal(auth.getAuth().user.id, "user-b");
+
+storage.clear();
 let phoneLoginCalls = 0;
 phoneLoginImpl = () => { phoneLoginCalls += 1; return Promise.resolve(validAuth); };
-preparedHome.handlePhoneNumber({ detail: {} });
+preparedHome.handlePhoneNumber({ detail: { errMsg: "getPhoneNumber:fail user cancel" } });
 assert.equal(phoneLoginCalls, 0);
 assert.match(preparedHome.data.entryError, /取消手机号授权/);
+
+const phoneApiCallsBeforeFailures = phoneApiCalls;
+let phoneFailureWxLoginCalls = 0;
+wx.login = () => { phoneFailureWxLoginCalls += 1; };
+preparedHome.handlePhoneNumber({ detail: { errMsg: "getPhoneNumber:fail user deny" } });
+assert.match(preparedHome.data.entryError, /取消手机号授权/);
+preparedHome.handlePhoneNumber({ detail: { errMsg: "getPhoneNumber:ok", encryptedData: "legacy", iv: "legacy-iv" } });
+assert.match(preparedHome.data.entryError, /版本.*不支持|旧版/u);
+preparedHome.handlePhoneNumber({ detail: { errMsg: "getPhoneNumber:fail no permission" } });
+assert.match(preparedHome.data.entryError, /未提供.*手机号|无法提供/u);
+for (const detail of [null, [], {}]) {
+  preparedHome.handlePhoneNumber({ detail });
+  assert.match(preparedHome.data.entryError, /未提供.*手机号|无法提供/u);
+}
+assert.equal(phoneFailureWxLoginCalls, 0);
+assert.equal(phoneApiCalls, phoneApiCallsBeforeFailures);
+assert.equal(auth.getAuth(), null);
 
 redirectedTo = "";
 wx.login = ({ success }) => success({ code: "wechat-login-code" });
@@ -401,12 +433,31 @@ assert.equal(redirectedTo, "/pages/me/me?completeProfile=1");
 storage.clear();
 const emptyCodeHome = loadPage(homePath);
 emptyCodeHome.data.phoneLoginReady = true;
+emptyCodeHome.data.privacyConfirmed = true;
+emptyCodeHome.loginAttemptId = 1;
+emptyCodeHome.phoneLoginAttemptId = 1;
+emptyCodeHome.phoneLoginStartingUserId = "";
 phoneLoginCalls = 0;
 wx.login = ({ success }) => success({ code: "" });
 emptyCodeHome.handlePhoneNumber({ detail: { code: "phone-code" } });
 await tick();
 assert.equal(phoneLoginCalls, 0);
 assert.match(emptyCodeHome.data.entryError, /有效登录凭证/);
+
+storage.clear();
+const switchedDuringPhoneHome = loadPage(homePath);
+switchedDuringPhoneHome.data.privacyConfirmed = true;
+wx.getPrivacySetting = ({ success }) => success({ needAuthorization: false });
+switchedDuringPhoneHome.preparePhoneLogin();
+await tick();
+const phoneCallsBeforeHomeSwitch = phoneApiCalls;
+let wxCallsAfterHomeSwitch = 0;
+wx.login = () => { wxCallsAfterHomeSwitch += 1; };
+auth.saveAuth(switchedAuth);
+switchedDuringPhoneHome.handlePhoneNumber({ detail: { code: "stale-home-phone-code" } });
+assert.equal(wxCallsAfterHomeSwitch, 0);
+assert.equal(phoneApiCalls, phoneCallsBeforeHomeSwitch);
+assert.equal(auth.getAuth().user.id, "user-b");
 
 storage.clear();
 const stalePrivacyHome = loadPage(homePath);
@@ -424,6 +475,10 @@ wx.getPrivacySetting = ({ success }) => success({ needAuthorization: false });
 storage.clear();
 const staleHome = loadPage(homePath);
 staleHome.data.phoneLoginReady = true;
+staleHome.data.privacyConfirmed = true;
+staleHome.loginAttemptId = 1;
+staleHome.phoneLoginAttemptId = 1;
+staleHome.phoneLoginStartingUserId = "";
 let resolvePhoneLogin;
 phoneLoginImpl = () => new Promise((resolve) => { resolvePhoneLogin = resolve; });
 wx.login = ({ success }) => success({ code: "wechat-login-code" });
@@ -453,6 +508,21 @@ assert.equal(me.data.isLoggingIn, false);
 assert.equal(mePrepareWxLoginCalls, 0);
 assert.equal(phoneApiCalls, phoneApiCallsBeforeMePrepare);
 assert.equal(auth.getAuth(), null);
+
+const switchedDuringPhoneMe = loadPage(mePath);
+switchedDuringPhoneMe.data.privacyConfirmed = true;
+switchedDuringPhoneMe.preparePhoneLogin();
+await tick();
+const phoneCallsBeforeMeSwitch = phoneApiCalls;
+let wxCallsAfterMeSwitch = 0;
+wx.login = () => { wxCallsAfterMeSwitch += 1; };
+auth.saveAuth(switchedAuth);
+switchedDuringPhoneMe.handlePhoneNumber({ detail: { code: "stale-me-phone-code" } });
+assert.equal(wxCallsAfterMeSwitch, 0);
+assert.equal(phoneApiCalls, phoneCallsBeforeMeSwitch);
+assert.equal(auth.getAuth().user.id, "user-b");
+storage.clear();
+
 me.preparePhoneLogin();
 await tick();
 assert.equal(me.data.phoneLoginReady, true);

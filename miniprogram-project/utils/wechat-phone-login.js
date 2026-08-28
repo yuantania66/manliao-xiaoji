@@ -1,5 +1,18 @@
 const authApi = require("../api/auth");
 
+const getWechatPhoneCode = (detail) => {
+  const normalized = detail && typeof detail === "object" && !Array.isArray(detail) ? detail : {};
+  if (typeof normalized.code === "string" && normalized.code) return normalized.code;
+  if (normalized.encryptedData && normalized.iv) {
+    throw new Error("当前微信版本返回的是旧版手机号凭证，暂不支持，请升级微信后重试。");
+  }
+  const errMsg = typeof normalized.errMsg === "string" ? normalized.errMsg : "";
+  if (/cancel|deny/u.test(errMsg.toLowerCase())) {
+    throw new Error("你已取消手机号授权，可以稍后再试。");
+  }
+  throw new Error("微信未提供可用的手机号授权凭证，请检查小程序权限或稍后重试。");
+};
+
 const authenticateWithWechatPhone = (phoneCode) => new Promise((resolve, reject) => {
   if (!phoneCode) {
     reject(new Error("你已取消手机号授权，可以稍后再试。"));
@@ -17,4 +30,4 @@ const authenticateWithWechatPhone = (phoneCode) => new Promise((resolve, reject)
   });
 });
 
-module.exports = { authenticateWithWechatPhone };
+module.exports = { authenticateWithWechatPhone, getWechatPhoneCode };

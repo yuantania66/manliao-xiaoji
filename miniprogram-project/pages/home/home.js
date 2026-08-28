@@ -2,7 +2,7 @@ const { formatDateLabel } = require("../../utils/local-data");
 const { getAuth, saveAuth, enterGuest, isGuest } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
 const { getMe } = require("../../api/auth");
-const { authenticateWithWechatPhone } = require("../../utils/wechat-phone-login");
+const { authenticateWithWechatPhone, getWechatPhoneCode } = require("../../utils/wechat-phone-login");
 const { authenticateWithWechat } = require("../../utils/wechat-login");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
 
@@ -118,6 +118,10 @@ Page({
 
   preparePhoneLogin() {
     if (this.data.isLoggingIn) return;
+    if (getAuth()) {
+      this.setData({ phoneLoginReady: false, isLoggingIn: false, entryError: "当前已有登录账号，请先返回账号页面。" });
+      return;
+    }
     if (!this.data.privacyConfirmed) {
       this.setData({ entryError: "请先阅读并同意隐私政策。" });
       return;
@@ -126,11 +130,18 @@ Page({
     this.authCheckPending = false;
     const attemptId = (this.loginAttemptId || 0) + 1;
     this.loginAttemptId = attemptId;
+    this.phoneLoginAttemptId = attemptId;
+    const startingUserId = getAuth()?.user?.id || "";
     this.setData({ isCheckingAuth: false, isLoggingIn: true, entryError: "" });
     requireWechatPrivacyAuthorization()
       .then(() => {
-        if (this.loginAttemptId === attemptId) {
+        if (this.loginAttemptId !== attemptId) return;
+        if (this.data.privacyConfirmed && (getAuth()?.user?.id || "") === startingUserId) {
+          this.phoneLoginAttemptId = attemptId;
+          this.phoneLoginStartingUserId = startingUserId;
           this.setData({ phoneLoginReady: true, isLoggingIn: false });
+        } else {
+          this.setData({ phoneLoginReady: false, isLoggingIn: false });
         }
       })
       .catch((error) => {
@@ -142,6 +153,8 @@ Page({
 
   cancelPhoneLogin() {
     this.loginAttemptId = (this.loginAttemptId || 0) + 1;
+    this.phoneLoginAttemptId = null;
+    this.phoneLoginStartingUserId = null;
     this.setData({ phoneLoginReady: false, isLoggingIn: false, entryError: "" });
   },
 
@@ -190,13 +203,24 @@ Page({
 
   handlePhoneNumber(event) {
     if (!this.data.phoneLoginReady || this.data.isLoggingIn) return;
-    const phoneCode = event.detail && event.detail.code;
-    if (!phoneCode) {
-      this.setData({ entryError: "你已取消手机号授权，可以稍后再试。" });
+    if (
+      this.phoneLoginAttemptId !== this.loginAttemptId ||
+      !this.data.privacyConfirmed ||
+      (getAuth()?.user?.id || "") !== this.phoneLoginStartingUserId
+    ) {
+      this.setData({ phoneLoginReady: false, isLoggingIn: false });
+      return;
+    }
+    let phoneCode;
+    try {
+      phoneCode = getWechatPhoneCode(event.detail);
+    } catch (error) {
+      this.setData({ entryError: error.message });
       return;
     }
     const attemptId = (this.loginAttemptId || 0) + 1;
     this.loginAttemptId = attemptId;
+    this.phoneLoginAttemptId = attemptId;
     const startingUserId = getAuth()?.user?.id || "";
     this.setData({ isLoggingIn: true, entryError: "" });
     authenticateWithWechatPhone(phoneCode)

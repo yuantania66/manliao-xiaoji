@@ -52,9 +52,11 @@ const uploadProfileAvatar = (filePath) => new Promise((resolve, reject) => {
   });
 });
 
-const discardProfileAvatar = (uploadId) => request({
+const discardProfileAvatar = (uploadId, capturedToken = "") => request({
   url: "/api/uploads/profile-avatar",
   method: "DELETE",
+  auth: !capturedToken,
+  ...(capturedToken ? { headers: { Authorization: `Bearer ${capturedToken}` } } : {}),
   data: { uploadId }
 });
 

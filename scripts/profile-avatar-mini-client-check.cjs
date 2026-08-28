@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Mini Program production modules require CommonJS cache mocks. */
 const assert = require("node:assert/strict");
+const { readFileSync } = require("node:fs");
+
+const meWxml = readFileSync(require.resolve("../miniprogram-project/pages/me/me.wxml"), "utf8");
+assert.match(meWxml, /profile-editor-layer[^>]*role="dialog"/u);
+assert.match(meWxml, /profile-avatar-preview/u);
+assert.ok(meWxml.includes('wx:if="{{isLoggedIn && profileEditing}}" class="profile-editor-layer"'));
 
 const future = new Date(Date.now() + 60_000).toISOString();
 let auth = { token: "token-a", expiresAt: future, user: { id: "user-a", nickname: "旧昵称", avatarUrl: "/avatar/a" } };
@@ -7,10 +13,14 @@ let pageDefinition;
 let uploadCalls = 0;
 let updateCalls = [];
 let discardCalls = 0;
+let discardTokens = [];
 let cacheCalls = 0;
 let cacheShouldFail = false;
 let uploadImplementation = () => Promise.resolve({ uploadId: "00000000-0000-4000-8000-000000000001" });
 let meImplementation = () => Promise.resolve({ user: auth.user });
+let updateImplementation = (body) => Promise.resolve({
+  user: { ...auth.user, ...body, avatarUrl: body.avatarUploadId ? "/avatar/new" : auth.user.avatarUrl }
+});
 
 global.getApp = () => ({ globalData: {} });
 global.wx = { redirectTo: () => undefined, login: () => undefined };
@@ -34,14 +44,18 @@ require.cache[apiPath] = { exports: {
   getMe: () => meImplementation(),
   updateMe: (body) => {
     updateCalls.push(body);
-    return Promise.resolve({ user: { ...auth.user, ...body, avatarUrl: body.avatarUploadId ? "/avatar/new" : auth.user.avatarUrl } });
+    return updateImplementation(body);
   },
   uploadProfileAvatar: (filePath) => {
     uploadCalls += 1;
     assert(filePath.startsWith("wxfile://"));
     return uploadImplementation();
   },
-  discardProfileAvatar: () => { discardCalls += 1; return Promise.resolve(); },
+  discardProfileAvatar: (_uploadId, capturedToken) => {
+    discardCalls += 1;
+    discardTokens.push(capturedToken);
+    return Promise.resolve();
+  },
   downloadProfileAvatar: (avatarUrl) => Promise.resolve(`downloaded:${avatarUrl}`)
 } };
 
@@ -65,8 +79,9 @@ const settle = async (rounds = 4) => {
 };
 const deferred = () => {
   let resolve;
-  const promise = new Promise((done) => { resolve = done; });
-  return { promise, resolve };
+  let reject;
+  const promise = new Promise((done, fail) => { resolve = done; reject = fail; });
+  return { promise, resolve, reject };
 };
 
 (async () => {
@@ -117,13 +132,62 @@ const deferred = () => {
   auth = { token: "token-b", expiresAt: future, user: { id: "user-b", nickname: "用户 B", avatarUrl: "/avatar/b" } };
   meImplementation = () => Promise.resolve({ user: auth.user });
   page.onShow();
+  assert.equal(page.data.profileEditing, false, "switching users must close A's profile sheet");
+  assert.equal(page.data.isSavingProfile, false, "switching users must release A's saving lock");
+  assert.equal(page.data.avatarLocalPath, "");
   lateUpload.resolve({ uploadId: "00000000-0000-4000-8000-000000000002" });
   await settle();
   assert.equal(updateCalls.length, 2, "late A upload must not patch B");
+  assert.equal(discardCalls, 1, "late unbound A upload must be discarded");
+  assert.deepEqual(discardTokens, ["token-a"], "late cleanup must use A's captured token");
   assert.equal(page.data.profileNickname, "用户 B");
   assert.equal(page.data.avatarPreview, "downloaded:/avatar/b");
   assert.equal(auth.user.id, "user-b");
   assert.equal(cacheCalls >= 2, true);
+
+  auth = { token: "token-patch-a", expiresAt: future, user: { id: "patch-a", nickname: "A", avatarUrl: null } };
+  meImplementation = () => Promise.resolve({ user: auth.user });
+  uploadImplementation = () => Promise.resolve({ uploadId: "00000000-0000-4000-8000-000000000004" });
+  const pendingPatch = deferred();
+  updateImplementation = () => pendingPatch.promise;
+  page.onShow();
+  await settle();
+  page.editProfile();
+  page.chooseAvatar({ detail: { avatarUrl: "wxfile://patch-pending.jpg" } });
+  page.saveProfile();
+  await settle(1);
+  auth = { token: "token-patch-b", expiresAt: future, user: { id: "patch-b", nickname: "B", avatarUrl: null } };
+  page.onShow();
+  pendingPatch.reject(new Error("patch rejected"));
+  await settle();
+  assert.equal(discardCalls, 2, "rejected pending PATCH must discard its unbound upload");
+  assert.equal(discardTokens.at(-1), "token-patch-a");
+  assert.equal(auth.user.id, "patch-b");
+
+  auth = { token: "token-c", expiresAt: future, user: { id: "user-c", nickname: null, avatarUrl: null } };
+  meImplementation = () => Promise.resolve({ user: auth.user });
+  uploadImplementation = () => Promise.resolve({ uploadId: "00000000-0000-4000-8000-000000000003" });
+  updateImplementation = (body) => Promise.resolve({
+    user: { ...auth.user, ...body, avatarUrl: body.avatarUploadId ? "/avatar/new" : auth.user.avatarUrl }
+  });
+  page.onShow();
+  await settle();
+  page.editProfile();
+  page.chooseAvatar({ detail: { avatarUrl: "wxfile://avatar-only.jpg" } });
+  assert.equal(page.data.avatarPreview, "wxfile://avatar-only.jpg");
+  const updatesBeforeAvatarOnly = updateCalls.length;
+  page.saveProfile();
+  await settle();
+  assert.equal(updateCalls.length, updatesBeforeAvatarOnly + 1, "new account must be able to save avatar without nickname");
+  assert.deepEqual(updateCalls.at(-1), { avatarUploadId: "00000000-0000-4000-8000-000000000003" });
+  assert.equal(page.data.profileEditing, false);
+
+  auth = { ...auth, user: { ...auth.user, avatarUrl: "/avatar/new-c" } };
+  page.editProfile();
+  const updatesBeforeNoop = updateCalls.length;
+  page.saveProfile();
+  assert.equal(updateCalls.length, updatesBeforeNoop);
+  assert.match(page.data.loginError, /选择头像|修改昵称/u, "no-op save must explain what is required");
 
   console.log("Profile avatar Mini Program client checks passed.");
 })().catch((error) => {
