@@ -27,7 +27,8 @@ const request = ({ url, method = "GET", data, auth = true, headers = {} }) =>
       timeout: API_TIMEOUT,
       success(res) {
         if (res.statusCode === 401) {
-          clearAuth();
+          const currentAuth = getAuth();
+          if (auth && storedAuth?.token && currentAuth?.token === storedAuth.token) clearAuth();
           reject(new Error("登录状态已过期，请重新登录"));
           return;
         }

@@ -3,6 +3,7 @@ const { getAuth, saveAuth, enterGuest, isGuest } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
 const { getMe } = require("../../api/auth");
 const { authenticateWithWechatPhone } = require("../../utils/wechat-phone-login");
+const { authenticateWithWechat } = require("../../utils/wechat-login");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
 
 const prompts = [
@@ -100,7 +101,7 @@ Page({
   togglePrivacy(event) {
     const privacyConfirmed = event.detail.value.includes("confirmed");
     if (!privacyConfirmed) this.loginAttemptId = (this.loginAttemptId || 0) + 1;
-    this.setData({ privacyConfirmed, ...(privacyConfirmed ? {} : { phoneLoginReady: false }) });
+    this.setData({ privacyConfirmed, ...(privacyConfirmed ? {} : { phoneLoginReady: false, isLoggingIn: false }) });
   },
 
   openWechatPrivacy() {
@@ -136,6 +137,49 @@ Page({
         if (this.loginAttemptId === attemptId) {
           this.setData({ isLoggingIn: false, entryError: error.message || "微信隐私授权未完成。" });
         }
+      });
+  },
+
+  loginWithWechatAccount() {
+    if (this.data.isLoggingIn) return;
+    if (!this.data.privacyConfirmed) {
+      this.setData({ entryError: "请先阅读并同意隐私政策。" });
+      return;
+    }
+    this.authCheckId = (this.authCheckId || 0) + 1;
+    this.authCheckPending = false;
+    const attemptId = (this.loginAttemptId || 0) + 1;
+    this.loginAttemptId = attemptId;
+    const startingUserId = getAuth()?.user?.id || "";
+    this.setData({ isCheckingAuth: false, isLoggingIn: true, phoneLoginReady: false, entryError: "" });
+    requireWechatPrivacyAuthorization()
+      .then(() => {
+        if (
+          this.loginAttemptId !== attemptId ||
+          !this.data.privacyConfirmed ||
+          (getAuth()?.user?.id || "") !== startingUserId
+        ) return null;
+        return authenticateWithWechat();
+      })
+      .then((auth) => {
+        if (!auth) return;
+        if (this.loginAttemptId !== attemptId || (getAuth()?.user?.id || "") !== startingUserId) return;
+        saveAuth(auth);
+        this.forceEntry = false;
+        this.setData({ showEntry: false, entryError: "" });
+        if (!auth.user.nickname || !auth.user.avatarUrl) {
+          wx.redirectTo({ url: "/pages/me/me?completeProfile=1" });
+        } else {
+          wx.showToast({ title: "登录成功，云端同步已开启", icon: "none" });
+        }
+      })
+      .catch((error) => {
+        if (this.loginAttemptId === attemptId) {
+          this.setData({ entryError: error.message || "微信登录失败，可以先用游客模式体验。" });
+        }
+      })
+      .finally(() => {
+        if (this.loginAttemptId === attemptId) this.setData({ isLoggingIn: false });
       });
   },
 

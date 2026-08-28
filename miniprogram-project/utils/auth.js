@@ -17,6 +17,8 @@ const isUsableAuth = (auth, now = Date.now()) => {
   if (!auth || typeof auth !== "object" || Array.isArray(auth)) return false;
   if (typeof auth.token !== "string" || !auth.token || auth.token.startsWith("local_demo_")) return false;
   if (typeof auth.expiresAt !== "string") return false;
+  if (!auth.user || typeof auth.user !== "object" || Array.isArray(auth.user)) return false;
+  if (typeof auth.user.id !== "string" || !auth.user.id.trim()) return false;
   const expiresAt = new Date(auth.expiresAt).getTime();
   return Number.isFinite(expiresAt) && expiresAt > now;
 };
@@ -37,9 +39,9 @@ const getAuth = () => {
 
 const saveAuth = (auth) => {
   if (!isUsableAuth(auth)) throw new Error("登录响应无效");
-  wx.setStorageSync(AUTH_KEY, auth);
   wx.removeStorageSync(GUEST_KEY);
   USER_CACHE_KEYS.forEach((key) => wx.removeStorageSync(key));
+  wx.setStorageSync(AUTH_KEY, auth);
   const app = getApp();
   app.globalData.user = auth.user || null;
   app.globalData.token = auth.token || "";

@@ -18,14 +18,15 @@
     <button bindtap="skipProfile" disabled="{{isSavingProfile}}">暂时跳过</button>
   </view>
   <view wx:if="{{loginError}}" class="login-error" aria-live="assertive">{{loginError}}</view>
-  <view wx:if="{{!isLoggedIn}}" class="login-panel" role="group" aria-label="手机号登录">
+  <view wx:if="{{!isLoggedIn}}" class="login-panel" role="group" aria-label="登录">
     <view class="entry-title">登录慢聊小记</view>
-    <view class="entry-copy">使用微信绑定手机号登录；未注册的手机号会创建新账号。</view>
+    <view class="entry-copy">可以直接使用微信登录，也可以使用微信绑定手机号登录。</view>
     <checkbox-group class="privacy-confirm" bindchange="togglePrivacy">
       <label><checkbox value="confirmed" checked="{{privacyConfirmed}}" color="#71877b" />我已阅读并同意</label>
       <navigator url="/pages/privacy/privacy" class="privacy-link" hover-class="none">《隐私政策》</navigator>
     </checkbox-group>
     <button class="wechat-privacy-link" bindtap="openWechatPrivacy">查看微信隐私保护指引</button>
+    <button class="primary-button login-button" loading="{{isLoggingIn}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="loginWithWechatAccount">微信登录</button>
     <button wx:if="{{phoneLoginReady}}" class="primary-button login-button" open-type="getPhoneNumber" bindgetphonenumber="handlePhoneNumber" loading="{{isLoggingIn}}" disabled="{{isLoggingIn}}">{{isLoggingIn ? "登录中..." : "使用微信手机号继续"}}</button>
     <button wx:else class="primary-button login-button" loading="{{isLoggingIn || isCheckingAuth}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="preparePhoneLogin">{{isCheckingAuth ? "正在验证..." : (isLoggingIn ? "准备中..." : "手机号登录")}}</button>
   </view>

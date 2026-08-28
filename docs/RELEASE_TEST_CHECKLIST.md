@@ -131,7 +131,7 @@ npm run check:release:required
 小程序发布必须完成：
 
 - 微信开发者工具编译、预览，无阻断错误；
-- 体验版 HTTPS 合法域名、真实 `code2Session`、`getPhoneNumber` 系统授权和手机号登录；
+- 体验版 HTTPS 合法域名、真实 `code2Session` 微信登录、`getPhoneNumber` 系统授权和手机号登录，并保留游客入口；
 - iOS 与 Android 各至少一台真机；
 - 新建/恢复会话、发送重试、弱网、断网、重复点击、前后台切换；
 - 小记创建、编辑、删除、图片上传、历史、搜索和日历；

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 
 const require = createRequire(import.meta.url);
 const storage = new Map();
@@ -25,6 +26,17 @@ const authPath = require.resolve("../miniprogram-project/utils/auth.js");
 const apiPath = require.resolve("../miniprogram-project/api/auth.js");
 const homePath = require.resolve("../miniprogram-project/pages/home/home.js");
 const mePath = require.resolve("../miniprogram-project/pages/me/me.js");
+const homeWxml = readFileSync(new URL("../miniprogram-project/pages/home/home.wxml", import.meta.url), "utf8");
+const meWxml = readFileSync(new URL("../miniprogram-project/pages/me/me.wxml", import.meta.url), "utf8");
+const privacyWxml = readFileSync(new URL("../miniprogram-project/pages/privacy/privacy.wxml", import.meta.url), "utf8");
+for (const label of ["微信登录", "手机号登录"]) {
+  assert.match(homeWxml, new RegExp(label));
+  assert.match(meWxml, new RegExp(label));
+}
+assert.match(homeWxml, /游客模式/);
+assert.match(privacyWxml, /选择微信登录.*登录凭证和对应的账号标识/);
+assert.match(privacyWxml, /微信登录不会自动获取你的手机号、头像或昵称/);
+assert.match(privacyWxml, /选择手机号登录.*微信系统界面选择的手机号/);
 const auth = require(authPath);
 const future = new Date(Date.now() + 60_000).toISOString();
 const validAuth = {
@@ -34,7 +46,20 @@ const validAuth = {
 };
 
 assert.equal(auth.isUsableAuth(validAuth), true);
-for (const invalid of [null, {}, [], { token: "x" }, { token: "local_demo_x", expiresAt: future }, { token: "x", expiresAt: "bad" }, { token: "x", expiresAt: new Date(0).toISOString() }]) {
+for (const invalid of [
+  null,
+  {},
+  [],
+  { token: "x" },
+  { token: "local_demo_x", expiresAt: future },
+  { token: "x", expiresAt: "bad" },
+  { token: "x", expiresAt: new Date(0).toISOString() },
+  { token: "x", expiresAt: future },
+  { token: "x", expiresAt: future, user: null },
+  { token: "x", expiresAt: future, user: [] },
+  { token: "x", expiresAt: future, user: { id: "" } },
+  { token: "x", expiresAt: future, user: { id: "   " } }
+]) {
   assert.equal(auth.isUsableAuth(invalid), false);
 }
 storage.set("xinqingAuth", { token: "expired", expiresAt: new Date(0).toISOString() });
@@ -47,6 +72,16 @@ storage.set("xinqingMiniNoteDraft:v1", preservedDraft);
 auth.saveAuth(validAuth);
 for (const key of ["xinqingMiniGuestChatMessages", "xinqingMiniGuestNotes"]) assert.equal(storage.has(key), false);
 assert.deepEqual(storage.get("xinqingMiniNoteDraft:v1"), preservedDraft);
+
+storage.clear();
+const originalRemoveStorageSync = wx.removeStorageSync;
+wx.removeStorageSync = (key) => {
+  if (key === "xinqingMiniNotes") throw new Error("storage unavailable");
+  return originalRemoveStorageSync(key);
+};
+assert.throws(() => auth.saveAuth(validAuth), /storage unavailable/);
+assert.equal(storage.has("xinqingAuth"), false, "failed cleanup must not persist new auth");
+wx.removeStorageSync = originalRemoveStorageSync;
 
 storage.set("xinqing_api_env", "local");
 storage.set("xinqing_api_base_url", "http://attacker.invalid");
@@ -62,11 +97,49 @@ wx.getAccountInfoSync = () => ({ miniProgram: { envVersion: runtimeEnvVersion } 
 runtimeEnvVersion = "develop";
 assert.equal(apiConfig.getApiBaseUrl(), "http://attacker.invalid");
 
+const { request } = require("../miniprogram-project/utils/request.js");
+let pendingRequest;
+wx.request = (options) => { pendingRequest = options; };
+const userBAuth = { ...validAuth, token: "user-b-token", user: { ...validAuth.user, id: "user-b" } };
+
+storage.clear();
+auth.saveAuth(validAuth);
+const stale401 = request({ url: "/test" }).catch((error) => error);
+auth.saveAuth(userBAuth);
+pendingRequest.success({ statusCode: 401 });
+assert.match((await stale401).message, /登录状态已过期/);
+assert.equal(auth.getAuth().token, "user-b-token", "late 401 from user A must not clear user B");
+
+storage.clear();
+auth.saveAuth(validAuth);
+const guest401 = request({ url: "/test" }).catch((error) => error);
+auth.enterGuest();
+pendingRequest.success({ statusCode: 401 });
+await guest401;
+assert.equal(auth.getAuth(), null);
+assert.equal(auth.isGuest(), true, "late 401 must not clear guest mode");
+
+storage.clear();
+auth.saveAuth(validAuth);
+const current401 = request({ url: "/test" }).catch((error) => error);
+pendingRequest.success({ statusCode: 401 });
+await current401;
+assert.equal(auth.getAuth(), null, "401 for the current token must clear auth");
+
+storage.clear();
+auth.saveAuth(validAuth);
+const public401 = request({ url: "/auth/login", auth: false }).catch((error) => error);
+pendingRequest.success({ statusCode: 401 });
+await public401;
+assert.equal(auth.getAuth().token, validAuth.token, "401 from an unauthenticated request must not clear auth");
+
 let getMeImpl = () => Promise.resolve({ user: validAuth.user });
 let phoneLoginImpl = () => Promise.resolve(validAuth);
+let wechatLoginImpl = () => Promise.resolve(validAuth);
 const api = require(apiPath);
 api.getMe = () => getMeImpl();
 api.loginWithWechatPhone = (codes) => phoneLoginImpl(codes);
+api.loginWithWechat = (code) => wechatLoginImpl(code);
 
 const loadPage = (path) => {
   let definition;
@@ -133,6 +206,10 @@ assert.equal(wxLoginCalls, 0);
 assert.equal(unconfirmedHome.data.phoneLoginReady, false);
 assert.match(unconfirmedHome.data.entryError, /隐私政策/);
 
+unconfirmedHome.loginWithWechatAccount();
+assert.equal(wxLoginCalls, 0, "unconfirmed WeChat login must not call wx.login");
+assert.match(unconfirmedHome.data.entryError, /隐私政策/);
+
 const preparedHome = loadPage(homePath);
 preparedHome.data.privacyConfirmed = true;
 preparedHome.preparePhoneLogin();
@@ -140,14 +217,152 @@ await tick();
 assert.equal(preparedHome.data.phoneLoginReady, true);
 assert.equal(wxLoginCalls, 0, "preparing privacy must not request a phone or login code");
 
+storage.clear();
+const staleWechatPrivacyHome = loadPage(homePath);
+staleWechatPrivacyHome.data.privacyConfirmed = true;
+let resolveWechatPrivacy;
+wx.getPrivacySetting = ({ success }) => { resolveWechatPrivacy = success; };
+wxLoginCalls = 0;
+wx.login = () => { wxLoginCalls += 1; };
+let staleWechatApiCalls = 0;
+wechatLoginImpl = () => { staleWechatApiCalls += 1; return Promise.resolve(validAuth); };
+staleWechatPrivacyHome.loginWithWechatAccount();
+staleWechatPrivacyHome.enterGuest();
+resolveWechatPrivacy({ needAuthorization: false });
+await tick();
+assert.equal(wxLoginCalls, 0, "stale privacy resolution must not call wx.login");
+assert.equal(staleWechatApiCalls, 0, "stale privacy resolution must not call login API");
+assert.equal(auth.isGuest(), true);
+
+storage.clear();
+const cancelledWechatPrivacyMe = loadPage(mePath);
+cancelledWechatPrivacyMe.data.privacyConfirmed = true;
+wx.getPrivacySetting = ({ success }) => { resolveWechatPrivacy = success; };
+wxLoginCalls = 0;
+wx.login = () => { wxLoginCalls += 1; };
+staleWechatApiCalls = 0;
+cancelledWechatPrivacyMe.loginWithWechatAccount();
+cancelledWechatPrivacyMe.togglePrivacy({ detail: { value: [] } });
+resolveWechatPrivacy({ needAuthorization: false });
+await tick();
+assert.equal(wxLoginCalls, 0, "revoked privacy confirmation must not call wx.login");
+assert.equal(staleWechatApiCalls, 0, "revoked privacy confirmation must not call login API");
+assert.equal(cancelledWechatPrivacyMe.data.isLoggingIn, false);
+
+storage.clear();
+let redirectedTo = "";
+wx.redirectTo = ({ url }) => { redirectedTo = url; };
+const wechatHome = loadPage(homePath);
+wechatHome.data.privacyConfirmed = true;
+let wechatApiCalls = 0;
+const wechatLoginOrder = [];
+wechatLoginImpl = (code) => {
+  wechatLoginOrder.push("api");
+  wechatApiCalls += 1;
+  assert.equal(code, "wechat-account-code");
+  return Promise.resolve({ ...validAuth, user: { ...validAuth.user, phone: null } });
+};
+wx.getPrivacySetting = ({ success }) => {
+  wechatLoginOrder.push("privacy");
+  success({ needAuthorization: false });
+};
+wx.login = ({ success }) => {
+  wechatLoginOrder.push("wx.login");
+  success({ code: "wechat-account-code" });
+};
+wechatHome.loginWithWechatAccount();
+await tick();
+await tick();
+assert.equal(wechatApiCalls, 1);
+assert.deepEqual(wechatLoginOrder, ["privacy", "wx.login", "api"]);
+assert.equal(auth.getAuth().user.phone, null, "WeChat login must not request or invent a phone");
+assert.equal(redirectedTo, "/pages/me/me?completeProfile=1");
+
+storage.clear();
+const emptyWechatHome = loadPage(homePath);
+emptyWechatHome.data.privacyConfirmed = true;
+wechatApiCalls = 0;
+wx.login = ({ success }) => success({ code: "" });
+emptyWechatHome.loginWithWechatAccount();
+await tick();
+assert.equal(wechatApiCalls, 0);
+assert.match(emptyWechatHome.data.entryError, /有效登录凭证/);
+assert.equal(auth.getAuth(), null);
+assert.equal(auth.isGuest(), false);
+assert.equal(emptyWechatHome.data.isLoggingIn, false);
+
+storage.clear();
+const failedWxHome = loadPage(homePath);
+failedWxHome.data.privacyConfirmed = true;
+wx.login = ({ fail }) => fail(new Error("private wx detail"));
+failedWxHome.loginWithWechatAccount();
+await tick();
+assert.equal(auth.getAuth(), null);
+assert.equal(auth.isGuest(), false);
+assert.equal(failedWxHome.data.isLoggingIn, false);
+assert.match(failedWxHome.data.entryError, /微信登录失败/);
+
+storage.clear();
+const rejectedWechatHome = loadPage(homePath);
+rejectedWechatHome.data.privacyConfirmed = true;
+wx.login = ({ success }) => success({ code: "rejected-wechat-code" });
+wechatLoginImpl = () => Promise.reject(new Error("登录服务拒绝"));
+rejectedWechatHome.loginWithWechatAccount();
+await tick();
+await tick();
+assert.equal(auth.getAuth(), null);
+assert.equal(auth.isGuest(), false);
+assert.equal(rejectedWechatHome.data.isLoggingIn, false);
+assert.match(rejectedWechatHome.data.entryError, /登录服务拒绝/);
+
+storage.clear();
+const invalidWechatHome = loadPage(homePath);
+invalidWechatHome.data.privacyConfirmed = true;
+wechatLoginImpl = () => Promise.resolve({ token: "malformed-token", expiresAt: future });
+invalidWechatHome.loginWithWechatAccount();
+await tick();
+await tick();
+assert.equal(auth.getAuth(), null);
+assert.equal(auth.isGuest(), false);
+assert.equal(invalidWechatHome.data.isLoggingIn, false);
+assert.match(invalidWechatHome.data.entryError, /登录响应无效/);
+
+storage.clear();
+const guestDuringWechatHome = loadPage(homePath);
+guestDuringWechatHome.data.privacyConfirmed = true;
+let resolveGuestWechatLogin;
+wechatLoginImpl = () => new Promise((resolve) => { resolveGuestWechatLogin = resolve; });
+wx.login = ({ success }) => success({ code: "guest-late-wechat-code" });
+guestDuringWechatHome.loginWithWechatAccount();
+await tick();
+guestDuringWechatHome.enterGuest();
+resolveGuestWechatLogin(validAuth);
+await tick();
+assert.equal(auth.getAuth(), null);
+assert.equal(auth.isGuest(), true);
+assert.equal(guestDuringWechatHome.data.isLoggingIn, false);
+
+storage.clear();
+const staleWechatHome = loadPage(homePath);
+staleWechatHome.data.privacyConfirmed = true;
+let resolveWechatLogin;
+wechatLoginImpl = () => new Promise((resolve) => { resolveWechatLogin = resolve; });
+wx.login = ({ success }) => success({ code: "late-wechat-code" });
+staleWechatHome.loginWithWechatAccount();
+await tick();
+const switchedAuth = { ...validAuth, token: "user-b-token", user: { ...validAuth.user, id: "user-b" } };
+auth.saveAuth(switchedAuth);
+resolveWechatLogin(validAuth);
+await tick();
+assert.equal(auth.getAuth().user.id, "user-b", "late WeChat response must not overwrite a switched account");
+
 let phoneLoginCalls = 0;
 phoneLoginImpl = () => { phoneLoginCalls += 1; return Promise.resolve(validAuth); };
 preparedHome.handlePhoneNumber({ detail: {} });
 assert.equal(phoneLoginCalls, 0);
 assert.match(preparedHome.data.entryError, /取消手机号授权/);
 
-let redirectedTo = "";
-wx.redirectTo = ({ url }) => { redirectedTo = url; };
+redirectedTo = "";
 wx.login = ({ success }) => success({ code: "wechat-login-code" });
 preparedHome.handlePhoneNumber({ detail: { code: "phone-code" } });
 await tick();
@@ -212,5 +427,16 @@ await tick();
 await tick();
 assert.equal(me.data.isLoggedIn, true);
 assert.equal(me.data.profileEditing, true, "missing profile must open after phone login");
+
+storage.clear();
+const wechatMe = loadPage(mePath);
+wechatMe.data.privacyConfirmed = true;
+wechatLoginImpl = () => Promise.resolve({ ...validAuth, user: { ...validAuth.user, phone: null } });
+wx.login = ({ success }) => success({ code: "me-wechat-code" });
+wechatMe.loginWithWechatAccount();
+await tick();
+await tick();
+assert.equal(wechatMe.data.isLoggedIn, true);
+assert.equal(wechatMe.data.profileEditing, true, "missing profile must open after WeChat login");
 
 console.log("Miniapp login release check passed.");
