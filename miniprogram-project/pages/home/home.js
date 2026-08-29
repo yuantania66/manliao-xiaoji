@@ -76,8 +76,17 @@ Page({
     this.authCheckPending = true;
     this.setData({ showEntry: true, isCheckingAuth: true, entryError: "" });
     getMe()
-      .then(() => {
-        if (this.authCheckId !== checkId || !getAuth()) return;
+      .then(({ user }) => {
+        if (
+          this.authCheckId !== checkId ||
+          getAuth()?.user?.id !== auth.user.id ||
+          user.id !== auth.user.id
+        ) return;
+        if (!user.nickname || !user.avatarUrl) {
+          this.setData({ showEntry: true, entryError: "" });
+          wx.redirectTo({ url: "/pages/me/me?completeProfile=1" });
+          return;
+        }
         this.setData({ showEntry: false, entryError: "" });
       })
       .catch(() => {

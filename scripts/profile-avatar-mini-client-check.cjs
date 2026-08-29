@@ -3,14 +3,19 @@ const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 
 const meWxml = readFileSync(require.resolve("../miniprogram-project/pages/me/me.wxml"), "utf8");
+const meWxss = readFileSync(require.resolve("../miniprogram-project/pages/me/me.wxss"), "utf8");
 assert.match(meWxml, /profile-editor-layer[^>]*role="dialog"/u);
 assert.match(meWxml, /profile-avatar-preview/u);
 assert.ok(meWxml.includes('wx:if="{{isLoggedIn && profileEditing}}" class="profile-editor-layer"'));
+assert.doesNotMatch(meWxml, /profile-editor-mask/u);
+assert.doesNotMatch(meWxss, /profile-editor-mask/u);
 assert.match(meWxml, /class="profile-avatar-button"[^>]*bindtap="chooseProfileAvatarFromMedia"/u);
 assert.doesNotMatch(meWxml, /open-type="chooseAvatar"/u);
-assert.match(meWxml, /class="profile-nickname-input"[^>]*bindinput="inputNickname"/u);
+assert.match(meWxml, /class="profile-nickname-input"[^>]*type="text"[^>]*bindinput="inputNickname"/u);
+assert.doesNotMatch(meWxml, /type="nickname"/u);
 assert.match(meWxml, /bindtap="saveProfile"[^>]*>保存<\/button>/u);
-assert.match(meWxml, /bindtap="skipProfile"[^>]*>暂时跳过<\/button>/u);
+assert.ok(meWxml.includes('wx:if="{{profileRequired}}" class="secondary-button" bindtap="exitRequiredProfile"'));
+assert.match(meWxml, /wx:else[^>]*bindtap="skipProfile"[^>]*>取消<\/button>/u);
 
 const future = new Date(Date.now() + 60_000).toISOString();
 let auth = { token: "token-a", expiresAt: future, user: { id: "user-a", nickname: "旧昵称", avatarUrl: "/avatar/a" } };
@@ -21,8 +26,8 @@ let discardCalls = 0;
 let discardTokens = [];
 let cacheCalls = 0;
 let cacheShouldFail = false;
-let chooseMediaCalls = 0;
-let chooseMediaImplementation = (options) => options.fail({ errMsg: "chooseMedia:fail cancel" });
+let chooseImageCalls = 0;
+let chooseImageImplementation = (options) => options.fail({ errMsg: "chooseImage:fail cancel" });
 let uploadImplementation = () => Promise.resolve({ uploadId: "00000000-0000-4000-8000-000000000001" });
 let meImplementation = () => Promise.resolve({ user: auth.user });
 let updateImplementation = (body) => Promise.resolve({
@@ -33,18 +38,20 @@ global.getApp = () => ({ globalData: {} });
 global.wx = {
   redirectTo: () => undefined,
   login: () => undefined,
-  chooseMedia: (options) => {
-    chooseMediaCalls += 1;
+  showToast: () => undefined,
+  chooseImage: (options) => {
+    chooseImageCalls += 1;
     assert.deepEqual(options.count, 1);
-    assert.deepEqual(options.mediaType, ["image"]);
+    assert.deepEqual(options.sizeType, ["compressed"]);
     assert.deepEqual(options.sourceType, ["album", "camera"]);
-    chooseMediaImplementation(options);
+    chooseImageImplementation(options);
   }
 };
 global.Page = (definition) => { pageDefinition = definition; };
 
 const authPath = require.resolve("../miniprogram-project/utils/auth");
 require.cache[authPath] = { exports: {
+  clearAuth: () => { auth = null; },
   getAuth: () => auth,
   saveAuth: () => undefined,
   updateCachedUser: (expectedId, user) => {
@@ -101,7 +108,7 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 const selectAvatar = (page, filePath) => {
-  chooseMediaImplementation = (options) => options.success({ tempFiles: [{ tempFilePath: filePath }] });
+  chooseImageImplementation = (options) => options.success({ tempFilePaths: [filePath] });
   page.chooseProfileAvatarFromMedia();
 };
 
@@ -111,27 +118,28 @@ const selectAvatar = (page, filePath) => {
   await settle();
   assert.equal(page.data.profileNickname, "旧昵称");
   assert.equal(page.data.avatarPreview, "downloaded:/avatar/a");
+  assert.equal(page.data.profileRequired, false);
 
   page.editProfile();
   const authBeforeGuards = auth;
   auth = null;
   page.chooseProfileAvatarFromMedia();
-  assert.equal(chooseMediaCalls, 0, "logged-out users must not open the media chooser");
+  assert.equal(chooseImageCalls, 0, "logged-out users must not open the image chooser");
   auth = authBeforeGuards;
   page.setData({ isSavingProfile: true });
   page.chooseProfileAvatarFromMedia();
-  assert.equal(chooseMediaCalls, 0, "saving must lock the media chooser");
+  assert.equal(chooseImageCalls, 0, "saving must lock the image chooser");
   page.setData({ isSavingProfile: false });
 
   page.setData({ loginError: "" });
   const avatarBeforeCancel = page.data.avatarPreview;
   page.chooseProfileAvatarFromMedia();
-  assert.equal(chooseMediaCalls, 1, "cancel must still open the media chooser once");
-  assert.equal(page.data.loginError, "", "cancelling media selection must not show an error");
-  assert.equal(page.data.avatarPreview, avatarBeforeCancel, "cancelling media selection must preserve the current avatar");
-  assert.equal(page.data.avatarLocalPath, "", "cancelling media selection must not create an avatar draft");
+  assert.equal(chooseImageCalls, 1, "cancel must still open the image chooser once");
+  assert.equal(page.data.loginError, "", "cancelling image selection must not show an error");
+  assert.equal(page.data.avatarPreview, avatarBeforeCancel, "cancelling image selection must preserve the current avatar");
+  assert.equal(page.data.avatarLocalPath, "", "cancelling image selection must not create an avatar draft");
 
-  chooseMediaImplementation = (options) => options.fail({ errMsg: "chooseMedia:fail unavailable" });
+  chooseImageImplementation = (options) => options.fail({ errMsg: "chooseImage:fail unavailable" });
   page.chooseProfileAvatarFromMedia();
   assert.equal(page.data.loginError, "头像选择失败，请稍后重试。");
 
@@ -223,22 +231,55 @@ const selectAvatar = (page, filePath) => {
   });
   page.onShow();
   await settle();
-  page.editProfile();
+  assert.equal(page.data.profileRequired, true, "missing profile must enter required mode");
+  assert.equal(page.data.profileEditing, true, "required profile sheet must block the page");
+  page.skipProfile();
+  assert.equal(page.data.profileEditing, true, "required profile cannot be cancelled");
+  const updatesBeforeRequiredProfile = updateCalls.length;
+  page.saveProfile();
+  assert.equal(updateCalls.length, updatesBeforeRequiredProfile);
+  assert.match(page.data.loginError, /请输入昵称/u);
+  page.inputNickname({ detail: { value: "新用户" } });
+  page.saveProfile();
+  assert.equal(updateCalls.length, updatesBeforeRequiredProfile);
+  assert.match(page.data.loginError, /请选择头像/u);
+  page.inputNickname({ detail: { value: "" } });
   selectAvatar(page, "wxfile://avatar-only.jpg");
   assert.equal(page.data.avatarPreview, "wxfile://avatar-only.jpg");
-  const updatesBeforeAvatarOnly = updateCalls.length;
+  assert.equal(uploadCalls, 3, "selecting a required avatar must remain local until save");
+  page.saveProfile();
+  assert.equal(updateCalls.length, updatesBeforeRequiredProfile, "required profile cannot save without a nickname");
+  assert.match(page.data.loginError, /请输入昵称/u);
+  page.inputNickname({ detail: { value: "新用户" } });
   page.saveProfile();
   await settle();
-  assert.equal(updateCalls.length, updatesBeforeAvatarOnly + 1, "new account must be able to save avatar without nickname");
-  assert.deepEqual(updateCalls.at(-1), { avatarUploadId: "00000000-0000-4000-8000-000000000003" });
+  assert.equal(updateCalls.length, updatesBeforeRequiredProfile + 1, "required profile must save after nickname and avatar are present");
+  assert.deepEqual(updateCalls.at(-1), {
+    nickname: "新用户",
+    avatarUploadId: "00000000-0000-4000-8000-000000000003"
+  });
+  assert.equal(page.data.profileRequired, false);
   assert.equal(page.data.profileEditing, false);
 
-  auth = { ...auth, user: { ...auth.user, avatarUrl: "/avatar/new-c" } };
+  auth = { ...auth, user: { ...auth.user, nickname: "新用户", avatarUrl: "/avatar/new-c" } };
   page.editProfile();
   const updatesBeforeNoop = updateCalls.length;
   page.saveProfile();
   assert.equal(updateCalls.length, updatesBeforeNoop);
-  assert.match(page.data.loginError, /选择头像|修改昵称/u, "no-op save must explain what is required");
+  assert.match(page.data.loginError, /没有变化|取消/u, "complete profile no-op must explain that editing can be cancelled");
+
+  page.skipProfile();
+  assert.equal(page.data.profileEditing, false, "complete profile editing must remain cancellable");
+
+  auth = { token: "token-required-exit", expiresAt: future, user: { id: "required-exit", nickname: null, avatarUrl: null } };
+  meImplementation = () => Promise.resolve({ user: auth.user });
+  page.onShow();
+  assert.equal(page.data.profileRequired, true);
+  page.exitRequiredProfile();
+  assert.equal(auth, null, "required profile must allow returning to login choices");
+  assert.equal(page.data.isLoggedIn, false);
+  assert.equal(page.data.profileEditing, false);
+  assert.equal(page.data.profileRequired, false);
 
   console.log("Profile avatar Mini Program client checks passed.");
 })().catch((error) => {

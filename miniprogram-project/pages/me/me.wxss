@@ -27,11 +27,6 @@
   position: fixed;
   inset: 0;
   z-index: 90;
-}
-
-.profile-editor-mask {
-  position: absolute;
-  inset: 0;
   background: rgba(91, 83, 77, 0.28);
 }
 

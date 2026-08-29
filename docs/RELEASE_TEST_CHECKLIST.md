@@ -46,7 +46,7 @@ npm run check:release:required
 | `check:account-cancel-client-storage` | Web 当前账号缓存精确清理、失败与本地重试 |
 | `check:account-cancel-mini-client` | 小程序当前账号缓存精确清理、失败与本地重试 |
 | `check:profile-avatar-e2e` | 私有头像上传、绑定、替换与注销清理合同 |
-| `check:profile-avatar-mini-client` | 小程序资料跳过、账号隔离缓存与私有头像下载 |
+| `check:profile-avatar-mini-client` | 小程序新账号资料必填、手动头像选择、完整资料编辑取消、账号隔离缓存与私有头像下载 |
 | `check:wechat-phone-login-e2e` | 微信手机号换取、登录/注册、绑定冲突与并发隔离 |
 
 ### 2.2 既有综合门 `check:launch`
@@ -132,6 +132,8 @@ npm run check:release:required
 
 - 微信开发者工具编译、预览，无阻断错误；
 - 体验版 HTTPS 合法域名、真实 `code2Session` 微信登录、`getPhoneNumber` 系统授权和手机号登录，并保留游客入口；
+- 微信或手机号登录后，缺少昵称或头像时必须显示阻塞式资料弹层；手动选择相册/相机图片并填写昵称后才能完成，允许退出登录但不可跳过；已有完整资料再次编辑时可以取消；
+- 资料弹层不得读取微信头像或昵称；头像不要求真人照片，并核对隐私政策明确头像不进入 AI、不做人脸识别；
 - iOS 与 Android 各至少一台真机；
 - 新建/恢复会话、发送重试、弱网、断网、重复点击、前后台切换；
 - 小记创建、编辑、删除、图片上传、历史、搜索和日历；

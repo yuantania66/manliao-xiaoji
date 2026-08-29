@@ -16,9 +16,16 @@ global.wx = {
   getPrivacySetting: ({ success }) => success({ needAuthorization: false }),
   requirePrivacyAuthorize: ({ success }) => success(),
   openPrivacyContract: ({ success }) => success && success(),
+  chooseImage: () => {},
   redirectTo: () => {},
   showToast: () => {},
   getMenuButtonBoundingClientRect: () => ({ top: 24, bottom: 56, right: 360 }),
+  getSystemInfoSync: () => ({
+    statusBarHeight: 20,
+    windowWidth: 390,
+    screenHeight: 844,
+    safeArea: { bottom: 810 }
+  }),
   getWindowInfo: () => ({ screenHeight: 844, safeArea: { bottom: 810 } })
 };
 
@@ -43,12 +50,26 @@ for (const markup of [homeWxml, meWxml]) {
 assert.match(privacyWxml, /选择微信登录.*登录凭证和对应的账号标识/);
 assert.match(privacyWxml, /微信登录不会自动获取你的手机号、头像或昵称/);
 assert.match(privacyWxml, /选择手机号登录.*微信系统界面选择的手机号/);
+assert.doesNotMatch(meWxml, /profile-editor-mask/);
+assert.match(meWxml, /profileRequired \? "完善个人资料" : "编辑个人资料"/);
+assert.ok(meWxml.includes('wx:if="{{profileRequired}}" class="secondary-button" bindtap="exitRequiredProfile"'));
+assert.match(meWxml, /wx:else[^>]*bindtap="skipProfile"[^>]*>取消<\/button>/);
+assert.doesNotMatch(meWxml, /type="nickname"/);
+assert.match(privacyWxml, /手动选择头像并填写昵称/);
+assert.match(privacyWxml, /头像不要求是真人照片/);
+assert.match(privacyWxml, /不会读取你的微信头像或昵称/);
+assert.match(privacyWxml, /头像不会提供给 AI，也不会用于人脸识别/);
 const auth = require(authPath);
 const future = new Date(Date.now() + 60_000).toISOString();
 const validAuth = {
   token: "valid-token",
   expiresAt: future,
   user: { id: "user-a", phone: "13800000000", nickname: null, avatarUrl: null, createdAt: new Date().toISOString() }
+};
+const completeAuth = {
+  ...validAuth,
+  token: "complete-token",
+  user: { ...validAuth.user, id: "complete-user", nickname: "完整用户", avatarUrl: "/avatar/complete" }
 };
 
 assert.equal(auth.isUsableAuth(validAuth), true);
@@ -165,6 +186,8 @@ const tick = () => new Promise((resolve) => setImmediate(resolve));
 
 storage.clear();
 storage.set("xinqingAuth", validAuth);
+let redirectedTo = "";
+wx.redirectTo = ({ url }) => { redirectedTo = url; };
 const home = loadPage(homePath);
 let resolveCheck;
 let checks = 0;
@@ -177,8 +200,34 @@ home.reconcileAuth();
 assert.equal(checks, 1);
 resolveCheck({ user: validAuth.user });
 await tick();
-assert.equal(home.data.showEntry, false);
+assert.equal(home.data.showEntry, true, "incomplete restored account must not expose home functions");
+assert.equal(redirectedTo, "/pages/me/me?completeProfile=1");
 
+storage.clear();
+auth.saveAuth(completeAuth);
+redirectedTo = "";
+getMeImpl = () => Promise.resolve({ user: completeAuth.user });
+const completeHome = loadPage(homePath);
+completeHome.reconcileAuth();
+await tick();
+assert.equal(completeHome.data.showEntry, false);
+assert.equal(redirectedTo, "", "complete restored account must stay on home");
+
+storage.clear();
+auth.saveAuth(validAuth);
+redirectedTo = "";
+let resolveStaleHomeCheck;
+getMeImpl = () => new Promise((resolve) => { resolveStaleHomeCheck = resolve; });
+const staleAccountHome = loadPage(homePath);
+staleAccountHome.reconcileAuth();
+auth.saveAuth(completeAuth);
+resolveStaleHomeCheck({ user: validAuth.user });
+await tick();
+assert.equal(auth.getAuth().user.id, completeAuth.user.id);
+assert.equal(redirectedTo, "", "late incomplete user A check must not redirect complete user B");
+
+storage.clear();
+auth.saveAuth(validAuth);
 getMeImpl = () => Promise.reject(new Error("网络暂时不可用"));
 home.reconcileAuth();
 await tick();
@@ -277,7 +326,7 @@ assert.equal(staleWechatApiCalls, 0, "revoked privacy confirmation must not call
 assert.equal(cancelledWechatPrivacyMe.data.isLoggingIn, false);
 
 storage.clear();
-let redirectedTo = "";
+redirectedTo = "";
 wx.redirectTo = ({ url }) => { redirectedTo = url; };
 const wechatHome = loadPage(homePath);
 wechatHome.data.privacyConfirmed = true;
@@ -540,6 +589,15 @@ await tick();
 await tick();
 assert.equal(me.data.isLoggedIn, true);
 assert.equal(me.data.profileEditing, true, "missing profile must open after phone login");
+assert.equal(me.data.profileRequired, true, "missing phone-login profile must be required");
+getMeImpl = () => Promise.resolve({ user: validAuth.user });
+wx.chooseImage = ({ success }) => success({ tempFilePaths: ["wxfile://phone-login-avatar.jpg"] });
+me.chooseProfileAvatarFromMedia();
+me.inputNickname({ detail: { value: "手机号用户" } });
+me.onShow();
+await tick();
+assert.equal(me.data.avatarLocalPath, "wxfile://phone-login-avatar.jpg");
+assert.equal(me.data.profileNickname, "手机号用户", "phone-login draft must survive chooser onShow");
 
 storage.clear();
 const wechatMe = loadPage(mePath);
@@ -551,5 +609,27 @@ await tick();
 await tick();
 assert.equal(wechatMe.data.isLoggedIn, true);
 assert.equal(wechatMe.data.profileEditing, true, "missing profile must open after WeChat login");
+assert.equal(wechatMe.data.profileRequired, true, "missing WeChat-login profile must be required");
+getMeImpl = () => Promise.resolve({ user: auth.getAuth().user });
+wx.chooseImage = ({ success }) => success({ tempFilePaths: ["wxfile://wechat-login-avatar.jpg"] });
+wechatMe.chooseProfileAvatarFromMedia();
+wechatMe.inputNickname({ detail: { value: "微信用户" } });
+wechatMe.onShow();
+await tick();
+assert.equal(wechatMe.data.avatarLocalPath, "wxfile://wechat-login-avatar.jpg");
+assert.equal(wechatMe.data.profileNickname, "微信用户", "WeChat-login draft must survive chooser onShow");
+
+storage.clear();
+auth.saveAuth(completeAuth);
+getMeImpl = () => Promise.resolve({ user: completeAuth.user });
+const completeMe = loadPage(mePath);
+completeMe.onShow();
+await tick();
+assert.equal(completeMe.data.profileRequired, false);
+assert.equal(completeMe.data.profileEditing, false);
+completeMe.editProfile();
+assert.equal(completeMe.data.profileRequired, false);
+completeMe.skipProfile();
+assert.equal(completeMe.data.profileEditing, false, "complete profile editing must remain cancellable");
 
 console.log("Miniapp login release check passed.");

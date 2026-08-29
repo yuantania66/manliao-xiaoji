@@ -1,4 +1,4 @@
-const { getAuth, saveAuth, updateCachedUser } = require("../../utils/auth");
+const { clearAuth, getAuth, saveAuth, updateCachedUser } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
 const {
   getMe,
@@ -25,6 +25,8 @@ const getMembershipText = (auth) => {
   return membershipDays ? `已加入 ${membershipDays} 天` : "已登录";
 };
 
+const isProfileRequired = (user) => Boolean(user && (!user.nickname || !user.avatarUrl));
+
 Page({
   data: {
     pageTop: 92,
@@ -39,6 +41,7 @@ Page({
     activeTab: "me",
     switchingTab: false,
     profileEditing: false,
+    profileRequired: false,
     profileNickname: "",
     originalProfileNickname: "",
     avatarLocalPath: "",
@@ -55,6 +58,7 @@ Page({
     const auth = getAuth();
     const userId = auth?.user?.id || "";
     const userChanged = this.visibleUserId !== undefined && this.visibleUserId !== userId;
+    const profileRequired = isProfileRequired(auth?.user);
     const preserveProfileDraft = Boolean(auth && !userChanged && this.data.profileEditing);
     this.visibleUserId = userId;
     if (userChanged) this.profileSaveId = (this.profileSaveId || 0) + 1;
@@ -68,10 +72,8 @@ Page({
       avatarPreview: preserveProfileDraft ? this.data.avatarPreview : "",
       isSavingProfile: userChanged ? false : this.data.isSavingProfile,
       loginError: userChanged ? "" : this.data.loginError,
-      profileEditing: Boolean(auth && !userChanged && (
-        this.data.profileEditing ||
-        (this.completeProfileAfterLogin && (!auth.user.nickname || !auth.user.avatarUrl))
-      ))
+      profileRequired,
+      profileEditing: Boolean(auth && (profileRequired || (!userChanged && this.data.profileEditing)))
     });
     if (auth?.user?.avatarUrl) {
       const userId = auth.user.id;
@@ -96,6 +98,7 @@ Page({
       .then(({ user }) => {
         if (this.authCheckId !== checkId || getAuth()?.user?.id !== auth.user.id || user.id !== auth.user.id) return;
         const preserveProfileDraft = this.data.profileEditing;
+        const profileRequired = isProfileRequired(user);
         let cacheWarning = "";
         try {
           updateCachedUser(auth.user.id, user);
@@ -108,6 +111,8 @@ Page({
           connectionText: "微信账号已连接 · 云端同步已开启",
           profileNickname: preserveProfileDraft ? this.data.profileNickname : (user.nickname || ""),
           originalProfileNickname: preserveProfileDraft ? this.data.originalProfileNickname : (user.nickname || ""),
+          profileRequired,
+          profileEditing: preserveProfileDraft || profileRequired,
           loginError: cacheWarning
         });
         if (user.avatarUrl) {
@@ -221,13 +226,16 @@ Page({
         if (!auth) return;
         if (this.loginAttemptId !== attemptId || (getAuth()?.user?.id || "") !== startingUserId) return;
         saveAuth(auth);
+        this.visibleUserId = auth.user.id;
         this.completeProfileAfterLogin = false;
+        const profileRequired = isProfileRequired(auth.user);
         this.setData({
           isLoggedIn: true,
           membershipText: getMembershipText(auth),
           connectionText: "微信账号已连接 · 云端同步已开启",
           loginError: "",
-          profileEditing: !auth.user.nickname || !auth.user.avatarUrl,
+          profileRequired,
+          profileEditing: profileRequired,
           profileNickname: auth.user.nickname || "",
           originalProfileNickname: auth.user.nickname || "",
           avatarLocalPath: ""
@@ -269,14 +277,17 @@ Page({
       .then((auth) => {
         if (this.loginAttemptId !== attemptId || (getAuth()?.user?.id || "") !== startingUserId) return;
         saveAuth(auth);
+        this.visibleUserId = auth.user.id;
         this.completeProfileAfterLogin = false;
+        const profileRequired = isProfileRequired(auth.user);
         this.setData({
           isLoggedIn: true,
           membershipText: getMembershipText(auth),
           connectionText: "手机号已验证 · 云端同步已开启",
           loginError: "",
           phoneLoginReady: false,
-          profileEditing: !auth.user.nickname || !auth.user.avatarUrl,
+          profileRequired,
+          profileEditing: profileRequired,
           profileNickname: auth.user.nickname || "",
           originalProfileNickname: auth.user.nickname || "",
           avatarLocalPath: ""
@@ -296,12 +307,12 @@ Page({
     const auth = getAuth();
     if (!auth || this.data.isSavingProfile) return;
     const userId = auth.user.id;
-    wx.chooseMedia({
+    wx.chooseImage({
       count: 1,
-      mediaType: ["image"],
+      sizeType: ["compressed"],
       sourceType: ["album", "camera"],
       success: (result) => {
-        const filePath = result.tempFiles?.[0]?.tempFilePath;
+        const filePath = result.tempFilePaths?.[0];
         if (getAuth()?.user?.id !== userId || this.data.isSavingProfile) return;
         if (!filePath) {
           this.setData({ loginError: "未能读取头像，请重新选择。" });
@@ -330,12 +341,16 @@ Page({
     const nickname = this.data.profileNickname.trim();
     const nicknameChanged = nickname !== this.data.originalProfileNickname;
     const avatarLocalPath = this.data.avatarLocalPath;
-    if (nicknameChanged && !nickname) {
-      this.setData({ loginError: "昵称不能为空；也可以保留原昵称或只选择头像。" });
+    if (!nickname) {
+      this.setData({ loginError: "请输入昵称。" });
+      return;
+    }
+    if (!avatarLocalPath && !auth.user.avatarUrl) {
+      this.setData({ loginError: "请选择头像。" });
       return;
     }
     if (!nicknameChanged && !avatarLocalPath) {
-      this.setData({ loginError: "请先选择头像或修改昵称，也可以暂时跳过。" });
+      this.setData({ loginError: "资料没有变化，可以直接取消。" });
       return;
     }
     const operationId = (this.profileSaveId || 0) + 1;
@@ -358,6 +373,7 @@ Page({
       .then(({ user }) => {
         committed = true;
         if (this.profileSaveId !== operationId || getAuth()?.user?.id !== userId || user.id !== userId) return;
+        const profileRequired = isProfileRequired(user);
         let cacheWarning = "";
         try {
           updateCachedUser(userId, user);
@@ -365,11 +381,12 @@ Page({
           cacheWarning = "资料已保存到云端，但本机缓存暂未更新；重新进入后会再次同步。";
         }
         this.setData({
-          profileEditing: false,
+          profileRequired,
+          profileEditing: profileRequired,
           profileNickname: user.nickname || "",
           originalProfileNickname: user.nickname || "",
           avatarLocalPath: "",
-          loginError: cacheWarning
+          loginError: profileRequired ? "请补齐昵称和头像。" : cacheWarning
         });
         if (user.avatarUrl) {
           return downloadProfileAvatar(user.avatarUrl).then((filePath) => {
@@ -391,7 +408,7 @@ Page({
   },
 
   skipProfile() {
-    if (this.data.isSavingProfile) return;
+    if (this.data.isSavingProfile || this.data.profileRequired) return;
     const auth = getAuth();
     this.completeProfileAfterLogin = false;
     this.setData({
@@ -410,11 +427,25 @@ Page({
     }
   },
 
+  exitRequiredProfile() {
+    if (!this.data.profileRequired || this.data.isSavingProfile) return;
+    this.loginAttemptId = (this.loginAttemptId || 0) + 1;
+    this.authCheckId = (this.authCheckId || 0) + 1;
+    this.authCheckPending = false;
+    this.profileSaveId = (this.profileSaveId || 0) + 1;
+    this.completeProfileAfterLogin = false;
+    clearAuth();
+    this.onShow();
+    wx.showToast({ title: "已退出登录", icon: "none" });
+  },
+
   editProfile() {
     const auth = getAuth();
     if (!auth) return;
+    const profileRequired = isProfileRequired(auth.user);
     this.setData({
       profileEditing: true,
+      profileRequired,
       profileNickname: auth.user.nickname || "",
       originalProfileNickname: auth.user.nickname || "",
       avatarLocalPath: "",
