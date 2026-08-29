@@ -292,11 +292,30 @@ Page({
       });
   },
 
-  chooseAvatar(event) {
-    const filePath = event.detail && event.detail.avatarUrl;
-    if (!filePath || this.data.isSavingProfile) return;
-    if (!getAuth()?.user?.id) return;
-    this.setData({ avatarLocalPath: filePath, avatarPreview: filePath, loginError: "" });
+  chooseProfileAvatarFromMedia() {
+    const auth = getAuth();
+    if (!auth || this.data.isSavingProfile) return;
+    const userId = auth.user.id;
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ["image"],
+      sourceType: ["album", "camera"],
+      success: (result) => {
+        const filePath = result.tempFiles?.[0]?.tempFilePath;
+        if (getAuth()?.user?.id !== userId || this.data.isSavingProfile) return;
+        if (!filePath) {
+          this.setData({ loginError: "未能读取头像，请重新选择。" });
+          return;
+        }
+        this.setData({ avatarLocalPath: filePath, avatarPreview: filePath, loginError: "" });
+      },
+      fail: (error) => {
+        if (String(error?.errMsg || "").includes("cancel")) return;
+        if (getAuth()?.user?.id === userId && !this.data.isSavingProfile) {
+          this.setData({ loginError: "头像选择失败，请稍后重试。" });
+        }
+      }
+    });
   },
 
   inputNickname(event) {

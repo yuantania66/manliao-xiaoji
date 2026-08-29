@@ -6,7 +6,8 @@ const meWxml = readFileSync(require.resolve("../miniprogram-project/pages/me/me.
 assert.match(meWxml, /profile-editor-layer[^>]*role="dialog"/u);
 assert.match(meWxml, /profile-avatar-preview/u);
 assert.ok(meWxml.includes('wx:if="{{isLoggedIn && profileEditing}}" class="profile-editor-layer"'));
-assert.match(meWxml, /open-type="chooseAvatar"[^>]*bindchooseavatar="chooseAvatar"/u);
+assert.match(meWxml, /class="profile-avatar-button"[^>]*bindtap="chooseProfileAvatarFromMedia"/u);
+assert.doesNotMatch(meWxml, /open-type="chooseAvatar"/u);
 assert.match(meWxml, /class="profile-nickname-input"[^>]*bindinput="inputNickname"/u);
 assert.match(meWxml, /bindtap="saveProfile"[^>]*>保存<\/button>/u);
 assert.match(meWxml, /bindtap="skipProfile"[^>]*>暂时跳过<\/button>/u);
@@ -20,6 +21,8 @@ let discardCalls = 0;
 let discardTokens = [];
 let cacheCalls = 0;
 let cacheShouldFail = false;
+let chooseMediaCalls = 0;
+let chooseMediaImplementation = (options) => options.fail({ errMsg: "chooseMedia:fail cancel" });
 let uploadImplementation = () => Promise.resolve({ uploadId: "00000000-0000-4000-8000-000000000001" });
 let meImplementation = () => Promise.resolve({ user: auth.user });
 let updateImplementation = (body) => Promise.resolve({
@@ -27,7 +30,17 @@ let updateImplementation = (body) => Promise.resolve({
 });
 
 global.getApp = () => ({ globalData: {} });
-global.wx = { redirectTo: () => undefined, login: () => undefined };
+global.wx = {
+  redirectTo: () => undefined,
+  login: () => undefined,
+  chooseMedia: (options) => {
+    chooseMediaCalls += 1;
+    assert.deepEqual(options.count, 1);
+    assert.deepEqual(options.mediaType, ["image"]);
+    assert.deepEqual(options.sourceType, ["album", "camera"]);
+    chooseMediaImplementation(options);
+  }
+};
 global.Page = (definition) => { pageDefinition = definition; };
 
 const authPath = require.resolve("../miniprogram-project/utils/auth");
@@ -87,6 +100,10 @@ const deferred = () => {
   const promise = new Promise((done, fail) => { resolve = done; reject = fail; });
   return { promise, resolve, reject };
 };
+const selectAvatar = (page, filePath) => {
+  chooseMediaImplementation = (options) => options.success({ tempFiles: [{ tempFilePath: filePath }] });
+  page.chooseProfileAvatarFromMedia();
+};
 
 (async () => {
   const page = createPage();
@@ -96,14 +113,35 @@ const deferred = () => {
   assert.equal(page.data.avatarPreview, "downloaded:/avatar/a");
 
   page.editProfile();
-  page.chooseAvatar({ detail: { avatarUrl: "wxfile://resume-picked.jpg" } });
+  const authBeforeGuards = auth;
+  auth = null;
+  page.chooseProfileAvatarFromMedia();
+  assert.equal(chooseMediaCalls, 0, "logged-out users must not open the media chooser");
+  auth = authBeforeGuards;
+  page.setData({ isSavingProfile: true });
+  page.chooseProfileAvatarFromMedia();
+  assert.equal(chooseMediaCalls, 0, "saving must lock the media chooser");
+  page.setData({ isSavingProfile: false });
+
+  page.setData({ loginError: "" });
+  const avatarBeforeCancel = page.data.avatarPreview;
+  page.chooseProfileAvatarFromMedia();
+  assert.equal(chooseMediaCalls, 1, "cancel must still open the media chooser once");
+  assert.equal(page.data.loginError, "", "cancelling media selection must not show an error");
+  assert.equal(page.data.avatarPreview, avatarBeforeCancel, "cancelling media selection must preserve the current avatar");
+  assert.equal(page.data.avatarLocalPath, "", "cancelling media selection must not create an avatar draft");
+
+  chooseMediaImplementation = (options) => options.fail({ errMsg: "chooseMedia:fail unavailable" });
+  page.chooseProfileAvatarFromMedia();
+  assert.equal(page.data.loginError, "头像选择失败，请稍后重试。");
+
+  selectAvatar(page, "wxfile://resume-picked.jpg");
   page.inputNickname({ detail: { value: "恢复后保留" } });
   page.onShow();
   await settle();
   assert.equal(page.data.avatarLocalPath, "wxfile://resume-picked.jpg", "returning from the native chooser must preserve the selected avatar");
   assert.equal(page.data.avatarPreview, "wxfile://resume-picked.jpg", "late cloud avatar download must not replace the local preview");
   assert.equal(page.data.profileNickname, "恢复后保留", "returning from the native chooser must preserve the nickname draft");
-  page.chooseAvatar({ detail: {} });
   page.skipProfile();
   assert.equal(page.data.profileEditing, false, "skip must close the profile sheet");
   assert.equal(page.data.isSavingProfile, false, "skip must leave the page interactive");
@@ -111,7 +149,7 @@ const deferred = () => {
   assert.equal(updateCalls.length, 0, "skip must make no profile request");
 
   page.editProfile();
-  page.chooseAvatar({ detail: { avatarUrl: "wxfile://avatar-a.jpg" } });
+  selectAvatar(page, "wxfile://avatar-a.jpg");
   assert.equal(uploadCalls, 0, "choosing an avatar must only create a local preview");
   cacheShouldFail = true;
   page.inputNickname({ detail: { value: "新昵称" } });
@@ -139,7 +177,7 @@ const deferred = () => {
   const lateUpload = deferred();
   uploadImplementation = () => lateUpload.promise;
   page.editProfile();
-  page.chooseAvatar({ detail: { avatarUrl: "wxfile://late-a.jpg" } });
+  selectAvatar(page, "wxfile://late-a.jpg");
   page.saveProfile();
   assert.equal(uploadCalls, 2);
   auth = { token: "token-b", expiresAt: future, user: { id: "user-b", nickname: "用户 B", avatarUrl: "/avatar/b" } };
@@ -166,7 +204,7 @@ const deferred = () => {
   page.onShow();
   await settle();
   page.editProfile();
-  page.chooseAvatar({ detail: { avatarUrl: "wxfile://patch-pending.jpg" } });
+  selectAvatar(page, "wxfile://patch-pending.jpg");
   page.saveProfile();
   await settle(1);
   auth = { token: "token-patch-b", expiresAt: future, user: { id: "patch-b", nickname: "B", avatarUrl: null } };
@@ -186,7 +224,7 @@ const deferred = () => {
   page.onShow();
   await settle();
   page.editProfile();
-  page.chooseAvatar({ detail: { avatarUrl: "wxfile://avatar-only.jpg" } });
+  selectAvatar(page, "wxfile://avatar-only.jpg");
   assert.equal(page.data.avatarPreview, "wxfile://avatar-only.jpg");
   const updatesBeforeAvatarOnly = updateCalls.length;
   page.saveProfile();

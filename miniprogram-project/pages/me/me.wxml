@@ -15,7 +15,7 @@
     <view class="profile-editor-sheet">
       <view class="entry-title">完善个人资料（可跳过）</view>
       <view class="entry-copy">头像和昵称可以分别选择，仅用于你的账号展示。跳过不会影响使用。</view>
-      <button class="profile-avatar-button" open-type="chooseAvatar" bindchooseavatar="chooseAvatar" loading="{{isSavingProfile}}">
+      <button class="profile-avatar-button" bindtap="chooseProfileAvatarFromMedia" disabled="{{isSavingProfile}}">
         <image wx:if="{{avatarPreview}}" class="profile-avatar-preview" src="{{avatarPreview}}" mode="aspectFill" />
         <view wx:else class="profile-avatar-preview profile-avatar-placeholder">选择头像</view>
       </button>
