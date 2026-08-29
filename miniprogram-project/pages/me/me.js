@@ -55,16 +55,17 @@ Page({
     const auth = getAuth();
     const userId = auth?.user?.id || "";
     const userChanged = this.visibleUserId !== undefined && this.visibleUserId !== userId;
+    const preserveProfileDraft = Boolean(auth && !userChanged && this.data.profileEditing);
     this.visibleUserId = userId;
     if (userChanged) this.profileSaveId = (this.profileSaveId || 0) + 1;
     this.setData({
       isLoggedIn: Boolean(auth),
       membershipText: getMembershipText(auth),
       connectionText: auth ? "微信账号已连接 · 云端同步已开启" : "未连接微信账号",
-      profileNickname: auth?.user?.nickname || "",
-      originalProfileNickname: auth?.user?.nickname || "",
-      avatarLocalPath: "",
-      avatarPreview: "",
+      profileNickname: preserveProfileDraft ? this.data.profileNickname : (auth?.user?.nickname || ""),
+      originalProfileNickname: preserveProfileDraft ? this.data.originalProfileNickname : (auth?.user?.nickname || ""),
+      avatarLocalPath: preserveProfileDraft ? this.data.avatarLocalPath : "",
+      avatarPreview: preserveProfileDraft ? this.data.avatarPreview : "",
       isSavingProfile: userChanged ? false : this.data.isSavingProfile,
       loginError: userChanged ? "" : this.data.loginError,
       profileEditing: Boolean(auth && !userChanged && (
@@ -75,7 +76,9 @@ Page({
     if (auth?.user?.avatarUrl) {
       const userId = auth.user.id;
       downloadProfileAvatar(auth.user.avatarUrl).then((filePath) => {
-        if (getAuth()?.user?.id === userId) this.setData({ avatarPreview: filePath });
+        if (getAuth()?.user?.id === userId && !this.data.avatarLocalPath) {
+          this.setData({ avatarPreview: filePath });
+        }
       }).catch(() => undefined);
     }
     if (auth) this.reconcileAuth();
@@ -92,6 +95,7 @@ Page({
     getMe()
       .then(({ user }) => {
         if (this.authCheckId !== checkId || getAuth()?.user?.id !== auth.user.id || user.id !== auth.user.id) return;
+        const preserveProfileDraft = this.data.profileEditing;
         let cacheWarning = "";
         try {
           updateCachedUser(auth.user.id, user);
@@ -102,13 +106,15 @@ Page({
           isLoggedIn: true,
           membershipText: getMembershipText({ ...auth, user }),
           connectionText: "微信账号已连接 · 云端同步已开启",
-          profileNickname: user.nickname || "",
-          originalProfileNickname: user.nickname || "",
+          profileNickname: preserveProfileDraft ? this.data.profileNickname : (user.nickname || ""),
+          originalProfileNickname: preserveProfileDraft ? this.data.originalProfileNickname : (user.nickname || ""),
           loginError: cacheWarning
         });
         if (user.avatarUrl) {
           downloadProfileAvatar(user.avatarUrl).then((filePath) => {
-            if (getAuth()?.user?.id === user.id) this.setData({ avatarPreview: filePath });
+            if (getAuth()?.user?.id === user.id && !this.data.avatarLocalPath) {
+              this.setData({ avatarPreview: filePath });
+            }
           }).catch(() => undefined);
         }
       })

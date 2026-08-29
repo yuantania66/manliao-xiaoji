@@ -6,6 +6,10 @@ const meWxml = readFileSync(require.resolve("../miniprogram-project/pages/me/me.
 assert.match(meWxml, /profile-editor-layer[^>]*role="dialog"/u);
 assert.match(meWxml, /profile-avatar-preview/u);
 assert.ok(meWxml.includes('wx:if="{{isLoggedIn && profileEditing}}" class="profile-editor-layer"'));
+assert.match(meWxml, /open-type="chooseAvatar"[^>]*bindchooseavatar="chooseAvatar"/u);
+assert.match(meWxml, /class="profile-nickname-input"[^>]*bindinput="inputNickname"/u);
+assert.match(meWxml, /bindtap="saveProfile"[^>]*>保存<\/button>/u);
+assert.match(meWxml, /bindtap="skipProfile"[^>]*>暂时跳过<\/button>/u);
 
 const future = new Date(Date.now() + 60_000).toISOString();
 let auth = { token: "token-a", expiresAt: future, user: { id: "user-a", nickname: "旧昵称", avatarUrl: "/avatar/a" } };
@@ -92,8 +96,17 @@ const deferred = () => {
   assert.equal(page.data.avatarPreview, "downloaded:/avatar/a");
 
   page.editProfile();
+  page.chooseAvatar({ detail: { avatarUrl: "wxfile://resume-picked.jpg" } });
+  page.inputNickname({ detail: { value: "恢复后保留" } });
+  page.onShow();
+  await settle();
+  assert.equal(page.data.avatarLocalPath, "wxfile://resume-picked.jpg", "returning from the native chooser must preserve the selected avatar");
+  assert.equal(page.data.avatarPreview, "wxfile://resume-picked.jpg", "late cloud avatar download must not replace the local preview");
+  assert.equal(page.data.profileNickname, "恢复后保留", "returning from the native chooser must preserve the nickname draft");
   page.chooseAvatar({ detail: {} });
   page.skipProfile();
+  assert.equal(page.data.profileEditing, false, "skip must close the profile sheet");
+  assert.equal(page.data.isSavingProfile, false, "skip must leave the page interactive");
   assert.equal(uploadCalls, 0, "cancelled chooser and skip must make no upload request");
   assert.equal(updateCalls.length, 0, "skip must make no profile request");
 
