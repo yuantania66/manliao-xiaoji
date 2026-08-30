@@ -6,7 +6,7 @@
     <view class="sheet-title compact">选择进入方式</view>
     <checkbox-group class="consent" bindchange="togglePrivacy">
       <label><checkbox value="confirmed" checked="{{privacyConfirmed}}" color="#71877b" />同意</label>
-      <navigator url="/pages/privacy/privacy" hover-class="none">《用户协议》与《隐私政策》</navigator>
+      <navigator url="/pages/privacy/privacy" hover-class="none">《隐私政策》</navigator>
     </checkbox-group>
     <view wx:if="{{error}}" class="error">{{error}}</view>
     <button class="action primary" bindtap="loginWechat" loading="{{busy}}" disabled="{{busy}}">微信登录</button>

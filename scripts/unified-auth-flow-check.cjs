@@ -9,6 +9,8 @@ assert.match(wxml, /open-type="chooseAvatar"[^>]*bindchooseavatar="chooseWechatA
 assert.match(wxml, /type="nickname"[^>]*maxlength="12"/u);
 assert.match(wxml, /bindtap="chooseAlbum"/u);
 assert.match(wxml, /bindtap="takePhoto"/u);
+assert.match(wxml, /《隐私政策》/u);
+assert.doesNotMatch(wxml, /用户协议/u);
 
 const future = new Date(Date.now() + 60000).toISOString();
 let storedAuth = null;
