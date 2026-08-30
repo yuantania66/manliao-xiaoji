@@ -28,7 +28,9 @@ const getMembershipText = (auth) => {
   return membershipDays ? `已加入 ${membershipDays} 天` : "已登录";
 };
 
-const isProfileRequired = (user) => Boolean(user && (!user.nickname || !user.avatarUrl));
+const isProfileRequired = (user) => Boolean(
+  user && (!user.nickname || !user.avatarUrl || user.profileCompletedAt === null)
+);
 const GUEST_AVATAR_GRADIENTS = [
   "linear-gradient(135deg, #71877b, #f4e4d3)",
   "linear-gradient(135deg, #8fa99a, #d9c5aa)",

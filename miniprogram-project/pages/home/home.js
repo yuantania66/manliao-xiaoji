@@ -93,7 +93,7 @@ Page({
           getAuth()?.user?.id !== auth.user.id ||
           user.id !== auth.user.id
         ) return;
-        if (!user.nickname || !user.avatarUrl) {
+        if (!user.nickname || !user.avatarUrl || user.profileCompletedAt === null) {
           wx.redirectTo({ url: "/pages/auth/auth" });
           return;
         }

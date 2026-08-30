@@ -87,7 +87,16 @@ const smsKeys = [
 ];
 const missingSms = smsKeys.filter((key) => isPlaceholder(value(key)));
 if (missingSms.length > 0) {
-  warn(`SMS production config is incomplete: ${missingSms.join(", ")}`);
+  fail(`SMS production config is incomplete: ${missingSms.join(", ")}`);
+}
+if (
+  isPlaceholder(value("TENCENT_SMS_TEMPLATE_ID")) &&
+  (
+    isPlaceholder(value("TENCENT_SMS_TEMPLATE_ID_LOGIN")) ||
+    isPlaceholder(value("TENCENT_SMS_TEMPLATE_ID_CANCEL"))
+  )
+) {
+  fail("SMS production config requires TENCENT_SMS_TEMPLATE_ID or both login and cancellation template IDs");
 }
 
 const numericKeys = ["SESSION_EXPIRES_DAYS", "AI_TIMEOUT_MS", "GUEST_AI_IP_DAILY_LIMIT", "MAX_NOTE_IMAGE_SIZE_MB"];

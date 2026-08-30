@@ -77,7 +77,7 @@ const validAuth = {
 const completeAuth = {
   ...validAuth,
   token: "complete-token",
-  user: { ...validAuth.user, id: "complete-user", nickname: "完整用户", avatarUrl: "/avatar/complete" }
+  user: { ...validAuth.user, id: "complete-user", nickname: "完整用户", avatarUrl: "/avatar/complete", profileCompletedAt: future }
 };
 
 assert.equal(auth.isUsableAuth(validAuth), true);
@@ -633,6 +633,19 @@ wechatMe.onShow();
 await tick();
 assert.equal(wechatMe.data.avatarLocalPath, "wxfile://wechat-login-avatar.jpg");
 assert.equal(wechatMe.data.profileNickname, "微信用户", "WeChat-login draft must survive chooser onShow");
+
+storage.clear();
+const markerIncompleteAuth = {
+  ...completeAuth,
+  token: "marker-incomplete-token",
+  user: { ...completeAuth.user, id: "marker-incomplete-user", profileCompletedAt: null }
+};
+auth.saveAuth(markerIncompleteAuth);
+redirectedTo = "";
+const markerIncompleteMe = loadPage(mePath);
+markerIncompleteMe.onShow();
+assert.equal(redirectedTo, "/pages/auth/auth");
+assert.equal(markerIncompleteMe.data.isLoggedIn, false, "server-incomplete profile marker must not expose My");
 
 storage.clear();
 auth.saveAuth(completeAuth);
