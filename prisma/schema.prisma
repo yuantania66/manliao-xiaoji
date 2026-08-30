@@ -415,6 +415,8 @@ model User {
   wechatOpenid           String?                  @unique
   nickname               String?
   avatarUrl              String?
+  isProvisional          Boolean                  @default(false)
+  profileCompletedAt     DateTime?
   status                 UserStatus               @default(ACTIVE)
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt

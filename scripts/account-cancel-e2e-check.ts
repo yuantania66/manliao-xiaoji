@@ -55,6 +55,13 @@ const countOwned = async (userId: string) => {
   return Object.fromEntries(entries) as Record<(typeof userOwnedDelegates)[number], number>;
 };
 
+const completedProfile = () => ({
+  nickname: "synthetic fixture",
+  avatarUrl: "/synthetic-profile-avatar",
+  isProvisional: false,
+  profileCompletedAt: new Date(),
+});
+
 const seedAllDataClasses = async (userId: string, mediaUrl: string) => {
   await prisma.verificationCode.create({
     data: { userId, phone: `1${String(Date.now()).slice(-10)}`, scene: "LOGIN", codeHash: "fixture", expiresAt: new Date(Date.now() + 60_000) },
@@ -137,12 +144,12 @@ const main = async () => {
   assert.equal(actualDatabase, databaseName);
   assert.equal(Number(nonCascadeCount), 0, "every user-owned FK except explicit SetNull records must cascade");
 
-  const other = await prisma.user.create({ data: { nickname: `other-${randomUUID()}` } });
+  const other = await prisma.user.create({ data: { ...completedProfile(), nickname: `other-${randomUUID()}` } });
   await prisma.note.create({ data: { userId: other.id, content: "other", recordDate: new Date(), mediaUrls: [] } });
 
   const code = `cancel-e2e-${randomUUID()}`;
   const wechatOpenid = `mock_${createHash("sha256").update(code).digest("hex").slice(0, 28)}`;
-  const user = await prisma.user.create({ data: { wechatOpenid, nickname: "delete me" } });
+  const user = await prisma.user.create({ data: { ...completedProfile(), wechatOpenid, nickname: "delete me" } });
   const { token } = await createSession(user.id);
   const mediaName = `${randomUUID()}.png`;
   const mediaDirectory = path.join(uploadRoot, user.id);
@@ -188,14 +195,14 @@ const main = async () => {
 
   const mismatchOwnerCode = `mismatch-owner-${randomUUID()}`;
   const mismatchOpenid = `mock_${createHash("sha256").update(mismatchOwnerCode).digest("hex").slice(0, 28)}`;
-  const mismatch = await prisma.user.create({ data: { wechatOpenid: mismatchOpenid } });
+  const mismatch = await prisma.user.create({ data: { ...completedProfile(), wechatOpenid: mismatchOpenid } });
   const mismatchSession = await createSession(mismatch.id);
   assert.equal((await invokeCancel(mismatchSession.token, { wechatCode: `wrong-${randomUUID()}` })).status, 403);
   assert.equal((await invokeCancel(mismatchSession.token, {})).status, 400);
   assert.equal(await prisma.user.count({ where: { id: mismatch.id } }), 1);
 
   const createPhoneFixture = async (phone: string, codeValue?: string, expiresAt = new Date(Date.now() + 60_000)) => {
-    const phoneUser = await prisma.user.create({ data: { phone } });
+    const phoneUser = await prisma.user.create({ data: { ...completedProfile(), phone } });
     const phoneSession = await createSession(phoneUser.id);
     if (codeValue) {
       await prisma.verificationCode.create({
@@ -226,7 +233,7 @@ const main = async () => {
 
   const rollbackCode = `rollback-${randomUUID()}`;
   const rollbackOpenid = `mock_${createHash("sha256").update(rollbackCode).digest("hex").slice(0, 28)}`;
-  const rollbackUser = await prisma.user.create({ data: { wechatOpenid: rollbackOpenid, nickname: "cancel-rollback-fixture" } });
+  const rollbackUser = await prisma.user.create({ data: { ...completedProfile(), wechatOpenid: rollbackOpenid, nickname: "cancel-rollback-fixture" } });
   const rollbackSession = await createSession(rollbackUser.id);
   const rollbackStorageKey = `${rollbackUser.id}/${randomUUID()}.webp`;
   const rollbackPath = path.join(uploadRoot, rollbackStorageKey);
@@ -252,7 +259,7 @@ const main = async () => {
 
   const finalizeCode = `finalize-${randomUUID()}`;
   const finalizeOpenid = `mock_${createHash("sha256").update(finalizeCode).digest("hex").slice(0, 28)}`;
-  const finalizeUser = await prisma.user.create({ data: { wechatOpenid: finalizeOpenid } });
+  const finalizeUser = await prisma.user.create({ data: { ...completedProfile(), wechatOpenid: finalizeOpenid } });
   const finalizeSession = await createSession(finalizeUser.id);
   const finalizeStorageKey = `${finalizeUser.id}/${randomUUID()}.webp`;
   const finalizePath = path.join(uploadRoot, finalizeStorageKey);

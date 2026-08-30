@@ -28,7 +28,8 @@
     <button class="bottom-item {{activeTab === 'me' ? 'active' : ''}}" data-tab="me" bindtap="switchTab">我的</button>
   </view>
 
-  <view wx:if="{{showEntry}}" class="entry-layer" role="dialog" aria-label="登录或选择游客模式">
+  <view wx:if="{{false && showEntry}}" class="entry-layer" role="dialog" aria-label="登录或选择游客模式">
+    <image class="entry-background" src="{{entryBackground}}" mode="aspectFill" aria-hidden="true" />
     <view class="entry-mask"></view>
     <view wx:if="{{!phoneLoginReady}}" class="entry-sheet" style="bottom: {{entryBottom}}px;">
       <view class="entry-title">欢迎来到慢聊小记</view>

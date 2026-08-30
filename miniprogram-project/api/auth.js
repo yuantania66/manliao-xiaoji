@@ -18,6 +18,21 @@ const loginWithWechatPhone = ({ wechatCode, phoneCode }) =>
     data: { wechatCode, phoneCode }
   });
 
+const loginWithPhone = ({ phone, code }) =>
+  request({
+    url: "/api/auth/phone",
+    method: "POST",
+    auth: false,
+    data: { phone, code }
+  });
+
+const abandonProfileSession = (capturedToken = "") => request({
+  url: "/api/auth/profile-abandon",
+  method: "POST",
+  auth: !capturedToken,
+  ...(capturedToken ? { headers: { Authorization: `Bearer ${capturedToken}` } } : {})
+});
+
 const getMe = () =>
   request({
     url: "/api/auth/me"
@@ -90,6 +105,8 @@ const cancelAccount = ({ code, wechatCode } = {}) =>
 module.exports = {
   loginWithWechat,
   loginWithWechatPhone,
+  loginWithPhone,
+  abandonProfileSession,
   getMe,
   updateMe,
   uploadProfileAvatar,

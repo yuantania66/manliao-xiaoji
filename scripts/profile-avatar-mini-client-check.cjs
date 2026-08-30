@@ -27,6 +27,7 @@ let discardTokens = [];
 let cacheCalls = 0;
 let cacheShouldFail = false;
 let chooseImageCalls = 0;
+const redirectUrls = [];
 let chooseImageImplementation = (options) => options.fail({ errMsg: "chooseImage:fail cancel" });
 let uploadImplementation = () => Promise.resolve({ uploadId: "00000000-0000-4000-8000-000000000001" });
 let meImplementation = () => Promise.resolve({ user: auth.user });
@@ -36,7 +37,7 @@ let updateImplementation = (body) => Promise.resolve({
 
 global.getApp = () => ({ globalData: {} });
 global.wx = {
-  redirectTo: () => undefined,
+  redirectTo: ({ url }) => { redirectUrls.push(url); },
   login: () => undefined,
   showToast: () => undefined,
   chooseImage: (options) => {
@@ -53,6 +54,8 @@ const authPath = require.resolve("../miniprogram-project/utils/auth");
 require.cache[authPath] = { exports: {
   clearAuth: () => { auth = null; },
   getAuth: () => auth,
+  getGuestProfile: () => null,
+  isGuest: () => false,
   saveAuth: () => undefined,
   updateCachedUser: (expectedId, user) => {
     cacheCalls += 1;
@@ -225,39 +228,14 @@ const selectAvatar = (page, filePath) => {
 
   auth = { token: "token-c", expiresAt: future, user: { id: "user-c", nickname: null, avatarUrl: null } };
   meImplementation = () => Promise.resolve({ user: auth.user });
-  uploadImplementation = () => Promise.resolve({ uploadId: "00000000-0000-4000-8000-000000000003" });
-  updateImplementation = (body) => Promise.resolve({
-    user: { ...auth.user, ...body, avatarUrl: body.avatarUploadId ? "/avatar/new" : auth.user.avatarUrl }
-  });
+  const redirectsBeforeRequiredProfile = redirectUrls.length;
   page.onShow();
   await settle();
-  assert.equal(page.data.profileRequired, true, "missing profile must enter required mode");
-  assert.equal(page.data.profileEditing, true, "required profile sheet must block the page");
-  page.skipProfile();
-  assert.equal(page.data.profileEditing, true, "required profile cannot be cancelled");
-  const updatesBeforeRequiredProfile = updateCalls.length;
-  page.saveProfile();
-  assert.equal(updateCalls.length, updatesBeforeRequiredProfile);
-  assert.match(page.data.loginError, /请输入昵称/u);
-  page.inputNickname({ detail: { value: "新用户" } });
-  page.saveProfile();
-  assert.equal(updateCalls.length, updatesBeforeRequiredProfile);
-  assert.match(page.data.loginError, /请选择头像/u);
-  page.inputNickname({ detail: { value: "" } });
-  selectAvatar(page, "wxfile://avatar-only.jpg");
-  assert.equal(page.data.avatarPreview, "wxfile://avatar-only.jpg");
-  assert.equal(uploadCalls, 3, "selecting a required avatar must remain local until save");
-  page.saveProfile();
-  assert.equal(updateCalls.length, updatesBeforeRequiredProfile, "required profile cannot save without a nickname");
-  assert.match(page.data.loginError, /请输入昵称/u);
-  page.inputNickname({ detail: { value: "新用户" } });
-  page.saveProfile();
-  await settle();
-  assert.equal(updateCalls.length, updatesBeforeRequiredProfile + 1, "required profile must save after nickname and avatar are present");
-  assert.deepEqual(updateCalls.at(-1), {
-    nickname: "新用户",
-    avatarUploadId: "00000000-0000-4000-8000-000000000003"
-  });
+  assert.deepEqual(
+    redirectUrls.slice(redirectsBeforeRequiredProfile),
+    ["/pages/auth/auth"],
+    "missing profile must be handed to the unified required-profile flow"
+  );
   assert.equal(page.data.profileRequired, false);
   assert.equal(page.data.profileEditing, false);
 
@@ -273,10 +251,10 @@ const selectAvatar = (page, filePath) => {
 
   auth = { token: "token-required-exit", expiresAt: future, user: { id: "required-exit", nickname: null, avatarUrl: null } };
   meImplementation = () => Promise.resolve({ user: auth.user });
+  const redirectsBeforeRequiredExit = redirectUrls.length;
   page.onShow();
-  assert.equal(page.data.profileRequired, true);
-  page.exitRequiredProfile();
-  assert.equal(auth, null, "required profile must allow returning to login choices");
+  assert.deepEqual(redirectUrls.slice(redirectsBeforeRequiredExit), ["/pages/auth/auth"]);
+  assert.equal(auth.user.id, "required-exit", "the unified auth page owns explicit abandonment");
   assert.equal(page.data.isLoggedIn, false);
   assert.equal(page.data.profileEditing, false);
   assert.equal(page.data.profileRequired, false);

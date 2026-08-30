@@ -5,6 +5,7 @@ const { getMe } = require("../../api/auth");
 const { authenticateWithWechatPhone, getWechatPhoneCode } = require("../../utils/wechat-phone-login");
 const { authenticateWithWechat } = require("../../utils/wechat-login");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
+const { getLoginBackground } = require("../../utils/login-time-background");
 
 const prompts = [
   { title: "今天过得怎么样？", lead: "不用急着说清楚。\n先选一个此刻更需要的方式。" },
@@ -33,6 +34,7 @@ Page({
   data: {
     pageTop: 92,
     entryBottom: 48,
+    entryBackground: getLoginBackground(),
     todayLabel: "",
     prompt: prompts[0],
     chatCopy: chatCopies[0],
@@ -55,19 +57,28 @@ Page({
       prompt: pick(prompts),
       chatCopy: pick(chatCopies),
       noteCopy: pick(noteCopies),
-      showEntry: this.forceEntry || (!getAuth() && !isGuest())
+      showEntry: false
     });
+    if (this.forceEntry || (!getAuth() && !isGuest())) {
+      wx.redirectTo({ url: "/pages/auth/auth" });
+    }
   },
 
   onShow() {
+    this.updateEntryBackground();
     this.reconcileAuth();
+  },
+
+  updateEntryBackground(hour) {
+    const entryBackground = getLoginBackground(hour);
+    if (this.data.entryBackground !== entryBackground) this.setData({ entryBackground });
   },
 
   reconcileAuth() {
     if (this.forceEntry || isGuest()) return;
     const auth = getAuth();
     if (!auth) {
-      this.setData({ showEntry: true, isCheckingAuth: false });
+      wx.redirectTo({ url: "/pages/auth/auth" });
       return;
     }
     if (this.authCheckPending) return;
@@ -83,8 +94,7 @@ Page({
           user.id !== auth.user.id
         ) return;
         if (!user.nickname || !user.avatarUrl) {
-          this.setData({ showEntry: true, entryError: "" });
-          wx.redirectTo({ url: "/pages/me/me?completeProfile=1" });
+          wx.redirectTo({ url: "/pages/auth/auth" });
           return;
         }
         this.setData({ showEntry: false, entryError: "" });
@@ -195,7 +205,7 @@ Page({
         this.forceEntry = false;
         this.setData({ showEntry: false, entryError: "" });
         if (!auth.user.nickname || !auth.user.avatarUrl) {
-          wx.redirectTo({ url: "/pages/me/me?completeProfile=1" });
+          wx.redirectTo({ url: "/pages/auth/auth" });
         } else {
           wx.showToast({ title: "登录成功，云端同步已开启", icon: "none" });
         }
@@ -239,7 +249,7 @@ Page({
         this.forceEntry = false;
         this.setData({ showEntry: false, phoneLoginReady: false, entryError: "" });
         if (!auth.user.nickname || !auth.user.avatarUrl) {
-          wx.redirectTo({ url: "/pages/me/me?completeProfile=1" });
+          wx.redirectTo({ url: "/pages/auth/auth" });
         } else {
           wx.showToast({ title: "登录成功，云端同步已开启", icon: "none" });
         }

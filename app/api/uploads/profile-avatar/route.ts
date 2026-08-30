@@ -5,7 +5,7 @@ import { NextRequest } from "next/server";
 import sharp from "sharp";
 
 import { failFromError, ok } from "@/lib/api-response";
-import { requireUser } from "@/lib/auth";
+import { requireAuthenticatedUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { drainAccountCancellationFiles } from "@/services/auth/accountCancellationService";
@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireUser(request);
+    const user = await requireAuthenticatedUser(request);
     const form = await request.formData().catch(() => null);
     const file = form?.get("file");
     if (!(file instanceof File) || file.size <= 0 || file.size > 5 * 1024 * 1024) {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await requireUser(request);
+    const user = await requireAuthenticatedUser(request);
     const body = await request.json().catch(() => null) as { uploadId?: unknown } | null;
     if (!body || typeof body.uploadId !== "string" || !/^[0-9a-f-]{36}$/u.test(body.uploadId)) {
       throw new AppError("VALIDATION_ERROR", "头像上传无效", 400);

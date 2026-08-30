@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       where: { wechatOpenid },
       create: {
         wechatOpenid,
+        isProvisional: true,
         status: UserStatus.ACTIVE,
       },
       update: {

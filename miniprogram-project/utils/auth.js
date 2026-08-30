@@ -1,5 +1,6 @@
 const AUTH_KEY = "xinqingAuth";
 const GUEST_KEY = "xinqingGuestMode";
+const GUEST_PROFILE_KEY = "xinqingGuestProfile";
 const USER_CACHE_KEYS = [
   "xinqingMiniChatMessages",
   "xinqingMiniNotes",
@@ -95,6 +96,21 @@ const enterGuest = () => {
   app.globalData.token = "";
 };
 
+const setGuestProfile = (profile) => {
+  if (!profile || typeof profile.nickname !== "string" || !profile.nickname.trim()) {
+    throw new Error("游客昵称无效");
+  }
+  wx.setStorageSync(GUEST_PROFILE_KEY, {
+    nickname: profile.nickname.trim(),
+    avatarIndex: Number.isInteger(profile.avatarIndex) ? profile.avatarIndex : 0
+  });
+};
+
+const getGuestProfile = () => {
+  const profile = wx.getStorageSync(GUEST_PROFILE_KEY);
+  return profile && typeof profile.nickname === "string" ? profile : null;
+};
+
 const isGuest = () => wx.getStorageSync(GUEST_KEY) === true;
 
 const isAuthenticated = () => {
@@ -115,6 +131,8 @@ module.exports = {
   clearAuth,
   clearCancelledAccount,
   enterGuest,
+  setGuestProfile,
+  getGuestProfile,
   isGuest,
   isAuthenticated,
   getDataMode,

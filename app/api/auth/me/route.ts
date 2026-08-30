@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { failFromError, ok } from "@/lib/api-response";
-import { requireUser, serializeUser } from "@/lib/auth";
+import { hasCompleteProfile, requireAuthenticatedUser, serializeUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { drainAccountCancellationFiles } from "@/services/auth/accountCancellationService";
@@ -31,8 +31,8 @@ const parseProfilePatch = (value: unknown) => {
     } else if (typeof body.nickname === "string") {
       nickname = body.nickname.trim();
       const length = Array.from(nickname).length;
-      if (!nickname || length > 30 || FORBIDDEN_NICKNAME_CHARACTERS.test(nickname)) {
-        throw new AppError("VALIDATION_ERROR", "昵称须为 1 至 30 个有效字符", 400);
+      if (length < 2 || length > 12 || FORBIDDEN_NICKNAME_CHARACTERS.test(nickname)) {
+        throw new AppError("VALIDATION_ERROR", "昵称须为 2 至 12 个有效字符", 400);
       }
     } else {
       throw new AppError("VALIDATION_ERROR", "昵称无效", 400);
@@ -54,7 +54,7 @@ const parseProfilePatch = (value: unknown) => {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireUser(request);
+    const user = await requireAuthenticatedUser(request);
     return ok({ user: serializeUser(user) });
   } catch (error) {
     return failFromError(error);
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireUser(request);
+    const user = await requireAuthenticatedUser(request);
     const patch = parseProfilePatch(await request.json().catch(() => null));
     const result = await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${user.id} FOR UPDATE`;
@@ -120,11 +120,19 @@ export async function PATCH(request: NextRequest) {
         throw new Error("profile_avatar_test_transaction_failure");
       }
 
+      const nextNickname = patch.hasNickname ? patch.nickname ?? null : current.nickname;
+      const profileCompletedAt = hasCompleteProfile({
+        nickname: nextNickname,
+        avatarUrl: nextAvatarUrl,
+        profileCompletedAt: current.profileCompletedAt ?? new Date(),
+      }) ? current.profileCompletedAt ?? new Date() : null;
       const updated = await tx.user.update({
         where: { id: user.id },
         data: {
           ...(patch.hasNickname ? { nickname: patch.nickname } : {}),
           ...(patch.hasAvatar ? { avatarUrl: nextAvatarUrl } : {}),
+          profileCompletedAt,
+          ...(profileCompletedAt ? { isProvisional: false } : {}),
         },
       });
       return { updated, cleanupTaskIds };

@@ -45,7 +45,7 @@ const bindWechatPhone = async (wechatOpenid: string, phone: string) => {
       }
 
       return tx.user.create({
-        data: { wechatOpenid, phone, status: UserStatus.ACTIVE },
+        data: { wechatOpenid, phone, isProvisional: true, status: UserStatus.ACTIVE },
       });
     });
   } catch (error) {

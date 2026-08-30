@@ -81,9 +81,25 @@ export const getCurrentUser = async (request: NextRequest) => {
   return session.user;
 };
 
-export const requireUser = async (request: NextRequest) => {
+export const requireAuthenticatedUser = async (request: NextRequest) => {
   const user = await getCurrentUser(request);
   if (!user) throw new AppError("UNAUTHORIZED", "请先登录", 401);
+  return user;
+};
+
+export const hasCompleteProfile = (user: {
+  nickname: string | null;
+  avatarUrl: string | null;
+  profileCompletedAt: Date | null;
+}) => Boolean(user.nickname?.trim() && user.avatarUrl?.trim() && user.profileCompletedAt);
+
+export const requireUser = async (request: NextRequest) => {
+  const user = await requireAuthenticatedUser(request);
+  if (!hasCompleteProfile(user)) {
+    throw new AppError("FORBIDDEN", "请先完成头像和昵称", 403, {
+      reason: "PROFILE_INCOMPLETE",
+    });
+  }
   return user;
 };
 
@@ -93,6 +109,8 @@ export const serializeUser = (user: {
   wechatOpenid: string | null;
   nickname: string | null;
   avatarUrl: string | null;
+  isProvisional: boolean;
+  profileCompletedAt: Date | null;
   status: string;
   createdAt: Date;
 }) => ({
@@ -101,6 +119,8 @@ export const serializeUser = (user: {
   wechatOpenid: user.wechatOpenid,
   nickname: user.nickname,
   avatarUrl: user.avatarUrl,
+  isProvisional: user.isProvisional,
+  profileCompletedAt: user.profileCompletedAt?.toISOString() ?? null,
   status: user.status,
   createdAt: user.createdAt.toISOString(),
 });

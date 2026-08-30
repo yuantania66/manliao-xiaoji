@@ -34,6 +34,7 @@ const apiPath = require.resolve("../miniprogram-project/api/auth.js");
 const homePath = require.resolve("../miniprogram-project/pages/home/home.js");
 const mePath = require.resolve("../miniprogram-project/pages/me/me.js");
 const homeWxml = readFileSync(new URL("../miniprogram-project/pages/home/home.wxml", import.meta.url), "utf8");
+const homeWxss = readFileSync(new URL("../miniprogram-project/pages/home/home.wxss", import.meta.url), "utf8");
 const meWxml = readFileSync(new URL("../miniprogram-project/pages/me/me.wxml", import.meta.url), "utf8");
 const privacyWxml = readFileSync(new URL("../miniprogram-project/pages/privacy/privacy.wxml", import.meta.url), "utf8");
 for (const label of ["微信登录", "手机号登录"]) {
@@ -41,6 +42,8 @@ for (const label of ["微信登录", "手机号登录"]) {
   assert.match(meWxml, new RegExp(label));
 }
 assert.match(homeWxml, /游客模式/);
+assert.match(homeWxml, /class="entry-background"[^>]*src="{{entryBackground}}"[^>]*mode="aspectFill"/);
+assert.match(homeWxss, /\.entry-mask[\s\S]*?background:\s*rgba\(0,\s*0,\s*0,\s*0\.18\)/);
 for (const markup of [homeWxml, meWxml]) {
   assert.match(markup, /创建或登录慢聊小记账号/);
   assert.match(markup, /继续后将打开微信手机号授权界面。只有你主动选择并允许后，我们才会通过微信取得并处理该手机号，用于创建或登录账号。/);
@@ -49,17 +52,22 @@ for (const markup of [homeWxml, meWxml]) {
 }
 assert.match(privacyWxml, /选择微信登录.*登录凭证和对应的账号标识/);
 assert.match(privacyWxml, /微信登录不会自动获取你的手机号、头像或昵称/);
-assert.match(privacyWxml, /选择手机号登录.*微信系统界面选择的手机号/);
+assert.match(privacyWxml, /选择手机号登录.*微信界面中确认的绑定号码.*其他大陆手机号.*短信验证码/);
 assert.doesNotMatch(meWxml, /profile-editor-mask/);
 assert.match(meWxml, /profileRequired \? "完善个人资料" : "编辑个人资料"/);
 assert.ok(meWxml.includes('wx:if="{{profileRequired}}" class="secondary-button" bindtap="exitRequiredProfile"'));
 assert.match(meWxml, /wx:else[^>]*bindtap="skipProfile"[^>]*>取消<\/button>/);
 assert.doesNotMatch(meWxml, /type="nickname"/);
-assert.match(privacyWxml, /手动选择头像并填写昵称/);
+assert.match(privacyWxml, /主动选择头像并填写昵称/);
 assert.match(privacyWxml, /头像不要求是真人照片/);
-assert.match(privacyWxml, /不会读取你的微信头像或昵称/);
-assert.match(privacyWxml, /头像不会提供给 AI，也不会用于人脸识别/);
+assert.match(privacyWxml, /不会在你操作前自动读取这些资料/);
+assert.match(privacyWxml, /不会提供给 AI，也不会用于人脸识别/);
 const auth = require(authPath);
+const { getLoginBackground, getLoginTimeSlot } = require("../miniprogram-project/utils/login-time-background.js");
+for (const [hour, slot] of [[4, "night"], [5, "dawn"], [8, "dawn"], [9, "day"], [16, "day"], [17, "dusk"], [19, "dusk"], [20, "night"], [23, "night"]]) {
+  assert.equal(getLoginTimeSlot(hour), slot);
+  assert.equal(getLoginBackground(hour), `/assets/login-times/login-${slot}.jpg`);
+}
 const future = new Date(Date.now() + 60_000).toISOString();
 const validAuth = {
   token: "valid-token",
@@ -184,6 +192,13 @@ const loadPage = (path) => {
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
+const timeAwareHome = loadPage(homePath);
+for (const [hour, asset] of [[5, "login-dawn.jpg"], [9, "login-day.jpg"], [17, "login-dusk.jpg"], [20, "login-night.jpg"]]) {
+  timeAwareHome.updateEntryBackground(hour);
+  assert.match(timeAwareHome.data.entryBackground, new RegExp(`${asset}$`));
+}
+assert.match(timeAwareHome.onShow.toString(), /updateEntryBackground/);
+
 storage.clear();
 storage.set("xinqingAuth", validAuth);
 let redirectedTo = "";
@@ -201,7 +216,7 @@ assert.equal(checks, 1);
 resolveCheck({ user: validAuth.user });
 await tick();
 assert.equal(home.data.showEntry, true, "incomplete restored account must not expose home functions");
-assert.equal(redirectedTo, "/pages/me/me?completeProfile=1");
+assert.equal(redirectedTo, "/pages/auth/auth");
 
 storage.clear();
 auth.saveAuth(completeAuth);
@@ -352,7 +367,7 @@ await tick();
 assert.equal(wechatApiCalls, 1);
 assert.deepEqual(wechatLoginOrder, ["privacy", "wx.login", "api"]);
 assert.equal(auth.getAuth().user.phone, null, "WeChat login must not request or invent a phone");
-assert.equal(redirectedTo, "/pages/me/me?completeProfile=1");
+assert.equal(redirectedTo, "/pages/auth/auth");
 
 storage.clear();
 const emptyWechatHome = loadPage(homePath);
@@ -477,7 +492,7 @@ await tick();
 await tick();
 assert.equal(phoneLoginCalls, 1);
 assert.equal(auth.getAuth().user.phone, "13800000000");
-assert.equal(redirectedTo, "/pages/me/me?completeProfile=1");
+assert.equal(redirectedTo, "/pages/auth/auth");
 
 storage.clear();
 const emptyCodeHome = loadPage(homePath);

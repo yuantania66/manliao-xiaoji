@@ -64,6 +64,7 @@ export async function POST(request: Request) {
         where: { phone },
         create: {
           phone,
+          isProvisional: true,
           status: UserStatus.ACTIVE,
         },
         update: {
