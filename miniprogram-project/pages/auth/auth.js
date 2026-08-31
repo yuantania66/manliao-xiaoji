@@ -18,7 +18,11 @@ const {
   setGuestProfile,
   updateCachedUser
 } = require("../../utils/auth");
-const { getLoginBackground } = require("../../utils/login-time-background");
+const {
+  getLoginBackground,
+  getLoginBackgroundInsetTop,
+  getLoginBackgroundTopColor
+} = require("../../utils/login-time-background");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
 
 const BACKGROUNDS = Object.freeze({
@@ -26,6 +30,15 @@ const BACKGROUNDS = Object.freeze({
   profile: "/assets/login-flow/login-profile.jpg",
   guest: "/assets/login-flow/login-guest.jpg"
 });
+const BACKGROUND_TOP_COLORS = Object.freeze({
+  [BACKGROUNDS.phone]: "#e6daca",
+  [BACKGROUNDS.profile]: "#ded5c5",
+  [BACKGROUNDS.guest]: "#d2c8b4"
+});
+const createBackgroundBlend = (color) => {
+  const [red, green, blue] = color.match(/[0-9a-f]{2}/giu).map((value) => parseInt(value, 16));
+  return `linear-gradient(180deg, rgba(${red}, ${green}, ${blue}, 1) 0%, rgba(${red}, ${green}, ${blue}, 0) 100%)`;
+};
 const GUEST_NAMES = ["雾听", "小满", "晚风", "青禾", "云朵", "慢慢", "晴川", "木棉"];
 const AVATAR_GRADIENTS = [
   "linear-gradient(135deg, #71877b, #f4e4d3)",
@@ -33,15 +46,15 @@ const AVATAR_GRADIENTS = [
   "linear-gradient(135deg, #6d7f86, #d8b9a2)",
   "linear-gradient(135deg, #84938b, #e7d8bf)"
 ];
-const isProfileComplete = (user) => Boolean(
-  user?.nickname && user?.avatarUrl && user.profileCompletedAt !== null
-);
 const nextGuest = (current = -1) => (current + 1) % GUEST_NAMES.length;
 
 Page({
   data: {
     stage: "choice",
     background: getLoginBackground(),
+    backgroundTopColor: getLoginBackgroundTopColor(),
+    backgroundBlend: createBackgroundBlend(getLoginBackgroundTopColor()),
+    backgroundInsetTop: getLoginBackgroundInsetTop(),
     privacyConfirmed: false,
     busy: false,
     error: "",
@@ -64,19 +77,25 @@ Page({
     this.editMode = options.mode === "edit";
     const auth = getAuth();
     if (auth) {
-      if (this.editMode || !isProfileComplete(auth.user)) {
-        this.openProfile(auth, !isProfileComplete(auth.user));
-      } else {
-        this.finishAccountLogin();
-      }
+      if (this.editMode) this.openProfile(auth);
+      else this.finishAccountLogin();
     } else if (isGuest()) {
       this.finishAccountLogin();
     }
   },
 
   onShow() {
+    const backgroundInsetTop = getLoginBackgroundInsetTop();
     if (this.data.stage === "choice") {
-      this.setData({ background: getLoginBackground() });
+      const backgroundTopColor = getLoginBackgroundTopColor();
+      this.setData({
+        background: getLoginBackground(),
+        backgroundTopColor,
+        backgroundBlend: createBackgroundBlend(backgroundTopColor),
+        backgroundInsetTop
+      });
+    } else {
+      this.setData({ backgroundInsetTop });
     }
   },
 
@@ -88,9 +107,15 @@ Page({
         : ["guestWarn", "guestIdentity"].includes(stage)
           ? "guest"
           : "choice";
+    const background = group === "choice" ? getLoginBackground() : BACKGROUNDS[group];
+    const backgroundTopColor = group === "choice"
+      ? getLoginBackgroundTopColor()
+      : BACKGROUND_TOP_COLORS[background];
     this.setData({
       stage,
-      background: group === "choice" ? getLoginBackground() : BACKGROUNDS[group],
+      background,
+      backgroundTopColor,
+      backgroundBlend: createBackgroundBlend(backgroundTopColor),
       error: ""
     });
   },
@@ -193,17 +218,16 @@ Page({
     }
     saveAuth(auth);
     this.visibleUserId = auth.user.id;
-    if (isProfileComplete(auth.user)) this.finishAccountLogin();
-    else this.openProfile(auth, true);
+    this.finishAccountLogin();
   },
 
-  openProfile(auth, required) {
+  openProfile(auth) {
     const userId = auth.user.id;
     this.visibleUserId = userId;
     this.setData({
       stage: "profile",
       background: BACKGROUNDS.profile,
-      profileRequired: required,
+      profileRequired: false,
       profileNickname: auth.user.nickname || "",
       originalProfileNickname: auth.user.nickname || "",
       avatarLocalPath: "",
@@ -288,13 +312,20 @@ Page({
       })
       .then(({ user }) => {
         committed = true;
-        if (!this.isCurrentProfileOperation(operation, userId) || !isProfileComplete(user)) return;
+        if (!this.isCurrentProfileOperation(operation, userId)) return;
         updateCachedUser(userId, user);
         this.finishAccountLogin();
       })
       .catch((error) => {
         if (uploadId && !committed) discardProfileAvatar(uploadId, token).catch(() => undefined);
-        if (this.isCurrentProfileOperation(operation, userId)) this.setData({ error: error.message || "资料保存失败" });
+        if (this.isCurrentProfileOperation(operation, userId)) {
+          const serviceMismatch = error?.statusCode === 404 || error?.statusCode === 405;
+          this.setData({
+            error: serviceMismatch
+              ? "当前预览服务尚未更新，可点“稍后再说”返回"
+              : error.message || "资料保存失败"
+          });
+        }
       })
       .finally(() => {
         if (this.profileOperationId === operation) this.setData({ busy: false });
@@ -302,28 +333,15 @@ Page({
   },
 
   abandonProfile() {
-    if (this.data.busy) return;
     const auth = getAuth();
     if (!auth) { this.setStage("choice"); return; }
-    const operation = this.beginProfileOperation();
-    const userId = auth.user.id;
-    this.setData({ busy: true, error: "" });
-    abandonProfileSession(auth.token)
-      .then(() => {
-        if (!this.isCurrentProfileOperation(operation, userId)) return;
-        this.invalidateAttempts();
-        clearAuth();
-        this.visibleUserId = "";
-        this.setStage("choice");
-      })
-      .catch((error) => {
-        if (this.isCurrentProfileOperation(operation, userId)) {
-          this.setData({ error: error?.message || "暂时无法放弃登录，请再试一次" });
-        }
-      })
-      .finally(() => {
-        if (this.profileOperationId === operation) this.setData({ busy: false });
-      });
+    this.beginProfileOperation();
+    this.invalidateAttempts();
+    clearAuth();
+    this.visibleUserId = "";
+    this.setStage("choice");
+    this.setData({ busy: false });
+    abandonProfileSession(auth.token).catch(() => undefined);
   },
 
   cancelProfileEdit() {

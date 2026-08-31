@@ -64,10 +64,11 @@ export async function POST(request: Request) {
         where: { phone },
         create: {
           phone,
-          isProvisional: true,
+          isProvisional: false,
           status: UserStatus.ACTIVE,
         },
         update: {
+          isProvisional: false,
           status: UserStatus.ACTIVE,
         },
       });

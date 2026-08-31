@@ -25,10 +25,11 @@ export async function POST(request: Request) {
       where: { wechatOpenid },
       create: {
         wechatOpenid,
-        isProvisional: true,
+        isProvisional: false,
         status: UserStatus.ACTIVE,
       },
       update: {
+        isProvisional: false,
         status: UserStatus.ACTIVE,
       },
     });

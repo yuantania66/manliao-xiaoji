@@ -10,10 +10,10 @@
     <navigator url="/pages/settings/settings" class="settings-link" hover-class="none">设置</navigator>
     <button wx:if="{{false}}" class="profile-edit-link" bindtap="editProfile">编辑资料</button>
   </view>
-  <view wx:if="{{isLoggedIn && profileEditing}}" class="profile-editor-layer" role="dialog" aria-label="完善个人资料">
+  <view wx:if="{{isLoggedIn && profileEditing}}" class="profile-editor-layer" role="dialog" aria-label="编辑个人资料">
     <view class="profile-editor-sheet">
-      <view class="entry-title">{{profileRequired ? "完善个人资料" : "编辑个人资料"}}</view>
-      <view class="entry-copy">{{profileRequired ? "请手动选择一张头像并填写昵称，完成后即可继续使用。头像不要求是真人照片；我们不会读取你的微信头像或昵称。" : "可以重新选择头像或修改昵称。头像不要求是真人照片；我们不会读取你的微信头像或昵称。"}}</view>
+      <view class="entry-title">编辑个人资料</view>
+      <view class="entry-copy">头像和昵称是可选资料，可以随时修改。头像不要求是真人照片；我们不会读取你的微信头像或昵称。</view>
       <button class="profile-avatar-button" bindtap="chooseProfileAvatarFromMedia" disabled="{{isSavingProfile}}">
         <image wx:if="{{avatarPreview}}" class="profile-avatar-preview" src="{{avatarPreview}}" mode="aspectFill" />
         <view wx:else class="profile-avatar-preview profile-avatar-placeholder">选择头像</view>
@@ -21,8 +21,7 @@
       <input class="profile-nickname-input" type="text" maxlength="30" value="{{profileNickname}}" bindinput="inputNickname" placeholder="输入昵称" />
       <view wx:if="{{loginError}}" class="login-error" aria-live="assertive">{{loginError}}</view>
       <button class="primary-button" bindtap="saveProfile" disabled="{{isSavingProfile}}">保存</button>
-      <button wx:if="{{profileRequired}}" class="secondary-button" bindtap="exitRequiredProfile" disabled="{{isSavingProfile}}">退出登录</button>
-      <button wx:else class="secondary-button" bindtap="skipProfile" disabled="{{isSavingProfile}}">取消</button>
+      <button class="secondary-button" bindtap="skipProfile" disabled="{{isSavingProfile}}">取消</button>
     </view>
   </view>
   <view wx:if="{{loginError && !phoneLoginReady}}" class="login-error" aria-live="assertive">{{loginError}}</view>

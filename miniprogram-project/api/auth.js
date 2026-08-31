@@ -26,12 +26,22 @@ const loginWithPhone = ({ phone, code }) =>
     data: { phone, code }
   });
 
-const abandonProfileSession = (capturedToken = "") => request({
-  url: "/api/auth/profile-abandon",
+const sessionRequest = (url, capturedToken = "") => request({
+  url,
   method: "POST",
   auth: !capturedToken,
   ...(capturedToken ? { headers: { Authorization: `Bearer ${capturedToken}` } } : {})
 });
+
+const abandonProfileSession = (capturedToken = "") =>
+  sessionRequest("/api/auth/profile-abandon", capturedToken).catch((error) => {
+    if (error?.statusCode === 401) return { accountRemoved: false };
+    if (error?.statusCode !== 404) throw error;
+    return sessionRequest("/api/auth/logout", capturedToken).catch((logoutError) => {
+      if (logoutError?.statusCode === 401) return { accountRemoved: false };
+      throw logoutError;
+    });
+  });
 
 const getMe = () =>
   request({
@@ -58,7 +68,9 @@ const uploadProfileAvatar = (filePath) => new Promise((resolve, reject) => {
       try {
         const body = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
         if (res.statusCode >= 400 || body.ok === false || !body.data?.uploadId) {
-          throw new Error(body.message || "头像上传失败");
+          const error = new Error(body.message || "头像上传失败");
+          error.statusCode = res.statusCode;
+          throw error;
         }
         resolve(body.data);
       } catch (error) { reject(error); }

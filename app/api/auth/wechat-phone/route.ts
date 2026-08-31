@@ -40,12 +40,12 @@ const bindWechatPhone = async (wechatOpenid: string, phone: string) => {
       if (existing) {
         return tx.user.update({
           where: { id: existing.id },
-          data: { wechatOpenid, phone, status: UserStatus.ACTIVE },
+          data: { wechatOpenid, phone, isProvisional: false, status: UserStatus.ACTIVE },
         });
       }
 
       return tx.user.create({
-        data: { wechatOpenid, phone, isProvisional: true, status: UserStatus.ACTIVE },
+        data: { wechatOpenid, phone, isProvisional: false, status: UserStatus.ACTIVE },
       });
     });
   } catch (error) {

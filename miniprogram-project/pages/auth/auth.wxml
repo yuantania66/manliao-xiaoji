@@ -1,5 +1,6 @@
-<view class="auth-screen">
-  <image class="auth-background" src="{{background}}" mode="aspectFill" aria-hidden="true" />
+<view class="auth-screen" style="background: {{backgroundTopColor}}">
+  <image class="auth-background" src="{{background}}" mode="widthFix" style="top: {{backgroundInsetTop}}px" aria-hidden="true" />
+  <view class="auth-background-blend" style="top: {{backgroundInsetTop}}px; background: {{backgroundBlend}}" aria-hidden="true"></view>
   <view class="auth-mask"></view>
 
   <view wx:if="{{stage === 'choice'}}" class="sheet choice-sheet">
@@ -34,15 +35,14 @@
   </view>
 
   <view wx:elif="{{stage === 'profile'}}" class="sheet profile-sheet">
-    <view class="app-line"><view class="app-mark">慢</view><text>慢聊小记 申请</text></view>
-    <view class="sheet-title">再认识一下你</view><view class="sheet-copy">选个头像，填个昵称，就可以啦。</view>
-    <button class="profile-row" bindtap="showAvatarSources" disabled="{{busy}}"><text>头像 *</text><image wx:if="{{avatarPreview}}" src="{{avatarPreview}}" mode="aspectFill" /><view wx:else>选择</view></button>
+    <view class="app-line"><view class="app-mark">慢</view><text>慢聊小记 个人资料</text></view>
+    <view class="sheet-title">完善个人资料</view><view class="sheet-copy">头像和昵称均为可选资料，可稍后再修改。</view>
+    <button class="profile-row" bindtap="showAvatarSources" disabled="{{busy}}"><text>头像</text><image wx:if="{{avatarPreview}}" src="{{avatarPreview}}" mode="aspectFill" /><view wx:else>选择</view></button>
     <view class="divider"></view>
-    <view class="profile-row nickname-row"><text>昵称 *</text><input type="nickname" maxlength="12" value="{{profileNickname}}" placeholder="2–12 个字" bindinput="inputNickname" /></view>
+    <view class="profile-row nickname-row"><text>昵称</text><input type="nickname" maxlength="12" value="{{profileNickname}}" placeholder="2–12 个字" bindinput="inputNickname" /></view>
     <view wx:if="{{error}}" class="error">{{error}}</view>
-    <button class="profile-submit" bindtap="saveProfile" loading="{{busy}}" disabled="{{busy || !avatarPreview || profileNickname.length < 2}}">完成并登录</button>
-    <button wx:if="{{profileRequired}}" class="text-action abandon" bindtap="abandonProfile" disabled="{{busy}}">放弃登录</button>
-    <button wx:else class="text-action abandon" bindtap="cancelProfileEdit" disabled="{{busy}}">取消</button>
+    <button class="profile-submit" bindtap="saveProfile" loading="{{busy}}" disabled="{{busy || !avatarPreview || profileNickname.length < 2}}">保存资料</button>
+    <button class="text-action abandon" bindtap="cancelProfileEdit" disabled="{{busy}}">稍后再说</button>
   </view>
 
   <view wx:elif="{{stage === 'avatarSource'}}" class="sheet avatar-source-sheet">

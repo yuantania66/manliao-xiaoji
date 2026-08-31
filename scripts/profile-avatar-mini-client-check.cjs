@@ -14,8 +14,8 @@ assert.doesNotMatch(meWxml, /open-type="chooseAvatar"/u);
 assert.match(meWxml, /class="profile-nickname-input"[^>]*type="text"[^>]*bindinput="inputNickname"/u);
 assert.doesNotMatch(meWxml, /type="nickname"/u);
 assert.match(meWxml, /bindtap="saveProfile"[^>]*>保存<\/button>/u);
-assert.ok(meWxml.includes('wx:if="{{profileRequired}}" class="secondary-button" bindtap="exitRequiredProfile"'));
-assert.match(meWxml, /wx:else[^>]*bindtap="skipProfile"[^>]*>取消<\/button>/u);
+assert.doesNotMatch(meWxml, /bindtap="exitRequiredProfile"/u);
+assert.match(meWxml, /bindtap="skipProfile"[^>]*>取消<\/button>/u);
 
 const future = new Date(Date.now() + 60_000).toISOString();
 let auth = { token: "token-a", expiresAt: future, user: { id: "user-a", nickname: "旧昵称", avatarUrl: "/avatar/a" } };
@@ -228,14 +228,9 @@ const selectAvatar = (page, filePath) => {
 
   auth = { token: "token-c", expiresAt: future, user: { id: "user-c", nickname: null, avatarUrl: null } };
   meImplementation = () => Promise.resolve({ user: auth.user });
-  const redirectsBeforeRequiredProfile = redirectUrls.length;
   page.onShow();
   await settle();
-  assert.deepEqual(
-    redirectUrls.slice(redirectsBeforeRequiredProfile),
-    ["/pages/auth/auth"],
-    "missing profile must be handed to the unified required-profile flow"
-  );
+  assert.equal(page.data.isLoggedIn, true, "missing optional profile must not redirect or hide the account");
   assert.equal(page.data.profileRequired, false);
   assert.equal(page.data.profileEditing, false);
 
@@ -248,16 +243,6 @@ const selectAvatar = (page, filePath) => {
 
   page.skipProfile();
   assert.equal(page.data.profileEditing, false, "complete profile editing must remain cancellable");
-
-  auth = { token: "token-required-exit", expiresAt: future, user: { id: "required-exit", nickname: null, avatarUrl: null } };
-  meImplementation = () => Promise.resolve({ user: auth.user });
-  const redirectsBeforeRequiredExit = redirectUrls.length;
-  page.onShow();
-  assert.deepEqual(redirectUrls.slice(redirectsBeforeRequiredExit), ["/pages/auth/auth"]);
-  assert.equal(auth.user.id, "required-exit", "the unified auth page owns explicit abandonment");
-  assert.equal(page.data.isLoggedIn, false);
-  assert.equal(page.data.profileEditing, false);
-  assert.equal(page.data.profileRequired, false);
 
   console.log("Profile avatar Mini Program client checks passed.");
 })().catch((error) => {

@@ -29,7 +29,9 @@ const request = ({ url, method = "GET", data, auth = true, headers = {} }) =>
         if (res.statusCode === 401) {
           const currentAuth = getAuth();
           if (auth && storedAuth?.token && currentAuth?.token === storedAuth.token) clearAuth();
-          reject(new Error("登录状态已过期，请重新登录"));
+          const error = new Error("登录状态已过期，请重新登录");
+          error.statusCode = 401;
+          reject(error);
           return;
         }
 
@@ -39,7 +41,9 @@ const request = ({ url, method = "GET", data, auth = true, headers = {} }) =>
             body.message ||
             (body.error && (body.error.message || body.error.code)) ||
             "服务暂时不可用";
-          reject(new Error(errorMessage));
+          const error = new Error(errorMessage);
+          error.statusCode = res.statusCode;
+          reject(error);
           return;
         }
 

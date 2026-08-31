@@ -88,11 +88,9 @@ const main = async () => {
     const incompleteId = phoneData.user.id;
     const incompleteToken = phoneData.token;
     fixtureIds.push(incompleteId);
-    assert.equal(phoneData.user.isProvisional, true, "new phone login must be provisional");
+    assert.equal(phoneData.user.isProvisional, false, "successful login must create a durable registered account");
 
-    const blocked = await ordinary(incompleteToken);
-    assert.equal(blocked.status, 403);
-    assert.equal(blocked.body.error?.details?.reason, "PROFILE_INCOMPLETE");
+    assert.equal((await ordinary(incompleteToken)).status, 200, "optional profile must not block ordinary business");
     assert.equal((await getMe(incompleteToken)).status, 200, "profile completion endpoint must remain available");
     assert.equal((await patchMe(incompleteToken, { nickname: "晴" })).status, 400, "one-character nickname must fail");
     assert.equal((await patchMe(incompleteToken, { nickname: "ABCDEFGHIJKLM" })).status, 400, "13-character nickname must fail");
@@ -123,7 +121,7 @@ const main = async () => {
     assert.equal(wechatAuth.status, 200, JSON.stringify(wechatAuth.body));
     const wechatData = dataOf<{ user: { id: string; isProvisional: boolean } }>(wechatAuth);
     fixtureIds.push(wechatData.user.id);
-    assert.equal(wechatData.user.isProvisional, true, "new WeChat login must be provisional");
+    assert.equal(wechatData.user.isProvisional, false, "new WeChat login must count as a durable registration");
 
     const discardUser = await prisma.user.create({ data: { phone: "13800000992", isProvisional: true } });
     fixtureIds.push(discardUser.id);
@@ -172,7 +170,7 @@ const main = async () => {
     assert.equal(await prisma.user.count({ where: { id: oldIncomplete.id } }), 1);
     assert.equal(await prisma.session.count({ where: { tokenHash: hashToken(oldSessionA.token) } }), 0);
     assert.equal(await prisma.session.count({ where: { tokenHash: hashToken(oldSessionB.token) } }), 1);
-    assert.equal((await ordinary(oldSessionB.token)).status, 403);
+    assert.equal((await ordinary(oldSessionB.token)).status, 200, "legacy incomplete durable users must remain usable");
 
     const completeUser = await prisma.user.create({
       data: {
@@ -235,7 +233,7 @@ const main = async () => {
     assert.equal(await prisma.user.count({ where: { id: logoutUser.id } }), 1);
     assert.equal(await prisma.session.count({ where: { tokenHash: hashToken(logoutSession.token) } }), 0);
 
-    console.log("Profile completion gate end-to-end checks passed.");
+    console.log("Optional profile and registration end-to-end checks passed.");
   } finally {
     await prisma.user.deleteMany({ where: { id: { in: fixtureIds } } }).catch(() => undefined);
     await prisma.verificationCode.deleteMany({ where: { phone } }).catch(() => undefined);

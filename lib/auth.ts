@@ -94,13 +94,7 @@ export const hasCompleteProfile = (user: {
 }) => Boolean(user.nickname?.trim() && user.avatarUrl?.trim() && user.profileCompletedAt);
 
 export const requireUser = async (request: NextRequest) => {
-  const user = await requireAuthenticatedUser(request);
-  if (!hasCompleteProfile(user)) {
-    throw new AppError("FORBIDDEN", "请先完成头像和昵称", 403, {
-      reason: "PROFILE_INCOMPLETE",
-    });
-  }
-  return user;
+  return requireAuthenticatedUser(request);
 };
 
 export const serializeUser = (user: {

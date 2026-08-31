@@ -94,13 +94,14 @@ const main = async () => {
     assert.equal(created.status, 200, JSON.stringify(created.body));
     assert.equal(dataOf<{ user: { phone: string; wechatOpenid: string } }>(created).user.phone, "13800000101");
     assert.equal(dataOf<{ user: { wechatOpenid: string } }>(created).user.wechatOpenid, "wx_e2e_new");
-    assert.equal(dataOf<{ user: { isProvisional: boolean } }>(created).user.isProvisional, true);
+    assert.equal(dataOf<{ user: { isProvisional: boolean } }>(created).user.isProvisional, false);
     assert.equal(dataOf<{ provider: string }>(created).provider, "wechat_phone");
 
     const phoneOwner = await prisma.user.create({ data: { phone: "13800000102" } });
     const phoneBound = await invoke("wx-phone-owner", "phone-owner");
     assert.equal(phoneBound.status, 200);
     assert.equal(dataOf<{ user: { id: string } }>(phoneBound).user.id, phoneOwner.id);
+    assert.equal(dataOf<{ user: { isProvisional: boolean } }>(phoneBound).user.isProvisional, false);
 
     const openIdOwner = await prisma.user.create({ data: { wechatOpenid: "wx_e2e_openid_owner" } });
     const openIdBound = await invoke("wx-openid-owner", "phone-openid-owner");
