@@ -39,16 +39,18 @@ npm run check:release:required
 
 ## 微信开发者工具预览
 
-当前 21-file 方案二候选尚未生成与最终 commit SHA 绑定的预览包。`647851712af78aaf46c2e8a1a819060b3b48f18e` 与 `aeccacd0238bf36be00d6cde90eefb1e6a07bd1c` 的二维码均已失效，不再用于验收；须在本候选提交后重新生成。
+微信开发者工具已对方案二候选 `5ca4e17` 成功生成新的预览包，报告包大小为 1,821,377 bytes。`647851712af78aaf46c2e8a1a819060b3b48f18e` 与 `aeccacd0238bf36be00d6cde90eefb1e6a07bd1c` 的二维码均已失效，不再用于验收。
 
 本地临时证据（不提交仓库）：
 
 | 文件 | SHA-256 | 大小 |
 | --- | --- | ---: |
+| `/private/tmp/xinqing-preview-5ca4e17.png` | `4e54cc6bebc91e7b418fc4b3c0443de0e603189071873f2d82a70d988b995f1a` | 47,002 bytes |
+| `/private/tmp/xinqing-preview-5ca4e17.json` | `789515f263db694db5ed55716851ab726ee27d97305b3d0818196dad3ac5047f` | 130 bytes |
 | `/private/tmp/xinqing-preview-6478517.png` | `93aaa50799130975b08de6533603b3f0741f380871677419c4c1b37aafa5e786` | 46,975 bytes |
 | `/private/tmp/xinqing-preview-6478517.json` | `127c3817ece9b7309c8ca48f2d56e997d43dfb8b509987c9422a768486a2a13c` | 130 bytes |
 
-开发者工具曾报告旧候选包大小为 1,820,659 bytes。该数值与上表二维码仅是历史记录，不属于当前方案二候选；在新 commit 生成新二维码、完成后端部署和真机回归前，不得作为上线体验版交付。
+旧候选包大小为 1,820,659 bytes，只是历史记录。新二维码虽已绑定当前候选，但在配套后端部署和真机回归完成前，仍不得作为上线体验版交付。
 
 ## 登录页视觉与 Figma 复核
 
