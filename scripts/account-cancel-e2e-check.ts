@@ -201,6 +201,29 @@ const main = async () => {
   assert.equal((await invokeCancel(mismatchSession.token, {})).status, 400);
   assert.equal(await prisma.user.count({ where: { id: mismatch.id } }), 1);
 
+  const dualCode = `dual-identity-${randomUUID()}`;
+  const dualOpenid = `mock_${createHash("sha256").update(dualCode).digest("hex").slice(0, 28)}`;
+  const dualPhone = `18${String(Date.now()).slice(-9)}`;
+  const dualSmsCode = "234567";
+  const dualIdentity = await prisma.user.create({
+    data: { ...completedProfile(), wechatOpenid: dualOpenid, phone: dualPhone },
+  });
+  const dualSession = await createSession(dualIdentity.id);
+  await prisma.verificationCode.create({
+    data: {
+      userId: dualIdentity.id,
+      phone: dualPhone,
+      scene: "CANCEL_ACCOUNT",
+      codeHash: hashVerificationCode({ phone: dualPhone, scene: "CANCEL_ACCOUNT", code: dualSmsCode }),
+      expiresAt: new Date(Date.now() + 60_000),
+    },
+  });
+  assert.equal((await invokeCancel(dualSession.token, { code: dualSmsCode })).status, 400, "a bound SMS code must not choose the branch for a WeChat-linked account");
+  assert.equal((await invokeCancel(dualSession.token, { wechatCode: `wrong-${randomUUID()}` })).status, 403);
+  assert.equal(await prisma.user.count({ where: { id: dualIdentity.id } }), 1);
+  assert.equal((await invokeCancel(dualSession.token, { wechatCode: dualCode, code: "000000" })).status, 200);
+  assert.equal(await prisma.user.count({ where: { id: dualIdentity.id } }), 0);
+
   const createPhoneFixture = async (phone: string, codeValue?: string, expiresAt = new Date(Date.now() + 60_000)) => {
     const phoneUser = await prisma.user.create({ data: { ...completedProfile(), phone } });
     const phoneSession = await createSession(phoneUser.id);
@@ -225,6 +248,7 @@ const main = async () => {
   const reused = await createPhoneFixture(phone(1));
   assert.equal((await invokeCancel(reused.token, { code: phoneCode })).status, 422, "deleted code must not be reusable");
   const wrong = await createPhoneFixture(phone(2), phoneCode);
+  assert.equal((await invokeCancel(wrong.token, {})).status, 400, "phone-only cancellation must require an SMS code");
   assert.equal((await invokeCancel(wrong.token, { code: "654321" })).status, 422);
   const expired = await createPhoneFixture(phone(3), phoneCode, new Date(Date.now() - 1_000));
   assert.equal((await invokeCancel(expired.token, { code: phoneCode })).status, 422);

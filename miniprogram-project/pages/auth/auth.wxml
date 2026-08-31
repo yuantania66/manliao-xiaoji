@@ -10,15 +10,8 @@
     </checkbox-group>
     <view wx:if="{{error}}" class="error">{{error}}</view>
     <button class="action primary" bindtap="loginWechat" loading="{{busy}}" disabled="{{busy}}">微信登录</button>
-    <button class="action soft" bindtap="showPhoneMethods" disabled="{{busy}}">手机号登录</button>
+    <button class="action soft" bindtap="showWechatPhone" disabled="{{busy}}">微信手机号登录</button>
     <button class="text-action guest" bindtap="showGuestWarning" disabled="{{busy}}">游客模式</button>
-  </view>
-
-  <view wx:elif="{{stage === 'phoneMethod'}}" class="sheet phone-method-sheet">
-    <view class="handle"></view><view class="sheet-title">手机号登录</view>
-    <button class="action primary" bindtap="showWechatPhone" loading="{{busy}}" disabled="{{busy}}">微信号码登录</button>
-    <button class="action neutral" bindtap="showSms" disabled="{{busy}}">验证码登录</button>
-    <button class="text-action back" bindtap="backToChoice">返回登录方式</button>
   </view>
 
   <view wx:elif="{{stage === 'wechatPhone'}}" class="sheet wechat-phone-sheet">
@@ -27,8 +20,7 @@
     <button class="bound-phone" open-type="getPhoneNumber" bindgetphonenumber="handleWechatPhone" loading="{{busy}}" disabled="{{busy}}">
       <view>微信绑定号码</view><text>由微信展示并确认</text>
     </button>
-    <button class="action soft" bindtap="showSms" disabled="{{busy}}">使用其他号码</button>
-    <button class="text-action back" bindtap="backToPhoneMethods">返回登录方式</button>
+    <button class="text-action back" bindtap="backToChoice">返回登录方式</button>
   </view>
 
   <view wx:elif="{{stage === 'sms'}}" class="sheet sms-sheet">

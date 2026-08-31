@@ -67,18 +67,20 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireUser(request);
     const body = await readJson(request);
-    const cancelCodeId = user.phone
-      ? await verifyCancelCode({ phone: user.phone, code: parseCode(body.code) })
-      : null;
-    if (!user.phone) {
+    let cancelCodeId: string | null = null;
+    if (user.wechatOpenid) {
       const wechatCode = typeof body.wechatCode === "string" ? body.wechatCode.trim() : "";
       if (!wechatCode) {
         throw new AppError("VALIDATION_ERROR", "请在微信小程序中重新验证身份后注销", 400, { field: "wechatCode" });
       }
       const verifiedOpenid = await getWechatOpenId(wechatCode);
-      if (!user.wechatOpenid || verifiedOpenid !== user.wechatOpenid) {
+      if (verifiedOpenid !== user.wechatOpenid) {
         throw new AppError("FORBIDDEN", "微信身份与当前账号不一致", 403);
       }
+    } else if (user.phone) {
+      cancelCodeId = await verifyCancelCode({ phone: user.phone, code: parseCode(body.code) });
+    } else {
+      throw new AppError("FORBIDDEN", "当前账号没有可用的身份验证方式", 403);
     }
 
     const cleanupTaskIds = await cancelAccountData({

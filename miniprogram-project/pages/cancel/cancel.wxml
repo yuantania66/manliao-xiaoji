@@ -16,7 +16,7 @@
   <view wx:if="{{confirmStep === 'sms'}}" class="card cancel-card">
     <view class="cancel-title">二次验证</view>
     <view class="body">
-      {{needsCode ? "验证码会发送到 " + maskedPhone : "当前账号未绑定手机，确认时会重新验证微信身份。"}}
+      {{needsCode ? "验证码会发送到 " + maskedPhone : "确认时会重新验证微信身份。"}}
     </view>
     <button wx:if="{{needsCode}}" class="primary-button" loading="{{isSendingCode}}" disabled="{{isSendingCode}}" bindtap="sendCancelCode">
       {{isSendingCode ? "发送中" : codeSent ? "重新发送验证码" : "发送验证码"}}

@@ -85,18 +85,29 @@ const smsKeys = [
   "TENCENT_SMS_SDK_APP_ID",
   "TENCENT_SMS_SIGN_NAME",
 ];
-const missingSms = smsKeys.filter((key) => isPlaceholder(value(key)));
-if (missingSms.length > 0) {
-  fail(`SMS production config is incomplete: ${missingSms.join(", ")}`);
-}
-if (
-  isPlaceholder(value("TENCENT_SMS_TEMPLATE_ID")) &&
-  (
-    isPlaceholder(value("TENCENT_SMS_TEMPLATE_ID_LOGIN")) ||
-    isPlaceholder(value("TENCENT_SMS_TEMPLATE_ID_CANCEL"))
-  )
-) {
-  fail("SMS production config requires TENCENT_SMS_TEMPLATE_ID or both login and cancellation template IDs");
+const smsTemplateKeys = [
+  "TENCENT_SMS_TEMPLATE_ID",
+  "TENCENT_SMS_TEMPLATE_ID_LOGIN",
+  "TENCENT_SMS_TEMPLATE_ID_CANCEL",
+];
+const hasSmsConfig = [...smsKeys, ...smsTemplateKeys]
+  .some((key) => !isPlaceholder(value(key)));
+if (!hasSmsConfig) {
+  warn("SMS login is deferred for this release; SMS production config is not required");
+} else {
+  const missingSms = smsKeys.filter((key) => isPlaceholder(value(key)));
+  if (missingSms.length > 0) {
+    fail(`SMS production config is incomplete: ${missingSms.join(", ")}`);
+  }
+  if (
+    isPlaceholder(value("TENCENT_SMS_TEMPLATE_ID")) &&
+    (
+      isPlaceholder(value("TENCENT_SMS_TEMPLATE_ID_LOGIN")) ||
+      isPlaceholder(value("TENCENT_SMS_TEMPLATE_ID_CANCEL"))
+    )
+  ) {
+    fail("SMS production config requires TENCENT_SMS_TEMPLATE_ID or both login and cancellation template IDs");
+  }
 }
 
 const numericKeys = ["SESSION_EXPIRES_DAYS", "AI_TIMEOUT_MS", "GUEST_AI_IP_DAILY_LIMIT", "MAX_NOTE_IMAGE_SIZE_MB"];

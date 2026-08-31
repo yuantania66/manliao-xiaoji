@@ -38,7 +38,7 @@ Page({
       backTop: layout.backTop,
       phone,
       maskedPhone: maskPhone(phone),
-      needsCode: Boolean(phone),
+      needsCode: Boolean(phone && !auth.user.wechatOpenid),
       userId: auth && auth.user ? auth.user.id : ""
     });
   },

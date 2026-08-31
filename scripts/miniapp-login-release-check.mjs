@@ -52,7 +52,7 @@ for (const markup of [homeWxml, meWxml]) {
 }
 assert.match(privacyWxml, /选择微信登录.*登录凭证和对应的账号标识/);
 assert.match(privacyWxml, /微信登录不会自动获取你的手机号、头像或昵称/);
-assert.match(privacyWxml, /选择手机号登录.*微信界面中确认的绑定号码.*其他大陆手机号.*短信验证码/);
+assert.match(privacyWxml, /选择微信手机号登录.*微信界面中确认的绑定号码.*当前版本暂不开放其他手机号短信验证码登录/);
 assert.doesNotMatch(meWxml, /profile-editor-mask/);
 assert.match(meWxml, /profileRequired \? "完善个人资料" : "编辑个人资料"/);
 assert.ok(meWxml.includes('wx:if="{{profileRequired}}" class="secondary-button" bindtap="exitRequiredProfile"'));
