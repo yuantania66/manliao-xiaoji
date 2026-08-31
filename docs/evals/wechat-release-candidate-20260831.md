@@ -10,6 +10,7 @@
 
 - 源码分支：`codex/release-main-integration-20260828`
 - 主线基线：`00a3301bd1abf3ddfd482a36746231f3159abe7d`
+- 当前短信延后源码候选：`647851712af78aaf46c2e8a1a819060b3b48f18e`
 - 原小程序源码与本地发布门候选：`aeccacd0238bf36be00d6cde90eefb1e6a07bd1c`；本次登录范围变更后该 commit 与二维码均已失效，须在新提交上重新封存。
 - 当前工作候选包含统一登录、微信手机号、暂缓公开但保留实现的短信登录、必填资料、头像、小记、聊天、观察、注销及持久删除队列。
 - 测试数据：仅隔离 PostgreSQL 与仓库合成 fixtures；未读取或写入真实用户数据。
@@ -36,16 +37,16 @@ npm run check:release:required
 
 ## 微信开发者工具预览
 
-微信开发者工具已对 `aeccacd0238bf36be00d6cde90eefb1e6a07bd1c` 对应源码成功生成预览包。预览编译过程中已经修复两项真实工具链问题：超出 2 MB 的登录背景资源，以及微信 WXSS 不支持的通配选择器。
+微信开发者工具已对 `647851712af78aaf46c2e8a1a819060b3b48f18e` 对应源码成功生成新预览包。原 `aeccacd0238bf36be00d6cde90eefb1e6a07bd1c` 二维码已失效，不再用于验收。
 
 本地临时证据（不提交仓库）：
 
 | 文件 | SHA-256 | 大小 |
 | --- | --- | ---: |
-| `/private/tmp/xinqing-preview-aeccacd.png` | `1dc1320773c5275cab57cad9fa359458e62f31f8e4f43ab6c02d571510810a09` | 46,689 bytes |
-| `/private/tmp/xinqing-preview-aeccacd.json` | `72ef0878bf45341abd06b6f80d84e9d00b8b10a0407c9471db707bbb339202ff` | 130 bytes |
+| `/private/tmp/xinqing-preview-6478517.png` | `93aaa50799130975b08de6533603b3f0741f380871677419c4c1b37aafa5e786` | 46,975 bytes |
+| `/private/tmp/xinqing-preview-6478517.json` | `127c3817ece9b7309c8ca48f2d56e997d43dfb8b509987c9422a768486a2a13c` | 130 bytes |
 
-开发者工具报告的小程序包大小为 1,821,179 bytes。该二维码只绑定本地候选；在后端迁移和部署完成前，不得把它作为上线体验版交付。
+开发者工具报告的小程序包大小为 1,820,659 bytes。该二维码只绑定上述本地源码候选；在后端迁移和部署完成前，不得把它作为上线体验版交付。
 
 ## 生产只读核验
 
@@ -59,7 +60,7 @@ npm run check:release:required
 
 ## 尚未完成
 
-1. 提交当前已通过完整发布门的短信延后候选，并重新生成与精确 commit 绑定的微信预览二维码。
+1. 使用新二维码完成微信、微信手机号、游客三条当前公开登录路径的真机复核，并确认页面没有可达的短信登录入口。
 2. 部署前确认可恢复备份；在生产应用 21 个 migration，构建并切换到本候选，再核对 migration、PM2、health、cleanup timer 和错误日志。
 3. 部署后运行基础 Smoke 与微信/微信手机号登录、资料完成、头像、小记、聊天、观察、注销、文件清理和跨账号隔离的合成主链路 Smoke。
 4. 在微信公众平台核对 request/upload/download 合法域名、隐私保护指引、服务类目和体验成员；上传精确候选开发版并保存版本/包绑定证据。
