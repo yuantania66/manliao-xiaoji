@@ -10,8 +10,8 @@
 
 - 源码分支：`codex/release-main-integration-20260828`
 - 主线基线：`00a3301bd1abf3ddfd482a36746231f3159abe7d`
-- 提交前基线：`cedcc6080cac02444e9c8ea58703c8be14a679f7`
-- 当前方案二候选：上述基线加 21 个 tracked 修改；排除本证据文档后的 canonical `git diff` SHA-256 为 `06f228abe8a1ca8ae4243e81b36cbd1fc09145703a17f159d0ceb8401c1e240c`。最终提交后以新 commit SHA 取代该临时绑定。
+- 当前方案二源码候选：`f05ef0ad14bb70a5ad090e73c56a3b68e7726108`
+- 提交前候选校验：基线 `cedcc6080cac02444e9c8ea58703c8be14a679f7` 加 21 个 tracked 修改；排除本证据文档后的 canonical `git diff` SHA-256 为 `06f228abe8a1ca8ae4243e81b36cbd1fc09145703a17f159d0ceb8401c1e240c`。该内容现已封存于上述 commit。
 - 上一版短信延后候选：`647851712af78aaf46c2e8a1a819060b3b48f18e`；其二维码和发布门证据均已被方案二取代，不得用于当前验收。
 - 原小程序源码与本地发布门候选：`aeccacd0238bf36be00d6cde90eefb1e6a07bd1c`；本次登录范围变更后该 commit 与二维码均已失效，须在新提交上重新封存。
 - 当前工作候选包含统一登录、微信手机号、暂缓公开但保留实现的短信登录、可选个人资料、头像、小记、聊天、观察、注销及持久删除队列。
