@@ -68,6 +68,11 @@ export const getWechatOpenId = async (code: string) => {
     | { openid?: string; errcode?: number }
     | null;
   if (!response.ok || !data?.openid || data.errcode) {
+    console.error("wechat upstream rejected", {
+      operation: "jscode2session",
+      httpStatus: response.status,
+      errcode: typeof data?.errcode === "number" ? data.errcode : null,
+    });
     throw new AppError("VALIDATION_ERROR", "微信身份验证失败，请重新操作", 400, {
       errcode: data?.errcode,
     });

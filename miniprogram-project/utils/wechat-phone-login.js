@@ -10,7 +10,13 @@ const getWechatPhoneCode = (detail) => {
   if (/cancel|deny/u.test(errMsg.toLowerCase())) {
     throw new Error("你已取消手机号授权，可以稍后再试。");
   }
-  throw new Error("微信未提供可用的手机号授权凭证，请检查小程序权限或稍后重试。");
+  if (Number(normalized.errno) === 1400001) {
+    throw new Error("微信手机号授权额度不足，请先使用微信登录。");
+  }
+  if (/no permission|permission denied/u.test(errMsg.toLowerCase())) {
+    throw new Error("当前小程序尚未开通微信手机号授权，请先使用微信登录。");
+  }
+  throw new Error("微信暂未提供手机号凭证，请先使用微信登录或稍后重试。");
 };
 
 const authenticateWithWechatPhone = (phoneCode) => new Promise((resolve, reject) => {

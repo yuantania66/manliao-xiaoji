@@ -115,6 +115,21 @@ Figma 文件 `慢聊小记 · 登录注册流程` 已按当前公开方案完整
 
 微信开发者工具不能签发真实 `getPhoneNumber` 动态凭证，因此本轮只能证明微信手机号页面、授权按钮和错误恢复状态正确，不能替代 iOS/Android 真机上的真实手机号授权成功证据。
 
+### 2026-09-01 微信登录故障修复
+
+- 真机反馈的普通微信登录失败已证明请求到达生产，但微信 `jscode2session` 未返回有效 `openid`；数据库、Nginx、Qwen 和短信均不在该失败边界内。服务端新增只含 `operation`、HTTP 状态和数字 `errcode` 的诊断事件，明确禁止记录登录 code、openid、AppSecret、URL 或响应正文。下一次真实登录可据 `40125` 与 `40029/40163` 区分 AppSecret 失效和临时 code 问题。
+- 预览二维码此前在 `develop` 环境且无本机调试设置时默认连接旧局域网。候选现改为默认连接生产 HTTPS；只有开发者显式写入本机调试环境/地址时才允许覆盖，release、trial 和未知环境仍强制生产域名。
+- 微信手机号按钮回调在没有 `phoneCode` 时不会请求后端。候选现分别提示取消授权、能力未开通和 `errno=1400001` 额度不足，并引导先使用普通微信登录；不会伪造手机号凭证或把微信权限问题冒充服务端成功。
+
+本地临时预览证据：
+
+| 文件 | SHA-256 | 大小 |
+| --- | --- | ---: |
+| `/private/tmp/xinqing-preview-wechat-auth-fix-r1-20260901.png` | `c6384e92f42b2a77f97d78de9243451eaeaaf57c9be4a82a4fd514bd9a0b4513` | 46,703 bytes |
+| `/private/tmp/xinqing-preview-wechat-auth-fix-r1-20260901.json` | `fef984759880f53d52ec4db2f1a78e47aa4fa0dfc2237e9e465ebe92a1930fd0` | 130 bytes |
+
+聚焦门：`check:miniapp-login`、`check:unified-auth-flow`、`check:miniapp-real-device`、`check:miniapp-js`、TypeScript、focused ESLint 与 `git diff --check` 均通过。手机号真实成功仍取决于微信公众平台主体认证、隐私保护指引中的手机号声明以及手机号快速验证额度。
+
 ## 生产只读核验
 
 - 当前生产应用 release：`dc1d010`；Nginx 代理到新版 `3101`，旧版 `5625262` 在 `3100` 保留作即时回滚。

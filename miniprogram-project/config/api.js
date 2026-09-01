@@ -27,7 +27,7 @@ const getStorageValue = (key) => {
 
 const getApiEnv = () => {
   if (getRuntimeVersion() !== "develop") return "prod";
-  return getStorageValue(API_ENV_KEY) || "lan";
+  return getStorageValue(API_ENV_KEY) || "prod";
 };
 
 const getRuntimeEnvVersion = () => {

@@ -134,10 +134,17 @@ assert.throws(() => auth.saveAuth(validAuth), /storage unavailable/);
 assert.equal(storage.has("xinqingAuth"), false, "failed cleanup must not persist new auth");
 wx.removeStorageSync = originalRemoveStorageSync;
 
-storage.set("xinqing_api_env", "local");
-storage.set("xinqing_api_base_url", "http://attacker.invalid");
 delete require.cache[require.resolve("../miniprogram-project/config/api.js")];
 const apiConfig = require("../miniprogram-project/config/api.js");
+runtimeEnvVersion = "develop";
+assert.equal(
+  apiConfig.getApiBaseUrl(),
+  "https://manliaoxiaoji.com",
+  "a fresh preview must use the production HTTPS API by default",
+);
+
+storage.set("xinqing_api_env", "local");
+storage.set("xinqing_api_base_url", "http://attacker.invalid");
 for (const envVersion of ["release", "trial", "unknown"]) {
   runtimeEnvVersion = envVersion;
   assert.equal(apiConfig.getApiBaseUrl(), "https://manliaoxiaoji.com");
@@ -521,10 +528,12 @@ assert.match(preparedHome.data.entryError, /取消手机号授权/);
 preparedHome.handlePhoneNumber({ detail: { errMsg: "getPhoneNumber:ok", encryptedData: "legacy", iv: "legacy-iv" } });
 assert.match(preparedHome.data.entryError, /版本.*不支持|旧版/u);
 preparedHome.handlePhoneNumber({ detail: { errMsg: "getPhoneNumber:fail no permission" } });
-assert.match(preparedHome.data.entryError, /未提供.*手机号|无法提供/u);
+assert.match(preparedHome.data.entryError, /尚未开通微信手机号授权/u);
+preparedHome.handlePhoneNumber({ detail: { errMsg: "getPhoneNumber:fail", errno: 1400001 } });
+assert.match(preparedHome.data.entryError, /授权额度不足/u);
 for (const detail of [null, [], {}]) {
   preparedHome.handlePhoneNumber({ detail });
-  assert.match(preparedHome.data.entryError, /未提供.*手机号|无法提供/u);
+  assert.match(preparedHome.data.entryError, /暂未提供手机号凭证/u);
 }
 assert.equal(phoneFailureWxLoginCalls, 0);
 assert.equal(phoneApiCalls, phoneApiCallsBeforeFailures);

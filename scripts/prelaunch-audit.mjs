@@ -63,12 +63,12 @@ const loadApiConfig = ({
 
 const productionUrl = "https://manliaoxiaoji.com";
 const developApi = loadApiConfig({ envVersion: "develop" });
-assert(developApi.getApiEnv() === "lan", "develop miniapp must default to lan API");
+assert(developApi.getApiEnv() === "prod", "develop miniapp must default to production API");
 const developWithoutStorage = loadApiConfig({ envVersion: "develop", storageThrows: true });
 assert(
-  developWithoutStorage.getApiEnv() === "lan" &&
-    developWithoutStorage.getApiBaseUrl() === developWithoutStorage.API_BASE_URLS.lan,
-  "develop miniapp must fall back to lan when storage is unavailable"
+  developWithoutStorage.getApiEnv() === "prod" &&
+    developWithoutStorage.getApiBaseUrl() === developWithoutStorage.API_BASE_URLS.prod,
+  "develop miniapp must fall back to production when storage is unavailable"
 );
 const overriddenDevelopApi = loadApiConfig({
   envVersion: "develop",
