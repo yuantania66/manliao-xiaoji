@@ -17,16 +17,17 @@
 
 ## 2026-09-01 当前发布
 
-- 生产版本：`dc1d010`（GitHub 网络不可达时通过封存 tar 包直接部署；远端主分支同步待补）
-- 当前目录：`/var/www/manliaoxiaoji/releases/dc1d010`
-- 回滚版本：`/var/www/manliaoxiaoji/releases/5625262`
-- Next.js Build ID：`VMncqpVGHM4vSPt86SVn7`
+- 生产版本：`4c0b72e`（GitHub 网络不可达时通过封存 tar 包直接部署；远端主分支同步待补）
+- 当前目录：`/var/www/manliaoxiaoji/releases/4c0b72e`
+- 回滚版本：`/var/www/manliaoxiaoji/releases/dc1d010`（另保留 `5625262`）
+- Next.js Build ID：`MPfwT9EZZYHck-CnI_YRX`
 - 生产数据库：21 个 migration 已应用，无待执行 migration
-- 蓝绿状态：Nginx 当前代理到 `127.0.0.1:3101` 的 `manliaoxiaoji-canary`（新版）；旧版 `manliaoxiaoji` 仍在 `3100` 在线保留作即时回滚
+- 蓝绿状态：Nginx 当前代理到 `127.0.0.1:3102` 的 `manliaoxiaoji-authfix`（新版）；`dc1d010` 在 `3101`、`5625262` 在 `3100` 在线保留作即时回滚
 - 健康检查：`/api/health` 返回 production / database connected
 - 线上 smoke：基础 3/3 通过；真实 Qwen 合成游客欢迎语与“你好”聊天均成功提交
-- 当前小程序预览：`/private/tmp/xinqing-preview-dc1d010.png`，SHA-256 `8d9b70459f48c8db1a9e606c3705ac13f1de3f66fda6f404e66ac721933c11ef`
+- 当前小程序预览：`/private/tmp/xinqing-preview-wechat-auth-fix-r1-20260901.png`，SHA-256 `c6384e92f42b2a77f97d78de9243451eaeaaf57c9be4a82a4fd514bd9a0b4513`
 - 线上 smoke：健康检查、匿名鉴权、微信空参数、游客主动问候、真实 Qwen 合成“你好”均通过
+- 微信登录诊断：新版本仅记录微信上游 operation、HTTP 状态和数字 errcode；等待最新二维码的一次真实登录以区分 AppSecret 与临时 code 问题
 - 注销文件清理：`manliaoxiaoji-account-cancellation-cleanup.timer` 已启用，最近一次执行成功
 - 数据库备份：`manliaoxiaoji-postgres-backup.timer` 已启用，每日执行；首份备份已通过 `pg_restore --list` 完整性检查
 - 小程序预览：从生产同版本 `5625262` 的纯净归档编译通过，包体 168.8 KB
