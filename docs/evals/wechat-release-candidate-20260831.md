@@ -91,6 +91,30 @@ Figma 文件 `慢聊小记 · 登录注册流程` 的当前夜间稿以及清晨
 
 并排复核确认：登录弹层起点、24px 左右内边距、342px 主按钮宽度、按钮顺序和背景亮度同真。微信原生 checkbox 在模拟器中仍为方形，而 Figma 画稿使用圆形同意控件；该差异不影响同意语义，未在本次仅限按钮宽度、背景亮度和文案同步的切片中重做控件。
 
+### 当前登录流程与设置页逐页验收（2026-09-01）
+
+Figma 文件 `慢聊小记 · 登录注册流程` 已按当前公开方案完整同步：微信登录、微信手机号登录、游客模式；头像和昵称为登录后的可选资料，资料页使用“稍后再说”；短信登录仍保留在代码中，但当前入口不展示。Figma 新增并补齐了“已登录设置”和“游客设置”两页，分别对应账号连接/个人资料/注销/退出，以及游客模式/隐私/反馈的真实页面状态。
+
+小程序同步修复三处弹层主按钮宽度：微信手机号授权、游客确认、游客身份确认。三者现在都清除原生按钮的左右 margin，并在弹层内容宽度内横向撑满；专项检查对该规则做了固定断言。
+
+微信开发者工具中实际走通并截图的本地合成流程为：登录选择 → 微信登录直达“我的” → 已登录设置 → 可选资料 → “稍后再说”返回 → 退出登录回到登录选择；以及登录选择 → 游客确认 → 游客身份 → 游客“我的” → 游客设置。所有下列截图均从模拟器设备区域直接截取，不含 Codex、桌面通知或调试浮层：
+
+| 页面 | Figma 文件（SHA-256） | 开发者工具文件（SHA-256） | 结论 |
+| --- | --- | --- | --- |
+| 登录选择 | `/private/tmp/figma-current-login.png` (`161e9635ae73e72e282b61721c87ff4925e0eb00628f4ca0b19ac443a4a905e2`) | `/private/tmp/xinqing-devtools-registration-flow/01-choice-after-logout.png` (`8a7e14bee28c1e9ccdf97683c64a122c6df32b3ca8b9b732a00d9b4e3d68a38e`) | 文案、顺序、背景和按钮宽度同真 |
+| 微信手机号 | `/private/tmp/figma-current-phone.png` (`d17066a0cb845a2e7f82015e08691147b9bd06161d527ad6ad95f0700731f625`) | `/private/tmp/xinqing-devtools-registration-flow/05-wechat-phone.png` (`9033b57aa96a1f934fa0ce9313682309071b6080e12c1a94e940a460565cfbd4`) | 授权按钮全宽；真实手机号凭证仍需真机 |
+| 可选资料 | `/private/tmp/figma-current-profile.png` (`2aba313985318582693425ecc54a3d7900a9c6f43b0e8c455c61e7244bb12e63`) | `/private/tmp/xinqing-devtools-registration-flow/03-optional-profile.png` (`27dc9bc7d82988b84696d8aecf2931fd65b89d3657f0e8b1042c047384fb6b6d`) | 可选语义和“稍后再说”同真 |
+| 已登录“我的” | `/private/tmp/figma-current-auth-me.png` (`a1ce5e2db34ca8b73788252a9aab7202bf17f2a79cc9e49e64a44dc68068a4e6`) | `/private/tmp/xinqing-devtools-registration-flow/02-wechat-direct-me.png` (`3249e2d9598d15bc3814c8546ad85c993cf7f1df173c5e4d6272374c1d682b28`) | 登录证据、设置入口、观察入口和层级同真 |
+| 已登录设置 | `/private/tmp/figma-current-auth-settings.png` (`39fb397252d150d86f49854ec438584bf5d266442db3dde2b93bf277394794e9`) | `/private/tmp/xinqing-devtools-registration-flow/04-settings-authenticated.png` (`eb0c435bd857884e288e3f6d97a53328a25812bf1343574d8cdf6e62c45f6554`) | 账号连接、资料、隐私、反馈、注销和退出同真 |
+| 游客确认 | `/private/tmp/figma-current-guest-warning.png` (`42e4a88158382f1ba146f07eb9e4fa4b95a301754de85bd74203d61a08a72dd2`) | `/private/tmp/xinqing-devtools-registration-flow/07-guest-warning.png` (`73c49fb7b98e97d8edf50389943eacf86d989ae32a1c0a49f2d25b329995262c`) | 两个动作与全宽主按钮同真 |
+| 游客身份 | `/private/tmp/figma-current-guest-identity.png` (`57929296e059665f660513a17d46edafb1e9115f4c717a151474cd326be66205`) | `/private/tmp/xinqing-devtools-registration-flow/08-guest-identity.png` (`58e861da6b64893720b8fdd2f0e08eed3a03a2bf3e15a60953baab4f1b43f8a0`) | 本地身份、返回入口与全宽主按钮同真 |
+| 游客“我的” | `/private/tmp/figma-current-guest-me.png` (`d804642380fdc75dd8692b3bc1039298324f5ea621a5a475299f26447a8fbcb0`) | `/private/tmp/xinqing-devtools-registration-flow/09-guest-me.png` (`f15be1fe251a6ff44ea2b1ef84d4f8c6d43c337b6c6ffe13c243b07f40050bf7`) | 本地保存提示、设置入口和观察入口同真 |
+| 游客设置 | `/private/tmp/figma-current-guest-settings.png` (`e5b774647cb8c79ee0bef46f60794ac62e32d83aa547f1f53caebfba05201480`) | `/private/tmp/xinqing-devtools-registration-flow/10-settings-guest.png` (`35df4d6fec8fe80ab9cb15accbefcd28f6282386c8c4a18aaada54388a694d8b`) | 游客状态、隐私和反馈同真 |
+
+逐页复核允许微信原生状态栏、胶囊和字体栅格化造成的设备差异；不允许内容、状态、操作顺序或按钮宽度偏离。已登录设置在真实小程序中沿用现有紧凑分组，Figma 使用相同信息层级的设计稿表达，未发现遮挡、横向溢出或不可达操作。
+
+微信开发者工具不能签发真实 `getPhoneNumber` 动态凭证，因此本轮只能证明微信手机号页面、授权按钮和错误恢复状态正确，不能替代 iOS/Android 真机上的真实手机号授权成功证据。
+
 ## 生产只读核验
 
 - 当前生产应用 release：`5625262`；不是本候选。

@@ -8,6 +8,7 @@ view,image,button,input,navigator,text,label,checkbox { box-sizing: border-box; 
 .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 28px 24px 24px; padding-bottom:max(24px, env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; background: #fffdf9; }
 .choice-sheet { display:flex;flex-direction:column;gap:12px;height:313px;padding-top:22px;border-radius:26px 26px 0 0;box-shadow:0 8px 24px rgba(45,41,38,.09); }
 .choice-sheet .sheet-title,.choice-sheet .consent,.choice-sheet .action,.choice-sheet .text-action{margin:0}.choice-sheet .action{align-self:stretch;width:auto;flex:none}.phone-method-sheet{height:272px}.wechat-phone-sheet{height:296px}.sms-sheet{height:405px}.profile-sheet{display:flex;flex-direction:column;height:429px;padding:22px 20px 12px;padding-bottom:max(12px, env(safe-area-inset-bottom))}.avatar-source-sheet{height:382px;padding:22px 18px 24px;padding-bottom:max(24px, env(safe-area-inset-bottom))}.guest-warn-sheet{height:292px}.guest-identity-sheet{height:422px}
+.wechat-phone-sheet>.bound-phone,.guest-warn-sheet>.action,.guest-identity-sheet>.action{width:auto;margin-left:0;margin-right:0}
 .handle { width:46px;height:5px;margin:0 0 14px;border-radius:3px;background:#ded8d1; }
 .sheet-title { margin-bottom:14px;font-size:24px;font-weight:700;line-height:1.2; }.sheet-title.compact{font-size:21px}.center{text-align:center}
 .sheet-copy { margin:-4px 0 14px;color:#6d665f;font-size:13px;line-height:1.45; }

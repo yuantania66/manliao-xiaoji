@@ -25,6 +25,7 @@ assert.match(wxss, /\.auth-mask\s*\{\s*background:\s*transparent\s*;?\s*\}/u);
 assert.match(wxss, /\.auth-background\s*\{[^}]*width:\s*100%[^}]*height:\s*auto/u);
 assert.match(wxss, /\.auth-background-blend\s*\{[^}]*height:\s*28px[^}]*pointer-events:\s*none/u);
 assert.match(wxss, /\.choice-sheet \.action\s*\{[^}]*align-self:\s*stretch[^}]*width:\s*auto[^}]*flex:\s*none[^}]*\}/u);
+assert.match(wxss, /\.wechat-phone-sheet>\.bound-phone,\.guest-warn-sheet>\.action,\.guest-identity-sheet>\.action\s*\{[^}]*width:\s*auto[^}]*margin-left:\s*0[^}]*margin-right:\s*0[^}]*\}/u);
 
 const future = new Date(Date.now() + 60000).toISOString();
 let storedAuth = null;
