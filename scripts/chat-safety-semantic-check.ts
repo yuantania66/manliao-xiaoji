@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 
+import { AppError } from "../lib/errors";
+
 import {
   SAFETY_SCHEMA_VERSION,
   createSafetyGeneration,
@@ -203,51 +205,189 @@ assert.equal(mixed.status, "decided");
 assert.equal(mixed.channel, "semantic");
 if (mixed.status === "decided") assert.equal(mixed.decision.requiresSafetyResponse, true);
 
-const repairedAttempts: number[] = [];
-const repaired = await triageSafety({
+let successAttempts = 0;
+const successful = await triageSafety({
   currentUserMessage: currentMessage,
   recentMessages: [],
-  provider: async ({ attempt, previousFailure, messages }) => {
-    repairedAttempts.push(attempt);
+  provider: async ({ messages }) => {
+    successAttempts += 1;
     assert(messages[0]?.content.includes("exact schema"));
-    if (attempt === 1) return "not-json";
-    assert(previousFailure?.includes("invalid_json"));
     return validRisk;
   },
 });
-assert.equal(repaired.status, "decided");
-assert.equal(repaired.channel, "semantic");
-assert.equal(repaired.attempts, 2);
-assert.deepEqual(repairedAttempts, [1, 2]);
-if (repaired.status === "decided") assert.equal(repaired.decision.requiresSafetyResponse, true);
+assert.equal(successful.status, "decided");
+assert.equal(successful.channel, "semantic");
+assert.equal(successful.attempts, 1);
+assert.equal(successAttempts, 1);
+assert.deepEqual(successful.attemptTrace, [{
+  attempt: 1,
+  outcome: "success",
+  failureCategory: null,
+  retryable: false,
+}]);
 
-let malformedAttempts = 0;
-const malformed = await triageSafety({
-  currentUserMessage: "我只是想聊聊今天的天气",
-  recentMessages: [],
-  provider: async () => {
-    malformedAttempts += 1;
-    return "{}";
-  },
-});
-assert.equal(malformed.status, "blocked");
-assert.equal(malformed.failureType, "invalid_output");
-assert.equal(malformed.attempts, 2);
-assert.equal(malformedAttempts, 2);
+for (const invalidOutput of [
+  "not-json",
+  JSON.stringify({ ...JSON.parse(validRisk), evidence: [{ text: "伪造片段" }] }),
+  JSON.stringify({
+    ...JSON.parse(validRisk),
+    riskLevel: "none",
+    categories: [],
+    evidence: [],
+    requiresSafetyResponse: true,
+  }),
+]) {
+  let malformedAttempts = 0;
+  const malformed = await triageSafety({
+    currentUserMessage: currentMessage,
+    recentMessages: [],
+    provider: async () => {
+      malformedAttempts += 1;
+      return invalidOutput;
+    },
+  });
+  assert.equal(malformed.status, "blocked");
+  assert.equal(malformed.failureType, "invalid_output");
+  assert.equal(malformed.attempts, 1);
+  assert.equal(malformedAttempts, 1);
+  assert.deepEqual(malformed.attemptTrace, [{
+    attempt: 1,
+    outcome: "failed",
+    failureCategory: "invalid_output",
+    retryable: false,
+  }]);
+}
 
 let exceptionAttempts = 0;
+const privateProviderDetail = "private provider detail sk-secret-value";
 const providerFailure = await triageSafety({
   currentUserMessage: "我只是想聊聊今天的天气",
   recentMessages: [],
   provider: async () => {
     exceptionAttempts += 1;
-    throw new Error("private provider detail");
+    throw new Error(privateProviderDetail);
   },
 });
 assert.equal(providerFailure.status, "blocked");
 assert.equal(providerFailure.failureType, "provider_error");
-assert.equal(providerFailure.attempts, 2);
-assert.equal(exceptionAttempts, 2);
+assert.equal(providerFailure.attempts, 1);
+assert.equal(exceptionAttempts, 1);
+assert.equal(JSON.stringify(providerFailure).includes(privateProviderDetail), false);
+assert.deepEqual(providerFailure.attemptTrace, [{
+  attempt: 1,
+  outcome: "failed",
+  failureCategory: "provider_error",
+  retryable: false,
+}]);
+
+for (const status of [400, 401] as const) {
+  let attempts = 0;
+  const failure = await triageSafety({
+    currentUserMessage: "我只是想聊聊今天的天气",
+    recentMessages: [],
+    provider: async () => {
+      attempts += 1;
+      throw new AppError("AI_GENERATION_FAILED", privateProviderDetail, 502, {
+        status,
+        apiKey: "sk-private-provider-key",
+      });
+    },
+  });
+  assert.equal(failure.status, "blocked");
+  assert.equal(failure.attempts, 1);
+  assert.equal(attempts, 1);
+  assert.equal(JSON.stringify(failure).includes("private"), false);
+  assert.equal(failure.attemptTrace[0]?.failureCategory, "provider_4xx");
+  assert.equal(failure.attemptTrace[0]?.retryable, false);
+}
+
+const retryThenSucceed = async ({
+  error,
+  expectedCategory,
+}: {
+  error: AppError;
+  expectedCategory: "timeout" | "rate_limited" | "provider_5xx";
+}) => {
+  const attempts: number[] = [];
+  const result = await triageSafety({
+    currentUserMessage: currentMessage,
+    recentMessages: [],
+    provider: async ({ attempt, previousFailure }) => {
+      attempts.push(attempt);
+      if (attempt === 1) throw error;
+      assert.equal(previousFailure, expectedCategory);
+      return validRisk;
+    },
+  });
+  assert.equal(result.status, "decided");
+  assert.equal(result.attempts, 2);
+  assert.deepEqual(attempts, [1, 2]);
+  assert.deepEqual(result.attemptTrace.map((entry) => entry.failureCategory), [
+    expectedCategory,
+    null,
+  ]);
+  assert.equal(result.attemptTrace[0]?.retryable, true);
+  assert.equal(JSON.stringify(result).includes(privateProviderDetail), false);
+};
+
+await retryThenSucceed({
+  error: new AppError("AI_GENERATION_FAILED", privateProviderDetail, 504),
+  expectedCategory: "timeout",
+});
+await retryThenSucceed({
+  error: new AppError("AI_GENERATION_FAILED", privateProviderDetail, 502, { status: 429 }),
+  expectedCategory: "rate_limited",
+});
+for (const status of [500, 503] as const) {
+  await retryThenSucceed({
+    error: new AppError("AI_GENERATION_FAILED", privateProviderDetail, 502, { status }),
+    expectedCategory: "provider_5xx",
+  });
+}
+
+let exhaustedAttempts = 0;
+const exhausted = await triageSafety({
+  currentUserMessage: "我只是想聊聊今天的天气",
+  recentMessages: [],
+  provider: async () => {
+    exhaustedAttempts += 1;
+    throw new AppError("AI_GENERATION_FAILED", privateProviderDetail, 502, { status: 503 });
+  },
+});
+assert.equal(exhausted.status, "blocked");
+assert.equal(exhausted.attempts, 2);
+assert.equal(exhaustedAttempts, 2);
+assert.deepEqual(exhausted.attemptTrace.map((entry) => entry.retryable), [true, false]);
+assert.deepEqual(exhausted.attemptTrace.map((entry) => entry.failureCategory), [
+  "provider_5xx",
+  "provider_5xx",
+]);
+assert.equal(JSON.stringify(exhausted).includes(privateProviderDetail), false);
+
+for (const secondFailure of ["invalid_output", "provider_4xx"] as const) {
+  let attempts = 0;
+  const result = await triageSafety({
+    currentUserMessage: currentMessage,
+    recentMessages: [],
+    provider: async () => {
+      attempts += 1;
+      if (attempts === 1) {
+        throw new AppError("AI_GENERATION_FAILED", privateProviderDetail, 502, { status: 500 });
+      }
+      if (secondFailure === "invalid_output") return "not-json";
+      throw new AppError("AI_GENERATION_FAILED", privateProviderDetail, 502, { status: 401 });
+    },
+  });
+  assert.equal(result.status, "blocked");
+  assert.equal(result.attempts, 2);
+  assert.equal(attempts, 2);
+  assert.deepEqual(result.attemptTrace.map((entry) => entry.failureCategory), [
+    "provider_5xx",
+    secondFailure,
+  ]);
+  assert.deepEqual(result.attemptTrace.map((entry) => entry.retryable), [true, false]);
+  assert.equal(JSON.stringify(result).includes(privateProviderDetail), false);
+}
 
 const environmentKeys = [
   "NODE_ENV",

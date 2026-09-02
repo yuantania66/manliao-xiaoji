@@ -4,6 +4,7 @@ import {
   getDefaultAiModel,
   isAiProviderConfigured,
 } from "./modelProvider";
+import { AppError } from "@/lib/errors";
 import type { AiConversationMessage, AiGenerationResult, AiModelMessage } from "./types";
 
 export const SAFETY_PROMPT_VERSION = "safety-semantic-triage-v2";
@@ -50,6 +51,21 @@ export type SafetySemanticProvider = (
   input: SafetySemanticProviderInput
 ) => Promise<SafetySemanticProviderResult | string>;
 
+export type SafetyAttemptFailureCategory =
+  | "invalid_output"
+  | "provider_error"
+  | "provider_4xx"
+  | "timeout"
+  | "rate_limited"
+  | "provider_5xx";
+
+export type SafetyAttemptTraceEntry = {
+  attempt: 1 | 2;
+  outcome: "success" | "failed";
+  failureCategory: SafetyAttemptFailureCategory | null;
+  retryable: boolean;
+};
+
 export type SafetyTriageResult =
   | {
       status: "decided";
@@ -57,13 +73,15 @@ export type SafetyTriageResult =
       decision: SafetyTriageDecision;
       model: string;
       attempts: number;
+      attemptTrace: SafetyAttemptTraceEntry[];
     }
   | {
       status: "blocked";
       channel: "semantic";
       failureType: "provider_error" | "provider_unconfigured" | "invalid_output";
       reason: string;
-      attempts: 0 | 2;
+      attempts: 0 | 1 | 2;
+      attemptTrace: SafetyAttemptTraceEntry[];
     };
 
 const SAFETY_CATEGORIES = new Set<SafetyCategory>([
@@ -243,7 +261,7 @@ const buildSafetyMessages = ({
     .map((message) => `${message.role}: ${message.content}`)
     .join("\n");
   const repairInstruction = previousFailure
-    ? `\n上一次输出违反合同（${previousFailure}）。只修正结构，不改变对同一输入的风险判断。`
+    ? `\n上一次调用因临时基础设施失败（${previousFailure}）。保持相同判定合同。`
     : "";
   return [
     {
@@ -276,6 +294,28 @@ const toProviderResult = (
   ? { text: result, model: "injected-safety-provider", latencyMs: 0 }
   : result;
 
+const classifyProviderFailure = (error: unknown): {
+  category: Exclude<SafetyAttemptFailureCategory, "invalid_output">;
+  retryable: boolean;
+} => {
+  if (!(error instanceof AppError)) {
+    return { category: "provider_error", retryable: false };
+  }
+  if (error.status === 504) return { category: "timeout", retryable: true };
+  const providerStatus = isRecord(error.details) ? error.details.status : undefined;
+  if (providerStatus === 429) return { category: "rate_limited", retryable: true };
+  if (typeof providerStatus === "number" && providerStatus >= 500 && providerStatus <= 599) {
+    return { category: "provider_5xx", retryable: true };
+  }
+  if (typeof providerStatus === "number" && providerStatus >= 400 && providerStatus <= 499) {
+    return { category: "provider_4xx", retryable: false };
+  }
+  return { category: "provider_error", retryable: false };
+};
+
+const failureReason = (category: SafetyAttemptFailureCategory) =>
+  `safety_semantic_${category}`;
+
 const noRiskDecision = (): SafetyTriageDecision => ({
   schemaVersion: SAFETY_SCHEMA_VERSION,
   riskLevel: "none",
@@ -302,6 +342,7 @@ export const triageSafety = async ({
       decision: deterministic,
       model: "safety-deterministic",
       attempts: 0,
+      attemptTrace: [],
     };
   }
   const providerEnvConfigured = Boolean(process.env.AI_PROVIDER?.trim());
@@ -316,6 +357,7 @@ export const triageSafety = async ({
       decision: noRiskDecision(),
       model: "local-fixture-no-semantic-provider",
       attempts: 0,
+      attemptTrace: [],
     };
   }
   if (!provider && !configuredDefault) {
@@ -325,11 +367,12 @@ export const triageSafety = async ({
       failureType: "provider_unconfigured",
       reason: "safety_semantic_provider_unconfigured",
       attempts: 0,
+      attemptTrace: [],
     };
   }
   const selectedProvider = provider ?? defaultSafetySemanticProvider;
   let previousFailure: string | null = null;
-  let lastFailureType: "provider_error" | "invalid_output" = "provider_error";
+  const attemptTrace: SafetyAttemptTraceEntry[] = [];
   for (const attempt of [1, 2] as const) {
     try {
       const result = toProviderResult(await selectedProvider({
@@ -345,23 +388,51 @@ export const triageSafety = async ({
           decision,
           model: result.model,
           attempts: attempt,
+          attemptTrace: [
+            ...attemptTrace,
+            { attempt, outcome: "success", failureCategory: null, retryable: false },
+          ],
         };
-      } catch (error) {
-        lastFailureType = "invalid_output";
-        previousFailure = error instanceof Error ? error.message : "invalid_safety_triage";
+      } catch {
+        attemptTrace.push({
+          attempt,
+          outcome: "failed",
+          failureCategory: "invalid_output",
+          retryable: false,
+        });
+        return {
+          status: "blocked",
+          channel: "semantic",
+          failureType: "invalid_output",
+          reason: failureReason("invalid_output"),
+          attempts: attempt,
+          attemptTrace,
+        };
       }
     } catch (error) {
-      lastFailureType = "provider_error";
-      previousFailure = error instanceof Error ? error.message : "safety_provider_error";
+      const failure = classifyProviderFailure(error);
+      const willRetry = failure.retryable && attempt === 1;
+      attemptTrace.push({
+        attempt,
+        outcome: "failed",
+        failureCategory: failure.category,
+        retryable: willRetry,
+      });
+      if (willRetry) {
+        previousFailure = failure.category;
+        continue;
+      }
+      return {
+        status: "blocked",
+        channel: "semantic",
+        failureType: "provider_error",
+        reason: failureReason(failure.category),
+        attempts: attempt,
+        attemptTrace,
+      };
     }
   }
-  return {
-    status: "blocked",
-    channel: "semantic",
-    failureType: lastFailureType,
-    reason: previousFailure ?? "safety_triage_failed",
-    attempts: 2,
-  };
+  throw new Error("unreachable_safety_triage_attempt_state");
 };
 
 export function createSafetyGeneration(decision: SafetyTriageDecision): AiGenerationResult;

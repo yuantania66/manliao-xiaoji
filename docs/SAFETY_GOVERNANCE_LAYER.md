@@ -262,3 +262,18 @@ Phase 1 通过标准：
 - 用户数据删除路径明确。
 - 敏感数据不进入训练。
 - Trace 能显示 Safety 是否覆盖普通链路。
+
+## Implemented Semantic Triage Boundary (2026-08-10)
+
+生产聊天入口现在在 Clinical、Planner 和 Surface 之前执行双通道 Safety 分诊：
+
+1. 确定性 imminent 快通道只接受无主体标记、整条消息为已实施行动的输入。原文在 Unicode 与标点规范化前如含任意非句末标点或符号，必须进入 semantic triage，避免引号、括注、Markdown/code 或装饰标记被清洗后误归属。
+2. 配置 Qwen 时，其余每个用户回合都运行一次只读语义分诊；模型只返回 strict JSON，不生成回复或电话号码。最小相邻 committed 上下文只用于判断当前性和承接关系。
+3. `evidence` 只允许模型选择当前消息中的 exact `{text}`。代码要求片段非空、唯一且逐字存在，再计算内部 UTF-16 位置。malformed、额外/缺失字段、非法枚举、证据错绑、`uncertain` 未升级、provider failure 均不能伪装成 `none`。
+4. malformed、binding/evidence 错绑、语义不一致、provider 4xx 或未知异常首次失败即 `SAFETY_BLOCKED`。只有 timeout、429、provider 5xx 可在 Safety 边界内对同一输入重试一次；第二次任何失败都立即阻断，不进入普通 Planner，也不创建 Assistant event。Trace 只记录脱敏失败类别和是否执行重试，不记录 provider 原始错误或用户原文。
+
+Safety winner 仍由代码所有。中国大陆回复先承认危险并给出当前最优先动作：已服药、已受伤或正在实施优先 `120（医疗急救）`；暴力、家暴或武器威胁优先 `110（人身安全/报警）`，受伤时同时给 `120`；当前自伤/自杀念头给 `12356（心理援助）`，并明确升级到 `120/110` 的条件。号码不来自模型，也不宣称 `12356` 全国 24 小时。国家卫健委已将 [12356 设为全国统一心理援助热线](https://www.nhc.gov.cn/yzygj/c100068/202412/49a1a65386cd4be582d4702fd0926ee8.shtml)，并规定 [120 院前医疗急救呼叫体系](https://www.nhc.gov.cn/wjw/c100221/202201/26ea3c97e82d466f9aa2b4a9901ae187/files/%E9%99%A2%E5%89%8D%E5%8C%BB%E7%96%97%E6%80%A5%E6%95%91%E7%AE%A1%E7%90%86%E5%8A%9E%E6%B3%95.pdf)。
+
+本边界只在当前执行 trace 中记录通道、风险级别、类别和当前性；不新增持久 Safety lifecycle state、Memory/User Model 写入或 schema。已验证 Safety winner 的既有 immutable `supersedes` edge，以及 `resolved/active` 纯查询保持不变。
+
+冻结状态：**已封存**。Subject-Ownership Closure 将所有意图表达及带主体标记的输入交给 semantic triage；明确第三方归属放行，无归属危险引文 fail closed。真实 `qwen3.7-max` 22-case 集、独立工程复审和 Safety/Privacy 复审均 PASS；未扩张说话人词表，也未新增持久化或数据访问。

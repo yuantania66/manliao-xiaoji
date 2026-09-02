@@ -1,17 +1,24 @@
 # 当前交付切片
 
-- 名称：PHM-A Reciprocal/Unclear Candidate Reconciliation。
-- 交付结果：真实主动问候后的明确 reciprocal relation 不再被自动 adjacency fallback `unclear` 污染；Planner 可选择 `complete_reciprocal_contact`，而真实歧义仍 defer。
-- 用户价值：用户回复“嗨”等简短回礼时，系统不再错误回到“嗨，在呢。”的重复问候/在场声明。
-- 验收标准：报告场景先复现 `[reciprocates_move, unclear]` 与 defer；修复后仅保留有效 same-target model reciprocal 并产生 `complete_reciprocal_contact/fulfill/optional_after_completion`；模型失败/无效/错 target、模型自身 unclear、多关系真歧义继续 defer；topic redirect、question greeting、direct question、boundary、repair 保持既有语义；专项、真实端到端人工路径、TypeScript、ESLint、独立 Reviewer 与完整 `check:launch` 通过。
-- 允许范围：`mergeModelInterpretation` 中唯一 deterministic adjacency fallback 的候选协调；PHM-A 与最小 Planner 回归；直接状态台账。
-- 非目标：不改 Planner 的“含真实 unclear 必须 defer”合同；不改 relation mapping、confidence threshold、evidence span、PHM-C、Surface、Safety、schema/migration、Memory/User Model 或 lifecycle state；不新增问候关键词、regex、固定回复白名单。
-- 当前基线：分支 `codex/planner-handoff-migration`；HEAD `febff4b`。已有未提交的 `AGENTS.md`、客户端 UUID/Guest history 修复及其 package/test 变更必须保留并隔离；本次截图对应 committed trace 已只读核验。
-- 第一因果边界：`mergeModelInterpretation` 无条件合并 deterministic adjacency-only `continues_active_thread` fallback 与有效模型关系；在 insufficient semantic evidence 下 fallback 投影为 `unclear`，Planner 随后按合同 defer。
-- 依赖项：合同 §§14.2-14.5、PHM-A target-bound projection、既有 model candidate validation/target binding、PHM-B total mapping。
-- 主要风险：过宽抑制造成模型猜测 fail-open、误删模型自身 `continues_active_thread`、错 target 候选压掉 fallback、破坏真实多候选歧义、加入文本特判。
-- 激活角色：主线程 Delivery Lead、Architect、Developer、独立 Reviewer。
-- 文件写入负责人：Architect 仅分析文档；Developer 独占 `turnInterpreter` 与两份专项；主线程独占任务卡和状态台账；Reviewer 只读。
-- 执行顺序：真实 trace → 根因分析 → 冻结合同 → 唯一 merge 修复 → 专项/相邻/完整门 → 独立复核 → Git 封存 → 重启 3103 人工测试服务。
-- 修复预算：一次实现；同一冻结门最多两次证据驱动修复。
-- 当前状态：已封存；Developer 修复、专项/相邻/完整门与独立 Reviewer 全部通过，等待 Git seal 与 3103 人工测试服务恢复。
+- 名称：P0–P6 Overnight Local Delivery Audit — Active / Externally Blocked。
+- Outcome：在不接触生产数据、真用户流量、合入或部署的前提下，连续完成可本地证明的 P0–P6 工作，并把修复额度用尽、直接授权、凭据和三自然日时间门如实记录。
+- Acceptance：
+  1. 每个封存切片必须有冻结合同、本地或隔离 PostgreSQL 证据、反例挑战及独立复核。
+  2. 两轮 repair 后仍失败的门必须 STOP，不得用第三轮案例、提示词或自签权威伪装通过。
+  3. Composer 真实 Qwen、人工盲评和三个不同自然日 Hot 观测只能以真实外部证据升级；没有凭据、真实日期或可信来源时保持 pending。
+  4. 所有候选保持隔离，不 push、merge、deploy，不读取生产或真实用户数据。
+- Allowed scope：隔离 worktree、合成 fixtures、本地/隔离 PostgreSQL、local/eval-only authority、治理台账。
+- Non-goals：生产 route/scheduler、真实用户镜像、生产数据库、默认开启、合入、部署或删除真实数据。
+- Baseline：主候选封存链为 `aadc62d -> ed0cc19 -> 05f8329 -> d6741d4 -> f6268ab -> e42d1da -> ee5ed04 -> bb1852d -> e9f6740 -> 249be49`。P5 独立封存提交为 `3e1844c`；P6 独立封存提交为 `d7dd07b`。所有 `node_modules` 与生成 Prisma client 均排除。
+- Roles：主线程 Delivery Lead；每个实现切片一个 writer；Independent Functional Reviewer 与 Safety/Privacy Reviewer 只读复核。
+- Round budget：每个冻结门一次实现、最多两次 repair；随后仍失败则 STOP。
+- 当前状态：
+  - P0：本地基线封存。
+  - P1：local/eval authorities、Ledger 与 Exit Evaluator 封存；真实 Qwen、人工盲评、production-like isolation 与三自然日/200 Hot 时间门 pending。当前环境 `QWEN_API_KEY`、`DASHSCOPE_API_KEY` 与区域 Base URL 均未配置。
+    - Real-Qwen 机制 runner 已补齐 authoritative 12 ordinary × 3 独立尝试；mock 只能产生 mechanism-only，真实结果仍须 Ledger Authority 验证。隔离提交 `e9f6740`，clean worktree 全量 TypeScript/ESLint/diff PASS。
+  - P2：Winner Skeleton 封存于 `ee5ed04`。
+  - P3：default-off Safety Trunk + canonical HardFacts Surface Authority 封存于 `bb1852d`。
+  - P4：Eligibility & Read Integrity 旧 41 门与 Profile Cache Commitment 新 27 门均通过 fresh PG、静态门及功能/Safety 双复核，封存于 `249be49`。
+  - P5：Deletion Cascade Authority 已完成 41-case、fresh PG 15 migrations、功能与 Safety 双复核，封存于独立提交 `3e1844c`。
+  - P6：Principal & Cache Time Integrity Authority 已完成 old47/new14/repair5、fresh PG 15 migrations、功能与 Safety 双复核，封存于独立提交 `d7dd07b`。
+  - 当前不可继续项仅属于 P1 外部证据：Composer 仍需要本地凭据、人工证据和三个真实自然日。

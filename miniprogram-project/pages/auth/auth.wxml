@@ -1,0 +1,69 @@
+<view class="auth-screen" style="background: {{backgroundTopColor}}">
+  <image class="auth-background" src="{{background}}" mode="widthFix" style="top: {{backgroundInsetTop}}px" aria-hidden="true" />
+  <view class="auth-background-blend" style="top: {{backgroundInsetTop}}px; background: {{backgroundBlend}}" aria-hidden="true"></view>
+  <view class="auth-mask"></view>
+
+  <view wx:if="{{stage === 'choice'}}" class="sheet choice-sheet">
+    <view class="sheet-title compact">选择进入方式</view>
+    <checkbox-group class="consent {{consentInvalid ? 'consent-invalid' : ''}} {{consentShake ? 'consent-shake' : ''}}" bindchange="togglePrivacy">
+      <label><checkbox value="confirmed" checked="{{privacyConfirmed}}" color="{{consentInvalid ? '#a95f55' : '#71877b'}}" />同意</label>
+      <navigator url="/pages/privacy/privacy" hover-class="none">《隐私政策》</navigator>
+    </checkbox-group>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <button class="action primary" bindtap="loginWechat" loading="{{busy}}" disabled="{{busy}}">微信登录</button>
+    <button class="action soft" bindtap="showWechatPhone" disabled="{{busy}}">微信绑定手机号码登录</button>
+    <button class="text-action guest" bindtap="showGuestWarning" disabled="{{busy}}">游客模式</button>
+  </view>
+
+  <view wx:elif="{{stage === 'wechatPhone'}}" class="sheet wechat-phone-sheet">
+    <view class="handle"></view><view class="sheet-title">选择手机号</view>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <button class="bound-phone" open-type="getPhoneNumber" bindgetphonenumber="handleWechatPhone" loading="{{busy}}" disabled="{{busy}}">
+      <view>微信绑定号码</view><text>由微信展示并确认</text>
+    </button>
+    <button class="text-action back" bindtap="backToChoice">返回登录方式</button>
+  </view>
+
+  <view wx:elif="{{stage === 'sms'}}" class="sheet sms-sheet">
+    <view class="handle"></view><view class="eyebrow">手机号登录</view><view class="sheet-title">验证码登录</view>
+    <view class="sheet-copy">输入手机号，收个验证码就能登录。</view>
+    <view class="input-row"><text>手机号</text><input type="number" maxlength="11" value="{{phone}}" placeholder="请输入手机号码" bindinput="inputPhone" /></view>
+    <view class="input-row code-row"><text>验证码</text><input type="number" maxlength="6" value="{{code}}" placeholder="请输入验证码" bindinput="inputCode" /><button bindtap="sendSmsCode" disabled="{{busy || codeSeconds > 0}}">{{codeSeconds > 0 ? codeSeconds + 's' : '获取验证码'}}</button></view>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <button class="action primary" bindtap="loginSms" loading="{{busy}}" disabled="{{busy}}">登录</button>
+    <button class="text-action back" bindtap="backToPhoneMethods">返回登录方式</button>
+  </view>
+
+  <view wx:elif="{{stage === 'profile'}}" class="sheet profile-sheet">
+    <view class="app-line"><view class="app-mark">慢</view><text>慢聊小记 个人资料</text></view>
+    <view class="sheet-title">选择你的头像和名字</view><view class="sheet-copy">已为你准备了一个名字和头像，也可以自己修改；稍后再说不影响登录。</view>
+    <view class="profile-row"><text>头像</text><button class="profile-avatar-choice" bindtap="showAvatarSources" disabled="{{busy}}" aria-label="选择头像"><image wx:if="{{avatarPreview}}" src="{{avatarPreview}}" mode="aspectFill" /><view wx:else class="generated-avatar" style="background: {{profileAvatarStyle}}">{{profileInitial}}</view></button></view>
+    <view class="divider"></view>
+    <view class="profile-row nickname-row"><text>昵称</text><input type="nickname" maxlength="12" value="{{profileNickname}}" placeholder="2–12 个字" bindinput="inputNickname" /></view>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <button class="profile-submit" bindtap="saveProfile" loading="{{busy}}" disabled="{{busy || profileNickname.length < 2}}">保存资料</button>
+    <button class="text-action abandon" bindtap="cancelProfileEdit" disabled="{{busy}}">稍后再说</button>
+  </view>
+
+  <view wx:elif="{{stage === 'avatarSource'}}" class="sheet avatar-source-sheet">
+    <view class="sheet-title compact center">选个头像</view><view class="sheet-copy center">选一张你喜欢的图片</view>
+    <button class="source wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar">用微信头像</button>
+    <button class="source" bindtap="chooseAlbum">从相册选</button><button class="source" bindtap="takePhoto">拍一张</button>
+    <view class="source-divider"></view><button class="source cancel" bindtap="cancelAvatarSources">取消</button>
+  </view>
+
+  <view wx:elif="{{stage === 'guestWarn'}}" class="sheet guest-warn-sheet">
+    <view class="handle"></view><view class="sheet-title">先登录，会更安心</view><view class="sheet-copy">内容主要保存在本机；生成聊天回复时，必要的聊天内容会发送给服务端和 AI 处理。</view>
+    <button class="action primary" bindtap="backToChoice">去登录</button><button class="action neutral" bindtap="showGuestIdentity">继续游客模式</button>
+  </view>
+
+  <view wx:elif="{{stage === 'guestIdentity'}}" class="sheet guest-identity-sheet">
+    <view class="handle"></view><view class="sheet-title compact">选择你的本机身份</view>
+    <view class="guest-helper"><text>名字和头像已随机生成。</text><button bindtap="randomizeGuest">重新生成 <text aria-hidden="true">↻</text></button></view>
+    <view class="guest-profile-row"><text>头像</text><button class="guest-avatar-choice" bindtap="cycleGuestAvatar" aria-label="切换头像配色"><view class="guest-avatar" style="background: {{guestAvatarStyle}}">{{guestInitial}}</view><text>点击切换</text></button></view>
+    <view class="divider"></view>
+    <view class="guest-profile-row guest-nickname-row"><text>昵称</text><input type="nickname" maxlength="12" value="{{guestNickname}}" placeholder="2–12 个字" bindinput="inputGuestNickname" /></view>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <button class="action primary" bindtap="startGuest">进入游客模式</button><button class="text-action" bindtap="backToGuestWarning">返回</button>
+  </view>
+</view>

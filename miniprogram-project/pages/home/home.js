@@ -1,8 +1,11 @@
 const { formatDateLabel } = require("../../utils/local-data");
 const { getAuth, saveAuth, enterGuest, isGuest } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
-const { loginWithWechat, getMe } = require("../../api/auth");
+const { getMe } = require("../../api/auth");
+const { authenticateWithWechatPhone, getWechatPhoneCode } = require("../../utils/wechat-phone-login");
+const { authenticateWithWechat } = require("../../utils/wechat-login");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
+const { getLoginBackground } = require("../../utils/login-time-background");
 
 const prompts = [
   { title: "今天过得怎么样？", lead: "不用急着说清楚。\n先选一个此刻更需要的方式。" },
@@ -31,6 +34,7 @@ Page({
   data: {
     pageTop: 92,
     entryBottom: 48,
+    entryBackground: getLoginBackground(),
     todayLabel: "",
     prompt: prompts[0],
     chatCopy: chatCopies[0],
@@ -40,6 +44,7 @@ Page({
     isLoggingIn: false,
     entryError: "",
     privacyConfirmed: false,
+    phoneLoginReady: false,
     activeTab: "home",
     switchingTab: false
   },
@@ -52,19 +57,28 @@ Page({
       prompt: pick(prompts),
       chatCopy: pick(chatCopies),
       noteCopy: pick(noteCopies),
-      showEntry: this.forceEntry || (!getAuth() && !isGuest())
+      showEntry: false
     });
+    if (this.forceEntry || (!getAuth() && !isGuest())) {
+      wx.redirectTo({ url: "/pages/auth/auth" });
+    }
   },
 
   onShow() {
+    this.updateEntryBackground();
     this.reconcileAuth();
+  },
+
+  updateEntryBackground(hour) {
+    const entryBackground = getLoginBackground(hour);
+    if (this.data.entryBackground !== entryBackground) this.setData({ entryBackground });
   },
 
   reconcileAuth() {
     if (this.forceEntry || isGuest()) return;
     const auth = getAuth();
     if (!auth) {
-      this.setData({ showEntry: true, isCheckingAuth: false });
+      wx.redirectTo({ url: "/pages/auth/auth" });
       return;
     }
     if (this.authCheckPending) return;
@@ -73,8 +87,12 @@ Page({
     this.authCheckPending = true;
     this.setData({ showEntry: true, isCheckingAuth: true, entryError: "" });
     getMe()
-      .then(() => {
-        if (this.authCheckId !== checkId || !getAuth()) return;
+      .then(({ user }) => {
+        if (
+          this.authCheckId !== checkId ||
+          getAuth()?.user?.id !== auth.user.id ||
+          user.id !== auth.user.id
+        ) return;
         this.setData({ showEntry: false, entryError: "" });
       })
       .catch(() => {
@@ -96,7 +114,9 @@ Page({
   },
 
   togglePrivacy(event) {
-    this.setData({ privacyConfirmed: event.detail.value.includes("confirmed") });
+    const privacyConfirmed = event.detail.value.includes("confirmed");
+    if (!privacyConfirmed) this.loginAttemptId = (this.loginAttemptId || 0) + 1;
+    this.setData({ privacyConfirmed, ...(privacyConfirmed ? {} : { phoneLoginReady: false, isLoggingIn: false }) });
   },
 
   openWechatPrivacy() {
@@ -111,7 +131,49 @@ Page({
     });
   },
 
-  handleLogin() {
+  preparePhoneLogin() {
+    if (this.data.isLoggingIn) return;
+    if (getAuth()) {
+      this.setData({ phoneLoginReady: false, isLoggingIn: false, entryError: "当前已有登录账号，请先返回账号页面。" });
+      return;
+    }
+    if (!this.data.privacyConfirmed) {
+      this.setData({ entryError: "请先阅读并同意隐私政策。" });
+      return;
+    }
+    this.authCheckId = (this.authCheckId || 0) + 1;
+    this.authCheckPending = false;
+    const attemptId = (this.loginAttemptId || 0) + 1;
+    this.loginAttemptId = attemptId;
+    this.phoneLoginAttemptId = attemptId;
+    const startingUserId = getAuth()?.user?.id || "";
+    this.setData({ isCheckingAuth: false, isLoggingIn: true, entryError: "" });
+    requireWechatPrivacyAuthorization()
+      .then(() => {
+        if (this.loginAttemptId !== attemptId) return;
+        if (this.data.privacyConfirmed && (getAuth()?.user?.id || "") === startingUserId) {
+          this.phoneLoginAttemptId = attemptId;
+          this.phoneLoginStartingUserId = startingUserId;
+          this.setData({ phoneLoginReady: true, isLoggingIn: false });
+        } else {
+          this.setData({ phoneLoginReady: false, isLoggingIn: false });
+        }
+      })
+      .catch((error) => {
+        if (this.loginAttemptId === attemptId) {
+          this.setData({ isLoggingIn: false, entryError: error.message || "微信隐私授权未完成。" });
+        }
+      });
+  },
+
+  cancelPhoneLogin() {
+    this.loginAttemptId = (this.loginAttemptId || 0) + 1;
+    this.phoneLoginAttemptId = null;
+    this.phoneLoginStartingUserId = null;
+    this.setData({ phoneLoginReady: false, isLoggingIn: false, entryError: "" });
+  },
+
+  loginWithWechatAccount() {
     if (this.data.isLoggingIn) return;
     if (!this.data.privacyConfirmed) {
       this.setData({ entryError: "请先阅读并同意隐私政策。" });
@@ -119,54 +181,101 @@ Page({
     }
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.authCheckPending = false;
-    this.setData({ isCheckingAuth: false, isLoggingIn: true, entryError: "" });
+    const attemptId = (this.loginAttemptId || 0) + 1;
+    this.loginAttemptId = attemptId;
+    const startingUserId = getAuth()?.user?.id || "";
+    this.setData({ isCheckingAuth: false, isLoggingIn: true, phoneLoginReady: false, entryError: "" });
     requireWechatPrivacyAuthorization()
-      .then(() => this.loginWithWechatCode())
+      .then(() => {
+        if (
+          this.loginAttemptId !== attemptId ||
+          !this.data.privacyConfirmed ||
+          (getAuth()?.user?.id || "") !== startingUserId
+        ) return null;
+        return authenticateWithWechat();
+      })
+      .then((auth) => {
+        if (!auth) return;
+        if (this.loginAttemptId !== attemptId || (getAuth()?.user?.id || "") !== startingUserId) return;
+        saveAuth(auth);
+        this.forceEntry = false;
+        this.setData({ showEntry: false, entryError: "" });
+        if (!auth.user.nickname || !auth.user.avatarUrl) {
+          wx.redirectTo({ url: "/pages/auth/auth" });
+        } else {
+          wx.showToast({ title: "登录成功，云端同步已开启", icon: "none" });
+        }
+      })
       .catch((error) => {
-        this.setData({ isLoggingIn: false, entryError: error.message || "微信隐私授权未完成。" });
+        if (this.loginAttemptId === attemptId) {
+          this.setData({ entryError: error.message || "微信登录失败，可以先用游客模式体验。" });
+        }
+      })
+      .finally(() => {
+        if (this.loginAttemptId === attemptId) this.setData({ isLoggingIn: false });
       });
   },
 
-  loginWithWechatCode() {
-    wx.login({
-      success: ({ code }) => {
-        if (!code) {
-          this.setData({ isLoggingIn: false, entryError: "微信未返回有效登录凭证，请重试。" });
-          return;
+  handlePhoneNumber(event) {
+    if (!this.data.phoneLoginReady || this.data.isLoggingIn) return;
+    if (
+      this.phoneLoginAttemptId !== this.loginAttemptId ||
+      !this.data.privacyConfirmed ||
+      (getAuth()?.user?.id || "") !== this.phoneLoginStartingUserId
+    ) {
+      this.setData({ phoneLoginReady: false, isLoggingIn: false });
+      return;
+    }
+    let phoneCode;
+    try {
+      phoneCode = getWechatPhoneCode(event.detail);
+    } catch (error) {
+      this.setData({ entryError: error.message });
+      return;
+    }
+    const attemptId = (this.loginAttemptId || 0) + 1;
+    this.loginAttemptId = attemptId;
+    this.phoneLoginAttemptId = attemptId;
+    const startingUserId = getAuth()?.user?.id || "";
+    this.setData({ isLoggingIn: true, entryError: "" });
+    authenticateWithWechatPhone(phoneCode)
+      .then((auth) => {
+        if (this.loginAttemptId !== attemptId || (getAuth()?.user?.id || "") !== startingUserId) return;
+        saveAuth(auth);
+        this.forceEntry = false;
+        this.setData({ showEntry: false, phoneLoginReady: false, entryError: "" });
+        if (!auth.user.nickname || !auth.user.avatarUrl) {
+          wx.redirectTo({ url: "/pages/auth/auth" });
+        } else {
+          wx.showToast({ title: "登录成功，云端同步已开启", icon: "none" });
         }
-        loginWithWechat(code)
-          .then((auth) => {
-            saveAuth(auth);
-            this.forceEntry = false;
-            this.setData({ showEntry: false, entryError: "" });
-            wx.showToast({ title: "微信已连接，云端同步已开启", icon: "none" });
-          })
-          .catch((error) => {
-            this.setData({
-              entryError: error.message === "网络暂时不可用"
-                ? "登录服务暂不可用，可以先用游客模式体验。"
-                : (error.message || "登录失败，可以先用游客模式体验。")
-            });
-          })
-          .finally(() => {
-            this.setData({ isLoggingIn: false });
-          });
-      },
-      fail: () => {
+      })
+      .catch((error) => {
+        if (this.loginAttemptId !== attemptId) return;
         this.setData({
-          isLoggingIn: false,
-          entryError: "微信登录失败，可以先用游客模式体验。"
+          entryError: error.message === "网络暂时不可用"
+            ? "登录服务暂不可用，可以先用游客模式体验。"
+            : (error.message || "登录失败，可以先用游客模式体验。")
         });
-      }
-    });
+      })
+      .finally(() => {
+        if (this.loginAttemptId === attemptId) this.setData({ isLoggingIn: false });
+      });
   },
 
   enterGuest() {
+    this.loginAttemptId = (this.loginAttemptId || 0) + 1;
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.authCheckPending = false;
     this.forceEntry = false;
     enterGuest();
-    this.setData({ showEntry: false, isCheckingAuth: false, entryError: "" });
+    this.setData({
+      showEntry: false,
+      isCheckingAuth: false,
+      isLoggingIn: false,
+      phoneLoginReady: false,
+      entryError: ""
+    });
   },
 
   goChat() {
@@ -194,6 +303,7 @@ Page({
   },
 
   onUnload() {
+    this.loginAttemptId = (this.loginAttemptId || 0) + 1;
     this.authCheckId = (this.authCheckId || 0) + 1;
     if (this.tabSwitchTimer) clearTimeout(this.tabSwitchTimer);
   }

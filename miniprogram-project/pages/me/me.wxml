@@ -2,20 +2,50 @@
   <view class="eyebrow">慢聊小记</view>
   <view class="title">{{isLoggedIn ? "我的慢聊小记" : "欢迎来到慢聊小记"}}</view>
   <view class="profile-card card-sage">
-    <view class="avatar">晴</view>
-    <view class="profile-title">{{isLoggedIn ? "我的慢聊小记" : "游客模式"}}</view>
-    <view class="body">{{membershipText}}</view>
-    <view class="connection-status {{isLoggedIn ? 'connected' : ''}}">{{connectionText}}</view>
+    <image wx:if="{{avatarPreview}}" class="avatar avatar-image" src="{{avatarPreview}}" mode="aspectFill" />
+    <view wx:else class="avatar" style="background: {{guestAvatarStyle}}">{{guestInitial}}</view>
+    <view class="profile-title">{{isLoggedIn ? (profileNickname || "我的慢聊小记") : (profileNickname || "游客模式")}}</view>
+    <view class="body">{{isLoggedIn ? membershipText : "内容主要保存在本机"}}</view>
+    <view class="connection-status {{isLoggedIn ? 'connected' : ''}}">{{isLoggedIn ? connectionText : "生成聊天回复时会发送必要内容"}}</view>
     <navigator url="/pages/settings/settings" class="settings-link" hover-class="none">设置</navigator>
+    <navigator wx:if="{{!isLoggedIn}}" url="/pages/auth/auth?mode=login" class="guest-login-link" hover-class="none">登录或注册</navigator>
+    <button wx:if="{{false}}" class="profile-edit-link" bindtap="editProfile">编辑资料</button>
   </view>
-  <view wx:if="{{loginError}}" class="login-error" aria-live="assertive">{{loginError}}</view>
-  <view wx:if="{{!isLoggedIn}}" class="login-panel" role="group" aria-label="微信登录">
+  <view wx:if="{{isLoggedIn && profileEditing}}" class="profile-editor-layer" role="dialog" aria-label="编辑个人资料">
+    <view class="profile-editor-sheet">
+      <view class="entry-title">编辑个人资料</view>
+      <view class="entry-copy">头像和昵称是可选资料，可以随时修改。头像不要求是真人照片；我们不会读取你的微信头像或昵称。</view>
+      <button class="profile-avatar-button" bindtap="chooseProfileAvatarFromMedia" disabled="{{isSavingProfile}}">
+        <image wx:if="{{avatarPreview}}" class="profile-avatar-preview" src="{{avatarPreview}}" mode="aspectFill" />
+        <view wx:else class="profile-avatar-preview profile-avatar-placeholder">选择头像</view>
+      </button>
+      <input class="profile-nickname-input" type="text" maxlength="30" value="{{profileNickname}}" bindinput="inputNickname" placeholder="输入昵称" />
+      <view wx:if="{{loginError}}" class="login-error" aria-live="assertive">{{loginError}}</view>
+      <button class="primary-button" bindtap="saveProfile" disabled="{{isSavingProfile}}">保存</button>
+      <button class="secondary-button" bindtap="skipProfile" disabled="{{isSavingProfile}}">取消</button>
+    </view>
+  </view>
+  <view wx:if="{{loginError && !phoneLoginReady}}" class="login-error" aria-live="assertive">{{loginError}}</view>
+  <view wx:if="{{false && !isLoggedIn && !phoneLoginReady}}" class="login-panel" role="group" aria-label="登录">
+    <view class="entry-title">登录慢聊小记</view>
+    <view class="entry-copy">可以直接使用微信登录，也可以使用微信绑定手机号登录。</view>
     <checkbox-group class="privacy-confirm" bindchange="togglePrivacy">
       <label><checkbox value="confirmed" checked="{{privacyConfirmed}}" color="#71877b" />我已阅读并同意</label>
       <navigator url="/pages/privacy/privacy" class="privacy-link" hover-class="none">《隐私政策》</navigator>
     </checkbox-group>
     <button class="wechat-privacy-link" bindtap="openWechatPrivacy">查看微信隐私保护指引</button>
-    <button class="primary-button login-button" loading="{{isLoggingIn || isCheckingAuth}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="login">{{isCheckingAuth ? "正在验证..." : (isLoggingIn ? "登录中..." : "微信登录")}}</button>
+    <button class="primary-button login-button" loading="{{isLoggingIn}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="loginWithWechatAccount">微信登录</button>
+    <button class="primary-button login-button" loading="{{isLoggingIn || isCheckingAuth}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="preparePhoneLogin">{{isCheckingAuth ? "正在验证..." : (isLoggingIn ? "准备中..." : "手机号登录")}}</button>
+  </view>
+  <view wx:if="{{false && !isLoggedIn && phoneLoginReady}}" class="phone-confirm-layer" role="dialog" aria-label="确认手机号登录">
+    <view class="phone-confirm-mask"></view>
+    <view class="phone-confirm-sheet">
+      <view class="entry-title">创建或登录慢聊小记账号</view>
+      <view class="entry-copy">继续后将打开微信手机号授权界面。只有你主动选择并允许后，我们才会通过微信取得并处理该手机号，用于创建或登录账号。</view>
+      <view wx:if="{{loginError}}" class="login-error" aria-live="assertive">{{loginError}}</view>
+      <button class="primary-button login-button" open-type="getPhoneNumber" bindgetphonenumber="handlePhoneNumber" loading="{{isLoggingIn}}" disabled="{{isLoggingIn}}">{{isLoggingIn ? "登录中..." : "继续"}}</button>
+      <button class="secondary-button phone-cancel-button" bindtap="cancelPhoneLogin" disabled="{{isLoggingIn}}">取消</button>
+    </view>
   </view>
   <navigator url="/pages/insights/insights" class="insight-entry card" hover-class="none">
     <view class="entry-title">慢聊小记观察</view>

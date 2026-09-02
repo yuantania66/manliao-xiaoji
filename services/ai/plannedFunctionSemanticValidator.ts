@@ -372,7 +372,7 @@ const buildSemanticValidationMessages = (
       "Return one exact JSON object matching outputSchema, without Markdown, surrounding text, missing keys, or extra keys. An absent binding requires the corresponding verdict to be null; a present binding requires a non-null independent verdict.",
       "Each present satisfied branch needs its own non-empty evidence array. Every evidence item must be an exact UTF-16 slice of candidateReply. Use the caller-provided full-span reference when the whole reply is evidence.",
       "For a handoff fulfill binding, satisfied requires addressing the exact target and relation, realizing requiredFunction, realizedFunction exactly equal to requiredFunction, and no later contradictory move. For defer, realizedFunction is null and requiredFunctionRealized is false. Never claim an internal handoff completed.",
-      "For complete_reciprocal_contact, apply this decision order before all other considerations: (1) inspect candidateReply alone for a visible conversational function beyond greeting; (2) if it contains only another greeting, set handoff.status=not_satisfied, requiredFunctionRealized=false and realizedFunction=null; never use the User's already-completed reciprocal relation as evidence that the candidate realized the function; (3) otherwise judge whether it releases the greeting ritual into a natural transition and realizes the trusted neutral-conversation-entry action. This mandatory failure applies even when the repeated greeting is warm, reciprocal or polite. A no-question neutral transition is allowed. If it asks one question, it must be a light choice between casual conversation and something already on the User's mind. Reject a generic open question such as asking only what the User wants to discuss, any request for reasons/details/explanation, any invented specific topic, and every second question. A receipt, presence statement, availability statement, or closing is insufficient.",
+      "For complete_reciprocal_contact, apply this decision order before all other considerations: (1) inspect candidateReply alone for a visible conversational function beyond greeting; (2) if it contains only another greeting, set handoff.status=not_satisfied, requiredFunctionRealized=false and realizedFunction=null; never use the User's already-completed reciprocal relation as evidence that the candidate realized the function; (3) otherwise judge whether it releases the greeting ritual into a natural transition. This mandatory failure applies even when the repeated greeting is warm, reciprocal or polite. After completion, one low-pressure invitation asking what the User would like to discuss is allowed and is not a generic open door. A receipt, presence statement, availability statement, or closing is insufficient.",
       "answer_current_obligation must actually answer the committed targeted statement; erasing or disowning it is insufficient unless the plan separately requires repair.",
       "For establish_assistant_identity/first_contact, satisfied requires both an introduction as exact displayName 小慢 and a natural low-pressure way directly into conversation. Bare identity, another greeting, receipt, presence, generic permission/open door, closing, product-name impersonation, or an unrelated question is insufficient.",
       "For establish_assistant_identity/identity_continuation, satisfied requires naturally continuing the exact targetProposition. Merely repeating 小慢, saying 嗯/听到了, generic confirmation, changing to a random/product name, or changing topic is insufficient.",
@@ -476,11 +476,16 @@ export const defaultPlannedFunctionSemanticProvider = async (
 
 const ordinaryQuestionSupportedByPlan = (plan: ResponsePlan) =>
   plan.questionPolicy.mode !== "none" &&
-  plan.responseActions.some((action) =>
-    action === "offer_neutral_conversation_entry" ||
-    action === "take_light_topic_initiative" ||
-    action === "invite_low_pressure_calibration" ||
-    action === "establish_assistant_identity"
+  (
+    (
+      plan.interactionMoveHandoffPlan?.requiredFunction === "complete_reciprocal_contact" &&
+      plan.interactionMoveHandoffPlan.questionPolicy === "optional_after_completion"
+    ) ||
+    plan.responseActions.some((action) =>
+      action === "take_light_topic_initiative" ||
+      action === "invite_low_pressure_calibration" ||
+      action === "establish_assistant_identity"
+    )
   );
 
 export const validatePlannedFunctionSemanticOutput = async ({

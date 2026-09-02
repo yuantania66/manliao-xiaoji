@@ -26,7 +26,7 @@ export const buildInterpretationMessages = (context: ConversationControlContext)
       "A greeting, phatic acknowledgment, receipt, lack of topic content, or generic willingness to chat is not by itself opens_new_thread.",
       "Use continues_active_thread only when the current User turn contains concrete content that extends an already established topic, proposition, answer frame, or activity.",
       "Mere adjacency, reciprocal contact, a receipt, or a generic greeting is not by itself continues_active_thread.",
-      "Use acknowledges_previous_move when the current User turn only acknowledges, receives, or reciprocates the targeted move and contributes no independent topic content.",
+      "Use acknowledges_previous_move when the current User turn acknowledges, receives, or reciprocates the targeted move; preserve it alongside opens_new_thread or continues_active_thread when the same turn also independently satisfies that relation's concrete-content preconditions.",
       "Preserve multiple candidates only when each distinct semantic reading independently satisfies its own typed preconditions; do not add opens_new_thread or continues_active_thread as a generic hedge alongside acknowledgment.",
       "Do not infer emotion from message length, product category, or lack of topic content.",
       "Optionally propose ordinaryPostureProposal for this turn only. It is non-authoritative and must not carry over a prior mode.",

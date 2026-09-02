@@ -1,0 +1,26 @@
+{
+  "environment": "local production build at http://127.0.0.1:3102",
+  "testedAtRange": "2026-08-28T00:49:00+08:00/2026-08-28T01:02:27+08:00",
+  "routes": {
+    "/": {
+      "browserErrorsOrWarnings": 0,
+      "screenshot": "screenshots/release-20260828/home-after-20260828.png"
+    },
+    "/note": {
+      "browserErrorsOrWarnings": 0,
+      "screenshot": "screenshots/release-20260828/note-after-20260828.png"
+    },
+    "/chat/calendar": {
+      "browserErrorsOrWarnings": 0,
+      "visibleStatus": "请先登录",
+      "screenshot": "screenshots/release-20260828/chat-calendar-after-20260828.png"
+    },
+    "/chat": {
+      "browserErrorsOrWarnings": 0,
+      "routeLoadMs": 637,
+      "firstUsableState": "empty chat with textbox and enabled send button",
+      "firstScreenshot": "screenshots/release-20260828/chat-after-20260828.png",
+      "settledScreenshot": "screenshots/release-20260828/chat-settled-after-20260828.png"
+    }
+  }
+}

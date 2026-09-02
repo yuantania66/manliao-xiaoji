@@ -2,25 +2,69 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
-import { noteEntries } from "@/lib/note-entries";
+import { Suspense, useEffect, useState } from "react";
+
+import { apiRequest, ClientApiError } from "@/lib/client-api";
+
+type NoteItem = {
+  id: string;
+  content: string;
+  moodName: string | null;
+  moodIcon: string | null;
+  mediaUrls: unknown[];
+  recordDate: string;
+};
+type LoadState = "loading" | "ready" | "guest" | "error";
+
+const formatMonth = (date: string) => {
+  const [year, month] = date.split("-");
+  return `${year} 年 ${Number(month)} 月`;
+};
+
+const formatDate = (date: string) => {
+  const [, month, day] = date.split("-");
+  return `${Number(month)} 月 ${Number(day)} 日`;
+};
 
 function NoteHistoryContent() {
   const searchParams = useSearchParams();
   const dateFilter = searchParams.get("date");
   const [query, setQuery] = useState("");
-  const filteredEntries = useMemo(() => {
-    const keyword = query.trim().toLowerCase();
-    const dateEntries = dateFilter
-      ? noteEntries.filter((entry) => entry.dateKey === dateFilter)
-      : noteEntries;
-    if (!keyword) return dateEntries;
-    return dateEntries.filter((entry) =>
-      [entry.date, entry.month, entry.title, entry.body]
-        .join(" ")
-        .toLowerCase()
-        .includes(keyword)
-    );
+  const [items, setItems] = useState<NoteItem[]>([]);
+  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ pageSize: "100" });
+      if (dateFilter) params.set("date", dateFilter);
+      if (query.trim()) params.set("q", query.trim());
+
+      setLoadState("loading");
+      setErrorMessage("");
+      apiRequest<{ items: NoteItem[] }>(`/api/notes?${params.toString()}`)
+        .then((data) => {
+          if (cancelled) return;
+          setItems(data.items);
+          setLoadState("ready");
+        })
+        .catch((error) => {
+          if (cancelled) return;
+          setItems([]);
+          if (error instanceof ClientApiError && error.status === 401) {
+            setLoadState("guest");
+            return;
+          }
+          setErrorMessage(error instanceof Error ? error.message : "小记暂时加载失败");
+          setLoadState("error");
+        });
+    }, 200);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [dateFilter, query]);
 
   let lastMonth = "";
@@ -46,7 +90,7 @@ function NoteHistoryContent() {
           + 记一下
         </Link>
         <p className="absolute left-[22px] top-[132px] h-[22px] w-[330px] text-[13px] leading-[22px] text-[var(--body)]">
-          {dateFilter ? "这一天写下的小记，都放在这里。" : "按时间回看文字、图片和视频，不用一次看完。"}
+          {dateFilter ? "这一天写下的小记，都放在这里。" : "按时间回看自己写下的小记，不用一次看完。"}
         </p>
 
         <div className="absolute left-[22px] top-[178px] h-11 w-[346px] rounded-2xl bg-[var(--card-warm)]">
@@ -70,75 +114,73 @@ function NoteHistoryContent() {
             心情日历
           </span>
           <span className="absolute left-[110px] top-[18px] h-[18px] w-40 text-xs leading-[18px] text-[var(--sage)]">
-            按天气回看某一天
+            按日期回看某一天
           </span>
           <span className="absolute left-[314px] top-4 h-[22px] w-5 text-xl leading-[22px] text-[var(--sage)]">
             ›
           </span>
         </Link>
 
-        <section className="note-scrollbar absolute left-[22px] top-[356px] bottom-[38px] w-[346px] overflow-y-auto pr-2">
-          {filteredEntries.length > 0 ? (
-            filteredEntries.map((entry) => {
-              const showMonth = entry.month !== lastMonth;
-              lastMonth = entry.month;
-
-              return (
-                <div key={entry.dateKey}>
-                  {showMonth ? (
-                    <h2 className="mb-[28px] h-[18px] text-[13px] font-semibold leading-[18px] text-[var(--sage)]">
-                      {entry.month}
-                    </h2>
-                  ) : null}
-                  <Link
-                    href={`/note/detail?date=${entry.dateKey}`}
-                    className="relative mb-[22px] block min-h-[126px] border-b border-[var(--line)] pb-[22px]"
-                    aria-label={`查看 ${entry.date} 的小记`}
-                  >
-                    <p className="h-[18px] text-xs leading-[18px] text-[var(--muted)]">
-                      {entry.date}
-                    </p>
-                    <h3 className="mt-[9px] min-h-5 w-[205px] text-sm font-semibold leading-5">
-                      {entry.title}
-                    </h3>
-                    <p className="mt-3.5 min-h-[18px] w-[205px] text-xs leading-[18px] text-[var(--body)]">
-                      {entry.body}
-                    </p>
-                    {entry.media === "images" ? (
-                      <div className="absolute left-[234px] top-[5px] grid w-[72px] grid-cols-2 gap-1">
-                        {["#f4e4d3", "#e8f0ea", "#e4ecf0"].map((color, index) => (
-                          <div
-                            key={color}
-                            className="h-[34px] w-[34px] rounded-lg text-center text-[10px] font-semibold leading-[34px]"
-                            style={{
-                              backgroundColor: color,
-                              color: index === 0 ? "#b9826e" : "var(--sage)",
-                            }}
-                          >
-                            图
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    {entry.media === "video" ? (
-                      <>
-                        <div className="absolute left-[234px] top-[16px] h-[54px] w-[72px] rounded-[10px] bg-[#e4ecf0]">
-                          <div className="absolute left-7 top-[17px] h-0 w-0 border-y-[7px] border-l-[12px] border-y-transparent border-l-[var(--sage)]" />
-                        </div>
-                        <p className="absolute left-[234px] top-[76px] h-[15px] w-[90px] text-[11px] leading-[15px] text-[var(--body)]">
-                          视频 · 00:12
-                        </p>
-                      </>
-                    ) : null}
-                  </Link>
-                </div>
-              );
-            })
-          ) : (
-            <div className="pt-4 text-center text-xs leading-5 text-[var(--muted)]">
-              没找到相关小记。
+        <section
+          className="note-scrollbar absolute bottom-[38px] left-[22px] top-[330px] w-[346px] overflow-y-auto pr-2"
+          aria-live="polite"
+        >
+          {loadState === "loading" ? (
+            <div className="pt-8 text-center text-xs leading-5 text-[var(--muted)]">正在加载小记…</div>
+          ) : null}
+          {loadState === "guest" ? (
+            <div className="rounded-[18px] bg-[var(--card-warm)] px-5 py-6 text-center text-xs leading-6 text-[var(--body)]">
+              请先登录，再查看只属于你的小记。
+              <Link href="/me" className="mt-2 block font-semibold text-[var(--sage)]">
+                返回登录
+              </Link>
             </div>
-          )}
+          ) : null}
+          {loadState === "error" ? (
+            <div className="rounded-[18px] bg-[var(--card-warm)] px-5 py-6 text-center text-xs leading-6 text-[var(--body)]">
+              {errorMessage || "小记暂时加载失败，请稍后再试。"}
+            </div>
+          ) : null}
+          {loadState === "ready" && items.length === 0 ? (
+            <div className="pt-8 text-center text-xs leading-5 text-[var(--muted)]">
+              {query.trim() ? "没找到相关小记。" : dateFilter ? "这一天还没有小记。" : "还没有写下小记。"}
+            </div>
+          ) : null}
+          {loadState === "ready"
+            ? items.map((entry) => {
+                const month = formatMonth(entry.recordDate);
+                const showMonth = month !== lastMonth;
+                lastMonth = month;
+
+                return (
+                  <div key={entry.id}>
+                    {showMonth ? (
+                      <h2 className="mb-5 h-[18px] text-[13px] font-semibold leading-[18px] text-[var(--sage)]">
+                        {month}
+                      </h2>
+                    ) : null}
+                    <Link
+                      href={`/note/detail?id=${encodeURIComponent(entry.id)}`}
+                      className="relative mb-[22px] block min-h-[112px] border-b border-[var(--line)] pb-[22px]"
+                      aria-label={`查看 ${formatDate(entry.recordDate)} 的小记`}
+                    >
+                      <p className="h-[18px] text-xs leading-[18px] text-[var(--muted)]">
+                        {formatDate(entry.recordDate)}
+                        {entry.moodName ? ` · ${entry.moodName}` : ""}
+                      </p>
+                      <p className="mt-3 line-clamp-3 w-[270px] whitespace-pre-line text-sm leading-6 text-[var(--body)]">
+                        {entry.content}
+                      </p>
+                      {entry.mediaUrls.length > 0 ? (
+                        <span className="absolute right-0 top-0 rounded-full bg-[var(--card-sage)] px-2 py-1 text-[10px] text-[var(--sage)]">
+                          附件 {entry.mediaUrls.length}
+                        </span>
+                      ) : null}
+                    </Link>
+                  </div>
+                );
+              })
+            : null}
         </section>
 
         <div className="absolute bottom-2.5 left-1/2 h-1 w-[100px] -translate-x-1/2 rounded-sm bg-[var(--ink)]" />

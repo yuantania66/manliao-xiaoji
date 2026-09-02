@@ -2,8 +2,12 @@ import { AppError } from "./errors";
 
 export const isValidPhone = (value: string) => /^1\d{10}$/.test(value);
 
-export const isValidDateOnly = (value: string) =>
-  /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`));
+export const isValidDateOnly = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+};
 
 export const requireNonEmptyString = (value: unknown, field: string, maxLength?: number) => {
   if (typeof value !== "string" || !value.trim()) {

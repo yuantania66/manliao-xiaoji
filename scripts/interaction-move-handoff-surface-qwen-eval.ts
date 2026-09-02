@@ -103,6 +103,7 @@ const planFor = ({
     decisionOwner: "conversation_os.response_planner",
     behaviorSource: "ordinary_conversation",
     planningDepth: "minimal",
+    ordinaryPosture: null,
     answerObligations: requiredFunction === "answer_current_obligation"
       ? [{
           id: `${sourceUserTurnId}:answer-1`,
@@ -126,7 +127,6 @@ const planFor = ({
     clinicalStrategy: null,
     positiveFunctionContract: null,
     interactionMoveHandoffPlan: handoff,
-    ordinaryPosture: null,
     questionPolicy: {
       mode: handoff.questionPolicy === "none" ? "none" : "optional_after_answer",
       reason: "frozen Qwen Surface eval",

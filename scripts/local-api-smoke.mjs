@@ -12,7 +12,9 @@ const prisma = new PrismaClient();
 let serverProcess = null;
 let token = "";
 let phone = "";
+let secondaryPhone = "";
 let userId = "";
+let primaryToken = "";
 let uploadedUrl = "";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -113,9 +115,10 @@ const uniquePhone = () => {
 };
 
 const cleanup = async () => {
-  if (phone) {
-    await prisma.user.deleteMany({ where: { phone } }).catch(() => null);
-    await prisma.verificationCode.deleteMany({ where: { phone } }).catch(() => null);
+  const phones = [phone, secondaryPhone].filter(Boolean);
+  if (phones.length > 0) {
+    await prisma.user.deleteMany({ where: { phone: { in: phones } } }).catch(() => null);
+    await prisma.verificationCode.deleteMany({ where: { phone: { in: phones } } }).catch(() => null);
   }
 
   if (uploadedUrl) {
@@ -136,6 +139,8 @@ const addCheck = (name, fn) => checks.push({ name, fn });
 addCheck("anonymous protected APIs reject", async () => {
   token = "";
   expectStatus(await request("/api/notes"), 401, "anonymous notes");
+  expectStatus(await request("/api/notes/calendar"), 401, "anonymous note calendar");
+  expectStatus(await request("/api/insights"), 401, "anonymous insights");
   expectStatus(await request("/api/calendar"), 401, "anonymous calendar");
   expectStatus(await request("/api/chat/sessions"), 401, "anonymous chat sessions");
 });
@@ -161,6 +166,7 @@ addCheck("phone login with dev code", async () => {
     "phone login"
   );
   token = loginData.token;
+  primaryToken = token;
   userId = loginData.user.id;
   if (!token || !userId) throw new Error("phone login: missing token or user id");
 });
@@ -171,7 +177,7 @@ addCheck("note create/list/detail/update/delete", async () => {
     await request("/api/notes", {
       method: "POST",
       body: JSON.stringify({
-        content: "local smoke note",
+        content: "local smoke note query-marker-alpha",
         recordDate,
         moodName: "晴朗",
         moodIcon: "sunny",
@@ -187,8 +193,22 @@ addCheck("note create/list/detail/update/delete", async () => {
     throw new Error("list notes: created note not found");
   }
 
+  const queryData = expectOk(await request("/api/notes?q=query-marker-alpha"), "query notes");
+  if (!queryData.items.some((item) => item.id === created.id)) {
+    throw new Error("query notes: created note not found");
+  }
+  const blankQueryData = expectOk(await request("/api/notes?q=%20%20"), "blank query notes");
+  if (blankQueryData.total !== expectOk(await request("/api/notes"), "ordinary list notes").total) {
+    throw new Error("blank query notes: expected ordinary list contract");
+  }
+  expectStatus(await request(`/api/notes?q=${"x".repeat(101)}`), 400, "overlong note query");
+  expectStatus(await request("/api/notes?date=2026-02-31"), 400, "invalid note date");
+  expectOk(await request("/api/notes?date=2028-02-29"), "valid leap-day note date");
+
   const detail = expectOk(await request(`/api/notes/${created.id}`), "note detail");
-  if (detail.content !== "local smoke note") throw new Error("note detail: content mismatch");
+  if (detail.content !== "local smoke note query-marker-alpha") {
+    throw new Error("note detail: content mismatch");
+  }
 
   const updated = expectOk(
     await request(`/api/notes/${created.id}`, {
@@ -201,6 +221,141 @@ addCheck("note create/list/detail/update/delete", async () => {
 
   expectOk(await request(`/api/notes/${created.id}`, { method: "DELETE" }), "delete note");
   expectStatus(await request(`/api/notes/${created.id}`), 404, "deleted note detail");
+});
+
+addCheck("notes and insights isolate users and drafts", async () => {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const month = today.slice(0, 7);
+  token = primaryToken;
+
+  const primaryNote = expectOk(
+    await request("/api/notes", {
+      method: "POST",
+      body: JSON.stringify({
+        content: "owneralpha ".repeat(12),
+        recordDate: today,
+        moodName: "晴朗",
+        moodIcon: "sun",
+      }),
+    }),
+    "create primary ownership note"
+  );
+  const primaryDraft = expectOk(
+    await request("/api/notes", {
+      method: "POST",
+      body: JSON.stringify({
+        content: "draftonlyalpha ".repeat(20),
+        recordDate: today,
+        isDraft: true,
+      }),
+    }),
+    "create primary draft"
+  );
+  await request("/api/notes", {
+    method: "POST",
+    body: JSON.stringify({
+      content: "futureonlyalpha ".repeat(20),
+      recordDate: "2099-01-01",
+    }),
+  }).then((result) => expectOk(result, "create future note"));
+  const assistantOnlySession = await prisma.chatSession.create({
+    data: { userId, title: "insights role isolation" },
+  });
+  await prisma.chatMessage.create({
+    data: {
+      sessionId: assistantOnlySession.id,
+      userId,
+      role: "ASSISTANT",
+      content: "assistantonlyalpha ".repeat(20),
+    },
+  });
+
+  secondaryPhone = uniquePhone();
+  const secondaryCode = expectOk(
+    await request("/api/auth/code", {
+      method: "POST",
+      body: JSON.stringify({ phone: secondaryPhone, scene: "login" }),
+    }),
+    "send secondary code"
+  );
+  const secondaryLogin = expectOk(
+    await request("/api/auth/phone", {
+      method: "POST",
+      body: JSON.stringify({ phone: secondaryPhone, code: secondaryCode.devCode }),
+    }),
+    "secondary phone login"
+  );
+  token = secondaryLogin.token;
+  const foreignNote = expectOk(
+    await request("/api/notes", {
+      method: "POST",
+      body: JSON.stringify({
+        content: "ownerbeta ".repeat(20),
+        recordDate: today,
+        moodName: "小雨",
+        moodIcon: "rain",
+      }),
+    }),
+    "create foreign ownership note"
+  );
+
+  token = primaryToken;
+  const primaryList = expectOk(await request(`/api/notes?date=${today}&pageSize=100`), "primary dated notes");
+  if (!primaryList.items.some((item) => item.id === primaryNote.id)) {
+    throw new Error("primary dated notes: own note missing");
+  }
+  if (primaryList.items.some((item) => item.id === foreignNote.id || item.id === primaryDraft.id)) {
+    throw new Error("primary dated notes: foreign or draft note leaked");
+  }
+
+  const foreignQuery = expectOk(await request("/api/notes?q=ownerbeta"), "primary foreign query");
+  if (foreignQuery.items.length !== 0) throw new Error("primary foreign query: foreign note leaked");
+  const draftQuery = expectOk(await request("/api/notes?q=draftonlyalpha"), "primary draft query");
+  if (draftQuery.items.length !== 0) throw new Error("primary draft query: draft note leaked");
+
+  const calendar = expectOk(
+    await request(`/api/notes/calendar?month=${month}`),
+    "primary note calendar"
+  );
+  const calendarIds = calendar.days.flatMap((day) => day.noteIds);
+  if (!calendarIds.includes(primaryNote.id)) throw new Error("primary note calendar: own note missing");
+  if (calendarIds.includes(foreignNote.id) || calendarIds.includes(primaryDraft.id)) {
+    throw new Error("primary note calendar: foreign or draft note leaked");
+  }
+
+  expectStatus(await request(`/api/notes/${foreignNote.id}`), 404, "foreign note detail");
+
+  const insights = expectOk(await request("/api/insights?range=90d"), "primary insights");
+  if (insights.words.length > 6) throw new Error("primary insights: more than six words returned");
+  if (!insights.words.some((item) => item.word === "owneralpha")) {
+    throw new Error("primary insights: own word missing");
+  }
+  if (
+    insights.words.some((item) =>
+      ["ownerbeta", "draftonlyalpha", "futureonlyalpha", "assistantonlyalpha"].includes(item.word)
+    )
+  ) {
+    throw new Error("primary insights: foreign, draft, future, or assistant-only word leaked");
+  }
+  if (
+    insights.words.some(
+      (item) => Object.keys(item).sort().join(",") !== "count,word" || typeof item.count !== "number"
+    )
+  ) {
+    throw new Error("primary insights: response exposed fields beyond word/count");
+  }
+
+  token = "";
+  expectStatus(await request("/api/insights?range=90d"), 401, "anonymous insights after login");
+  token = primaryToken;
+  expectStatus(await request("/api/insights?range=365d"), 400, "invalid insights range");
+  expectStatus(await request("/api/insights?range=constructor"), 400, "prototype insights range");
+  expectStatus(await request("/api/notes/calendar?month=2026-13"), 400, "invalid note calendar month");
 });
 
 addCheck("image upload accepts png", async () => {

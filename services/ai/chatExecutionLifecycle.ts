@@ -243,10 +243,6 @@ export const preflightResponsePlan = (
       handoff.requiredFunction === "complete_reciprocal_contact" &&
       plan.responseActions.includes("respond_to_proactive_greeting")
     ) failureReasons.push("reciprocal_handoff_must_not_repeat_proactive_greeting");
-    if (
-      handoff.requiredFunction === "complete_reciprocal_contact" &&
-      !plan.responseActions.includes("offer_neutral_conversation_entry")
-    ) failureReasons.push("reciprocal_handoff_missing_neutral_conversation_entry");
     if (plan.responseActions.includes("respond_to_proactive_greeting")) {
       failureReasons.push("v1_handoff_must_not_use_legacy_proactive_greeting_action");
     }

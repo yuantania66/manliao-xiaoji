@@ -211,6 +211,7 @@ for (const testCase of cases) {
     currentness: result.decision.currentness,
     requiresSafetyResponse: result.decision.requiresSafetyResponse,
     attempts: result.attempts,
+    attemptTrace: result.attemptTrace,
     model: result.model,
   });
 }

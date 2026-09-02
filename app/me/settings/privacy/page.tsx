@@ -5,9 +5,9 @@ export default function PrivacyPolicyPage() {
     <SettingsShell title="隐私政策" lead="慢聊小记小程序隐私政策">
       <article className="note-scrollbar absolute left-[22px] top-[236px] bottom-[44px] w-[346px] overflow-y-auto rounded-[24px] bg-[var(--card-warm)] px-5 py-6 text-[12px] leading-6 text-[var(--body)]">
         <p className="text-right text-[11px] leading-5 text-[var(--muted)]">
-          更新日期：2026 年 8 月 26 日
+          更新日期：2026 年 8 月 28 日
           <br />
-          生效日期：2026 年 8 月 26 日
+          生效日期：2026 年 8 月 28 日
         </p>
 
         <h2 className="mt-5 text-center text-[16px] font-semibold leading-7 text-[var(--ink)]">
@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
 
         <h3 className="mt-6 font-semibold text-[var(--ink)]">二、我们如何使用授权权限</h3>
         <p className="mt-3">
-          只有当你主动使用添加图片功能时，我们才会调用微信的媒体选择能力，读取你本次选择或拍摄的图片。使用微信登录时，我们会处理微信提供的登录凭证并保存对应的账号标识，用于识别账号和维持登录状态。你可以拒绝或撤回图片授权，未授权不会影响无需图片的基础功能。
+          只有当你主动使用添加图片功能时，我们才会调用微信的媒体选择能力，读取你本次选择或拍摄的图片。当你主动选择手机号登录时，我们会处理微信提供的登录凭证、你在微信系统界面选择的手机号，并保存对应的账号标识，用于创建或识别账号、维持登录状态和账号安全。拒绝提供手机号时不会登录，你仍可使用游客模式。你可以拒绝或撤回图片授权，未授权不会影响无需图片的基础功能。
         </p>
 
         <h3 className="mt-6 font-semibold text-[var(--ink)]">三、AI 技术服务</h3>

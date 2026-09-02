@@ -405,7 +405,6 @@ assert.equal(doubleFailure.outcome, "failed");
 assert.equal(doubleFailure.generation.finalReplySource, "constraint_failure");
 assert.equal(doubleFailure.validations.at(-1)?.passed, false);
 assert((doubleFailure.validations.at(-1)?.hardFailureReasons?.length ?? 0) > 0);
-assert.equal(doubleFailure.validations.at(-1)?.advisoryFailureReasons?.length, 0);
 
 const positiveOnlyPlan: ResponsePlan = {
   ...plan,

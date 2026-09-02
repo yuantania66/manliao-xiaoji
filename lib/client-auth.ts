@@ -83,6 +83,8 @@ export const getStoredAuth = (): StoredAuth | null => {
   return { token, expiresAt, user };
 };
 
+export const getCancellationUserSnapshot = () => getStoredAuth()?.user ?? null;
+
 export const saveAuth = ({ token, expiresAt, user }: StoredAuth) => {
   const storage = safeStorage();
 
@@ -106,3 +108,33 @@ export const clearAuth = () => {
   removeCookieValue(AUTH_TOKEN_KEY);
   removeCookieValue(AUTH_EXPIRES_AT_KEY);
 };
+
+export const clearCancelledAccount = (userId: string) => {
+  if (!userId.trim() || typeof window === "undefined") {
+    throw new Error("当前账号标识不可用");
+  }
+  const local = window.localStorage;
+  const session = window.sessionStorage;
+  const localKeys = [
+    AUTH_TOKEN_KEY,
+    AUTH_EXPIRES_AT_KEY,
+    AUTH_USER_KEY,
+    LEGACY_LOGGED_IN_KEY,
+    `xinqingInsightsAnalysisAuthorized:${userId}`,
+  ];
+  const sessionPrefixes = [`xinqingChatCache:${userId}`, `xinqingChatCalendarCache:${userId}:`];
+  for (const key of localKeys) local.removeItem(key);
+  for (const key of Object.keys(session)) {
+    if (sessionPrefixes.some((prefix) => key === prefix || key.startsWith(prefix))) {
+      session.removeItem(key);
+    }
+  }
+  removeCookieValue(AUTH_TOKEN_KEY);
+  removeCookieValue(AUTH_EXPIRES_AT_KEY);
+  if (localKeys.some((key) => local.getItem(key) !== null)) throw new Error("本机账号数据清理失败");
+  if (Object.keys(session).some((key) => sessionPrefixes.some((prefix) => key === prefix || key.startsWith(prefix)))) {
+    throw new Error("本机会话缓存清理失败");
+  }
+};
+
+export const shouldRequestCloudAccountCancellation = (cloudCancelled: boolean) => !cloudCancelled;

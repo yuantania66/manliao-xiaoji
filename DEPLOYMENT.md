@@ -15,17 +15,20 @@
 - HTTPS 证书：Let's Encrypt，路径 `/etc/letsencrypt/live/manliaoxiaoji.com/`
 - 数据库：本机 PostgreSQL，库名 `manliaoxiaoji`
 
-## 2026-08-27 当前发布
+## 2026-09-03 当前发布
 
-- 生产版本：`5625262`（PR #35）
-- 当前目录：`/var/www/manliaoxiaoji/releases/5625262`
-- 回滚版本：`/var/www/manliaoxiaoji/releases/dcb5515`
-- Next.js Build ID：`rVl17Osnb2jkIOailx9bJ`
-- 生产数据库：19 个 migration 已应用，无待执行 migration
-- PM2：`manliaoxiaoji` 已切换并重启，`/api/health` 返回 production / database connected
-- 线上 smoke：健康检查、匿名鉴权、微信空参数、游客主动问候、真实 Qwen 合成“你好”均通过
+- 生产版本：`9750adc`（产品源码候选 `f66e0bd`，证据文档提交 `9750adc`）
+- 当前目录：`/var/www/manliaoxiaoji/releases/9750adc`
+- 回滚版本：`/var/www/manliaoxiaoji/releases/4c0b72e`（另保留 `dc1d010`、`5625262`）
+- Next.js Build ID：`DB_RiEeWMmtZ2woWGJhii`
+- 生产数据库：21 个 migration 已应用，无待执行 migration
+- 蓝绿状态：Nginx 当前代理到 `127.0.0.1:3103` 的 `manliaoxiaoji-guestfix`（新版）；`4c0b72e` 在 `3102`、`dc1d010` 在 `3101`、`5625262` 在 `3100` 在线保留作即时回滚
+- 健康检查：`/api/health` 返回 production / database connected
+- 线上 smoke：基础 3/3 通过；真实 Qwen 合成游客欢迎语与“你好”聊天均成功提交，输出证据只记录状态和是否存在结果
+- 当前小程序预览：`/private/tmp/xinqing-preview-2bf6855.png`，SHA-256 `6855d3c197529415cabf85a234ad14b4fbbbf2509bad8d97cffed204bcd51499`，包大小 1,832,393 bytes；所有旧二维码均已失效
+- 微信登录诊断：新版本仅记录微信上游 operation、HTTP 状态和数字 errcode；等待最新二维码的一次真实登录以区分 AppSecret 与临时 code 问题
 - 注销文件清理：`manliaoxiaoji-account-cancellation-cleanup.timer` 已启用，最近一次执行成功
-- 数据库备份：`manliaoxiaoji-postgres-backup.timer` 已启用，每日执行；首份备份已通过 `pg_restore --list` 完整性检查
+- 数据库备份：`manliaoxiaoji-postgres-backup.timer` 已启用，每日执行；部署前新备份 `postgres-20260902T170319Z.dump` 已通过 `pg_restore --list` 完整性检查
 - 小程序预览：从生产同版本 `5625262` 的纯净归档编译通过，包体 168.8 KB
 
 ## 已完成
@@ -49,9 +52,10 @@
 - [x] 生产 AI Provider 已配置为 Qwen；不记录密钥或 Base URL。真实合成游客问候与聊天已通过。
 - [x] 已运行 `npm run smoke:prod`，3/3 通过。
 - [x] 已配置注销文件清理 secret 与 systemd timer。
-- [ ] 腾讯云短信签名与正文模板尚未配置；当前版本隐藏手机号登录，审核材料明确按微信登录上线。
+- [x] 当前候选采用微信登录、微信手机号登录和游客模式；短信登录入口暂缓开放。生产审计允许短信配置全缺失，但部分配置仍视为失败；短信实现保留供后续独立候选启用。
+- [ ] 后续启用短信登录前，完成腾讯云短信凭据、应用、签名、登录与注销模板配置及真实短信验证。
 - [ ] 完成微信体验版真机人工验收并提交审核。
-- [ ] Composer 第 3 个自然日延迟采样完成前，按已批准的限量上线方案保持 pending 并监控。
+- [x] Composer 三自然日延迟门不再阻断上线；改为北京时间 17:00 固定窗口监控，异常趋势单独处理。
 
 ## 常用命令
 

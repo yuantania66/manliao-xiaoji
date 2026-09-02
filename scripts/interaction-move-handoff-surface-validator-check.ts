@@ -220,11 +220,8 @@ for (const malformedOutput of [
   assert.equal(parseInteractionMoveHandoffSemanticProviderOutput(malformedOutput), null);
 }
 
-const fullTuplePlan = responsePlanFor({
-  requiredFunction: "complete_reciprocal_contact",
-  responseActions: ["offer_neutral_conversation_entry"],
-});
-assert.deepEqual(fullTuplePlan.responseActions, ["offer_neutral_conversation_entry"]);
+const fullTuplePlan = responsePlanFor({ requiredFunction: "complete_reciprocal_contact" });
+assert.deepEqual(fullTuplePlan.responseActions, []);
 
 const providerEnvNames = [
   "AI_PROVIDER",
@@ -395,13 +392,13 @@ const prompt = buildChatPrompt({
 });
 const promptText = prompt.messages.map((message) => message.content).join("\n");
 assert(promptText.includes(`interactionMoveHandoffPlan: ${JSON.stringify(fullTuplePlan.interactionMoveHandoffPlan)}`));
-assert(promptText.includes("responseActions: offer_neutral_conversation_entry"));
+assert(promptText.includes("responseActions: none"));
 const normalizedPromptText = promptText.toLowerCase();
 for (const requiredConstraint of [
   "complete_reciprocal_contact",
   "当前用户的问候在这个交接中已经完成",
   "第一个且主要动作应是简短的陈述式过渡",
-  "最多问一个轻量选择问题",
+  "只问一个低压力的话题选择问题",
   "这些句子只约束语义组合",
   "不得复制、翻译、机械改写或向用户暴露本说明",
   "another greeting",
@@ -500,7 +497,7 @@ assert(semanticQuestionWithoutPunctuation.failureReasons.includes(
 
 const optionalPlan = responsePlanFor({
   requiredFunction: "complete_reciprocal_contact",
-  responseActions: ["offer_neutral_conversation_entry"],
+  responseActions: [],
 });
 const optionalPromptText = buildChatPrompt({
   userMessage: currentUserText,
@@ -512,7 +509,7 @@ const optionalPromptText = buildChatPrompt({
   responsePlan: optionalPlan,
 }).messages.map((message) => message.content).join("\n");
 assert(optionalPromptText.includes(
-  "最多问一个轻量选择问题"
+  "只问一个低压力的话题选择问题"
 ));
 const optionalAfterCompletion = await validateInteractionMoveHandoffOutput({
   plan: optionalPlan,

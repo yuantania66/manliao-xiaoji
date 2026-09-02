@@ -823,10 +823,10 @@ function NoteContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [shareVariant, setShareVariant] = useState(shareVariants[0]);
   const [slipActionFeedback, setSlipActionFeedback] = useState("");
-  const [todayLabel, setTodayLabel] = useState(formatLocalDate(new Date()));
+  const [todayLabel, setTodayLabel] = useState("");
   const [prompt, setPrompt] = useState(notePrompts[0]);
   const hasNote = note.trim().length > 0;
-  const currentDateLabel = date ? formatNoteDate(date) : todayLabel;
+  const currentDateLabel = date ? formatNoteDate(date) : todayLabel || "\u00a0";
   const slipQuote = getSlipQuote(note, selectedMood);
 
   useEffect(() => {

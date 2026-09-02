@@ -10,7 +10,7 @@ import {
   isProactiveGreetingPromptVersion,
 } from "@/lib/proactive-greeting";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v27";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v28";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -175,7 +175,9 @@ const handoffSurfaceConstraintsFor = (responsePlan: ResponsePlan) => {
     complete_reciprocal_contact: [
       "这是语义组合算法，不是可见回复文案：源 Assistant 开场与当前 User reciprocal move 已经建立双方接触，当前用户的问候在这个交接中已经完成，Surface 不再对它作表层回应。",
       "可见回复必须把对话推进到寒暄之后：第一个且主要动作应是简短的陈述式过渡，预设交流已经开始，而不是再次建立、确认、提供或索取接触。",
-      "先完成上述 reciprocal 陈述式过渡，再实现计划中正式选择的中性聊天入口。最多问一个轻量选择问题，让用户选择随便聊聊或聊此刻在意的事；不得要求解释、索取细节、连续提问，也不得表示在线、可用或愿意倾听。",
+      responsePlan.responseActions.length === 0
+        ? "本轮 responseActions 为 none：完成上述 reciprocal 过渡后可以自然结束，也可以只问一个低压力的话题选择问题（例如询问用户今天想聊什么）；不得替用户指定话题、连续提问或要求解释，也不得表示在线、可用或愿意倾听。"
+        : "先完成上述 reciprocal 陈述式过渡，再实现计划中仍然存在且有独立支持的 responseActions。",
       "这些句子只约束语义组合；不得复制、翻译、机械改写或向用户暴露本说明，尤其不得把接触已建立、交流已开始或正在过渡作为对用户的解释或自我报告。",
       "Do not replace that function with another greeting, receipt, echo, Assistant-presence confirmation, availability statement, or generic open door.",
     ],

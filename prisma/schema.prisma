@@ -18,6 +18,11 @@ enum UserStatus {
   BLOCKED
 }
 
+enum NoteUploadPurpose {
+  NOTE_MEDIA
+  PROFILE_AVATAR
+}
+
 enum VerificationScene {
   LOGIN
   CANCEL_ACCOUNT
@@ -410,6 +415,8 @@ model User {
   wechatOpenid           String?                  @unique
   nickname               String?
   avatarUrl              String?
+  isProvisional          Boolean                  @default(false)
+  profileCompletedAt     DateTime?
   status                 UserStatus               @default(ACTIVE)
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
@@ -657,12 +664,15 @@ model NoteUpload {
   mimeType        String
   size            Int
   accessTokenHash String
+  purpose         NoteUploadPurpose @default(NOTE_MEDIA)
+  boundAt         DateTime?
   createdAt       DateTime @default(now())
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   note            Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([noteId])
+  @@index([userId, purpose, boundAt])
 }
 
 model AccountCancellationFileDeletion {

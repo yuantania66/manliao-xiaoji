@@ -742,6 +742,7 @@ const buildValidatedHandoffFulfillment = ({
     handoff.requiredFunction === "defer_handoff_completion"
   ) return null;
   const ordinaryHandoffFunction =
+    handoff.requiredFunction === "complete_reciprocal_contact" ||
     handoff.requiredFunction === "continue_from_user_answer" ||
     handoff.requiredFunction === "continue_user_introduced_content";
   const unresolvedHandoffSemanticAdvisory =

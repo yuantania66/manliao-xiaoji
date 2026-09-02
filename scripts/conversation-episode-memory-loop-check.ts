@@ -7,6 +7,7 @@ import {
   assembleConversationControlContext,
   buildDialogueState,
   createResponsePlan,
+  createResponsePlanPreflightAuthoritySnapshot,
   interpretTurnDeterministically,
   type EpisodeMemoryCandidate,
 } from "../conversation-os/control";
@@ -19,7 +20,6 @@ import {
   preflightResponsePlan,
 } from "../services/ai/chatExecutionLifecycle";
 import {
-  countTopicTermOverlap,
   parseEpisodeSummaryProviderOutput,
   refreshEpisodeSummaryForSession,
   retrieveRelevantEpisodeMemories,
@@ -33,7 +33,7 @@ const workExtraction: UnderstandingExtraction = {
   experiences: [{ emotion: "疲惫" }],
   interpretations: [],
   people: [],
-  topics: ["工作压力"],
+  topics: ["工作"],
   occurredAt: null,
 };
 
@@ -116,11 +116,27 @@ const planFor = (
   });
 };
 
+const preflightFor = (
+  userMessage: string,
+  candidates: EpisodeMemoryCandidate[],
+  plan: ReturnType<typeof createResponsePlan>,
+  modelEnrichedSupportingEmotion = false
+) => {
+  const { context, interpretation, dialogueState } = planningInputFor(userMessage, candidates);
+  const effectiveDialogueState = modelEnrichedSupportingEmotion
+    ? {
+        ...dialogueState,
+        currentActivity: { ...dialogueState.currentActivity, primary: "supporting_emotion" as const },
+      }
+    : dialogueState;
+  return preflightResponsePlan(plan, createResponsePlanPreflightAuthoritySnapshot({
+    context,
+    interpretation,
+    dialogueState: effectiveDialogueState,
+  }));
+};
+
 const main = async () => {
-  assert.equal(countTopicTermOverlap(["工作"], ["工作压力"]), 1);
-  assert.equal(countTopicTermOverlap(["工作压力"], ["工作"]), 1);
-  assert.equal(countTopicTermOverlap(["电影"], ["工作压力"]), 0);
-  assert.equal(countTopicTermOverlap(["工"], ["工作压力"]), 0);
   assert.equal(parseEpisodeSummaryProviderOutput("```json\n{}\n```"), null);
   assert.equal(parseEpisodeSummaryProviderOutput({
     naturalSummary: "x",
@@ -312,7 +328,7 @@ const main = async () => {
     assert(!surfacePrompt.includes(candidates[0]!.sourceMessageIds[0]!), "Surface must not receive source ids.");
     assert(surfacePrompt.includes("Never state an unconfirmed cause"));
 
-    const initialPreflight = preflightResponsePlan(selectedPlan);
+    const initialPreflight = preflightFor("最近不想上班", candidates, selectedPlan, true);
     assert.deepEqual(
       initialPreflight.failureReasons,
       ["missing_emotional_support_evidence_spans"],
@@ -329,7 +345,12 @@ const main = async () => {
       recoveryDirective,
       true
     );
-    assert.equal(preflightResponsePlan(recoveredPlan).passed, true);
+    const recoveredPreflight = preflightFor("最近不想上班", candidates, recoveredPlan, true);
+    assert.equal(
+      recoveredPreflight.passed,
+      true,
+      `Recovered episode plan must pass preflight: ${recoveredPreflight.failureReasons.join(",")}`
+    );
     assert(!recoveredPlan.responseActions.includes("offer_emotional_support"));
     assert.equal(recoveredPlan.positiveFunctionContract, null);
     assert.equal(recoveredPlan.clinicalStrategy, null);
@@ -345,24 +366,27 @@ const main = async () => {
     const noMemoryInitialPlan = planFor("最近不想上班", [], null, true);
     const noMemoryDirective = createPlanPreflightRecoveryDirective(
       noMemoryInitialPlan,
-      preflightResponsePlan(noMemoryInitialPlan)
+      preflightFor("最近不想上班", [], noMemoryInitialPlan, true)
     );
     assert(noMemoryDirective);
     assert.equal(
-      preflightResponsePlan(
-        planFor("最近不想上班", [], noMemoryDirective, true)
+      preflightFor(
+        "最近不想上班",
+        [],
+        planFor("最近不想上班", [], noMemoryDirective, true),
+        true
       ).passed,
       true,
       "Ordinary chat without Episode Memory must recover without adding affect keywords."
     );
 
     const explicitEmotionPlan = planFor("最近上班真的很累", candidates);
-    assert.equal(preflightResponsePlan(explicitEmotionPlan).passed, true);
+    assert.equal(preflightFor("最近上班真的很累", candidates, explicitEmotionPlan).passed, true);
     assert(explicitEmotionPlan.responseActions.includes("offer_emotional_support"));
     assert.equal(
       createPlanPreflightRecoveryDirective(
         explicitEmotionPlan,
-        preflightResponsePlan(explicitEmotionPlan)
+        preflightFor("最近上班真的很累", candidates, explicitEmotionPlan)
       ),
       null,
       "Canonical current-turn affect evidence must pass without recovery."

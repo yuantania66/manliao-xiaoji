@@ -1,0 +1,21 @@
+{
+  "capturedAt": "2026-08-28T21:07:20+08:00",
+  "environment": "production",
+  "url": "https://manliaoxiaoji.com/",
+  "browser": "Chromium production runtime",
+  "console": {
+    "errors": 1,
+    "warnings": 0,
+    "items": [
+      {
+        "level": "error",
+        "category": "react_hydration",
+        "code": 418,
+        "message": "Minified React error #418",
+        "source": "/_next/static/chunks/4bd1b696-f785427dddbba9fb.js"
+      }
+    ]
+  },
+  "screenshot": "docs/evals/screenshots/prod-home-runtime-20260828.png",
+  "privacy": "No cookie, token, user id, request body, user content, or secret retained."
+}

@@ -1,4 +1,5 @@
 import { removeNoteUploadFile } from "@/app/api/uploads/notes/storage";
+import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 
 export const drainAccountCancellationFiles = async (taskIds: string[]) => {
@@ -60,10 +61,7 @@ export const cancelAccountData = async ({
     });
   }
 
-  await tx.feedback.updateMany({
-    where: { userId },
-    data: { userId: null, content: "[account_cancelled]", contact: null, userAgent: null },
-  });
+  await tx.feedback.deleteMany({ where: { userId } });
   const uploads = await tx.noteUpload.findMany({
     where: { userId },
     select: { storageKey: true },
@@ -80,6 +78,51 @@ export const cancelAccountData = async ({
     where: { OR: [{ userId }, ...(phone ? [{ phone }] : [])] },
   });
   await tx.user.delete({ where: { id: userId } });
-  await tx.user.create({ data: { status: "CANCELLED" } });
   return cleanupTasks.map((task) => task.id);
+});
+
+export const abandonIncompleteProfile = async ({
+  userId,
+  sessionTokenHash,
+}: {
+  userId: string;
+  sessionTokenHash: string;
+}) => prisma.$transaction(async (tx) => {
+  const lockedUsers = await tx.$queryRaw<Array<{
+    id: string;
+    phone: string | null;
+    nickname: string | null;
+    avatarUrl: string | null;
+    isProvisional: boolean;
+    profileCompletedAt: Date | null;
+  }>>`
+    SELECT "id", "phone", "nickname", "avatarUrl", "isProvisional", "profileCompletedAt"
+    FROM "User" WHERE "id" = ${userId} FOR UPDATE
+  `;
+  const user = lockedUsers[0];
+  if (!user) throw new AppError("UNAUTHORIZED", "请先登录", 401);
+  await tx.session.deleteMany({ where: { userId, tokenHash: sessionTokenHash } });
+
+  const profileIsComplete = Boolean(
+    user.nickname?.trim() && user.avatarUrl?.trim() && user.profileCompletedAt,
+  );
+  if (!user.isProvisional || profileIsComplete) {
+    return { accountRemoved: false, cleanupTaskIds: [] as string[] };
+  }
+
+  await tx.feedback.deleteMany({ where: { userId } });
+  const uploads = await tx.noteUpload.findMany({ where: { userId }, select: { storageKey: true } });
+  const cleanupTasks = await Promise.all(uploads.map((upload) =>
+    tx.accountCancellationFileDeletion.upsert({
+      where: { storageKey: upload.storageKey },
+      create: { storageKey: upload.storageKey },
+      update: {},
+      select: { id: true },
+    }),
+  ));
+  await tx.verificationCode.deleteMany({
+    where: { OR: [{ userId }, ...(user.phone ? [{ phone: user.phone }] : [])] },
+  });
+  await tx.user.delete({ where: { id: userId } });
+  return { accountRemoved: true, cleanupTaskIds: cleanupTasks.map((task) => task.id) };
 });

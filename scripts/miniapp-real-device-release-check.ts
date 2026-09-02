@@ -35,11 +35,14 @@ const privacy = read("miniprogram-project/utils/wechat-privacy.js");
 for (const api of ["getPrivacySetting", "requirePrivacyAuthorize", "openPrivacyContract"]) {
   assert(privacy.includes(`wx.${api}`), api);
 }
-for (const page of ["home", "me"]) {
-  const source = read(`miniprogram-project/pages/${page}/${page}.js`);
-  assert.match(source, /requireWechatPrivacyAuthorization\(\)/);
-  assert(source.indexOf("requireWechatPrivacyAuthorization()") < source.indexOf("wx.login({"));
-}
+const homeSource = read("miniprogram-project/pages/home/home.js");
+const meSource = read("miniprogram-project/pages/me/me.js");
+const authSource = read("miniprogram-project/pages/auth/auth.js");
+assert.match(homeSource, /redirectTo\(\{ url: "\/pages\/auth\/auth" \}\)/);
+assert.match(meSource, /redirectTo\(\{ url: "\/pages\/auth\/auth" \}\)/);
+assert.match(authSource, /requireWechatPrivacyAuthorization\(\)/);
+const wechatLoginFlow = authSource.slice(authSource.indexOf("loginWechat()"), authSource.indexOf("handleWechatPhone"));
+assert(wechatLoginFlow.indexOf("requireWechatPrivacyAuthorization()") < wechatLoginFlow.indexOf("authenticateWithWechat()"));
 assert.match(read("miniprogram-project/pages/me/me.js"), /微信账号已连接 · 云端同步已开启/);
 
 const settingsWxml = read("miniprogram-project/pages/settings/settings.wxml");

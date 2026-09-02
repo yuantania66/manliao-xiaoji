@@ -42,9 +42,17 @@ jobs:
       - name: Prepare database
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/manliao_xiaoji_ci
-        run: npx prisma migrate deploy
+        run: |
+          npx prisma migrate deploy
+          touch .env
 
-      - name: Run launch checks
+      - name: Run required release checks
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/manliao_xiaoji_ci
-        run: npm run check:launch
+          PROACTIVE_COMMIT_TEST_DATABASE_URL: postgresql://user:password@localhost:5432/manliao_xiaoji_ci
+          PROACTIVE_COMMIT_TEST_ALLOW_DDL: "1"
+          CANCEL_ACCOUNT_TEST_DATABASE_URL: postgresql://user:password@localhost:5432/manliao_xiaoji_ci
+          PROFILE_AVATAR_TEST_DATABASE_URL: postgresql://user:password@localhost:5432/manliao_xiaoji_ci
+          PROFILE_GATE_TEST_DATABASE_URL: postgresql://user:password@localhost:5432/manliao_xiaoji_ci
+          WECHAT_PHONE_LOGIN_TEST_DATABASE_URL: postgresql://user:password@localhost:5432/manliao_xiaoji_ci
+        run: npm run check:release:required

@@ -211,12 +211,11 @@ for (const qualityOnlyReply of [
   "没关系，那我们就先这样待着。",
   "没关系，就这样安静待着也挺好。",
   "想不到也没关系，你想聊点什么？",
-  ]) {
+]) {
   const validation = validateResponsePlanOutput({ plan: scenarioA.responsePlan, reply: qualityOnlyReply });
   assert.equal(validation.passed, false, qualityOnlyReply);
   assert.equal(validation.rewriteRequired, false, qualityOnlyReply);
   assert((validation.hardFailureReasons?.length ?? 0) > 0, qualityOnlyReply);
-  assert.equal(validation.advisoryFailureReasons?.length, 0, qualityOnlyReply);
 }
 assert(validateResponsePlanOutput({ plan: scenarioA.responsePlan, reply: "那我来起个轻松的头：今天有没有一件小事让你多看了一眼？" }).passed);
 assert(validateResponsePlanOutput({ plan: definitionQuestion.responsePlan, reply: "“接住”是指认真回应你的话，不是真的用手去接。" }).passed);

@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireUser(request);
     assertInsightsConsent({ token: request.headers.get("x-insights-consent"), userId: user.id });
-    const daysValue = Number(request.nextUrl.searchParams.get("days") ?? "30");
+    const range = request.nextUrl.searchParams.get("range");
+    const daysValue = Number(request.nextUrl.searchParams.get("days") ?? range?.replace(/d$/u, "") ?? "30");
     if (![7, 30, 90].includes(daysValue)) {
       throw new AppError("VALIDATION_ERROR", "观察范围必须是 7、30 或 90 天", 400);
     }

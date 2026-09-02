@@ -37,27 +37,16 @@ export type ResponsePlanRecoveryDirective = {
 
 const unique = <T>(items: T[]) => Array.from(new Set(items));
 
-const exactPostureSpanSource = (
-  context: ConversationControlContext,
-  span: OrdinaryPostureSourceSpan
-) => {
+const exactPostureSpanSource = (context: ConversationControlContext, span: OrdinaryPostureSourceSpan) => {
   if (span.source === "current_user_turn") {
-    return span.sourceTurnId === context.currentTurnId
-      ? context.currentUserMessage
-      : null;
+    return span.sourceTurnId === context.currentTurnId ? context.currentUserMessage : null;
   }
-  const source = context.adjacentTurns.find((turn) =>
+  return context.adjacentTurns.find((turn) =>
     turn.role === "user" && turn.id === span.sourceTurnId && turn.status === "saved"
-  );
-  return source?.content ?? null;
+  )?.content ?? null;
 };
 
-const acceptedOrdinaryPosture = ({
-  context,
-  interpretation,
-  priorityOwned,
-  boundary,
-}: {
+const acceptedOrdinaryPosture = ({ context, interpretation, priorityOwned, boundary }: {
   context: ConversationControlContext;
   interpretation: TurnInterpretation;
   priorityOwned: boolean;
@@ -68,64 +57,35 @@ const acceptedOrdinaryPosture = ({
   const boundaryRejectsExplore = boundary?.userBoundaries.some((item) =>
     item === "no_analysis" || item === "no_questions" || item === "pause" || item === "stop"
   ) ?? false;
-  const validProposal = Boolean(
-    proposal &&
-    proposal.sourceSpans.length > 0 &&
+  const valid = Boolean(proposal && proposal.sourceSpans.length > 0 &&
     proposal.sourceSpans.every((span) => {
-      const sourceText = exactPostureSpanSource(context, span);
-      return Boolean(
-        sourceText !== null &&
-        Number.isInteger(span.start) &&
-        Number.isInteger(span.end) &&
-        span.start >= 0 &&
-        span.end > span.start &&
-        sourceText?.slice(span.start, span.end) === span.text
-      );
-    }) &&
-    proposal.proposedContribution.targetSpanIndexes.length > 0 &&
-    new Set(proposal.proposedContribution.targetSpanIndexes).size ===
-      proposal.proposedContribution.targetSpanIndexes.length &&
+      const source = exactPostureSpanSource(context, span);
+      return source !== null && Number.isInteger(span.start) && Number.isInteger(span.end) &&
+        span.start >= 0 && span.end > span.start && source.slice(span.start, span.end) === span.text;
+    }) && proposal.proposedContribution.targetSpanIndexes.length > 0 &&
+    new Set(proposal.proposedContribution.targetSpanIndexes).size === proposal.proposedContribution.targetSpanIndexes.length &&
     proposal.proposedContribution.targetSpanIndexes.every((index) =>
       Number.isInteger(index) && index >= 0 && index < proposal.sourceSpans.length
-    ) &&
-    proposal.proposedContribution.instruction.trim().length > 0 &&
-    proposal.proposedContribution.instruction.trim().length <= 240 &&
-    proposal.evidence.some((item) => item.trim()) &&
-    !(proposal.mode === "explore" && boundaryRejectsExplore) &&
-    !interpretation.responseRelation.ambiguous
-  );
-  if (validProposal && proposal) {
-    return {
-      mode: proposal.mode,
-      sourceSpans: structuredClone(proposal.sourceSpans),
-      requiredContribution: {
-        targetSpanIndexes: [...proposal.proposedContribution.targetSpanIndexes],
-        instruction: proposal.proposedContribution.instruction.trim(),
-      },
-      evidence: unique(["owner=conversation_os.response_planner", ...proposal.evidence]),
-    };
-  }
-  const currentText = context.currentUserMessage;
-  const start = currentText.search(/\S/u);
-  const end = currentText.trimEnd().length;
+    ) && proposal.proposedContribution.instruction.trim().length > 0 &&
+    proposal.proposedContribution.instruction.trim().length <= 240 && proposal.evidence.some((item) => item.trim()) &&
+    !(proposal.mode === "explore" && boundaryRejectsExplore) && !interpretation.responseRelation.ambiguous);
+  if (valid && proposal) return {
+    mode: proposal.mode,
+    sourceSpans: structuredClone(proposal.sourceSpans),
+    requiredContribution: {
+      targetSpanIndexes: [...proposal.proposedContribution.targetSpanIndexes],
+      instruction: proposal.proposedContribution.instruction.trim(),
+    },
+    evidence: unique(["owner=conversation_os.response_planner", ...proposal.evidence]),
+  };
+  const start = context.currentUserMessage.search(/\S/u);
+  const end = context.currentUserMessage.trimEnd().length;
   if (start < 0 || end <= start) return null;
   return {
     mode: "accompany",
-    sourceSpans: [{
-      source: "current_user_turn",
-      sourceTurnId: context.currentTurnId,
-      start,
-      end,
-      text: currentText.slice(start, end),
-    }],
-    requiredContribution: {
-      targetSpanIndexes: [0],
-      instruction: "对用户当前已经表达的具体内容作出贴切回应，并保留由用户决定是否继续或转向的空间。",
-    },
-    evidence: [
-      "owner=conversation_os.response_planner",
-      proposal ? "interpreter_proposal_rejected" : "ambiguous_or_missing_proposal_defaults_to_accompany",
-    ],
+    sourceSpans: [{ source: "current_user_turn", sourceTurnId: context.currentTurnId, start, end, text: context.currentUserMessage.slice(start, end) }],
+    requiredContribution: { targetSpanIndexes: [0], instruction: "对用户当前已经表达的具体内容作出贴切回应，并保留由用户决定是否继续或转向的空间。" },
+    evidence: ["owner=conversation_os.response_planner", proposal ? "interpreter_proposal_rejected" : "ambiguous_or_missing_proposal_defaults_to_accompany"],
   };
 };
 
@@ -564,7 +524,6 @@ export const createResponsePlan = ({
       actions = actions.filter(
         (action) => action !== "acknowledge_without_psychologizing"
       );
-      actions = unique(["offer_neutral_conversation_entry", ...actions]);
     } else if (interactionMoveHandoffPlan?.requiredFunction === "respect_user_boundary") {
       actions = ["respect_pause"];
     } else if (

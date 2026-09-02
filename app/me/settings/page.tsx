@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { apiRequest } from "@/lib/client-api";
-import { clearAuth } from "@/lib/client-auth";
+import { clearAuth, getStoredAuth } from "@/lib/client-auth";
 
 const settingItems = [
   { title: "隐私政策", href: "/me/settings/privacy", copy: "查看数据如何被保存与使用" },
@@ -14,6 +15,11 @@ const settingItems = [
 
 export default function SettingsPage() {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(Boolean(getStoredAuth()?.token));
+  }, []);
 
   const logout = async () => {
     try {
@@ -73,13 +79,15 @@ export default function SettingsPage() {
           ))}
         </section>
 
-        <button
-          type="button"
-          className="absolute left-[22px] top-[512px] h-[52px] w-[346px] rounded-[20px] bg-[var(--card-warm)] text-[13px] font-semibold leading-5 text-[#b9826e]"
-          onClick={logout}
-        >
-          退出登录
-        </button>
+        {isLoggedIn ? (
+          <button
+            type="button"
+            className="absolute left-[22px] top-[512px] h-[52px] w-[346px] rounded-[20px] bg-[var(--card-warm)] text-[13px] font-semibold leading-5 text-[#b9826e]"
+            onClick={logout}
+          >
+            退出登录
+          </button>
+        ) : null}
 
         <p className="absolute left-1/2 top-[706px] h-[34px] w-[330px] -translate-x-1/2 whitespace-pre-line text-center text-[11px] leading-[17px] text-[var(--muted)]">
           {"慢聊小记 v2.0.0\n慢慢聊，轻轻记。"}

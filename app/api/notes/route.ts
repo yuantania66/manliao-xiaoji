@@ -128,14 +128,27 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const pagination = parsePagination(searchParams);
     const date = searchParams.get("date");
+    const q = searchParams.get("q")?.trim() ?? "";
 
     if (date && !isValidDateOnly(date)) {
       throw new AppError("VALIDATION_ERROR", "date 必须是 YYYY-MM-DD", 400, { field: "date" });
     }
+    if (q.length > 100) {
+      throw new AppError("VALIDATION_ERROR", "q 不能超过 100 个字符", 400, { field: "q" });
+    }
 
-    const where = {
+    const where: Prisma.NoteWhereInput = {
       userId: user.id,
+      isDraft: false,
       ...(date ? { recordDate: new Date(`${date}T00:00:00.000Z`) } : {}),
+      ...(q
+        ? {
+            OR: [
+              { content: { contains: q, mode: "insensitive" } },
+              { moodName: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
     };
 
     const [items, total] = await prisma.$transaction([
@@ -237,7 +250,7 @@ export async function POST(request: NextRequest) {
       note = await prisma.$transaction(async (tx) => {
         if (uploadIds.length) {
           const ownedUploads = await tx.noteUpload.findMany({
-            where: { id: { in: uploadIds as string[] }, userId: user.id, noteId: null },
+            where: { id: { in: uploadIds as string[] }, userId: user.id, noteId: null, purpose: "NOTE_MEDIA" },
             select: { id: true, accessTokenHash: true },
           });
           const uploadById = new Map(ownedUploads.map((upload) => [upload.id, upload]));
@@ -255,7 +268,7 @@ export async function POST(request: NextRequest) {
         });
         if (uploadIds.length) {
           const bound = await tx.noteUpload.updateMany({
-            where: { id: { in: uploadIds as string[] }, userId: user.id, noteId: null },
+            where: { id: { in: uploadIds as string[] }, userId: user.id, noteId: null, purpose: "NOTE_MEDIA" },
             data: { noteId: created.id },
           });
           if (bound.count !== uploadIds.length) throw new AppError("CONFLICT", "图片已被其他保存请求使用", 409);
