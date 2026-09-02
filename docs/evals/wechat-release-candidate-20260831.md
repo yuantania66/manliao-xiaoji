@@ -39,12 +39,14 @@ npm run check:release:required
 
 ## 微信开发者工具预览
 
-微信开发者工具此前为旧候选 `5ca4e17` 生成过预览包；该包及本节全部历史二维码均不属于当前 `f66e0bd` 候选，已经失效，不再用于验收。当前候选必须在生产核验完成后重新生成绑定提交的二维码。
+微信开发者工具已在生产核验完成后，为当前证据提交 `2bf6855`（产品源码 `f66e0bd`）生成预览包，报告包大小为 1,832,393 bytes。该二维码是当前唯一有效预览；下表其他历史二维码均已失效，不再用于验收。
 
 本地临时证据（不提交仓库）：
 
 | 文件 | SHA-256 | 大小 |
 | --- | --- | ---: |
+| `/private/tmp/xinqing-preview-2bf6855.png` | `6855d3c197529415cabf85a234ad14b4fbbbf2509bad8d97cffed204bcd51499` | 47,411 bytes |
+| `/private/tmp/xinqing-preview-2bf6855.json` | `bdd5d9c8bdce2274979b0e6b99515fcedd2d1b281774c5eb4af2317f09fec879` | 130 bytes |
 | `/private/tmp/xinqing-preview-5ca4e17.png` | `4e54cc6bebc91e7b418fc4b3c0443de0e603189071873f2d82a70d988b995f1a` | 47,002 bytes |
 | `/private/tmp/xinqing-preview-5ca4e17.json` | `789515f263db694db5ed55716851ab726ee27d97305b3d0818196dad3ac5047f` | 130 bytes |
 | `/private/tmp/xinqing-preview-6478517.png` | `93aaa50799130975b08de6533603b3f0741f380871677419c4c1b37aafa5e786` | 46,975 bytes |

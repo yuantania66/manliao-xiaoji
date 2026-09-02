@@ -25,7 +25,7 @@
 - 蓝绿状态：Nginx 当前代理到 `127.0.0.1:3103` 的 `manliaoxiaoji-guestfix`（新版）；`4c0b72e` 在 `3102`、`dc1d010` 在 `3101`、`5625262` 在 `3100` 在线保留作即时回滚
 - 健康检查：`/api/health` 返回 production / database connected
 - 线上 smoke：基础 3/3 通过；真实 Qwen 合成游客欢迎语与“你好”聊天均成功提交，输出证据只记录状态和是否存在结果
-- 当前小程序预览：待从 `9750adc` 重新生成；所有旧二维码均已失效
+- 当前小程序预览：`/private/tmp/xinqing-preview-2bf6855.png`，SHA-256 `6855d3c197529415cabf85a234ad14b4fbbbf2509bad8d97cffed204bcd51499`，包大小 1,832,393 bytes；所有旧二维码均已失效
 - 微信登录诊断：新版本仅记录微信上游 operation、HTTP 状态和数字 errcode；等待最新二维码的一次真实登录以区分 AppSecret 与临时 code 问题
 - 注销文件清理：`manliaoxiaoji-account-cancellation-cleanup.timer` 已启用，最近一次执行成功
 - 数据库备份：`manliaoxiaoji-postgres-backup.timer` 已启用，每日执行；部署前新备份 `postgres-20260902T170319Z.dump` 已通过 `pg_restore --list` 完整性检查
