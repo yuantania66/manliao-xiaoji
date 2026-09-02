@@ -52,6 +52,12 @@ npm run check:release:required
 | `/private/tmp/xinqing-preview-6478517.png` | `93aaa50799130975b08de6533603b3f0741f380871677419c4c1b37aafa5e786` | 46,975 bytes |
 | `/private/tmp/xinqing-preview-6478517.json` | `127c3817ece9b7309c8ca48f2d56e997d43dfb8b509987c9422a768486a2a13c` | 130 bytes |
 
+## GitHub 发布门
+
+2026-09-03，PR #37 在提交 `ea633b3` 上完成 GitHub Actions `launch-checks`，结果 **PASS**，耗时 2 分 5 秒。此前一次失败不是产品代码失败，而是生产环境审计专项的子进程继承了 CI 自身的 `DATABASE_URL`，覆盖合成 fixture 后被识别为占位配置；测试现会隔离其自行提供的全部环境字段，并已用 CI 同款地址及多字段污染反例重放通过。
+
+通过记录：<https://github.com/yuantania66/manliao-xiaoji/actions/runs/33661727522/job/100353610131>
+
 旧候选包大小为 1,820,659 bytes，只是历史记录。新二维码虽已绑定当前候选，但在配套后端部署和真机回归完成前，仍不得作为上线体验版交付。
 
 ## 登录页视觉与 Figma 复核
