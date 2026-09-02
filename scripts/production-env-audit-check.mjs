@@ -30,6 +30,7 @@ const baseEnv = [
 ];
 const cleanProcessEnv = { ...process.env };
 for (const key of smsKeys) delete cleanProcessEnv[key];
+for (const line of baseEnv) delete cleanProcessEnv[line.slice(0, line.indexOf("="))];
 
 const runAudit = async (extra = []) => {
   await writeFile(envFile, [...baseEnv, ...extra, ""].join("\n"));
