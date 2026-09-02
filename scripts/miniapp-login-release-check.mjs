@@ -36,6 +36,7 @@ const mePath = require.resolve("../miniprogram-project/pages/me/me.js");
 const homeWxml = readFileSync(new URL("../miniprogram-project/pages/home/home.wxml", import.meta.url), "utf8");
 const homeWxss = readFileSync(new URL("../miniprogram-project/pages/home/home.wxss", import.meta.url), "utf8");
 const meWxml = readFileSync(new URL("../miniprogram-project/pages/me/me.wxml", import.meta.url), "utf8");
+const settingsWxml = readFileSync(new URL("../miniprogram-project/pages/settings/settings.wxml", import.meta.url), "utf8");
 const privacyWxml = readFileSync(new URL("../miniprogram-project/pages/privacy/privacy.wxml", import.meta.url), "utf8");
 for (const label of ["微信登录", "手机号登录"]) {
   assert.match(homeWxml, new RegExp(label));
@@ -52,17 +53,20 @@ for (const markup of [homeWxml, meWxml]) {
 }
 assert.match(privacyWxml, /选择微信登录.*登录凭证和对应的账号标识/);
 assert.match(privacyWxml, /微信登录不会自动获取你的手机号、头像或昵称/);
-assert.match(privacyWxml, /选择微信手机号登录.*微信界面中确认的绑定号码.*当前版本暂不开放其他手机号短信验证码登录/);
+assert.match(privacyWxml, /选择微信绑定手机号码登录.*微信界面中确认的绑定号码.*当前版本暂不开放其他手机号短信验证码登录/);
 assert.doesNotMatch(meWxml, /profile-editor-mask/);
 assert.match(meWxml, /头像和昵称是可选资料，可以随时修改/);
 assert.doesNotMatch(meWxml, /bindtap="exitRequiredProfile"/);
 assert.match(meWxml, /bindtap="skipProfile"[^>]*>取消<\/button>/);
 assert.doesNotMatch(meWxml, /type="nickname"/);
+assert.match(meWxml, /wx:if="\{\{!isLoggedIn\}\}"[^>]*url="\/pages\/auth\/auth\?mode=login"[^>]*>登录或注册/u);
+assert.match(settingsWxml, /wx:if="\{\{dataMode === 'guest'\}\}"[^>]*url="\/pages\/auth\/auth\?mode=login"[^>]*>登录或注册/u);
 assert.match(privacyWxml, /头像和昵称属于可选个人资料/);
 assert.match(privacyWxml, /头像不要求是真人照片/);
 assert.match(privacyWxml, /不会在你操作前自动读取这些资料/);
 assert.match(privacyWxml, /不会提供给 AI，也不会用于人脸识别/);
 const auth = require(authPath);
+const local = require("../miniprogram-project/utils/local-data.js");
 const {
   getLoginBackground,
   getLoginBackgroundInsetTop,
@@ -113,25 +117,274 @@ for (const invalid of [
 ]) {
   assert.equal(auth.isUsableAuth(invalid), false);
 }
+
+const legacyDraft = { content: "旧草稿", mediaItems: [], selectedMood: null, clientRequestId: "legacy-owner-freeze" };
+storage.clear();
+auth.enterGuest();
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+auth.saveAuth({ ...validAuth, token: "guest-to-b", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "guest");
+assert.equal(local.readNoteDraft("authenticated:user-b"), null, "B must not claim unopened guest A v1");
+auth.enterGuest();
+assert.deepEqual(local.readNoteDraft("guest"), { ...legacyDraft, owner: "guest" }, "guest A must recover and migrate its v1");
+
+storage.clear();
+auth.saveAuth(validAuth);
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+auth.enterGuest();
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "authenticated:user-a");
+assert.equal(local.readNoteDraft("guest"), null, "guest must not claim unopened account A v1");
+auth.saveAuth(validAuth);
+assert.deepEqual(local.readNoteDraft("authenticated:user-a"), { ...legacyDraft, owner: "authenticated:user-a" }, "account A must recover its v1");
+
+storage.clear();
+auth.saveAuth(validAuth);
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+auth.clearAuth();
+assert.equal(auth.getDataOwner(), "none");
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "authenticated:user-a", "logout must freeze the departing account owner");
+
+storage.clear();
+auth.enterGuest();
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingMiniNoteDraft:v1:owner", "authenticated:prior-owner");
+auth.saveAuth({ ...validAuth, token: "different-claim", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(auth.getDataOwner(), "authenticated:user-b");
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "authenticated:prior-owner", "a different existing claim must not be overwritten");
+assert.equal(local.readNoteDraft("authenticated:user-b"), null);
+
+storage.clear();
+auth.saveAuth(validAuth);
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingAuth", {
+  ...validAuth,
+  token: "expired-a-token",
+  expiresAt: new Date(0).toISOString()
+});
+assert.equal(auth.getAuth(), null, "expired A must not restore a usable login");
+assert.equal(auth.getDataOwner(), "none");
+assert.equal(storage.has("xinqingAuth"), false, "expired A auth is discarded only after claim");
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "authenticated:user-a", "expired A must freeze the unopened v1 claim");
+auth.saveAuth({ ...validAuth, token: "user-b-after-expired-a", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(local.readNoteDraft("authenticated:user-b"), null, "B must not claim expired A's unopened v1");
+assert.deepEqual(storage.get("xinqingMiniNoteDraft:v1"), legacyDraft);
+auth.saveAuth(validAuth);
+assert.deepEqual(
+  local.readNoteDraft("authenticated:user-a"),
+  { ...legacyDraft, owner: "authenticated:user-a" },
+  "A must still recover the draft after re-login"
+);
+
+storage.clear();
+auth.saveAuth(validAuth);
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingAuth", {
+  ...validAuth,
+  token: "expired-a-direct-switch",
+  expiresAt: new Date(0).toISOString()
+});
+auth.saveAuth({ ...validAuth, token: "user-b-direct-after-expired", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "authenticated:user-a", "direct B login must still freeze expired A from raw auth");
+assert.equal(local.readNoteDraft("authenticated:user-b"), null);
+
+storage.clear();
+auth.saveAuth(validAuth);
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingAuth", {
+  ...validAuth,
+  token: "expired-a-claim-fail",
+  expiresAt: new Date(0).toISOString()
+});
+const expiredClaimSet = wx.setStorageSync;
+wx.setStorageSync = (key, value) => {
+  if (key === "xinqingMiniNoteDraft:v1:owner") throw new Error("claim unavailable");
+  return expiredClaimSet(key, value);
+};
+assert.equal(auth.getAuth(), null, "failed claim must not restore expired login");
+assert.equal(storage.has("xinqingAuth"), true, "failed claim must keep the expired identity record for retry");
+assert.equal(storage.has("xinqingMiniNoteDraft:v1:owner"), false);
+wx.setStorageSync = expiredClaimSet;
+assert.equal(auth.getAuth(), null);
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "authenticated:user-a", "retry after claim storage recovers must freeze A");
+assert.equal(storage.has("xinqingAuth"), false);
+
+storage.clear();
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingAuth", { user: { id: "user-a" } });
+auth.saveAuth({ ...validAuth, token: "user-b-after-malformed-a", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(local.readNoteDraft("authenticated:user-b"), null, "malformed raw auth must not let B observe unclaimed v1");
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "sealed:invalid-auth");
+assert.notEqual(storage.get("xinqingMiniNoteDraft:v1:owner"), "authenticated:user-a");
+assert.deepEqual(storage.get("xinqingMiniNoteDraft:v1"), legacyDraft);
+
+storage.clear();
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingAuth", { user: { id: "user-b" } });
+auth.saveAuth({ ...validAuth, token: "user-b-after-forged-b", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(
+  local.readNoteDraft("authenticated:user-b"),
+  null,
+  "forged user-only residue matching B must not mint a claim B can read"
+);
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "sealed:invalid-auth");
+
+storage.clear();
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingAuth", { token: "x", expiresAt: "bad", user: { id: "user-a" } });
+auth.saveAuth({ ...validAuth, token: "user-b-after-bad-expiry", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(local.readNoteDraft("authenticated:user-b"), null, "bad expiresAt must not mint an owner claim");
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "sealed:invalid-auth");
+
+storage.clear();
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingAuth", { token: "", expiresAt: future, user: { id: "user-a" } });
+auth.saveAuth({ ...validAuth, token: "user-b-after-empty-token", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(local.readNoteDraft("authenticated:user-b"), null, "empty token must not mint an owner claim");
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "sealed:invalid-auth");
+
+storage.clear();
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingAuth", { token: "local_demo_x", expiresAt: new Date(0).toISOString(), user: { id: "user-a" } });
+auth.saveAuth({ ...validAuth, token: "user-b-after-demo-token", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(local.readNoteDraft("authenticated:user-b"), null, "demo token residue must not mint an owner claim");
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "sealed:invalid-auth");
+
+storage.clear();
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+storage.set("xinqingAuth", { user: { id: "user-a" } });
+const malformedSealSet = wx.setStorageSync;
+wx.setStorageSync = (key, value) => {
+  if (key === "xinqingMiniNoteDraft:v1:owner") throw new Error("seal unavailable");
+  return malformedSealSet(key, value);
+};
+assert.equal(auth.getAuth(), null, "failed seal must not restore malformed login");
+assert.equal(storage.has("xinqingAuth"), true, "failed seal must keep malformed residue for retry");
+assert.equal(storage.has("xinqingMiniNoteDraft:v1:owner"), false);
+wx.setStorageSync = malformedSealSet;
+assert.equal(auth.getAuth(), null);
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "sealed:invalid-auth", "retry after seal storage recovers must seal v1");
+assert.equal(storage.has("xinqingAuth"), false);
+
+storage.clear();
+storage.set("xinqingMiniNoteDraft:v1", { ...legacyDraft, content: "synthetic-original", clientRequestId: "legacy-persistent-seal" });
+storage.set("xinqingAuth", { user: { id: "user-a" } });
+const persistentSealFail = wx.setStorageSync;
+wx.setStorageSync = (key, value) => {
+  if (key === "xinqingMiniNoteDraft:v1:owner") throw new Error("seal unavailable");
+  return persistentSealFail(key, value);
+};
+assert.equal(auth.getAuth(), null, "persistent seal failure must not restore malformed login");
+assert.equal(storage.has("xinqingAuth"), true, "malformed residue waits for seal retry");
+assert.throws(
+  () => auth.saveAuth({ ...validAuth, token: "b-while-seal-down", user: { ...validAuth.user, id: "user-b" } }),
+  /草稿归属暂时无法确认/,
+  "saveAuth must not overwrite a residue that still needs sealing"
+);
+assert.deepEqual(storage.get("xinqingAuth"), { user: { id: "user-a" } }, "malformed raw auth must stay until seal succeeds");
+assert.equal(storage.has("xinqingMiniNoteDraft:v1:owner"), false);
+assert.equal(storage.get("xinqingMiniNoteDraft:v1").content, "synthetic-original");
+assert.equal(auth.getDataOwner(), "none");
+assert.throws(() => auth.enterGuest(), /草稿归属暂时无法确认/, "enterGuest must not run while seal is pending");
+assert.equal(storage.get("xinqingGuestMode"), undefined);
+assert.deepEqual(storage.get("xinqingAuth"), { user: { id: "user-a" } });
+assert.throws(() => auth.clearAuth(), /草稿归属暂时无法确认/, "clearAuth must not drop a residue waiting to seal");
+assert.deepEqual(storage.get("xinqingAuth"), { user: { id: "user-a" } });
+assert.equal(storage.get("xinqingMiniNoteDraft:v1").content, "synthetic-original");
+wx.setStorageSync = persistentSealFail;
+auth.saveAuth({ ...validAuth, token: "b-after-seal-recovered", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(auth.getDataOwner(), "authenticated:user-b");
+assert.equal(local.readNoteDraft("authenticated:user-b"), null, "after seal recovers, B still must not observe the sealed draft");
+assert.equal(storage.get("xinqingMiniNoteDraft:v1:owner"), "sealed:invalid-auth");
+assert.equal(storage.get("xinqingMiniNoteDraft:v1").content, "synthetic-original");
+
+storage.clear();
+auth.enterGuest();
+storage.set("xinqingMiniNoteDraft:v1", { content: 1, mediaItems: "bad" });
+auth.saveAuth({ ...validAuth, token: "corrupt-v1", user: { ...validAuth.user, id: "user-b" } });
+assert.equal(auth.getDataOwner(), "authenticated:user-b", "corrupt v1 may be ignored without blocking the switch");
+assert.equal(storage.has("xinqingMiniNoteDraft:v1:owner"), false);
+
+storage.clear();
+auth.enterGuest();
+storage.set("xinqingMiniNoteDraft:v1", legacyDraft);
+const freezeSetStorageSync = wx.setStorageSync;
+wx.setStorageSync = (key, value) => {
+  if (key === "xinqingMiniNoteDraft:v1:owner") throw new Error("claim unavailable");
+  return freezeSetStorageSync(key, value);
+};
+assert.throws(() => auth.saveAuth({ ...validAuth, token: "must-not-switch", user: { ...validAuth.user, id: "user-b" } }), /草稿归属暂时无法确认/);
+assert.equal(auth.getDataOwner(), "guest", "claim write failure must preserve the guest identity");
+assert.deepEqual(storage.get("xinqingMiniNoteDraft:v1"), legacyDraft);
+assert.equal(storage.has("xinqingAuth"), false);
+wx.setStorageSync = freezeSetStorageSync;
+
+const freezeGetStorageSync = wx.getStorageSync;
+wx.getStorageSync = (key) => {
+  if (key === "xinqingMiniNoteDraft:v1:owner") throw new Error("claim unreadable");
+  return freezeGetStorageSync(key);
+};
+assert.throws(() => auth.saveAuth({ ...validAuth, token: "must-not-switch-read", user: { ...validAuth.user, id: "user-b" } }), /草稿归属暂时无法确认/);
+wx.getStorageSync = freezeGetStorageSync;
+assert.equal(auth.getDataOwner(), "guest", "claim read failure must preserve the guest identity");
+
+wx.setStorageSync = (key, value) => key === "xinqingMiniNoteDraft:v1:owner" ? undefined : freezeSetStorageSync(key, value);
+assert.throws(() => auth.saveAuth({ ...validAuth, token: "must-not-switch-verify", user: { ...validAuth.user, id: "user-b" } }), /草稿归属暂时无法确认/);
+assert.equal(auth.getDataOwner(), "guest", "claim verification failure must preserve the guest identity");
+assert.deepEqual(storage.get("xinqingMiniNoteDraft:v1"), legacyDraft);
+wx.setStorageSync = freezeSetStorageSync;
+
 storage.set("xinqingAuth", { token: "expired", expiresAt: new Date(0).toISOString() });
 assert.equal(auth.getAuth(), null);
 assert.equal(storage.has("xinqingAuth"), false);
 assert.throws(() => auth.saveAuth({ token: "bad" }), /登录响应无效/);
-for (const key of ["xinqingMiniGuestChatMessages", "xinqingMiniGuestNotes"]) storage.set(key, "private-guest-data");
-const preservedDraft = { content: "待恢复", mediaItems: [], clientRequestId: "request-preserved" };
-storage.set("xinqingMiniNoteDraft:v1", preservedDraft);
+for (const key of ["xinqingMiniGuestChatMessages", "xinqingMiniGuestNotes", "xinqingMiniChatMessages", "xinqingMiniNotes"]) storage.set(key, "private-guest-data");
+storage.set("xinqingGuestMode", true);
 auth.saveAuth(validAuth);
-for (const key of ["xinqingMiniGuestChatMessages", "xinqingMiniGuestNotes"]) assert.equal(storage.has(key), false);
-assert.deepEqual(storage.get("xinqingMiniNoteDraft:v1"), preservedDraft);
+for (const key of ["xinqingMiniGuestChatMessages", "xinqingMiniGuestNotes", "xinqingMiniChatMessages", "xinqingMiniNotes"]) assert.equal(storage.get(key), "private-guest-data");
+assert.equal(storage.has("xinqingGuestMode"), false);
+assert.equal(auth.getDataOwner(), "authenticated:user-a");
+
+const refreshedAuth = { ...validAuth, token: "refreshed-token" };
+auth.saveAuth(refreshedAuth);
+assert.equal(auth.getDataOwner(), "authenticated:user-a", "token refresh must keep the same stable owner");
+auth.clearAuth();
+for (const key of ["xinqingMiniGuestChatMessages", "xinqingMiniGuestNotes", "xinqingMiniChatMessages", "xinqingMiniNotes"]) assert.equal(storage.get(key), "private-guest-data", "logout must preserve guest-owned content");
 
 storage.clear();
-const originalRemoveStorageSync = wx.removeStorageSync;
-wx.removeStorageSync = (key) => {
-  if (key === "xinqingMiniNotes") throw new Error("storage unavailable");
-  return originalRemoveStorageSync(key);
+storage.set("xinqingGuestMode", true);
+storage.set("xinqingMiniGuestNotes", "guest-note-before-failed-login");
+const originalSetStorageSync = wx.setStorageSync;
+wx.setStorageSync = (key, value) => {
+  if (key === "xinqingAuth") throw new Error("storage unavailable");
+  return originalSetStorageSync(key, value);
 };
 assert.throws(() => auth.saveAuth(validAuth), /storage unavailable/);
-assert.equal(storage.has("xinqingAuth"), false, "failed cleanup must not persist new auth");
+assert.equal(storage.has("xinqingAuth"), false, "failed auth write must not switch identity");
+assert.equal(storage.get("xinqingGuestMode"), true);
+assert.equal(storage.get("xinqingMiniGuestNotes"), "guest-note-before-failed-login");
+wx.setStorageSync = originalSetStorageSync;
+
+storage.clear();
+auth.saveAuth(validAuth);
+wx.setStorageSync = (key, value) => {
+  if (key === "xinqingGuestMode") throw new Error("guest marker unavailable");
+  return originalSetStorageSync(key, value);
+};
+assert.throws(() => auth.enterGuest(), /guest marker unavailable/);
+assert.equal(auth.getAuth().token, validAuth.token, "failed guest marker write must preserve the account");
+assert.equal(auth.isGuest(), false);
+assert.equal(app.globalData.token, validAuth.token);
+wx.setStorageSync = originalSetStorageSync;
+
+const originalRemoveStorageSync = wx.removeStorageSync;
+wx.removeStorageSync = (key) => {
+  if (key === "xinqingAuth") throw new Error("auth removal unavailable");
+  return originalRemoveStorageSync(key);
+};
+assert.throws(() => auth.enterGuest(), /auth removal unavailable/);
+assert.equal(auth.getAuth().token, validAuth.token, "failed auth removal must roll back to the account");
+assert.equal(auth.isGuest(), false, "failed auth removal must remove the staged guest marker");
+assert.equal(app.globalData.token, validAuth.token);
 wx.removeStorageSync = originalRemoveStorageSync;
 
 delete require.cache[require.resolve("../miniprogram-project/config/api.js")];
@@ -659,6 +912,8 @@ await tick();
 assert.equal(me.data.isLoggedIn, true);
 assert.equal(me.data.profileEditing, false, "phone login must enter without a profile gate");
 assert.equal(me.data.profileRequired, false);
+assert.ok(me.data.profileNickname, "a registered account without a nickname must receive a stable visible suggestion");
+assert.match(me.data.guestAvatarStyle, /linear-gradient/u);
 
 storage.clear();
 const wechatMe = loadPage(mePath);

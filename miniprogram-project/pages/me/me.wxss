@@ -110,6 +110,15 @@
   font-weight: 700;
 }
 
+.guest-login-link {
+  position: absolute;
+  right: 40rpx;
+  top: 94rpx;
+  color: #71877b;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
 .profile-edit-link {
   position: absolute;
   right: 40rpx;

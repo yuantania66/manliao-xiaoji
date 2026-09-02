@@ -13,6 +13,7 @@ const {
 const { authenticateWithWechatPhone, getWechatPhoneCode } = require("../../utils/wechat-phone-login");
 const { authenticateWithWechat } = require("../../utils/wechat-login");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
+const { getAvatarStyle, getGeneratedIdentity } = require("../../utils/generated-identity");
 
 const getMembershipDays = (createdAt) => {
   if (!createdAt) return null;
@@ -28,12 +29,15 @@ const getMembershipText = (auth) => {
   return membershipDays ? `已加入 ${membershipDays} 天` : "已登录";
 };
 
-const GUEST_AVATAR_GRADIENTS = [
-  "linear-gradient(135deg, #71877b, #f4e4d3)",
-  "linear-gradient(135deg, #8fa99a, #d9c5aa)",
-  "linear-gradient(135deg, #6d7f86, #d8b9a2)",
-  "linear-gradient(135deg, #84938b, #e7d8bf)"
-];
+const getVisibleIdentity = (user) => {
+  const generated = getGeneratedIdentity(user.id);
+  const nickname = user.nickname || generated.nickname;
+  return {
+    nickname,
+    initial: nickname.slice(0, 1) || "慢",
+    avatarStyle: generated.avatarStyle
+  };
+};
 
 Page({
   data: {
@@ -55,7 +59,7 @@ Page({
     avatarLocalPath: "",
     avatarPreview: "",
     guestInitial: "晴",
-    guestAvatarStyle: GUEST_AVATAR_GRADIENTS[0],
+    guestAvatarStyle: getAvatarStyle(0),
     isSavingProfile: false
   },
 
@@ -74,6 +78,10 @@ Page({
       return;
     }
     const guestProfile = !auth ? getGuestProfile() : null;
+    const generatedIdentity = auth ? getVisibleIdentity(auth.user) : null;
+    const visibleNickname = auth
+      ? generatedIdentity.nickname
+      : (guestProfile?.nickname || "游客模式");
     const preserveProfileDraft = Boolean(auth && !userChanged && this.data.profileEditing);
     this.visibleUserId = userId;
     if (userChanged) this.profileSaveId = (this.profileSaveId || 0) + 1;
@@ -81,12 +89,12 @@ Page({
       isLoggedIn: Boolean(auth),
       membershipText: getMembershipText(auth),
       connectionText: auth ? "微信账号已连接 · 云端同步已开启" : "游客内容只保存在本机",
-      profileNickname: preserveProfileDraft ? this.data.profileNickname : (auth?.user?.nickname || guestProfile?.nickname || ""),
+      profileNickname: preserveProfileDraft ? this.data.profileNickname : visibleNickname,
       originalProfileNickname: preserveProfileDraft ? this.data.originalProfileNickname : (auth?.user?.nickname || ""),
       avatarLocalPath: preserveProfileDraft ? this.data.avatarLocalPath : "",
       avatarPreview: preserveProfileDraft ? this.data.avatarPreview : "",
-      guestInitial: guestProfile?.nickname?.slice(0, 1) || "晴",
-      guestAvatarStyle: GUEST_AVATAR_GRADIENTS[guestProfile?.avatarIndex] || GUEST_AVATAR_GRADIENTS[0],
+      guestInitial: visibleNickname.slice(0, 1) || "慢",
+      guestAvatarStyle: auth ? generatedIdentity.avatarStyle : getAvatarStyle(guestProfile?.avatarIndex),
       isSavingProfile: userChanged ? false : this.data.isSavingProfile,
       loginError: userChanged ? "" : this.data.loginError,
       profileRequired: false,
@@ -115,6 +123,8 @@ Page({
       .then(({ user }) => {
         if (this.authCheckId !== checkId || getAuth()?.user?.id !== auth.user.id || user.id !== auth.user.id) return;
         const preserveProfileDraft = this.data.profileEditing;
+        const generatedIdentity = getVisibleIdentity(user);
+        const visibleNickname = generatedIdentity.nickname;
         let cacheWarning = "";
         try {
           updateCachedUser(auth.user.id, user);
@@ -125,8 +135,10 @@ Page({
           isLoggedIn: true,
           membershipText: getMembershipText({ ...auth, user }),
           connectionText: "微信账号已连接 · 云端同步已开启",
-          profileNickname: preserveProfileDraft ? this.data.profileNickname : (user.nickname || ""),
+          profileNickname: preserveProfileDraft ? this.data.profileNickname : visibleNickname,
           originalProfileNickname: preserveProfileDraft ? this.data.originalProfileNickname : (user.nickname || ""),
+          guestInitial: visibleNickname.slice(0, 1) || "慢",
+          guestAvatarStyle: generatedIdentity.avatarStyle,
           profileRequired: false,
           profileEditing: preserveProfileDraft,
           loginError: cacheWarning
@@ -242,6 +254,7 @@ Page({
         if (!auth) return;
         if (this.loginAttemptId !== attemptId || (getAuth()?.user?.id || "") !== startingUserId) return;
         saveAuth(auth);
+        const visibleIdentity = getVisibleIdentity(auth.user);
         this.visibleUserId = auth.user.id;
         this.completeProfileAfterLogin = false;
         this.setData({
@@ -251,8 +264,10 @@ Page({
           loginError: "",
           profileRequired: false,
           profileEditing: false,
-          profileNickname: auth.user.nickname || "",
+          profileNickname: visibleIdentity.nickname,
           originalProfileNickname: auth.user.nickname || "",
+          guestInitial: visibleIdentity.initial,
+          guestAvatarStyle: visibleIdentity.avatarStyle,
           avatarLocalPath: ""
         });
       })
@@ -292,6 +307,7 @@ Page({
       .then((auth) => {
         if (this.loginAttemptId !== attemptId || (getAuth()?.user?.id || "") !== startingUserId) return;
         saveAuth(auth);
+        const visibleIdentity = getVisibleIdentity(auth.user);
         this.visibleUserId = auth.user.id;
         this.completeProfileAfterLogin = false;
         this.setData({
@@ -302,8 +318,10 @@ Page({
           phoneLoginReady: false,
           profileRequired: false,
           profileEditing: false,
-          profileNickname: auth.user.nickname || "",
+          profileNickname: visibleIdentity.nickname,
           originalProfileNickname: auth.user.nickname || "",
+          guestInitial: visibleIdentity.initial,
+          guestAvatarStyle: visibleIdentity.avatarStyle,
           avatarLocalPath: ""
         });
       })

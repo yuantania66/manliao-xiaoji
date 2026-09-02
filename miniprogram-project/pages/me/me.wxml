@@ -5,9 +5,10 @@
     <image wx:if="{{avatarPreview}}" class="avatar avatar-image" src="{{avatarPreview}}" mode="aspectFill" />
     <view wx:else class="avatar" style="background: {{guestAvatarStyle}}">{{guestInitial}}</view>
     <view class="profile-title">{{isLoggedIn ? (profileNickname || "我的慢聊小记") : (profileNickname || "游客模式")}}</view>
-    <view class="body">{{membershipText}}</view>
-    <view class="connection-status {{isLoggedIn ? 'connected' : ''}}">{{connectionText}}</view>
+    <view class="body">{{isLoggedIn ? membershipText : "内容主要保存在本机"}}</view>
+    <view class="connection-status {{isLoggedIn ? 'connected' : ''}}">{{isLoggedIn ? connectionText : "生成聊天回复时会发送必要内容"}}</view>
     <navigator url="/pages/settings/settings" class="settings-link" hover-class="none">设置</navigator>
+    <navigator wx:if="{{!isLoggedIn}}" url="/pages/auth/auth?mode=login" class="guest-login-link" hover-class="none">登录或注册</navigator>
     <button wx:if="{{false}}" class="profile-edit-link" bindtap="editProfile">编辑资料</button>
   </view>
   <view wx:if="{{isLoggedIn && profileEditing}}" class="profile-editor-layer" role="dialog" aria-label="编辑个人资料">

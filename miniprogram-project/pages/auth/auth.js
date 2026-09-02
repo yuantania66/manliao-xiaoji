@@ -24,6 +24,12 @@ const {
   getLoginBackgroundTopColor
 } = require("../../utils/login-time-background");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
+const {
+  getGeneratedIdentity,
+  getIdentityAt,
+  getNextAvatarIndex,
+  getRandomIdentity
+} = require("../../utils/generated-identity");
 
 const BACKGROUNDS = Object.freeze({
   phone: "/assets/login-flow/login-phone.jpg",
@@ -39,14 +45,7 @@ const createBackgroundBlend = (color) => {
   const [red, green, blue] = color.match(/[0-9a-f]{2}/giu).map((value) => parseInt(value, 16));
   return `linear-gradient(180deg, rgba(${red}, ${green}, ${blue}, 1) 0%, rgba(${red}, ${green}, ${blue}, 0) 100%)`;
 };
-const GUEST_NAMES = ["雾听", "小满", "晚风", "青禾", "云朵", "慢慢", "晴川", "木棉"];
-const AVATAR_GRADIENTS = [
-  "linear-gradient(135deg, #71877b, #f4e4d3)",
-  "linear-gradient(135deg, #8fa99a, #d9c5aa)",
-  "linear-gradient(135deg, #6d7f86, #d8b9a2)",
-  "linear-gradient(135deg, #84938b, #e7d8bf)"
-];
-const nextGuest = (current = -1) => (current + 1) % GUEST_NAMES.length;
+const INITIAL_GUEST_IDENTITY = getRandomIdentity();
 
 Page({
   data: {
@@ -56,6 +55,8 @@ Page({
     backgroundBlend: createBackgroundBlend(getLoginBackgroundTopColor()),
     backgroundInsetTop: getLoginBackgroundInsetTop(),
     privacyConfirmed: false,
+    consentInvalid: false,
+    consentShake: false,
     busy: false,
     error: "",
     phone: "",
@@ -66,20 +67,23 @@ Page({
     originalProfileNickname: "",
     avatarLocalPath: "",
     avatarPreview: "",
-    guestNameIndex: 0,
-    guestNickname: GUEST_NAMES[0],
-    guestInitial: GUEST_NAMES[0].slice(0, 1),
-    guestAvatarIndex: 0,
-    guestAvatarStyle: AVATAR_GRADIENTS[0]
+    profileInitial: "慢",
+    profileAvatarStyle: INITIAL_GUEST_IDENTITY.avatarStyle,
+    guestNameIndex: INITIAL_GUEST_IDENTITY.nameIndex,
+    guestNickname: INITIAL_GUEST_IDENTITY.nickname,
+    guestInitial: INITIAL_GUEST_IDENTITY.initial,
+    guestAvatarIndex: INITIAL_GUEST_IDENTITY.avatarIndex,
+    guestAvatarStyle: INITIAL_GUEST_IDENTITY.avatarStyle
   },
 
   onLoad(options) {
     this.editMode = options.mode === "edit";
+    this.loginMode = options.mode === "login";
     const auth = getAuth();
     if (auth) {
       if (this.editMode) this.openProfile(auth);
       else this.finishAccountLogin();
-    } else if (isGuest()) {
+    } else if (isGuest() && !this.loginMode) {
       this.finishAccountLogin();
     }
   },
@@ -123,7 +127,21 @@ Page({
   togglePrivacy(event) {
     const privacyConfirmed = event.detail.value.includes("confirmed");
     if (!privacyConfirmed) this.invalidateAttempts();
-    this.setData({ privacyConfirmed, busy: false, error: "" });
+    if (privacyConfirmed && this.consentShakeStartTimer) {
+      clearTimeout(this.consentShakeStartTimer);
+      this.consentShakeStartTimer = null;
+    }
+    if (privacyConfirmed && this.consentShakeTimer) {
+      clearTimeout(this.consentShakeTimer);
+      this.consentShakeTimer = null;
+    }
+    this.setData({
+      privacyConfirmed,
+      consentInvalid: privacyConfirmed ? false : this.data.consentInvalid,
+      consentShake: false,
+      busy: false,
+      error: ""
+    });
   },
 
   openPrivacy() { wx.navigateTo({ url: "/pages/privacy/privacy" }); },
@@ -131,7 +149,17 @@ Page({
 
   assertConsent() {
     if (this.data.privacyConfirmed) return true;
-    this.setData({ error: "请先同意协议" });
+    if (this.consentShakeStartTimer) clearTimeout(this.consentShakeStartTimer);
+    if (this.consentShakeTimer) clearTimeout(this.consentShakeTimer);
+    this.setData({ consentInvalid: true, consentShake: false, error: "" });
+    this.consentShakeStartTimer = setTimeout(() => {
+      this.consentShakeStartTimer = null;
+      this.setData({ consentShake: true });
+    }, 0);
+    this.consentShakeTimer = setTimeout(() => {
+      this.consentShakeTimer = null;
+      this.setData({ consentShake: false });
+    }, 360);
     return false;
   },
 
@@ -218,20 +246,24 @@ Page({
     }
     saveAuth(auth);
     this.visibleUserId = auth.user.id;
-    this.finishAccountLogin();
+    this.openProfile(auth);
   },
 
   openProfile(auth) {
     const userId = auth.user.id;
+    const generated = getGeneratedIdentity(userId);
+    const nickname = auth.user.nickname || generated.nickname;
     this.visibleUserId = userId;
     this.setData({
       stage: "profile",
       background: BACKGROUNDS.profile,
       profileRequired: false,
-      profileNickname: auth.user.nickname || "",
+      profileNickname: nickname,
       originalProfileNickname: auth.user.nickname || "",
       avatarLocalPath: "",
       avatarPreview: "",
+      profileInitial: nickname.slice(0, 1),
+      profileAvatarStyle: generated.avatarStyle,
       busy: false,
       error: ""
     });
@@ -281,7 +313,10 @@ Page({
   applyAvatarDraft(filePath) {
     this.setData({ avatarLocalPath: filePath, avatarPreview: filePath, stage: "profile", background: BACKGROUNDS.profile, error: "" });
   },
-  inputNickname(event) { this.setData({ profileNickname: String(event.detail.value || ""), error: "" }); },
+  inputNickname(event) {
+    const profileNickname = String(event.detail.value || "");
+    this.setData({ profileNickname, profileInitial: profileNickname.trim().slice(0, 1) || "慢", error: "" });
+  },
 
   saveProfile() {
     const auth = getAuth();
@@ -289,7 +324,6 @@ Page({
     const nickname = this.data.profileNickname.trim();
     const length = Array.from(nickname).length;
     if (length < 2 || length > 12) { this.setData({ error: "昵称请填写 2–12 个字" }); return; }
-    if (!this.data.avatarLocalPath && !auth.user.avatarUrl) { this.setData({ error: "请先选择头像" }); return; }
     if (!this.data.profileRequired && !this.data.avatarLocalPath && nickname === this.data.originalProfileNickname) {
       this.setData({ error: "资料还没有变化" });
       return;
@@ -348,21 +382,43 @@ Page({
     if (!this.data.profileRequired && !this.data.busy) this.finishAccountLogin();
   },
 
-  showGuestWarning() { this.invalidateAttempts(); this.setStage("guestWarn"); },
+  showGuestWarning() {
+    if (!this.assertConsent() || this.data.busy) return;
+    this.invalidateAttempts();
+    this.setStage("guestWarn");
+  },
   showGuestIdentity() { this.randomizeGuest(); this.setStage("guestIdentity"); },
   randomizeGuest() {
-    const guestNameIndex = nextGuest(this.data.guestNameIndex);
-    const guestAvatarIndex = (this.data.guestAvatarIndex + 1) % AVATAR_GRADIENTS.length;
+    const randomIdentity = getRandomIdentity();
+    const generated = randomIdentity.nameIndex === this.data.guestNameIndex && randomIdentity.avatarIndex === this.data.guestAvatarIndex
+      ? getIdentityAt(this.data.guestNameIndex + 1, this.data.guestAvatarIndex + 1)
+      : randomIdentity;
     this.setData({
-      guestNameIndex,
-      guestNickname: GUEST_NAMES[guestNameIndex],
-      guestInitial: GUEST_NAMES[guestNameIndex].slice(0, 1),
-      guestAvatarIndex,
-      guestAvatarStyle: AVATAR_GRADIENTS[guestAvatarIndex]
+      guestNameIndex: generated.nameIndex,
+      guestNickname: generated.nickname,
+      guestInitial: generated.initial,
+      guestAvatarIndex: generated.avatarIndex,
+      guestAvatarStyle: generated.avatarStyle,
+      error: ""
     });
   },
+  cycleGuestAvatar() {
+    const generated = getIdentityAt(this.data.guestNameIndex, getNextAvatarIndex(this.data.guestAvatarIndex));
+    this.setData({
+      guestAvatarIndex: generated.avatarIndex,
+      guestAvatarStyle: generated.avatarStyle,
+      error: ""
+    });
+  },
+  inputGuestNickname(event) {
+    const guestNickname = String(event.detail.value || "");
+    this.setData({ guestNickname, guestInitial: guestNickname.trim().slice(0, 1) || "慢", error: "" });
+  },
   startGuest() {
-    setGuestProfile({ nickname: this.data.guestNickname, avatarIndex: this.data.guestAvatarIndex });
+    const nickname = this.data.guestNickname.trim();
+    const length = Array.from(nickname).length;
+    if (length < 2 || length > 12) { this.setData({ error: "昵称请填写 2–12 个字" }); return; }
+    setGuestProfile({ nickname, avatarIndex: this.data.guestAvatarIndex });
     enterGuest();
     wx.redirectTo({ url: "/pages/me/me" });
   },
@@ -399,5 +455,7 @@ Page({
     this.invalidateAttempts();
     this.profileOperationId = (this.profileOperationId || 0) + 1;
     if (this.codeTimer) clearInterval(this.codeTimer);
+    if (this.consentShakeStartTimer) clearTimeout(this.consentShakeStartTimer);
+    if (this.consentShakeTimer) clearTimeout(this.consentShakeTimer);
   }
 });
