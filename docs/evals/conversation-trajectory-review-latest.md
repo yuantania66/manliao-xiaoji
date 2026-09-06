@@ -1,13 +1,13 @@
 # Conversation Trajectory Review Latest
 
-Generated at: 2026-07-12T12:25:35.327Z
+Generated at: 2026-07-12T13:08:11.150Z
 
 ## Runtime Metadata
 
 - datasetVersion: conversation-trajectories-v1
 - runnerVersion: conversation-trajectory-runner-v1
-- evaluatedCommit: 6769632b5601517f50785a5ee71007aa8a576b06
-- relevantSourceFingerprint: sha256:b307cdfb565562359724c88258f7e533e69a84262084a02fa5a121dba1859936
+- evaluatedCommit: 96793e49a9b5bf25cc4d2e402452aa6592b9995d
+- relevantSourceFingerprint: sha256:f92ba98bc7fba4358ff306ca7d368986c428de88071577e0baecbd17889c81d1
 - runMode: replay
 - repeatCount: 1
 - variant: canonical
