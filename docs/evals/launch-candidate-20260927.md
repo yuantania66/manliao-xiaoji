@@ -116,6 +116,8 @@
 
 结论：本地必跑门 PASS，候选 `4f9d881` 从“集成基线”升级为“待外部验收的发布候选”。其后仅有文档提交，不使功能证据失效。
 
+独立复现：[PR #38](https://github.com/yuantania66/manliao-xiaoji/pull/38) 的 GitHub CI `launch-checks`（ubuntu、postgres:16 服务、`npm ci` 后运行 `npm run check:release:required`）在 `aff9c19`（run 36330251163）与 `17c0956`（run 36330624814）上均为 success；两者相对 `4f9d881` 只多文档提交。
+
 ### 条件门映射（相对已部署 `9750adc`）
 
 - 运行时差异只有小程序观察页；后端 `app`、`lib`、`services`、`conversation-os`、`prisma`、`public`、`components` 与 `package-lock.json` 与生产版本逐字节相同，`package.json` 只改必跑入口。
