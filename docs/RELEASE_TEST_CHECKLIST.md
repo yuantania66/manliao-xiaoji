@@ -45,6 +45,7 @@ npm run check:release:required
 | `check:account-cancel-e2e` | 账号、派生数据、会话和受管媒体删除闭环 |
 | `check:account-cancel-client-storage` | Web 当前账号缓存精确清理、失败与本地重试 |
 | `check:account-cancel-mini-client` | 小程序当前账号缓存精确清理、失败与本地重试 |
+| `check:miniapp-insights` | 小程序观察真实接口、7/30/90 天、空数据、游客、失败重试、403 重新授权、401、撤回授权与跨账号晚到响应隔离 |
 | `check:profile-avatar-e2e` | 私有头像上传、绑定、替换与注销清理合同 |
 | `check:profile-completion-gate-e2e` | 登录即形成持久注册账号、资料未完善仍可使用、可选资料更新与旧临时账号清理兼容 |
 | `check:profile-avatar-mini-client` | 小程序可选资料编辑、手动头像选择、编辑取消、账号隔离缓存与私有头像下载 |

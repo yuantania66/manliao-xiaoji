@@ -53,6 +53,50 @@
 
 - schema/migration 命名与 `Note.requestHash` 默认值漂移：生产 `prisma/` 与候选相同，属既有状态；Prisma Client 写入时注入默认值，现有创建路径均通过。若今后执行 `prisma migrate dev` 会生成修正迁移，需单独切片处理。
 
-## 阶段 2–6
+## 阶段 2：功能缺口
+
+冻结：Outcome 为小程序观察补齐撤回授权并修复 403/401 后加载卡死，明确授权与派生数据边界；Acceptance 为 `check:miniapp-insights` 覆盖正常、空数据、7/30/90、游客、网络失败重试、403 重新授权、401、撤回（含在途请求）、跨账号与晚到响应并纳入唯一必跑入口；Allowed scope 为 `miniprogram-project/pages/insights/*`、该检查脚本、`package.json` 必跑入口、清单与本记录；Non-goals 为服务端持久化同意、Web 页面、统计口径。
+
+### 在基线上复核的结论
+
+- 任务书“小程序观察仍是固定数组”来自旧工作区；基线上小程序已调用 `/api/insights`，使用服务端签名、绑定 userId、30 天有效的 consent token，并以请求序号丢弃晚到响应。Web 同样使用该接口。
+- 退出（`clearAuth`）、注销（`clearCancelledAccount`）与 401（`utils/request.js` 调用 `clearAuth`）均清除本机观察授权；切换账号时授权按 userId 校验，B 无法使用 A 的授权，服务端 `assertInsightsConsent` 同样校验 userId。
+- 实际缺口 1：授权后没有撤回入口（隐私政策写明可撤回授权，`上线待办.md` 亦列为待办）。
+- 实际缺口 2（已复现）：服务端拒绝授权（403）时 `catch` 先删除本机授权，`finally` 以“授权仍为当前”为条件复位 `isLoading`，导致 `isLoading` 永久为真；重新授权后 `loadInsights` 因 `isLoading` 直接返回，页面卡在“正在整理”。401 清除登录后同样不复位，并在授权视图中保留空状态。
+
+### 修改
+
+- `miniprogram-project/pages/insights/insights.js`：新增 `syncIdentity`（按当前登录与授权重置页面、作废在途请求）与 `revokeAuthorization`（删除本机授权后同步）；加载失败时 403 与身份变化统一走 `syncIdentity`，`finally` 仅按请求序号复位加载态；授权请求遇到 401 时同步为未登录状态。
+- `insights.wxml/wxss`：授权视图底部新增“撤回观察授权”按钮（复用全局 `secondary-button`）。
+- `scripts/miniapp-insights-release-check.mjs`：新增范围、空数据、游客、网络重试、403 重新授权、加载与授权两处 401、撤回及撤回后在途响应用例。
+- `package.json`：`check:release:required` 在 `check:account-cancel-mini-client` 后加入 `check:miniapp-insights`；清单 §2.1 同步。
+
+### 授权与派生数据边界（按现有实现记录，未新增持久化同意）
+
+- 授权凭据只存在于客户端：小程序本机存储 `xinqingInsightsAuthorization:v1`（30 天，绑定 userId）；Web 只在页面内存中，离开或刷新即失效。服务端不保存同意记录，签名凭据在有效期内无法由服务端单独作废。
+- 撤回 = 删除本机凭据并作废在途请求；退出、注销、401 同样删除。观察结果按请求实时统计、不落库，因此没有需要清理的派生数据。
+- 待确认产品决定（不阻断本阶段）：若用户在多台设备分别授权，一台设备撤回不影响另一台设备在 30 天内继续查看本人观察。如需跨设备即时撤回，需要服务端持久化同意，属于新产品决定。
+
+### 证据
+
+| 门 | 证据 | 状态 |
+| --- | --- | --- |
+| 缺陷复现 | 新用例在基线页面上于“403 后 isLoading 应为 false”断言失败（exit 1） | 已复现 |
+| `check:miniapp-insights` | 修复后 exit 0 | PASS |
+| 相关小程序窄门 | `check:miniapp-js`（35 文件）、`check:account-cancel-mini-client`、`check:account-cancel-client-storage`、`check:unified-auth-flow`、`check:profile-avatar-mini-client`、`check:miniapp-login`、`check:miniapp-chat`、`check:miniapp-note`、`check:miniapp-real-device` 均 exit 0 | PASS |
+
+### 短信延后与注销依赖核实
+
+- 现行依据：本分支清单 §5.2/§5.3 与 `WECHAT_REVIEW_MATERIALS.md` 写明当前候选短信登录延后；生产审计允许短信配置全缺失（`check:production-env-audit`）。
+- 登录路径：小程序统一登录页不展示短信入口（`check:unified-auth-flow`）；Web `app/me/page.tsx` 没有任何进入 `phone` 模式的入口；`APP_ENV=production` 且缺少短信配置时 `/api/auth/code` 返回 `SMS_CONFIG_MISSING`，无开发码。
+- 注销路径：有 `wechatOpenid` 的账号用微信重新验证注销；微信手机号登录同时写入 `wechatOpenid` 与手机号，因此当前候选新建账号都不依赖短信注销。只有“有手机号、无 wechatOpenid”的历史账号需要短信验证码注销。
+- 结论：短信门对当前候选登录路径不适用；注销依赖取决于生产库是否存在上述历史账号。该事实只能通过一次生产只读聚合计数核实（不读取明文），未获授权前为 PENDING；计数为 0 则短信门不适用，大于 0 则这些账号的注销为 BLOCKED，需要产品决定。
+
+### Remaining（阶段 2 发现，不在本阶段修改）
+
+- Web 观察页 `authorizeInsights` 未处理 POST 失败（未捕获的 Promise 拒绝，页面停留在授权视图，可重试）；体验问题，无数据泄漏。
+- 小程序观察页文案称“不会调用 AI”，隐私政策称可选内容观察的文字“可能由 AI 技术服务处理”；当前实现不调用 AI。文案一致性由产品确认。
+
+## 阶段 3–6
 
 NOT_RUN。
