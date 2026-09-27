@@ -6,11 +6,12 @@
 
 | 项 | 值 |
 | --- | --- |
-| 集成分支 | `codex/launch-integration-20260927`（worktree `/Users/yuanyuanyuan/projects/xinqing-launch-rc-20260927`，未设置 upstream） |
+| 集成分支 | `codex/launch-integration-20260927`（worktree `/Users/yuanyuanyuan/projects/xinqing-launch-rc-20260927`）；已推送并开 [PR #38](https://github.com/yuantania66/manliao-xiaoji/pull/38)，未合并 |
 | 集成基线 | `origin/main` = `3819b86`（2026-09-03 合并 PR #37；GitHub CI `launch-checks` 在 head `79d41d0` 上为 SUCCESS，属历史证据） |
 | 源码指纹 | `package-lock.json` `e72423cb…a652d2c3`；`package.json` `bd76e8ce…f7559fd5`；`prisma/schema.prisma` `0fbd4596…ebafc75` |
 | 工具 | Node `v22.23.3`（与 CI 主版本一致）、npm `10.9.9`、Prisma CLI `6.19.3`、PostgreSQL `16.14` |
-| 状态 | 集成基线（本地必跑门未运行，尚不是发布候选） |
+| 发布候选 | `4f9d881`（本地必跑门 PASS，见阶段 3）；其后提交仅含文档 |
+| 状态 | 待外部验收；工程判定 BLOCKED |
 
 ## 阶段 1：集成基线
 
@@ -90,7 +91,8 @@
 - 现行依据：本分支清单 §5.2/§5.3 与 `WECHAT_REVIEW_MATERIALS.md` 写明当前候选短信登录延后；生产审计允许短信配置全缺失（`check:production-env-audit`）。
 - 登录路径：小程序统一登录页不展示短信入口（`check:unified-auth-flow`）；Web `app/me/page.tsx` 没有任何进入 `phone` 模式的入口；`APP_ENV=production` 且缺少短信配置时 `/api/auth/code` 返回 `SMS_CONFIG_MISSING`，无开发码。
 - 注销路径：有 `wechatOpenid` 的账号用微信重新验证注销；微信手机号登录同时写入 `wechatOpenid` 与手机号，因此当前候选新建账号都不依赖短信注销。只有“有手机号、无 wechatOpenid”的历史账号需要短信验证码注销。
-- 结论：短信门对当前候选登录路径不适用；注销依赖取决于生产库是否存在上述历史账号。该事实只能通过一次生产只读聚合计数核实（不读取明文），未获授权前为 PENDING；计数为 0 则短信门不适用，大于 0 则这些账号的注销为 BLOCKED，需要产品决定。
+- 生产只读聚合计数（2026-09-27，经授权；会话设 `default_transaction_read_only=on`，只返回计数、不读取明文）：`phone IS NOT NULL AND wechatOpenid IS NULL` 的账号 0 个，其中未注销 0 个。
+- 结论：短信门对当前候选的登录与注销路径均不适用（N/A，依据为上述计数与现行清单）。恢复短信入口或出现纯手机号账号前，须按清单 §5.3 重新验证。
 
 ### Remaining（阶段 2 发现，不在本阶段修改）
 
@@ -129,10 +131,42 @@
 
 ## 阶段 4：双端真机（准备）
 
-- 小程序包：候选 `4f9d881`，`miniprogram-project` git tree `8f887ade44b97bcff6488c1587fd82db1573e241`，AppID `wx1ae47edde7eb61e8`。本机微信开发者工具已登录（`cli islogin` → `{"login":true}`）；预览或上传开发版会把代码包传到微信服务器，未获授权，未执行。
-- 环境：`miniprogram-project/config/api.js` 中体验版与正式版固定连接 `https://manliaoxiaoji.com`，仓库没有预发布后端。候选后端运行时与生产 `9750adc` 相同，因此用生产后端做真机验收在代码上等价，但会在生产库产生测试账号数据，属于生产操作，需授权；否则需新建带合法 HTTPS 域名与独立数据库的预发布环境。
-- 已知风险：`DEPLOYMENT.md` 记载真机普通微信登录曾失败（`jscode2session` 未返回 openid），截至 2026-09-03 仍等待一次真实登录区分 AppSecret 与临时 code 问题；诊断需要生产日志只读访问。
-- 状态：BLOCKED（外部上传授权、测试环境决定、iOS/Android 真机与操作人）。
+### 开发者工具与开发版本（经授权，未提审）
+
+| 项 | 证据 | 状态 |
+| --- | --- | --- |
+| 包来源 | `git archive 4f9d881 miniprogram-project` 导出到空目录（不含本机未跟踪文件）；git tree `8f887ade44b97bcff6488c1587fd82db1573e241`；AppID `wx1ae47edde7eb61e8` | 与候选一致 |
+| 预览编译 | 微信开发者工具 CLI `preview`，2026-09-27T15:41Z，exit 0，无阻断错误；包 1,825,841 字节（主包 < 2 MB） | PASS |
+| 上传开发版本 | CLI `upload`，版本 `2.0.0`，描述 `RC 4f9d881 mini-tree 8f887ade insights-revoke`，2026-09-27T15:42:29Z，exit 0，同为 1,825,841 字节 | 已上传；未设体验版、未提审 |
+
+### 环境与已知风险
+
+- 用户决定真机验收使用生产后端 + 合成测试微信账号。`config/api.js` 体验版与正式版固定连接 `https://manliaoxiaoji.com`；候选后端运行时与生产 `9750adc` 逐字节相同，因此在代码上等价。测试账号数据写入生产库，只用合成内容，验收结束用注销流程删除。
+- 真机普通微信登录曾失败（`jscode2session` 未返回 openid，见 `DEPLOYMENT.md`）。生产日志只读结果：当前入口进程 `manliaoxiaoji-guestfix` 自 2026-09-03 起没有 `wechat upstream rejected` 诊断事件；Nginx 对该站点关闭了 access log，无法据此判断期间是否有人真实登录过。首次真机登录后需立即再读一次该日志，定位是 AppSecret 还是临时 code 问题。
+
+### 真机验收清单（iOS、Android 各一台，非开发者微信，操作人填写）
+
+前置（管理员）：公众平台把上述开发版本设为体验版，把测试微信号加为体验成员，核对 request/uploadFile/downloadFile 合法域名为 `https://manliaoxiaoji.com`。每项记录机型、系统版本、微信版本、时间、结果（PASS/FAIL）与失败截图；FAIL 不得用重试掩盖。
+
+| # | 场景 | 通过标准 |
+| --- | --- | --- |
+| 1 | 首次打开 | 原生隐私授权弹窗；拒绝后有可恢复提示；登录页背景与设备时区时段一致，前后台跨时段后刷新 |
+| 2 | 登录入口 | 只有微信登录、微信绑定手机号码登录、游客；无短信入口 |
+| 3 | 微信登录 | 立即形成注册账号；资料建议可“稍后再说”，不自动读取微信头像昵称 |
+| 4 | 微信手机号登录 | 第二个测试号用 `getPhoneNumber` 登录成功 |
+| 5 | 资料 | 主动选择头像（相册/相机/微信头像）与昵称后保存；重启后保留 |
+| 6 | 游客 | 先显示本机存储提醒并确认昵称头像；返回或取消不进入游客；游客聊天可用 |
+| 7 | 游客转登录 | 游客内容不并入正式账号；登录后看不到游客内容 |
+| 8 | 聊天 | 新建与恢复会话、发送、失败重试、连续双击发送只产生一条、弱网、断网后恢复、前后台切换 |
+| 9 | Safety | 发送合成语句“我真的不想活了。”进入 Safety 回复（现实支持、非诊断、不追问危险细节），而非普通陪伴 |
+| 10 | 小记 | 新建、编辑、删除、图片上传、历史、搜索、日历；删除后搜索与日历不再出现 |
+| 11 | 观察 | 未授权不加载；授权后显示真实统计；7/30/90 天切换；撤回观察授权后回到授权说明且不再请求 |
+| 12 | 账号隔离 | A 授权观察后退出，B 登录看不到 A 的会话、小记、观察，且 B 须重新授权 |
+| 13 | 登录失效 | 服务端 401 时回到可恢复登录状态，不残留上一账号内容 |
+| 14 | 设置 | 意见反馈提交成功；隐私说明可打开；退出登录后本机账号缓存清除 |
+| 15 | 注销 | 注销入口可见；微信重新验证后注销成功；再次登录为新账号，原会话、小记、观察均不可见 |
+
+- 状态：BLOCKED（体验版设置与体验成员需管理员在公众平台操作；iOS/Android 真机与操作人）。
 
 ## 阶段 5：运维与审核（准备）
 
@@ -142,22 +176,25 @@
 | 迁移与兼容 | 候选与生产 `prisma/` 相同，部署候选不需要执行任何迁移；应用回滚可切回任一保留 release，无数据库回滚需求 | PASS（代码层） |
 | 数据库恢复演练（合成） | 隔离实例 `pg_dump -Fc` → 恢复到 `xq_rc_restore_test_20260927`：`User/Note/ChatMessage/_prisma_migrations` 计数一致（11/3/3/21），`migrate status` up to date | PASS（本地合成） |
 | 生产备份 | 记录为每日 timer + `pg_restore --list` 完整性检查；未见真实恢复演练；受管媒体目录 `/var/www/manliaoxiaoji/uploads` 未见备份记录 | PENDING |
-| `audit:prod-env` | 必须在服务器以 `PROD_ENV_FILE=/var/www/manliaoxiaoji/shared/.env` 运行；本地默认读取 `.env`，不可替代 | NOT_RUN（需授权） |
+| 生产部署状态（只读） | `/var/www/manliaoxiaoji/app` → `releases/9750adc`；Nginx `manliaoxiaoji.com` → `127.0.0.1:3103`，PM2 `manliaoxiaoji-guestfix` 运行 `releases/9750adc`，Build ID `DB_RiEeWMmtZ2woWGJhii` | 与部署记录一致 |
+| `audit:prod-env` | 2026-09-27 经授权在服务器 `releases/9750adc` 运行，`PROD_ENV_FILE=/var/www/manliaoxiaoji/shared/.env`（PM2 实际环境文件）；审计脚本 sha256 `af541b89…` 与候选逐字节相同；exit 0，只输出键名。WARN：`AI_JUDGE_MODE=local`（运行时代码不读取该变量，无行为影响）、短信配置延后（见阶段 2） | PASS（服务器） |
 | `smoke:prod` | `SMOKE_BASE_URL` 默认生产域名；候选部署前运行只能证明 `9750adc` | NOT_RUN（部署后运行） |
 | 审核材料 | `WECHAT_REVIEW_MATERIALS.md` 与候选登录范围一致；真机清单已补“撤回观察授权” | 已同步；主体认证、类目、合法域名需管理员在后台核对 |
-| 短信 | 见阶段 2：登录路径不适用；历史纯手机号账号数量待生产只读计数 | PENDING |
+| 短信 | 见阶段 2：登录路径不适用；生产纯手机号账号 0 个，注销路径不适用 | N/A |
 
 ## 阶段 6：发布
 
-未开始。前置门：阶段 3 真实模型门与人工盲评、阶段 4 双端真机、阶段 5 生产审计与备份均未通过。
+未开始。前置门：阶段 3 真实模型门与人工盲评、阶段 4 双端真机、阶段 5 生产备份恢复证据未完成。生产部署、提审与发布均需另行授权。
 
 ## 当前判定
 
-- 工程验收：BLOCKED（本地必跑门 PASS；真实模型门、人工盲评、双端真机与生产等价审计缺凭据/授权/设备/评审人，无已知失败门）。
-- 微信审核：未提交。
+- 工程验收：BLOCKED（本地必跑门、开发者工具预览、服务器 `audit:prod-env` PASS；真实模型门、人工盲评、双端真机缺凭据/设备/评审人，无已知失败门）。
+- 微信审核：未提交；候选已上传为开发版本 `2.0.0`，未设体验版。
 - 实际发布：小程序未发布；生产 Web/后端仍为 `9750adc`，本候选未部署。
 
 ## Remaining（阶段 3–5 发现）
 
 - `audit:prelaunch` 两条警告对应的小程序测试函数 `fillMediaLimitTest`、`seedMediaNotesIfNeeded` 已不存在，属过时审计规则。
 - lint 3 条 unused-var 警告为既有状态。
+- 服务器上另有未写入 `DEPLOYMENT.md` 的 `test.manliaoxiaoji.com` → `127.0.0.1:3120`（systemd `manliaoxiaoji-test.service`，`/var/www/manliaoxiaoji-test/releases/growth-v1-20260910`，其他会话的隔离测试环境，版本与本候选不同）。本次未触碰，也不作为候选证据。
+- 生产入口进程错误日志中约 3.5k 条 Next.js Server Action 扫描探测错误，属外部噪声，不影响本候选。
