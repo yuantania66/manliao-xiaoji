@@ -131,6 +131,7 @@
 - 判定：即将随小程序首发的 AI 代码从未通过真实模型门，部署版本不能作为这些门的已验证基线，因此六项 Qwen 门、`clinical:model-eval`、`trajectory:review:repeat`、Chat Gate 与人工盲评均按首发触发。
 - 候选相对旧工作区：`turnInterpretationAdapter.ts` 新增本回合 `ordinaryPostureProposal`，`proactiveGreeting.ts` 的质量判定与重复文本为 hard（已授权口径），`chatSafety.ts` 相同。8/28 的 NO-GO 来自迁移历史，六项 Qwen 门当时在旧工作区通过；因上述差异，不能沿用到候选。
 - Chat Gate v0：数据集 `chat-gate-v0-provisional-2026-07-30` 为 provisional（4 个片段，自述无法单独满足非回归门，未确定生产基线）；上次结果 `candidate_failed_applicable_thresholds`（基线 A-repo `3e34257c`）。合同要求候选相对基线“不明显更差”且目标片段更好；候选后端与生产 `9750adc` 相同，本次对照组选择与是否作为首发必过门需评测决定。
+- 用户决定（2026-09-27）：Chat Gate v0 作为首发必过门，A 侧为数据集冻结基线 `3e34257c`（`git archive --format=tar.gz` sha256 `101037b4…`，与 7/30 记录一致），B 侧为候选 `4f9d881`（同法 sha256 `cfda8c41a4000165e95ddfd1701a18d605215c7b662b28e40fe9a4aaa5d19bd5`），各 `--repeat=3`，两侧均为本机 `127.0.0.1` 生产构建并设 `AI_DEBUG_TRACE=true`；人工盲评由用户本人单人完成（清单要求记录评审者与分歧裁决，单人评审无分歧可记，如实记录）。
 - 状态：BLOCKED。本机与 worktree `.env` 中 `QWEN_API_KEY`、`QWEN_BASE_URL`、`AI_PROVIDER`、`AI_MAIN_MODEL` 均为空（用户将自行配置）；生产密钥不复制到本地。人工盲评需评审人。
 
 ## 阶段 4：双端真机（准备）
