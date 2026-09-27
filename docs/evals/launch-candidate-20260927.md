@@ -97,6 +97,67 @@
 - Web 观察页 `authorizeInsights` 未处理 POST 失败（未捕获的 Promise 拒绝，页面停留在授权视图，可重试）；体验问题，无数据泄漏。
 - 小程序观察页文案称“不会调用 AI”，隐私政策称可选内容观察的文字“可能由 AI 技术服务处理”；当前实现不调用 AI。文案一致性由产品确认。
 
-## 阶段 3–6
+## 阶段 3：工程与对话验收
 
-NOT_RUN。
+冻结：Outcome 为在隔离库上以候选 commit 通过唯一必跑入口，并按触发范围判定条件门、真实模型门与人工门；Non-goals 为 V2/Composer、重复采样；修复预算每门两轮。
+
+### 本地必跑门
+
+| 项 | 值 |
+| --- | --- |
+| 命令 | `npm run check:release:required` |
+| 候选 | `4f9d881ea68292b4d50838c6d1182b150d9bdfcb` |
+| 时间 | 2026-09-27T14:11:40Z – 14:17:11Z |
+| 数据库 | `xq_rc_ci_test_20260927`（隔离实例 `localhost:55439`，运行前 `prisma migrate deploy` 21/21）；`DATABASE_URL`、`PROACTIVE_COMMIT_TEST_DATABASE_URL`、`CANCEL_ACCOUNT_TEST_DATABASE_URL`、`PROFILE_AVATAR_TEST_DATABASE_URL`、`PROFILE_GATE_TEST_DATABASE_URL`、`WECHAT_PHONE_LOGIN_TEST_DATABASE_URL` 均指向该库；`PROACTIVE_COMMIT_TEST_ALLOW_DDL=1` 仅对该进程设置 |
+| 环境 | Node 22.23.3；worktree `.env` 为空；进程环境无任何模型、微信或短信密钥 |
+| 结果 | exit 0；130 个子命令；lint 0 error / 3 unused-var warning；`audit:prelaunch` 通过（2 条警告见 Remaining）；Next build 44/44 |
+
+结论：本地必跑门 PASS，候选 `4f9d881` 从“集成基线”升级为“待外部验收的发布候选”。其后仅有文档提交，不使功能证据失效。
+
+### 条件门映射（相对已部署 `9750adc`）
+
+- 运行时差异只有小程序观察页；后端 `app`、`lib`、`services`、`conversation-os`、`prisma`、`public`、`components` 与 `package-lock.json` 与生产版本逐字节相同，`package.json` 只改必跑入口。
+- 小程序页面：`check:miniapp-js` 已被 `check:launch` 覆盖（PASS）；§5.2 微信开发者工具与真机门见阶段 4。
+- Chat API/鉴权/持久化、Safety、Clinical、Understanding、Memory、Handoff/Planner、主动问候、Prisma：候选相对部署版本无改动，`smoke:local-api` 等条件门不因本候选 diff 触发；Prisma 已在阶段 1 另行验证。
+- 生产环境配置：`audit:prod-env`、`smoke:prod` 见阶段 5。
+
+### 真实模型门与人工门
+
+- 仓库中唯一的真实模型门记录 `docs/evals/real-release-validation-20260828.md` 绑定旧工作区（源码组合指纹 `6f0b6019…`，与原工作区当前内容一致）。候选指纹为 `ff5c3ec78090110ed2f777630692c52bd0bdfa823c762bf11848428aa38f2ca7`；`turnInterpretationAdapter.ts`、`proactiveGreeting.ts` 及 planned-function、handoff surface、handoff structured 三个评测脚本不同，Safety 相关源码相同。`docs/evals/wechat-release-candidate-20260831.md` 与 `DEPLOYMENT.md` 对已部署代码只记录 Smoke 与一次真实 Qwen 合成“你好”，没有真实模型门或人工盲评结果。
+- 判定：即将随小程序首发的 AI 代码从未通过真实模型门，部署版本不能作为这些门的已验证基线，因此六项 Qwen 门、`clinical:model-eval`、`trajectory:review:repeat`、Chat Gate 与人工盲评均按首发触发。
+- 状态：BLOCKED。本机 `QWEN_API_KEY`、`QWEN_BASE_URL`、`AI_PROVIDER`、`AI_MAIN_MODEL` 均为空；生产密钥不复制到本地。Chat Gate 盲评包需要 A/B 两侧真实运行（`--repeat=3`），在拿到凭据与评审人前无法生成。
+
+## 阶段 4：双端真机（准备）
+
+- 小程序包：候选 `4f9d881`，`miniprogram-project` git tree `8f887ade44b97bcff6488c1587fd82db1573e241`，AppID `wx1ae47edde7eb61e8`。本机微信开发者工具已登录（`cli islogin` → `{"login":true}`）；预览或上传开发版会把代码包传到微信服务器，未获授权，未执行。
+- 环境：`miniprogram-project/config/api.js` 中体验版与正式版固定连接 `https://manliaoxiaoji.com`，仓库没有预发布后端。候选后端运行时与生产 `9750adc` 相同，因此用生产后端做真机验收在代码上等价，但会在生产库产生测试账号数据，属于生产操作，需授权；否则需新建带合法 HTTPS 域名与独立数据库的预发布环境。
+- 已知风险：`DEPLOYMENT.md` 记载真机普通微信登录曾失败（`jscode2session` 未返回 openid），截至 2026-09-03 仍等待一次真实登录区分 AppSecret 与临时 code 问题；诊断需要生产日志只读访问。
+- 状态：BLOCKED（外部上传授权、测试环境决定、iOS/Android 真机与操作人）。
+
+## 阶段 5：运维与审核（准备）
+
+| 项 | 证据 | 状态 |
+| --- | --- | --- |
+| 生产只读观察 | 2026-09-27 `/api/health` production / connected；首页 Build ID `DB_RiEeWMmtZ2woWGJhii` 与部署记录 `9750adc` 一致 | 观察，非候选证据 |
+| 迁移与兼容 | 候选与生产 `prisma/` 相同，部署候选不需要执行任何迁移；应用回滚可切回任一保留 release，无数据库回滚需求 | PASS（代码层） |
+| 数据库恢复演练（合成） | 隔离实例 `pg_dump -Fc` → 恢复到 `xq_rc_restore_test_20260927`：`User/Note/ChatMessage/_prisma_migrations` 计数一致（11/3/3/21），`migrate status` up to date | PASS（本地合成） |
+| 生产备份 | 记录为每日 timer + `pg_restore --list` 完整性检查；未见真实恢复演练；受管媒体目录 `/var/www/manliaoxiaoji/uploads` 未见备份记录 | PENDING |
+| `audit:prod-env` | 必须在服务器以 `PROD_ENV_FILE=/var/www/manliaoxiaoji/shared/.env` 运行；本地默认读取 `.env`，不可替代 | NOT_RUN（需授权） |
+| `smoke:prod` | `SMOKE_BASE_URL` 默认生产域名；候选部署前运行只能证明 `9750adc` | NOT_RUN（部署后运行） |
+| 审核材料 | `WECHAT_REVIEW_MATERIALS.md` 与候选登录范围一致；真机清单已补“撤回观察授权” | 已同步；主体认证、类目、合法域名需管理员在后台核对 |
+| 短信 | 见阶段 2：登录路径不适用；历史纯手机号账号数量待生产只读计数 | PENDING |
+
+## 阶段 6：发布
+
+未开始。前置门：阶段 3 真实模型门与人工盲评、阶段 4 双端真机、阶段 5 生产审计与备份均未通过。
+
+## 当前判定
+
+- 工程验收：BLOCKED（本地必跑门 PASS；真实模型门、人工盲评、双端真机与生产等价审计缺凭据/授权/设备/评审人，无已知失败门）。
+- 微信审核：未提交。
+- 实际发布：小程序未发布；生产 Web/后端仍为 `9750adc`，本候选未部署。
+
+## Remaining（阶段 3–5 发现）
+
+- `audit:prelaunch` 两条警告对应的小程序测试函数 `fillMediaLimitTest`、`seedMediaNotesIfNeeded` 已不存在，属过时审计规则。
+- lint 3 条 unused-var 警告为既有状态。
