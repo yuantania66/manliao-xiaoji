@@ -1,5 +1,12 @@
 # 当前交付切片
 
+- 名称：慢聊小记首版上线交付（2026-09-27）。
+- 执行安排：`docs/tasks/cursor-launch-delivery-brief.md`；验收依据：`docs/RELEASE_TEST_CHECKLIST.md`。
+- 唯一候选验收记录：`docs/evals/launch-candidate-20260927.md`（阶段冻结、证据、Remaining 与判定均记在该文件）。
+- 集成基线：`codex/launch-integration-20260927`，基于 `origin/main` `3819b86`。
+
+## 上一切片（历史，未关闭项以其记录为准）
+
 - 名称：P0–P6 Overnight Local Delivery Audit — Active / Externally Blocked。
 - Outcome：在不接触生产数据、真用户流量、合入或部署的前提下，连续完成可本地证明的 P0–P6 工作，并把修复额度用尽、直接授权、凭据和三自然日时间门如实记录。
 - Acceptance：
