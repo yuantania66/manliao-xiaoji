@@ -6,7 +6,7 @@ import { loadEnvConfig } from "@next/env";
 
 import { createChatReply } from "../services/ai/chatOrchestrationService";
 import { getAiProvider, getDefaultAiModel, isAiProviderConfigured } from "../services/ai/modelProvider";
-import { loadPreservationDataset } from "./hill-helping-batch1-5-preservation-lib";
+import { loadPreservationDataset, PRESERVATION_DATASET_PATH } from "./hill-helping-batch1-5-preservation-lib";
 
 loadEnvConfig(process.cwd());
 
@@ -21,7 +21,10 @@ if (!outputPath) throw new Error("--output is required.");
 if (!sourceId) throw new Error("--source-id is required.");
 assert(isAiProviderConfigured(), "A configured real AI provider is required for the preservation run.");
 
-const { dataset, sha256: datasetSha256 } = loadPreservationDataset();
+const datasetPath = getArg("dataset");
+const { dataset, sha256: datasetSha256 } = datasetPath
+  ? loadPreservationDataset(datasetPath)
+  : loadPreservationDataset();
 const run = async () => {
   const startedAt = new Date().toISOString();
   const rows = [];
@@ -115,6 +118,7 @@ const run = async () => {
   const artifact = {
     schemaVersion: 1,
     sourceId,
+    datasetPath: datasetPath || PRESERVATION_DATASET_PATH,
     datasetVersion: dataset.datasetVersion,
     datasetSha256,
     provider: getAiProvider(),

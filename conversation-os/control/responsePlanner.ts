@@ -21,6 +21,7 @@ import {
   buildCanonicalResponsePlanPreflightProvenance,
 } from "./responsePlanPreflightAuthority";
 import { getRequiredGroundingDisclosure } from "./assistantGrounding";
+import { replacementFactFromCorrection } from "./correctionEvidence";
 
 export type ClinicalAdviceProvider = (input: {
   need: "emotional_support" | "action_support";
@@ -219,14 +220,6 @@ const emotionalSupportFunctionFor = ({
   return "return_amount_control";
 };
 
-const replacementFactFromCorrection = (message: string) => {
-  const contrast = message.match(
-    /(?:不是|不叫)([^，,。；;\s]{1,18}?)[，,；;\s]*(?:而?是|叫)([^，,。；;]{1,24})/u
-  );
-  const replacement = contrast?.[2]?.trim();
-  return replacement?.replace(/^(?:我|你)(?:的)?/u, "").trim() || null;
-};
-
 const interactionMoveSubtypeFor = ({
   currentUserMessage,
   targetText,
@@ -282,18 +275,24 @@ const positiveFunctionContractFor = ({
         targetText === identityRepair.targetProposition
       ? context.grounding.availableFacts.assistant.displayName
       : null;
-    const replacementFact = replacementFactFromCorrection(context.currentUserMessage) ?? identityReplacement;
+    // A move-fit repair withdraws a way of helping, not a factual claim; a missing subtype fails preflight.
+    const moveFitRepair = dialogueState.repairState.sourceRelation === "challenges_move_fit";
+    const replacementFact = moveFitRepair
+      ? null
+      : replacementFactFromCorrection(context.currentUserMessage) ?? identityReplacement;
     const interactionMoveSubtype = replacementFact
       ? null
       : interactionMoveSubtypeFor({
           currentUserMessage: context.currentUserMessage,
           targetText,
         });
-    const repairMode = replacementFact
-      ? "factual_replacement"
-      : interactionMoveSubtype
-        ? "interaction_move_withdrawal"
-        : "proposition_withdrawal";
+    const repairMode = moveFitRepair
+      ? "interaction_move_withdrawal"
+      : replacementFact
+        ? "factual_replacement"
+        : interactionMoveSubtype
+          ? "interaction_move_withdrawal"
+          : "proposition_withdrawal";
     return {
       action: "repair_previous_wording",
       repairMode,

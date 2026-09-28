@@ -190,6 +190,7 @@ export type TurnStateUpdate = {
     targetTurnId: string;
     rejectedPropositionIds: string[];
     evidence: string[];
+    sourceRelation?: "challenges_move_fit";
   } | null;
 };
 
@@ -397,6 +398,7 @@ export type InteractionState = {
     targetTurnId?: string;
     rejectedPropositionIds: string[];
     evidence: string[];
+    sourceRelation?: "challenges_move_fit";
   };
 };
 

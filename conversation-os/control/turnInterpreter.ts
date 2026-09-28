@@ -10,6 +10,7 @@ import type {
   TurnInterpretation,
   TurnStateUpdate,
 } from "./types";
+import { replacementFactFromCorrection } from "./correctionEvidence";
 import { projectUserMoveRelation, retainCommittedAssistantMoveEnvelope } from "./interactionMoveHandoff";
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
@@ -529,6 +530,9 @@ const currentCommittedClaimAuthorityForContext = (
 export const UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE =
   "Target Assistant turn has no committed claims; unverifiable target claim text was dropped.";
 
+export const MOVE_FIT_REPAIR_ADOPTION_EVIDENCE =
+  "No active handoff: validated challenges_move_fit on the latest committed Assistant turn adopted as interaction-move withdrawal repair.";
+
 // Missing committed-move data means claims are unavailable, not absent.
 const latestAssistantTurnExplicitlyHasNoClaims = (
   context: ConversationControlContext | undefined,
@@ -817,7 +821,7 @@ export const mergeModelInterpretation = (
     : context
       ? [...context.adjacentTurns].reverse().find((turn) => turn.role === "assistant")
       : null;
-  const inferredRepairUpdate =
+  const modelRepairUpdate =
     !deterministic.stateUpdate.repairProposal &&
     modelRepair &&
     repairTarget &&
@@ -836,6 +840,41 @@ export const mergeModelInterpretation = (
           evidence: modelRepair.evidence,
         }
       : null;
+  const latestAssistantTurn = context
+    ? [...context.adjacentTurns].reverse().find((turn) => turn.role === "assistant")
+    : undefined;
+  // Outside an active handoff, a validated move-fit challenge of the latest Assistant turn
+  // withdraws that interaction move; claims and concrete factual corrections keep their own path.
+  const latestAssistantTurnId = latestAssistantTurn?.id;
+  const moveFitRepair =
+    !deterministic.stateUpdate.repairProposal &&
+    !modelRepairUpdate &&
+    context &&
+    !context.interactionMoveHandoffTarget &&
+    !replacementFactFromCorrection(context.currentUserMessage) &&
+    latestAssistantTurnId
+      ? acceptedModelCandidates.find((candidate) =>
+          candidate.relation === "challenges_move_fit" &&
+          candidate.confidence >= 0.93 &&
+          candidate.targetTurnId === latestAssistantTurnId &&
+          !candidate.targetProposition &&
+          latestAssistantTurnExplicitlyHasNoClaims(context, latestAssistantTurnId)
+        ) ?? null
+      : null;
+  const moveFitRepairUpdate = moveFitRepair && latestAssistantTurn && latestAssistantTurnId
+    ? {
+        propositionId: `${latestAssistantTurnId}:model-challenged-move-1`,
+        proposition: latestAssistantTurn.content,
+        operation: "reject" as const,
+        subject: "assistant" as const,
+        speaker: "user" as const,
+        epistemicStatus: "rejected_by_user" as const,
+        sourceTurnId: latestAssistantTurnId,
+        confidence: moveFitRepair.confidence,
+        evidence: [...moveFitRepair.evidence, MOVE_FIT_REPAIR_ADOPTION_EVIDENCE],
+      }
+    : null;
+  const inferredRepairUpdate = modelRepairUpdate ?? moveFitRepairUpdate;
   const modelAnswerTarget = candidates.find((candidate) =>
     candidate.relation === "requests_answer" &&
     (candidate.targetOperation === "explain" || candidate.targetOperation === "answer") &&
@@ -908,6 +947,7 @@ export const mergeModelInterpretation = (
           targetTurnId: inferredRepairUpdate.sourceTurnId,
           rejectedPropositionIds: [inferredRepairUpdate.propositionId],
           evidence: inferredRepairUpdate.evidence,
+          ...(moveFitRepairUpdate ? { sourceRelation: "challenges_move_fit" as const } : {}),
         }
       : deterministic.stateUpdate.repairProposal,
   };
