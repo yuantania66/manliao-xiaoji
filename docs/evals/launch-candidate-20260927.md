@@ -270,6 +270,10 @@ Safety 门已用满两轮修复预算，本轮停止修改 Safety。Chat Gate �
 
 ## Remaining（阶段 3–5 发现）
 
+- 模型服务商对当前凭据返回 4xx（2026-09-28 07:27 UTC 起全部回合），需账户侧确认后才能获得有效的轨迹与计划证据。
+- 上一轮 3 个非 Safety `constraint_failure` 回合（`REPAIR-OBS` t1 ×2、`RUT-REPRO` run-2 t2）当时未记录失败码，新工具已会记录 `executionFailure`。
+- 恢复 Chat Gate 时 B 侧必须使用届时最终候选的新构建，不复用 `Jgmnw_hcqIi2p2M9QbS_T` 等旧候选构建。
+
 - `audit:prelaunch` 两条警告对应的小程序测试函数 `fillMediaLimitTest`、`seedMediaNotesIfNeeded` 已不存在，属过时审计规则。
 - lint 3 条 unused-var 警告为既有状态。
 - 服务器上另有未写入 `DEPLOYMENT.md` 的 `test.manliaoxiaoji.com` → `127.0.0.1:3120`（systemd `manliaoxiaoji-test.service`，`/var/www/manliaoxiaoji-test/releases/growth-v1-20260910`，其他会话的隔离测试环境，版本与本候选不同）。本次未触碰，也不作为候选证据。
