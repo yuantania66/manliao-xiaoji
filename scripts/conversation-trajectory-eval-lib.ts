@@ -61,7 +61,41 @@ export type TurnRunResult = {
   questionFunction: string;
   machineCheckErrors: string[];
   heuristicFlags: Array<{ rule: string; matchedText: string }>;
+  forensics?: TurnForensics;
   error?: string;
+};
+
+export type SafetyForensics = {
+  outcome: "passed_to_planner" | "routed_safety_response" | "blocked_fail_closed" | "unknown";
+  failureType: string;
+  failureCategory: string;
+  routedDecision: string;
+  attemptTrace: "not_exposed_by_chat_reply_result";
+};
+
+export type PlanForensics = {
+  evaluatorSource: "clinicalTrace.selectedPlan";
+  evaluatorSelectedPlanPresent: boolean;
+  clinicalInvokedByPlanner: boolean | "unknown";
+  plannerSource: "controlTrace.responsePlan" | "absent";
+  plannerPlanId: string;
+  behaviorSource: string;
+  planningDepth: string;
+  responseActions: string[];
+  questionPolicy: string;
+  closurePolicy: string;
+  clinicalStrategy: string;
+  positiveFunctionAction: string;
+  interactionMoveHandoff: boolean;
+};
+
+export type TurnForensics = {
+  runtimeTurnId: string;
+  executionPhase: string;
+  executionFailureCode: string;
+  executionFailureReasonCodes: string[];
+  safety: SafetyForensics;
+  plan: PlanForensics;
 };
 
 export type TrajectoryRunResult = {
@@ -88,11 +122,14 @@ export type TrajectoryReportMetadata = {
   promptVersion: string;
   freshness: "current" | "stale";
   staleReason: string;
+  productUnderTest?: string;
+  productSourceFingerprint?: string;
+  evalToolFingerprint?: string;
 };
 
 export const TRAJECTORY_DATASET_PATH = "clinical-evals/conversation-trajectories-v1.json";
 export const TRAJECTORY_REPORT_PATH = "docs/evals/conversation-trajectory-review-latest.md";
-export const TRAJECTORY_RUNNER_VERSION = "conversation-trajectory-runner-v1";
+export const TRAJECTORY_RUNNER_VERSION = "conversation-trajectory-runner-v1-forensics-1";
 
 const ensureStringArray = (value: unknown, field: string) => {
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
@@ -155,15 +192,121 @@ const RELEVANT_SOURCE_PATHS = [
   "scripts/conversation-trajectory-experiment-adapters.ts",
 ];
 
-export const computeRelevantSourceFingerprint = () => {
+const PRODUCT_SOURCE_PATHS = ["services", "conversation-os", "lib", "prisma/schema.prisma"];
+
+const EVAL_TOOL_PATHS = [
+  TRAJECTORY_DATASET_PATH,
+  "scripts/conversation-trajectory-eval-lib.ts",
+  "scripts/conversation-trajectory-eval-runner.ts",
+  "scripts/conversation-trajectory-experiment-adapters.ts",
+];
+
+const fingerprintPaths = (paths: string[]) => {
   const hash = createHash("sha256");
-  for (const absolute of RELEVANT_SOURCE_PATHS.flatMap(listFiles).sort()) {
+  for (const absolute of paths.flatMap(listFiles).sort()) {
     hash.update(relative(process.cwd(), absolute));
     hash.update("\0");
     hash.update(readFileSync(absolute));
     hash.update("\0");
   }
   return `sha256:${hash.digest("hex")}`;
+};
+
+export const computeRelevantSourceFingerprint = () => fingerprintPaths(RELEVANT_SOURCE_PATHS);
+export const computeProductSourceFingerprint = () => fingerprintPaths(PRODUCT_SOURCE_PATHS);
+export const computeEvalToolFingerprint = () => fingerprintPaths(EVAL_TOOL_PATHS);
+
+const SAFETY_FAILURE_TYPES = new Set(["provider_error", "provider_unconfigured", "invalid_output"]);
+const SAFETY_FAILURE_CATEGORIES = new Set([
+  "invalid_output",
+  "provider_error",
+  "provider_4xx",
+  "timeout",
+  "rate_limited",
+  "provider_5xx",
+  "provider_unconfigured",
+]);
+const REASON_CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_.:-]{0,80}$/;
+
+const parseSafetyFailureCategory = (reason: string | undefined) => {
+  const category = reason?.match(/^safety_semantic_([a-z0-9_]+)$/)?.[1];
+  return category && SAFETY_FAILURE_CATEGORIES.has(category) ? category : "unknown";
+};
+
+const parseSafetyFailureType = (transitions: Array<{ reason: string }>) => {
+  for (const transition of transitions) {
+    const failureType = transition.reason.match(/^Safety semantic triage failed closed \(([a-z_]+)\)\.$/)?.[1];
+    if (failureType) return SAFETY_FAILURE_TYPES.has(failureType) ? failureType : "unknown";
+  }
+  return "unknown";
+};
+
+const parseRoutedSafetyDecision = (transitions: Array<{ reason: string }>) => {
+  for (const transition of transitions) {
+    const match = transition.reason.match(
+      /^Safety pre-gate selected the safety-owned response path \(channel=([a-z_]+), risk=([a-z]+), categories=([a-z_|]*), currentness=([a-z]+)\)\.$/
+    );
+    if (match) return `channel=${match[1]} risk=${match[2]} categories=${match[3] || "none"} currentness=${match[4]}`;
+  }
+  return "unknown";
+};
+
+const sanitizeReasonCodes = (reason: string | undefined) =>
+  (reason ?? "")
+    .split(/,\s*/)
+    .filter(Boolean)
+    .map((item) => (REASON_CODE_PATTERN.test(item) ? item : "unrecognized"));
+
+const safeToken = (value: unknown) =>
+  typeof value === "string" && REASON_CODE_PATTERN.test(value) ? value : value == null ? "none" : "unrecognized";
+
+export const extractTurnForensics = (result: ChatReplyResult | undefined): TurnForensics => {
+  const execution = result?.execution;
+  const failure = execution?.failure;
+  const transitions = execution?.transitions ?? [];
+  const blocked = failure?.code === "SAFETY_BLOCKED" ||
+    transitions.some((transition) => transition.reason.startsWith("Safety semantic triage failed closed"));
+  const routed = !blocked && result?.finalSource === "safety";
+  const safety: SafetyForensics = {
+    outcome: !result
+      ? "unknown"
+      : blocked
+        ? "blocked_fail_closed"
+        : routed
+          ? "routed_safety_response"
+          : "passed_to_planner",
+    failureType: !result ? "unknown" : blocked ? parseSafetyFailureType(transitions) : "none",
+    failureCategory: !result ? "unknown" : blocked ? parseSafetyFailureCategory(failure?.reason) : "none",
+    routedDecision: routed ? parseRoutedSafetyDecision(transitions) : "none",
+    attemptTrace: "not_exposed_by_chat_reply_result",
+  };
+
+  const plan = result?.controlTrace?.responsePlan;
+  const clinical = plan?.clinicalStrategy;
+  return {
+    runtimeTurnId: safeToken(execution?.turnId),
+    executionPhase: safeToken(execution?.phase?.toLowerCase()),
+    executionFailureCode: failure?.code ?? (result && !blocked ? "none" : "unknown"),
+    executionFailureReasonCodes: blocked ? [] : sanitizeReasonCodes(failure?.reason),
+    safety,
+    plan: {
+      evaluatorSource: "clinicalTrace.selectedPlan",
+      evaluatorSelectedPlanPresent: Boolean(result?.clinicalTrace?.selectedPlan),
+      clinicalInvokedByPlanner: result?.controlTrace ? result.controlTrace.clinicalInvoked : "unknown",
+      plannerSource: plan ? "controlTrace.responsePlan" : "absent",
+      plannerPlanId: plan ? safeToken(plan.planId) : "none",
+      behaviorSource: plan ? safeToken(plan.behaviorSource) : "none",
+      planningDepth: plan ? safeToken(plan.planningDepth) : "none",
+      responseActions: plan ? plan.responseActions.map(safeToken) : [],
+      questionPolicy: plan ? safeToken(plan.questionPolicy.mode) : "none",
+      closurePolicy: plan ? safeToken(plan.closurePolicy.mode) : "none",
+      clinicalStrategy: clinical
+        ? `strategy=${safeToken(clinical.strategy)} intent=${safeToken(clinical.intent)} questionFunction=${safeToken(clinical.questionFunction)}`
+        : "none",
+      positiveFunctionAction: plan?.positiveFunctionContract ? safeToken(plan.positiveFunctionContract.action) : "none",
+      interactionMoveHandoff: Boolean(plan?.interactionMoveHandoffPlan),
+    },
+  };
 };
 
 export const getCurrentCommit = () =>
@@ -273,9 +416,89 @@ export const buildTurnResult = ({
     ...plan,
     machineCheckErrors,
     heuristicFlags,
+    ...(mode === "real" ? { forensics: extractTurnForensics(result) } : {}),
     error,
   };
 };
+
+export type TurnForensicsRecord = {
+  caseId: string;
+  runIndex: number;
+  turnId: string;
+  runStatus: TurnRunResult["status"];
+  source: string;
+  selectedResponseGoal: string;
+  structureChecked: boolean;
+  forensics: TurnForensics;
+};
+
+export const collectForensicsRecords = (results: TrajectoryRunResult[]): TurnForensicsRecord[] =>
+  results.flatMap((result) =>
+    result.turns
+      .filter((turn) => turn.forensics)
+      .map((turn) => ({
+        caseId: result.trajectory.id,
+        runIndex: result.runIndex,
+        turnId: turn.turn.turnId,
+        runStatus: turn.status,
+        source: turn.source,
+        selectedResponseGoal: turn.selectedResponseGoal,
+        structureChecked: turn.turn.machineChecks.includes("structure_matches"),
+        forensics: turn.forensics!,
+      }))
+  );
+
+const countBy = (values: string[]) =>
+  values.reduce<Record<string, number>>((acc, value) => {
+    acc[value] = (acc[value] ?? 0) + 1;
+    return acc;
+  }, {});
+
+export const summarizeForensics = (records: TurnForensicsRecord[]) => {
+  const blocked = records.filter((record) => record.forensics.safety.outcome === "blocked_fail_closed");
+  const evaluatorPlanAbsent = records.filter(
+    (record) => record.structureChecked && !record.forensics.plan.evaluatorSelectedPlanPresent
+  );
+  return {
+    safetyOutcomes: countBy(records.map((record) => record.forensics.safety.outcome)),
+    safetyBlockedByCategory: countBy(blocked.map((record) => record.forensics.safety.failureCategory)),
+    safetyBlockedByType: countBy(blocked.map((record) => record.forensics.safety.failureType)),
+    safetyBlocked: blocked.map((record) => ({
+      caseId: record.caseId,
+      runIndex: record.runIndex,
+      turnId: record.turnId,
+      failureType: record.forensics.safety.failureType,
+      failureCategory: record.forensics.safety.failureCategory,
+    })),
+    executionFailureCodes: countBy(records.map((record) => record.forensics.executionFailureCode)),
+    structureCheckedTurnsWithoutEvaluatorPlan: evaluatorPlanAbsent.map((record) => ({
+      caseId: record.caseId,
+      runIndex: record.runIndex,
+      turnId: record.turnId,
+      safetyOutcome: record.forensics.safety.outcome,
+      plannerSource: record.forensics.plan.plannerSource,
+      clinicalInvokedByPlanner: record.forensics.plan.clinicalInvokedByPlanner,
+      responseActions: record.forensics.plan.responseActions,
+      questionPolicy: record.forensics.plan.questionPolicy,
+    })),
+  };
+};
+
+const formatForensicsLines = (forensics: TurnForensics) => [
+  `- runtimeTurnId: ${forensics.runtimeTurnId}`,
+  `- executionPhase: ${forensics.executionPhase}`,
+  `- executionFailure: ${forensics.executionFailureCode}${forensics.executionFailureReasonCodes.length ? ` (${forensics.executionFailureReasonCodes.join(", ")})` : ""}`,
+  `- safetyOutcome: ${forensics.safety.outcome}`,
+  `- safetyFailureType: ${forensics.safety.failureType}`,
+  `- safetyFailureCategory: ${forensics.safety.failureCategory}`,
+  `- safetyRoutedDecision: ${forensics.safety.routedDecision}`,
+  `- safetyAttemptTrace: ${forensics.safety.attemptTrace}`,
+  `- evaluatorPlanSource: ${forensics.plan.evaluatorSource} (${forensics.plan.evaluatorSelectedPlanPresent ? "present" : "absent"})`,
+  `- plannerPlanSource: ${forensics.plan.plannerSource}`,
+  `- plannerClinicalInvoked: ${forensics.plan.clinicalInvokedByPlanner}`,
+  `- plannerPlan: planId=${forensics.plan.plannerPlanId} behaviorSource=${forensics.plan.behaviorSource} planningDepth=${forensics.plan.planningDepth} responseActions=${forensics.plan.responseActions.join("|") || "none"} questionPolicy=${forensics.plan.questionPolicy} closurePolicy=${forensics.plan.closurePolicy} positiveFunction=${forensics.plan.positiveFunctionAction} interactionMoveHandoff=${forensics.plan.interactionMoveHandoff}`,
+  `- plannerClinicalStrategy: ${forensics.plan.clinicalStrategy}`,
+];
 
 export const buildTrajectoryChecks = (turns: TurnRunResult[]) => {
   const completed = turns.filter((turn) => turn.status === "completed" && turn.assistant);
@@ -318,6 +541,9 @@ export const renderTrajectoryReport = (metadata: TrajectoryReportMetadata, resul
     `- promptVersion: ${metadata.promptVersion}`,
     `- freshness: ${metadata.freshness}`,
     `- staleReason: ${metadata.staleReason || "none"}`,
+    ...(metadata.productUnderTest ? [`- productUnderTest: ${metadata.productUnderTest}`] : []),
+    ...(metadata.productSourceFingerprint ? [`- productSourceFingerprint: ${metadata.productSourceFingerprint}`] : []),
+    ...(metadata.evalToolFingerprint ? [`- evalToolFingerprint: ${metadata.evalToolFingerprint}`] : []),
     "",
     "Replay mode validates fixtures, report structure, and deterministic checks only. It is not evidence of current model quality.",
     "",
@@ -329,6 +555,28 @@ export const renderTrajectoryReport = (metadata: TrajectoryReportMetadata, resul
     `- deterministic errors: ${results.flatMap((item) => [...item.turns.flatMap((turn) => turn.machineCheckErrors), ...item.trajectoryMachineCheckErrors]).length}`,
     "",
   ];
+
+  const forensicsRecords = collectForensicsRecords(results);
+  if (forensicsRecords.length) {
+    const summary = summarizeForensics(forensicsRecords);
+    lines.push(
+      "## Forensics Summary",
+      "",
+      "Safety failure fields come only from execution.failure and execution.transitions; unexposed values are recorded as unknown. Plan fields list the evaluator source (clinicalTrace.selectedPlan) beside the runtime plan (controlTrace.responsePlan) without mapping one onto the other.",
+      "",
+      `- safetyOutcomes: ${JSON.stringify(summary.safetyOutcomes)}`,
+      `- safetyBlockedByCategory: ${JSON.stringify(summary.safetyBlockedByCategory)}`,
+      `- safetyBlockedByType: ${JSON.stringify(summary.safetyBlockedByType)}`,
+      `- executionFailureCodes: ${JSON.stringify(summary.executionFailureCodes)}`,
+      ...summary.safetyBlocked.map(
+        (item) => `- safetyBlocked: ${item.caseId} / run-${item.runIndex} / ${item.turnId}: type=${item.failureType} category=${item.failureCategory}`
+      ),
+      ...summary.structureCheckedTurnsWithoutEvaluatorPlan.map(
+        (item) => `- evaluatorPlanAbsent: ${item.caseId} / run-${item.runIndex} / ${item.turnId}: safety=${item.safetyOutcome} planner=${item.plannerSource} clinicalInvoked=${item.clinicalInvokedByPlanner} responseActions=${item.responseActions.join("|") || "none"} questionPolicy=${item.questionPolicy}`
+      ),
+      ""
+    );
+  }
 
   for (const result of results) {
     lines.push(
@@ -360,6 +608,7 @@ export const renderTrajectoryReport = (metadata: TrajectoryReportMetadata, resul
         `- questionFunction: ${turn.questionFunction}`,
         `- machineCheckErrors: ${turn.machineCheckErrors.length ? turn.machineCheckErrors.join(" / ") : "none"}`,
         `- heuristicFlags: ${turn.heuristicFlags.length ? JSON.stringify(turn.heuristicFlags) : "none"}`,
+        ...(turn.forensics ? formatForensicsLines(turn.forensics) : []),
         "",
         "**Reviewer Fields**",
         "",

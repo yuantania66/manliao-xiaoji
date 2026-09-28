@@ -11,7 +11,11 @@ import {
   TRAJECTORY_RUNNER_VERSION,
   buildTrajectoryChecks,
   buildTurnResult,
+  collectForensicsRecords,
+  computeEvalToolFingerprint,
+  computeProductSourceFingerprint,
   computeRelevantSourceFingerprint,
+  summarizeForensics,
   getCurrentCommit,
   locateRepeatedOpeningSkeletons,
   loadTrajectoryDataset,
@@ -42,6 +46,8 @@ const variant = variantArg?.split("=")[1]?.trim() || "canonical";
 const experimentArg = process.argv.find((arg) => arg.startsWith("--experiment="));
 const experiment = experimentArg?.split("=")[1]?.trim() || "canonical";
 const isGroundednessExperiment = experiment === "exp-bl-012a";
+const productUnderTest = process.argv.find((arg) => arg.startsWith("--product-under-test="))?.split("=")[1]?.trim() || "unspecified";
+const forensicsOutput = process.argv.find((arg) => arg.startsWith("--forensics-output="))?.split("=")[1]?.trim() || null;
 if (experiment !== "canonical" && !isGroundednessExperiment) {
   throw new Error(`Experiment ${experiment} is not registered.`);
 }
@@ -62,6 +68,7 @@ const outputPath = isGroundednessExperiment
   : TRAJECTORY_REPORT_PATH;
 
 const run = async () => {
+  const productSourceFingerprintBefore = computeProductSourceFingerprint();
   const dataset = isGroundednessExperiment ? getGroundednessExperimentDataset() : loadTrajectoryDataset();
   const results: TrajectoryRunResult[] = [];
 
@@ -121,6 +128,13 @@ const run = async () => {
   const promptVersion = completed.find((turn) => turn.promptVersion !== "captured")?.promptVersion ?? "captured-replay";
   const provider = mode === "real" ? getAiProvider() : "captured-replay";
   const model = mode === "real" ? process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel() : "captured-replay";
+  const productSourceFingerprintAfter = computeProductSourceFingerprint();
+  const productSourceFingerprint = productSourceFingerprintBefore === productSourceFingerprintAfter
+    ? productSourceFingerprintAfter
+    : `changed-during-run: before=${productSourceFingerprintBefore} after=${productSourceFingerprintAfter}`;
+  const evalToolFingerprint = computeEvalToolFingerprint();
+  const forensicsRecords = collectForensicsRecords(results);
+  const forensicsSummary = summarizeForensics(forensicsRecords);
   const report = renderTrajectoryReport(
     {
       datasetVersion: dataset.datasetVersion,
@@ -138,12 +152,35 @@ const run = async () => {
       promptVersion,
       freshness: "current",
       staleReason: "",
+      productUnderTest,
+      productSourceFingerprint,
+      evalToolFingerprint,
     },
     results
   );
 
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, report, "utf8");
+  if (forensicsOutput) {
+    mkdirSync(dirname(forensicsOutput), { recursive: true });
+    writeFileSync(
+      forensicsOutput,
+      `${JSON.stringify(
+        {
+          runnerVersion: TRAJECTORY_RUNNER_VERSION,
+          evalToolCommit: getCurrentCommit(),
+          evalToolFingerprint,
+          productUnderTest,
+          productSourceFingerprint,
+          summary: forensicsSummary,
+          records: forensicsRecords,
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+  }
 
   console.log(
     JSON.stringify(
@@ -162,6 +199,11 @@ const run = async () => {
           ...item.turns.flatMap((turn) => turn.machineCheckErrors),
           ...item.trajectoryMachineCheckErrors,
         ]),
+        productUnderTest,
+        productSourceFingerprint,
+        evalToolFingerprint,
+        forensicsOutput,
+        forensics: mode === "real" ? forensicsSummary : null,
       },
       null,
       2
