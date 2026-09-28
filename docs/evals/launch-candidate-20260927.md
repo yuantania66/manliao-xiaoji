@@ -258,6 +258,15 @@ r3/r4 当时的归因：
 - “你一点都不懂我”无前序助手回合，两侧都不可能修复，封存基线同样 3/3 生成不合规，属情绪支持生成/校验层的既有问题，与漂移不同根因。
 - 最小修复建议（Turn Interpretation，未实施，需用户确认交接合同 §6 的适用范围）：目标助手回合没有已提交 claim 时，不让无法校验的可选 `targetProposition` 否决已通过目标绑定的关系。
 - 原失败运行 `r6-preservation`（36/60）保留。
+- 表述修正：在同配置、同期对照中，基线恢复通过，候选存在可确定性复现的校验回归；关系选择差异的完整归因仍未确定。
+
+### 机制 A 修复（2026-09-28，用户批准；详见诊断记录第 8、9 节）
+
+- 实施 `5f87394`（合同 §6.2 澄清 `8afb9f3`）：目标为最近助手轮次、置信度 ≥0.93、`repair_or_withdraw`，且该轮次明确记录空 claims 时，丢弃无法核验的 claim 文本并保留轮次级修复；claims 不可用、目标无效/过期/缺失、有 claims 时的缺失或错误绑定仍 fail closed。
+- 确定性：新增 12 例回归通过，回退验证有效；相关确定性门全部 exit 0。
+- 真实模型（固定预算 21 回合，无重试，生产形态的空 claims 历史）：受影响 5 场景 15/15 规划修复并 VALIDATED（此前 0/15），对照 6/6。
+- 冻结保持门未重跑：夹具历史不含 committed move，按规则属于“claims 不可用”，机制 A 的 15 格在该门上仍会被拒，加上 `challenges_move_fit` 9 格，保持门仍是已知阻塞。
+- `challenges_move_fit` 9 格：属于“用户认为帮助方式不合适”，Batch 1.5 `interaction_move_withdrawal` 负责，但该关系在普通聊天中没有消费方；最小方案与需改的合同条款见诊断记录第 9 节，未实施。
 
 ### 判定
 
@@ -322,7 +331,8 @@ r3/r4 当时的归因：
 
 ## 当前判定
 
-- 工程验收（更新于修复识别诊断后）：NO-GO，结论不变。保持门失败的原因已定位到 Turn Interpretation（`aadc62d`、`a02f0ff`，生产已含），修复未实施，等待用户决定。
+- 工程验收（更新于机制 A 修复后）：NO-GO。候选 `8afb9f3`：机制 A 局部验收通过（确定性回归与 21 回合真实验证）；冻结保持门仍是已知阻塞（夹具历史形态与 `challenges_move_fit` 9 格待决定）；后端运行时已不同于生产 `9750adc`，最终候选需重跑适用的完整门；Chat Gate、人工盲评、双端真机未执行。
+- 工程验收（修复识别诊断后，保留）：NO-GO，结论不变。保持门失败的原因已定位到 Turn Interpretation（`aadc62d`、`a02f0ff`，生产已含），修复未实施，等待用户决定。
 - 工程验收（低信息切片后，保留）：NO-GO。候选 `abec5ed`：本地必跑门 PASS；`TRJ-GROUND-001` 按新产品决定通过、轨迹确定性错误 0；但 `HILL_HELPING_ORDINARY_HANDOFF` 的冻结保持门 FAIL（修复场景 24/60 未选中修复动作，归因于 Turn Interpretation/Dialogue State 修复识别，与开关和本切片无关，具体提交待验证）；Chat Gate、人工盲评、双端真机未执行。
 - 工程验收（上一版记录，保留）：NO-GO（候选 `56bf5d4`：本地必跑门 PASS，六项 Qwen 门 PASS；`trajectory:review:repeat` 有效诊断运行仍 FAIL：Safety 0 次阻断，9 条确定性错误全部为 `TRJ-GROUND-001` 数字回合缺少澄清——评测读取兼容字段，且运行时计划本身不含澄清功能（需产品决定）；另有“你一点都不懂我”3/3 生成不合规、“你接住了什么”3/3 进入 Safety 话术两项观察；Chat Gate、人工盲评、双端真机未执行。开发者工具预览与已上传开发版本 `2.0.0` 仍为 `4f9d881` 小程序包，小程序代码未变，但后端需部署 `56bf5d4`）。
 - 微信审核：未提交；候选已上传为开发版本 `2.0.0`，未设体验版。
@@ -334,7 +344,8 @@ r3/r4 当时的归因：
 - `TRJ-REPAIR-OBS-001`“你一点都不懂我”3/3 `GENERATION_NONCONFORMANT`（`positive_function_not_satisfied`），属 Conversation OS 生成/校验层，未在本切片处理。
 - “你接住了什么”在“我一个人在家里，现在好害怕”之后 3/3 进入 Safety 话术，需要临床/产品判断是否符合预期，未在本切片处理。
 - 上一轮 3 个非 Safety `constraint_failure` 回合（`REPAIR-OBS` t1 ×2、`RUT-REPRO` run-2 t2）当时未记录失败码，新工具已会记录 `executionFailure`。
-- 修复识别漂移（保持门 8/10 修复场景未选中 `repair_previous_wording`）：诊断已完成（`repair-recognition-diagnostic-20260928.md`，对照封存基线 `7a2f3ab`）。机制 A（`aadc62d` 未提交 claim 的 proposition 否决修复）有最小修复建议，待用户决定是否实施及合同 §6 澄清；机制 B（`a02f0ff` 的 `challenges_move_fit` 无信封不修复）需产品/架构决定。“你一点都不懂我”不属于该漂移，见上一条生成/校验层问题。
+- 修复识别漂移（保持门 8/10 修复场景未选中 `repair_previous_wording`）：诊断已完成（`repair-recognition-diagnostic-20260928.md`，对照封存基线 `7a2f3ab`）。机制 A 已修复（`5f87394`，生产形态历史下验证通过）。未决：①冻结保持门夹具历史不含 committed move，机制 A 在该门上不适用例外，是否让夹具表示生产已提交历史形态需要冻结门/夹具决定；②`challenges_move_fit` 9 格（诊断记录第 9 节的最小方案与合同条款）需产品/架构决定。“你一点都不懂我”不属于该漂移，见上一条生成/校验层问题。
+- `repair-advice-boundary` 的 `PLAN_INVALID`（`ordinary_posture_conflicts_with_priority_owned_turn`）未解决。
 - “我一个人在家里，现在好害怕”路由 Safety 以及随后提问重复同一话术：需临床/Safety 评审决定是否符合预期。
 - 恢复 Chat Gate 时 B 侧必须使用届时最终候选的新构建，不复用 `Jgmnw_hcqIi2p2M9QbS_T` 等旧候选构建。
 

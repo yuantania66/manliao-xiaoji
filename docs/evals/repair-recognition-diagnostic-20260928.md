@@ -64,7 +64,7 @@
 
 - 过滤规则：`aadc62d`（2026-08-25，“feat: seal current conversation baseline”）在 `conversation-os/control/turnInterpreter.ts` 的 `modelRelationCandidates` 中加入：若提供了 `targetProposition` 但它不是目标回合的精确已提交 claim，整个候选丢弃。
 - 同一提交在 `services/ai/turnInterpretationAdapter.ts` Prompt 中要求“语义上针对已提交助手 claim 的候选须逐字复制 targetProposition 并设置 targetOperation”。普通回复通常没有已提交 claim（`buildCommittedResponseMove` 只从 grounding facts 与 required disclosure 生成 claim），模型仍复制了上一轮的措辞，于是正确目标、置信 0.95 的修复被整体拒绝。
-- 确定性探针复现同一差异（第 3 节第二行）；`7a2f3ab` 侧今天重跑 24/24 通过，排除了“模型已漂移”的解释。
+- 确定性探针复现同一差异（第 3 节第二行）。在同配置、同期对照中，基线 `7a2f3ab` 恢复通过（24/24），候选存在可确定性复现的校验回归；关系选择差异（机制 B）的完整归因仍未确定。
 
 机制 B（9/24 格，“模型没提出修复”）：
 
@@ -81,7 +81,7 @@
 - `0a80b5d`：`challenges_move_fit@0.85`，无目标 + `shares_distress@0.75` → 同一计划 → 3/3 `GENERATION_NONCONFORMANT`（`planned_function_semantic:positive_function_not_satisfied`）。
 - 结论：与上述修复识别漂移**不同根因**。计划两侧一致且符合现有合同，失败在情绪支持的生成/校验层，封存基线上同样失败，属既有问题。
 
-## 7. 最小修复建议（未实施，待用户决定）
+## 7. 最小修复建议（诊断时未实施；用户已批准，实施与验证见第 8 节）
 
 证据最充分的是机制 A（确定性复现 + 15/15 真实格）。所属层：Conversation OS Turn Interpretation，`conversation-os/control/turnInterpreter.ts` 的 `modelRelationCandidates`。
 
@@ -92,3 +92,66 @@
 不在本建议内、需另行决定：机制 B（无信封时 `challenges_move_fit` 是否应进入修复，属产品/架构决定）；`advice-boundary` 的 `PLAN_INVALID`；“你一点都不懂我”的情绪支持生成失败；重复 Safety 话术（待评审，符合书面规则不等于体验通过）。
 
 修复若实施，需要重跑：诊断工具两侧、`check:interaction-move-*`、`check:conversation-os-control`、`check:interaction-move-handoff-turn-interpretation-qwen-real`、Batch 1.5 保持门（冻结门，门槛不变）以及受影响的轨迹。
+
+## 8. 机制 A 修复实施与局部验收（2026-09-28，用户批准）
+
+实施（`5f87394`，合同 `8afb9f3`）：
+
+- `conversation-os/control/turnInterpreter.ts`：`modelRelationCandidates` 中，仅当同时满足以下条件时丢弃无法核验的 `targetProposition`/`targetOperation`，保留针对该助手轮次的修复，并在候选 evidence 中记录丢弃：关系为 `repairs_previous_move`、`targetOperation=repair_or_withdraw`、置信度 ≥0.93、目标是上下文中最近一个助手轮次、该轮次**明确**记录空 claims（有效的 `committedAssistantMove` 或有效 move envelope 的 `claims: []`，或交接信封的 claims 为空，且所有来源都为空）。
+- “明确没有 claims”与“claims 不可用”分开：没有 committed move、envelope 无效、目标缺失、未知、用户轮次、非最近助手轮次，都不走该例外，保持原 fail closed。目标轮次有 claims 时仍要求精确绑定。0.93 阈值、目标轮次校验、handoff 目标绑定不变；没有新增无目标放行路径；不生成或伪造 claim 绑定（修复状态沿用既有的轮次级 `model-rejected` 标识和该轮次原文）。
+- 合同：交接合同 §6.2 增加“Claimless-target repair”澄清条款。
+
+确定性回归（`check:conversation-os-relational-state` 新增 12 例，全部通过）：
+
+| 类别 | 用例 | 结果 |
+| --- | --- | --- |
+| 无 claims 的合法轮次级修复被保留 | 已提交 move `claims: []`；游客 envelope `claims: []` | 保留修复，proposition 被丢弃并记录；进入 `repairing_common_ground`，`repairState.status=active`，计划含 `repair_previous_wording` |
+| 有 claims 且绑定正确 | 精确绑定 | 正常通过，绑定到 `claim-1`，不走例外 |
+| 有 claims 但绑定缺失/错误 | 缺失；不匹配 | 拒绝，无修复 |
+| 无效、过期或缺失目标 | claims 数据不可用；无目标；未知目标；用户轮次；较早助手轮次 | 拒绝，例外不放行 |
+| 其他 | 置信度 0.9；`requests_answer` + `explain` | 拒绝 |
+
+回退验证：把例外临时置为关闭后，新回归在第一例失败；恢复后文件字节一致。
+
+相关确定性门（均 exit 0）：`tsc`、eslint（改动文件）、`check:conversation-os-{control,relational-state,architecture}`、`check:interaction-move-{envelope,handoff,handoff-planner,handoff-surface-validator}`、`check:hill-helping-batch1-5`、`-preservation`、`-stage2`、`-post-candidate4`、`-causal-ablation`、`check:hill-helping-batch1`、`-batch2a`、`-batch2b`、`-batch2c-a`、`check:ai-orchestration`、`check:natural-chat-control`、`check:conversation-trajectories`、`check:trajectory-experiments`、诊断工具检查。
+
+确定性探针（修复后候选，无凭据）：
+
+- 已提交且无 claims 的历史（下述真实验证输入）：“合法目标 + 未提交 proposition + repair_or_withdraw”7/7 进入修复；用户轮次目标、置信度 0.9、`continues_active_thread`、`challenges_move_fit` 仍不修复（唯一例外是确定性修复场景 `repair-unsupported-fear`，与模型候选无关）。
+- 冻结夹具原样历史：同一探针 9/10 仍不修复（1 格为确定性修复场景）。原因是夹具历史中的助手轮次**没有** committed move 数据，按批准的规则属于“claims 不可用”，例外不适用。
+
+真实模型验证（预算在运行前固定：机制 A 的 5 个场景 + 2 个修复对照 × 3 轮 = 21 回合，仅候选侧，无重试；输入为冻结夹具的相同用户消息与助手原文，助手轮次附加生产普通回复会记录的空 claims committed move，夹具文件本身未改；HEAD `8afb9f3` 干净，`qwen3.7-max`，13:36:59–13:43:20 UTC，exit 0）：
+
+- 21/21 `repair_planned`，全部 VALIDATED；受影响 5 个场景 15/15（此前 0/15）。
+- 15 格中 14 格模型仍复制了上一轮措辞作为 `targetProposition`（即使看到 `claims: []`），由例外丢弃后保留修复；1 格模型未提供 proposition，走既有路径。对照 6/6 保持修复（3 确定性，3 无 proposition）。
+- 产物：`repair-recognition-diagnostic-20260928/diag-real-candidate-fix-claimless.json`、`diag-probes-candidate-fix-{claimless,fixture}.json`（探针在提交前以同一份代码运行，productDirty 仅为本修复文件）。CJK 0、文本键 0、疑似密钥 0。原诊断与失败记录均保留。
+
+对冻结门的影响（未重跑冻结门）：冻结保持门的夹具历史不含 committed move，机制 A 的 15 格在该门上按规则仍会被拒绝，加上机制 B 的 9 格，保持门仍是已知阻塞。夹具是否应表示生产的已提交历史形态，属于冻结门/夹具决定，本轮未改。
+
+## 9. 剩余 9 格 `challenges_move_fit` 分析（不追加采样）
+
+依据：第 4 节已有结构数据、冻结夹具原文、现有代码与合同。
+
+三类区分：
+
+| 类别 | 判断依据 | 现有负责机制 | 本次数据 |
+| --- | --- | --- | --- |
+| 用户明确纠正或反对上一轮助手表达（命题） | 否定上一轮加入的情绪、强度、意图、人物或事实 | TI `repairs_previous_move` → 修复 `proposition_withdrawal`/`factual_replacement` | 机制 A 的 15 格；第 8 节修复后已恢复（生产形态历史） |
+| 用户认为当前帮助方式不合适（互动动作） | 反对上一轮的建议、追问、套话或话题切换，有明确可指向的上一助手轮次 | Batch 1.5 正向功能合同 §4.1 `interaction_move_withdrawal`（`repair_previous_wording` 的子类型：`unsolicited_advice`、`pressure_question`、`generic_listening`、`moralizing`、`topic_switch`） | 剩余 9 格：advice-boundary（“我说了不想要建议，你还是在教我怎么做”）、question-pressure（“你又在追问……”）、generic-listening（“……只是在说你会听”）；模型 9/9 给出 `challenges_move_fit@0.95`，目标为合法的上一助手轮次 `a1`，无活动交接信封 |
+| 没有明确可指向的助手轮次 | 无前序助手轮次或候选无目标 | 不进入修复；按当前内容规划（如情绪支持） | `REPAIR-OBS`：`challenges_move_fit@0.85` 无目标，结构上不能修复（第 6 节） |
+
+现有机制为什么没有履行第二类责任：
+
+1. Turn Interpretation Prompt（`a02f0ff` 起）同时要求“`repairs_previous_move` 只用于否定具体命题”（该句封存时已存在）与“互动动作被认为不必要、重复、施压或不匹配时用 `challenges_move_fit`”。封存时没有 `challenges_move_fit` 可选，模型对这三类抱怨给出 `repairs_previous_move`；现在模型按 Prompt 改选 `challenges_move_fit`，这是符合 Prompt 的分类，不是模型失误。
+2. `challenges_move_fit` 只有交接路径消费：交接合同 §7.2 把它映射到 `withdraw_or_repair_targeted_move`，前提是存在活动交接目标（主动问候的 `opens` 信封）。普通聊天中它只用于阻止 idle 和排除记忆召回（`responsePlanner.ts`），Dialogue State 不会因此进入 `repairing_common_ground`。
+3. 因此 Batch 1.5 的 `interaction_move_withdrawal` 在普通聊天中只剩确定性纠正这一个入口，模型路径不可达；Planner 退回 `acknowledge_without_psychologizing`，advice-boundary 还因确定性 `requests_action_support@0.9`（两侧都有，封存侧被修复优先覆盖）落到 `offer_action_support`，触发 `PLAN_INVALID`。
+
+最小处理方案（未实施，需要用户决定）：在 Turn Interpretation 的修复提案处（`mergeModelInterpretation` 的 `modelRepair` 选择），当**没有活动交接目标**时，接受满足以下全部条件的 `challenges_move_fit` 作为轮次级修复提案：置信度 ≥0.93；目标是上下文中最近一个已提交助手轮次；不携带或不依赖 claim 绑定。Planner 已有的 `interactionMoveSubtypeFor` 会据此给出 `interaction_move_withdrawal` 与子类型。有活动交接目标时继续走 §7.2 的交接路径；无目标、低置信、目标非最近助手轮次都不进入修复。按第 4 节已记录的结构数据，9/9 满足这些条件，`REPAIR-OBS`（无目标、0.85）与所有非修复对照不满足；是否恢复计划与生成通过，需要实施后按固定预算验证，不能预先断言。
+
+需要改变的具体合同条款：
+
+- 交接合同 `CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md` §6.2 中 `challenges_move_fit` 条款：补充“无活动交接目标时，指向最近已提交助手轮次、置信度 ≥0.93 的 `challenges_move_fit` 进入普通修复（`interaction_move_withdrawal`）；有活动交接目标时按 §7.2”。
+- `HILL_HELPING_BATCH1_5_RESPONSE_PLAN_POSITIVE_FUNCTION_CONTRACT_V1.md` §4.1：写明 `interaction_move_withdrawal` 的入口包括上述 `challenges_move_fit`，不只来自命题否定。
+- Turn Interpretation Prompt 的两句分类说明可以保持不变（分类本身正确，缺的是消费方）。
+
+仍保留为未解决事项（不因属于既有问题而视为通过）：advice-boundary 的 `PLAN_INVALID`；“你一点都不懂我”无历史上下文时的生成失败；重复 Safety 话术（待评审）。

@@ -2,6 +2,7 @@
 
 | 日期 | 决策 | 证据 | 影响 |
 |---|---|---|---|
+| 2026-09-28 | 批准并实施机制 A 最小修复：目标助手轮次明确无 claims 时丢弃无法核验的 claim 文本、保留轮次级修复；合同 §6.2 同步澄清 | 用户批准；确定性 12 例回归与回退验证；固定预算 21 回合真实验证 15/15 + 对照 6/6 | `5f87394`/`8afb9f3`；claims 不可用、目标无效/过期/缺失、有 claims 的错误绑定仍 fail closed，0.93 与目标校验不变；冻结夹具历史无 committed move，保持门仍阻塞；`challenges_move_fit` 9 格方案待决定；未重置 Safety 预算，未启动 Chat Gate |
 | 2026-09-28 | 修复识别漂移诊断（仅诊断）：保持门封存基线为 `7a2f3ab`，Chat Gate A `3e34257c` 只用于 A/B 对照 | 同模型同输入同时对照：`7a2f3ab` 24/24 规划修复，候选 0/24；15 格修复候选因未提交 claim 的 `targetProposition` 被拒（`aadc62d`），9 格模型改选 `challenges_move_fit`（`a02f0ff`）；两者均在生产 `9750adc` | 未改产品代码、阈值、夹具或 Safety 预算；最小修复建议在 Turn Interpretation，待用户确认合同 §6 适用范围后再决定实施；`a45da36` 影响尚未确定；“你一点都不懂我”为情绪支持生成层既有问题 |
 | 2026-09-28 | 低信息输入按上下文处理：同一段连续低信息交流“澄清→入口→入口”；`HILL_HELPING_ORDINARY_HANDOFF` 代码默认关闭，仅本地候选评测与 Chat Gate B 侧开启，A 侧保持冻结基线配置 | 用户产品决定（两题均选 A）；r5 显示数字回合只有“嗯，看到了。”类空确认；评测读取兼容字段 `clinicalTrace.selectedPlan` | `ordinaryHandoff.ts` 只按已提交助手回复判断本窗口是否已澄清；Batch 1.5 冻结检查与 `TRJ-GROUND-001` 期望同步更新，普通计划改读 `controlTrace.responsePlan`；生产配置未改，部署时随最终候选另行确认。开关冻结保持门在 `abec5ed` FAIL（修复识别漂移，非本切片与开关引起），Chat Gate 暂缓 |
 | 2026-08-11 | Hill《助人技术》与慢聊结合采用优先级对照，不另建 Cursor/Codex 平行真源目录 | 用户确认写入 `docs/`；真实会话显示可聊性先于加厚助人/心理学表层 | 新增 `docs/HILL_HELPING_PRODUCT_PRIORITY_MAP_V1.md`；代理共享同一 git 树：`docs/` 产品真源，`.project-team/` 切片台账；本文不授权改运行时 |
