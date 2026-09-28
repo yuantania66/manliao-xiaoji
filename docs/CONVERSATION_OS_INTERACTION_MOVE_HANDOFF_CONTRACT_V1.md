@@ -359,6 +359,22 @@ lifecycle record.
 - `challenges_move_fit` covers rejection of an interaction move as unnecessary,
   repetitive, pressuring or mismatched. It does not require rejection of a
   concrete factual proposition.
+- Ordinary move-fit repair (clarified 2026-09-28): with an active handoff target,
+  `challenges_move_fit` keeps the §7.2 `withdraw_or_repair_targeted_move` path
+  unchanged. Without one, an accepted `challenges_move_fit` candidate enters the
+  existing ordinary repair path as `interaction_move_withdrawal` only when it
+  meets the 0.93 repair threshold, carries no `targetProposition`, targets the
+  latest adjacent committed Assistant event, and that event explicitly records
+  `claims: []` under the same rule as claimless-target repair. The candidate keeps
+  its original relation; the adoption is recorded as
+  `repairProposal.sourceRelation = "challenges_move_fit"` plus adoption evidence,
+  never as a `repairs_previous_move` candidate. The Planner then selects the
+  existing interaction-move subtype from adjacent evidence; when none applies,
+  preflight fails closed with `missing_interaction_move_subtype_in_contract`. The
+  path never applies to a missing, unknown, User or stale target, to unavailable
+  or non-empty claims, below threshold, or when the current User turn gives a
+  concrete replacement fact; factual and claim corrections keep their
+  `repairs_previous_move` binding rules.
 - The relation is determined contextually. Text form, message length, punctuation
   and phrase membership cannot independently establish it.
 

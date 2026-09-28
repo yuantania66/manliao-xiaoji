@@ -116,6 +116,13 @@ Planner 必须在计划中明确修复目标属于哪一种：
 - `proposition_withdrawal`：助手加入了用户拒绝的情绪、强度、意图或解释；
 - `interaction_move_withdrawal`：助手进行了用户拒绝的建议、提问、套话或话题切换。
 
+没有 active handoff 时，若修复来源是已采纳的 `challenges_move_fit`
+（`repairState.sourceRelation = "challenges_move_fit"`，采纳条件见交接合同 §6.2
+“Ordinary move-fit repair”），Planner 固定选择 `interaction_move_withdrawal`，
+`replacementFact` 为空，子类型沿用上述相邻证据规则；无法确定子类型时由 preflight
+失败关闭，不降级为 `proposition_withdrawal` 或 `factual_replacement`。纠正具体事实
+主张不走此来源。
+
 Surface 不得自行推断修复类型。
 
 ### 4.2 所有修复的共同必需功能
