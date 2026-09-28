@@ -2,6 +2,7 @@
 
 | 日期 | 决策 | 证据 | 影响 |
 |---|---|---|---|
+| 2026-09-28 | 修复识别漂移诊断（仅诊断）：保持门封存基线为 `7a2f3ab`，Chat Gate A `3e34257c` 只用于 A/B 对照 | 同模型同输入同时对照：`7a2f3ab` 24/24 规划修复，候选 0/24；15 格修复候选因未提交 claim 的 `targetProposition` 被拒（`aadc62d`），9 格模型改选 `challenges_move_fit`（`a02f0ff`）；两者均在生产 `9750adc` | 未改产品代码、阈值、夹具或 Safety 预算；最小修复建议在 Turn Interpretation，待用户确认合同 §6 适用范围后再决定实施；`a45da36` 影响尚未确定；“你一点都不懂我”为情绪支持生成层既有问题 |
 | 2026-09-28 | 低信息输入按上下文处理：同一段连续低信息交流“澄清→入口→入口”；`HILL_HELPING_ORDINARY_HANDOFF` 代码默认关闭，仅本地候选评测与 Chat Gate B 侧开启，A 侧保持冻结基线配置 | 用户产品决定（两题均选 A）；r5 显示数字回合只有“嗯，看到了。”类空确认；评测读取兼容字段 `clinicalTrace.selectedPlan` | `ordinaryHandoff.ts` 只按已提交助手回复判断本窗口是否已澄清；Batch 1.5 冻结检查与 `TRJ-GROUND-001` 期望同步更新，普通计划改读 `controlTrace.responsePlan`；生产配置未改，部署时随最终候选另行确认。开关冻结保持门在 `abec5ed` FAIL（修复识别漂移，非本切片与开关引起），Chat Gate 暂缓 |
 | 2026-08-11 | Hill《助人技术》与慢聊结合采用优先级对照，不另建 Cursor/Codex 平行真源目录 | 用户确认写入 `docs/`；真实会话显示可聊性先于加厚助人/心理学表层 | 新增 `docs/HILL_HELPING_PRODUCT_PRIORITY_MAP_V1.md`；代理共享同一 git 树：`docs/` 产品真源，`.project-team/` 切片台账；本文不授权改运行时 |
 | 2026-08-05 | 在 `.project-team/` 建立项目专属角色注册表和轻量台账 | 用户要求每个项目建立对应角色；仓库已有根目录历史交付账本 | 根目录账本保留历史，`.project-team/` 管理可复用提示词、角色档案和当前切片 |
