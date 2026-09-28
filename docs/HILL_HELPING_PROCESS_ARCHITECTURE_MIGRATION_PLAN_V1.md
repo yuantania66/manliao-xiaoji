@@ -547,6 +547,12 @@ Functional、60/60 Machine Validator、0 constraint failure、5/60 regeneration�
 `HILL_HELPING_ORDINARY_HANDOFF=true` 时启用；它不隐式开启完整 Hill Shadow、Hill
 目标/技术或正式 Helping state。
 
+2026-09-28 产品决定（发布候选 `abec5ed`）：没有可解释语境的同一段连续低信息交流，
+由原“澄清/入口/澄清”交替改为“澄清→入口→入口”；是否已澄清只按已提交助手回复判断，
+仅限当前连续低信息语境。有效选项回答、明确换话题、不要追问/暂停/结束的边界不变。
+同日在该候选上重跑冻结保持门为 36/60 预期动作（修复场景识别漂移，非本决定与开关
+引起，见 `docs/evals/launch-candidate-20260927.md`），上述 60/60 结论不代表当前构建。
+
 目标：
 
 - 只修复本次人工盲审暴露的通用架构缺口：Helping Logic 判断为 `uncertain` 后，
