@@ -12,6 +12,7 @@ import { createChatReply } from "../services/ai/chatOrchestrationService";
 import {
   DIAGNOSTIC_VERSION,
   RUNS_PER_SCENARIO,
+  buildClaimlessVerificationScenarios,
   buildDiagnosticScenarios,
   legalTargetsOf,
   projectDiagnosticCell,
@@ -19,6 +20,7 @@ import {
   scenarioInputFingerprint,
   summarizeDiagnosticCells,
   type DiagnosticCell,
+  type HistoryShape,
 } from "./repair-recognition-diagnostic-lib";
 
 const getArg = (name: string) =>
@@ -27,8 +29,12 @@ const getArg = (name: string) =>
 const side = getArg("side");
 const outputPath = getArg("output");
 const mode = getArg("mode") || "real";
+const historyShape = (getArg("history") || "fixture") as HistoryShape;
 if (!side || !outputPath) throw new Error("--side and --output are required.");
 if (mode !== "real" && mode !== "probes") throw new Error("--mode must be real or probes.");
+if (historyShape !== "fixture" && historyShape !== "committed_claimless") {
+  throw new Error("--history must be fixture or committed_claimless.");
+}
 if (mode === "real" && !process.env.QWEN_API_KEY?.trim()) {
   throw new Error("A configured real AI provider is required.");
 }
@@ -38,7 +44,9 @@ const git = (...args: string[]) => execFileSync("git", args, { encoding: "utf8" 
 
 const datasetPath = "clinical-evals/hill-helping-batch1-5-preservation.json";
 const dataset = JSON.parse(readFileSync(datasetPath, "utf8")) as { scenarios: unknown[] };
-const scenarios = buildDiagnosticScenarios(dataset.scenarios);
+const scenarios = historyShape === "committed_claimless"
+  ? buildClaimlessVerificationScenarios(dataset.scenarios)
+  : buildDiagnosticScenarios(dataset.scenarios);
 
 const merge = (deterministic: unknown, model: unknown, context?: unknown) => mergeModelInterpretation(
   deterministic as Parameters<typeof mergeModelInterpretation>[0],
@@ -52,6 +60,7 @@ const sideMetadata = () => ({
   diagnosticVersion: DIAGNOSTIC_VERSION,
   side,
   mode,
+  historyShape,
   productHead: git("rev-parse", "HEAD"),
   productDirty: git("status", "--porcelain", "--", "services", "conversation-os", "lib", "prisma"),
   diagnosticLibSha: sha("scripts/repair-recognition-diagnostic-lib.ts"),

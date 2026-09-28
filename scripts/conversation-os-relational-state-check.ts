@@ -3,7 +3,9 @@ import { readFileSync } from "node:fs";
 
 import {
   buildProactiveGreetingAssistantMoveEnvelope,
+  buildResponsePlanAssistantMoveEnvelope,
 } from "../conversation-os";
+import { UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE } from "../conversation-os/control/turnInterpreter";
 import {
   assembleConversationControlContext,
   buildDialogueState,
@@ -1367,7 +1369,183 @@ assert(!surfacePrompt.includes("availableFacts"));
 assert(surfacePrompt.includes("relevanceProvenance:"));
 assert(surfacePrompt.includes(`planningDepth: ${screenshotRegression.responsePlan.planningDepth}`));
 
+// A repair of a claimless Assistant turn survives an unverifiable target claim only
+// when the turn explicitly records no claims; everything else stays fail-closed.
+const claimlessRepairMessage = "我没那么严重吧";
+const claimlessRepairText = "你现在一定非常崩溃。";
+const uncommittedRepairText = "你现在一定非常崩溃";
+const claimlessMove = (sourceTurnId: string) => ({
+  purpose: ["offer_emotional_support"],
+  claims: [],
+  assumptions: [],
+  questionOrRequest: null,
+  expectedUserContribution: "none" as const,
+  userBurden: "none" as const,
+  sourceTurnId,
+  evidence: ["claimless ordinary committed reply fixture"],
+});
+const claimlessHistory = (
+  assistant: Partial<AiConversationMessage> = {}
+): AiConversationMessage[] => [
+  { id: "claimless-user", role: "user", content: "今天有点累。", status: "saved" },
+  {
+    id: "claimless-assistant",
+    role: "assistant",
+    content: claimlessRepairText,
+    status: "saved",
+    replyToMessageId: "claimless-user",
+    committedAssistantMove: claimlessMove("claimless-user"),
+    ...assistant,
+  },
+];
+const claimlessRepairCandidate = (
+  overrides: Partial<RelationalInterpretationCandidate> = {}
+): RelationalInterpretationCandidate => ({
+  relation: "repairs_previous_move",
+  confidence: 0.95,
+  targetTurnId: "claimless-assistant",
+  targetProposition: uncommittedRepairText,
+  targetOperation: "repair_or_withdraw",
+  evidence: ["The User rejects the intensity attributed by the previous Assistant turn."],
+  ...overrides,
+});
+const assertRepairPlanned = (result: ReturnType<typeof build>, label: string) => {
+  assert.equal(result.deterministic.stateUpdate.repairProposal, null, label);
+  const repair = result.interpretation.responseRelation.candidates.find((candidate) =>
+    candidate.relation === "repairs_previous_move"
+  );
+  assert(repair, label);
+  assert.equal(repair.targetTurnId, "claimless-assistant", label);
+  assert.equal(repair.targetProposition, undefined, label);
+  assert.equal(repair.targetOperation, undefined, label);
+  assert(repair.evidence.includes(UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE), label);
+  const proposal = result.interpretation.stateUpdate.repairProposal;
+  assert.equal(proposal?.targetTurnId, "claimless-assistant", label);
+  assert.deepEqual(proposal?.rejectedPropositionIds, ["claimless-assistant:model-rejected-1"], label);
+  const rejected = result.interpretation.stateUpdate.commonGround.find((item) =>
+    item.propositionId === "claimless-assistant:model-rejected-1"
+  );
+  assert.equal(rejected?.proposition, claimlessRepairText, label);
+  assert.equal(result.dialogueState.repairState.status, "active", label);
+  assert.equal(result.dialogueState.currentActivity.primary, "repairing_common_ground", label);
+  assert(result.responsePlan.responseActions.includes("repair_previous_wording"), label);
+};
+const assertRepairRejected = (result: ReturnType<typeof build>, label: string) => {
+  assert.equal(result.deterministic.stateUpdate.repairProposal, null, label);
+  assert(!result.interpretation.responseRelation.candidates.some((candidate) =>
+    candidate.evidence.includes(UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE)
+  ), label);
+  assert.equal(result.interpretation.stateUpdate.repairProposal, null, label);
+  assert.notEqual(result.dialogueState.currentActivity.primary, "repairing_common_ground", label);
+  assert(!result.responsePlan.responseActions.includes("repair_previous_wording"), label);
+};
+
+assertRepairPlanned(build({
+  userMessage: claimlessRepairMessage,
+  recentMessages: claimlessHistory(),
+  modelCandidates: [claimlessRepairCandidate()],
+}), "committed move with no claims");
+assertRepairPlanned(build({
+  userMessage: claimlessRepairMessage,
+  recentMessages: claimlessHistory({
+    committedAssistantMove: undefined,
+    interactionMoveEnvelope: buildResponsePlanAssistantMoveEnvelope({
+      assistantMoveId: "claimless-assistant",
+      planId: "claimless-plan",
+      sourceUserTurnId: "claimless-user",
+      committedMove: claimlessMove("claimless-user"),
+    }),
+  }),
+  modelCandidates: [claimlessRepairCandidate()],
+}), "guest envelope with no claims");
+
+const claimedRepairHistory = claimlessHistory({
+  committedAssistantMove: committedClaimMove(claimlessRepairText, "claimless-user"),
+});
+const exactClaimedRepair = build({
+  userMessage: claimlessRepairMessage,
+  recentMessages: claimedRepairHistory,
+  modelCandidates: [claimlessRepairCandidate({ targetProposition: claimlessRepairText })],
+});
+assert.deepEqual(
+  exactClaimedRepair.interpretation.stateUpdate.repairProposal?.rejectedPropositionIds,
+  ["claimless-assistant:claim-1"]
+);
+assert(!exactClaimedRepair.interpretation.responseRelation.candidates.some((candidate) =>
+  candidate.evidence.includes(UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE)
+));
+assert(exactClaimedRepair.responsePlan.responseActions.includes("repair_previous_wording"));
+
+const invalidClaimlessRepairs: Array<{
+  label: string;
+  recentMessages: AiConversationMessage[];
+  candidate: RelationalInterpretationCandidate;
+}> = [
+  {
+    label: "claims exist, binding missing",
+    recentMessages: claimedRepairHistory,
+    candidate: claimlessRepairCandidate({ targetProposition: undefined, targetOperation: undefined }),
+  },
+  {
+    label: "claims exist, binding mismatched",
+    recentMessages: claimedRepairHistory,
+    candidate: claimlessRepairCandidate(),
+  },
+  {
+    label: "claims data unavailable",
+    recentMessages: claimlessHistory({ committedAssistantMove: undefined }),
+    candidate: claimlessRepairCandidate(),
+  },
+  {
+    label: "targetless",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ targetTurnId: undefined }),
+  },
+  {
+    label: "unknown target",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ targetTurnId: "missing-assistant" }),
+  },
+  {
+    label: "user-turn target",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ targetTurnId: "claimless-user" }),
+  },
+  {
+    label: "stale Assistant target",
+    recentMessages: [
+      {
+        id: "claimless-old-assistant",
+        role: "assistant",
+        content: "旧的回复。",
+        status: "saved",
+        committedAssistantMove: claimlessMove("claimless-old-user"),
+      },
+      ...claimlessHistory(),
+    ],
+    candidate: claimlessRepairCandidate({ targetTurnId: "claimless-old-assistant" }),
+  },
+  {
+    label: "below repair threshold",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ confidence: 0.9 }),
+  },
+  {
+    label: "non-repair operation",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ relation: "requests_answer", targetOperation: "explain" }),
+  },
+];
+for (const { label, recentMessages, candidate } of invalidClaimlessRepairs) {
+  assertRepairRejected(build({
+    userMessage: claimlessRepairMessage,
+    recentMessages,
+    modelCandidates: [candidate],
+  }), label);
+}
+
 console.log(JSON.stringify({
+  claimlessRepairCases: 3 + invalidClaimlessRepairs.length,
   screenshotRegressions: 4,
   blindCounterExamples: blindCases.length,
   multipleInterpretationsPreserved: ambiguous.interpretation.responseRelation.candidates.length,

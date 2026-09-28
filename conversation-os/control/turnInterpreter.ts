@@ -10,7 +10,7 @@ import type {
   TurnInterpretation,
   TurnStateUpdate,
 } from "./types";
-import { projectUserMoveRelation } from "./interactionMoveHandoff";
+import { projectUserMoveRelation, retainCommittedAssistantMoveEnvelope } from "./interactionMoveHandoff";
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
 
@@ -526,6 +526,30 @@ const currentCommittedClaimAuthorityForContext = (
     : null;
 };
 
+export const UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE =
+  "Target Assistant turn has no committed claims; unverifiable target claim text was dropped.";
+
+// Missing committed-move data means claims are unavailable, not absent.
+const latestAssistantTurnExplicitlyHasNoClaims = (
+  context: ConversationControlContext | undefined,
+  targetTurnId: string | undefined
+) => {
+  if (!context || !targetTurnId) return false;
+  const latestAssistantTurn = [...context.adjacentTurns]
+    .reverse()
+    .find((turn) => turn.role === "assistant");
+  if (!latestAssistantTurn || latestAssistantTurn.id !== targetTurnId) return false;
+  const claimSources = [
+    context.interactionMoveHandoffTarget?.sourceAssistantMoveId === targetTurnId
+      ? context.interactionMoveHandoffTarget.envelope.committedMove.claims
+      : undefined,
+    retainCommittedAssistantMoveEnvelope(latestAssistantTurn)?.committedMove.claims,
+    latestAssistantTurn.committedAssistantMove?.claims,
+  ].filter((claims) => claims !== undefined);
+  return claimSources.length > 0 &&
+    claimSources.every((claims) => Array.isArray(claims) && claims.length === 0);
+};
+
 const isTargetOperation = (value: unknown): value is TargetPropositionOperation =>
   value === "explain" || value === "answer" || value === "affirm" || value === "repair_or_withdraw";
 
@@ -628,8 +652,15 @@ const modelRelationCandidates = (
       suppliedTargetProposition && suppliedTargetOperation
     );
     if (suppliedOneTargetField && !suppliedBothTargetFields) return [];
+    const dropsUnverifiableRepairClaim =
+      value.relation === "repairs_previous_move" &&
+      suppliedTargetOperation === "repair_or_withdraw" &&
+      confidence >= 0.93 &&
+      committedClaims.length === 0 &&
+      latestAssistantTurnExplicitlyHasNoClaims(context, targetTurnId);
     if (
       suppliedTargetProposition &&
+      !dropsUnverifiableRepairClaim &&
       !committedClaims.some((claim) => claim.text === suppliedTargetProposition)
     ) return [];
     if (
@@ -650,19 +681,22 @@ const modelRelationCandidates = (
       value.relation !== "requests_answer"
     ) return [];
     if (claimAuthority && claimTargetingRelation && !suppliedBothTargetFields) return [];
+    const evidence = Array.isArray(value.evidence)
+      ? value.evidence.filter((item): item is string => typeof item === "string")
+      : ["Model supplied a relational interpretation candidate."];
     return [{
       relation: value.relation,
       confidence,
       ...(targetTurnId ? { targetTurnId } : {}),
-      ...(suppliedTargetProposition && suppliedTargetOperation
+      ...(suppliedTargetProposition && suppliedTargetOperation && !dropsUnverifiableRepairClaim
         ? {
             targetProposition: suppliedTargetProposition,
             targetOperation: suppliedTargetOperation,
           }
         : {}),
-      evidence: Array.isArray(value.evidence)
-        ? value.evidence.filter((item): item is string => typeof item === "string")
-        : ["Model supplied a relational interpretation candidate."],
+      evidence: dropsUnverifiableRepairClaim
+        ? [...evidence, UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE]
+        : evidence,
     }];
   });
 };

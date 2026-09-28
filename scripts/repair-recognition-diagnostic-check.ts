@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
+  CLAIMLESS_VERIFICATION_IDS,
+  buildClaimlessVerificationScenarios,
   buildDiagnosticScenarios,
   classifyRepairStage,
   classifyTargetId,
@@ -114,6 +116,7 @@ const repairCandidate = (accepted: boolean, confidence: number) => ({
   targetPropositionMatchesCommittedClaim: false,
   targetPropositionEqualsTargetTurnText: false,
   acceptedBySideMerge: accepted,
+  claimDroppedAsUnverifiable: false,
   rejectionReason: accepted ? "none" : "target_proposition_not_committed_claim",
 });
 const withCandidates = (candidates: ReturnType<typeof repairCandidate>[]) =>
@@ -177,5 +180,48 @@ assert.equal(cell.probes, null, "probes run only on the first run of a scenario"
 assert.equal(cell.execution.failureCode, "GENERATION_NONCONFORMANT");
 assert.equal(JSON.stringify(cell).includes(SECRET_TEXT), false);
 assert.equal(summarizeDiagnosticCells([cell]).stages.accepted_target_unresolved, 1);
+
+const droppingMerge = (_det: unknown, model: unknown) => ({
+  responseRelation: {
+    candidates: (model as { responseRelation: { candidates: Array<Record<string, unknown>> } })
+      .responseRelation.candidates.map((candidate) => ({
+        relation: candidate.relation,
+        confidence: candidate.confidence,
+        targetTurnId: candidate.targetTurnId,
+        evidence: [
+          ...(candidate.evidence as string[]),
+          "Target Assistant turn has no committed claims; unverifiable target claim text was dropped.",
+        ],
+      })),
+  },
+});
+const dropped = projectRawCandidates({ rawOutput: raw, context, deterministic, merge: droppingMerge });
+assert(dropped.candidates.length > 0);
+assert(dropped.candidates.every((candidate) => candidate.claimDroppedAsUnverifiable));
+assert.equal(
+  summarizeDiagnosticCells([{ ...cell, rawModel: dropped }]).claimDroppedAsUnverifiable,
+  dropped.candidates.length
+);
+assert(!projectRawCandidates({ rawOutput: raw, context, deterministic, merge: fakeMerge }).candidates
+  .some((candidate) => candidate.claimDroppedAsUnverifiable));
+
+const verification = buildClaimlessVerificationScenarios(dataset.scenarios);
+assert.deepEqual(verification.map((scenario) => scenario.id), [...CLAIMLESS_VERIFICATION_IDS]);
+for (const scenario of verification) {
+  const original = scenarios.find((item) => item.id === scenario.id);
+  assert.equal(scenario.userMessage, original?.userMessage);
+  assert.deepEqual(
+    scenario.recentMessages.map(({ id, role, content }) => ({ id, role, content })),
+    original?.recentMessages
+  );
+  for (const message of scenario.recentMessages) {
+    if (message.role === "assistant") {
+      assert.deepEqual(message.committedAssistantMove?.claims, []);
+      assert.equal(message.committedAssistantMove?.sourceTurnId, scenario.recentMessages[0]?.id);
+    } else {
+      assert.equal(message.committedAssistantMove, undefined);
+    }
+  }
+}
 
 console.log(JSON.stringify({ repairRecognitionDiagnosticCheck: "passed", realModelCallsInCheck: false }));

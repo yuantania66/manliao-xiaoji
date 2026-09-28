@@ -12,12 +12,30 @@ export type DiagnosticGroup =
   | "non_repair_control"
   | "trajectory_meta_repair";
 
+type DiagnosticCommittedMove = {
+  purpose: string[];
+  claims: [];
+  assumptions: [];
+  questionOrRequest: null;
+  expectedUserContribution: "none";
+  userBurden: "none";
+  sourceTurnId: string;
+  evidence: string[];
+};
+
 export type DiagnosticScenario = {
   id: string;
   group: DiagnosticGroup;
   userMessage: string;
-  recentMessages: Array<{ id: string; role: "user" | "assistant"; content: string }>;
+  recentMessages: Array<{
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    committedAssistantMove?: DiagnosticCommittedMove;
+  }>;
 };
+
+export type HistoryShape = "fixture" | "committed_claimless";
 
 export const AFFECTED_REPAIR_IDS = [
   "repair-advice-boundary",
@@ -36,6 +54,17 @@ export const TRAJECTORY_REPAIR_OBS = {
   userMessage: "你一点都不懂我",
 } as const;
 export const RUNS_PER_SCENARIO = 3;
+// Fix verification: scenarios whose repair was rejected only for an uncommitted target claim,
+// plus the repair controls, with history carrying the committed move production records.
+export const CLAIMLESS_VERIFICATION_IDS = [
+  "repair-intensity-exaggeration",
+  "repair-wrong-person",
+  "repair-repeated-claim",
+  "repair-direct-relationship-challenge",
+  "repair-moralizing",
+  ...PASSING_REPAIR_CONTROL_IDS,
+] as const;
+const UNVERIFIABLE_CLAIM_DROPPED_EVIDENCE_FRAGMENT = "unverifiable target claim text was dropped";
 
 const REPAIR_CONFIDENCE_THRESHOLD = 0.93;
 const ACCEPTANCE_MARKER = "repair-recognition-diagnostic:acceptance-marker";
@@ -97,6 +126,41 @@ export const buildDiagnosticScenarios = (preservationScenarios: unknown[]): Diag
       recentMessages: [],
     },
   ];
+};
+
+// Attaches the claimless committed move an ordinary validated reply records (no selected memory,
+// no required disclosure); the frozen fixture itself is not modified.
+export const withCommittedClaimlessHistory = (scenario: DiagnosticScenario): DiagnosticScenario => ({
+  ...scenario,
+  recentMessages: scenario.recentMessages.map((message, index) => {
+    if (message.role !== "assistant") return message;
+    const sourceTurnId = scenario.recentMessages
+      .slice(0, index)
+      .reverse()
+      .find((item) => item.role === "user")?.id ?? `${message.id}:source`;
+    return {
+      ...message,
+      committedAssistantMove: {
+        purpose: [],
+        claims: [],
+        assumptions: [],
+        questionOrRequest: null,
+        expectedUserContribution: "none",
+        userBurden: "none",
+        sourceTurnId,
+        evidence: ["repair-recognition-diagnostic:committed-claimless-history"],
+      },
+    };
+  }),
+});
+
+export const buildClaimlessVerificationScenarios = (preservationScenarios: unknown[]) => {
+  const scenarios = buildDiagnosticScenarios(preservationScenarios);
+  return CLAIMLESS_VERIFICATION_IDS.map((id) => {
+    const scenario = scenarios.find((item) => item.id === id);
+    if (!scenario) throw new Error(`Missing verification scenario ${id}.`);
+    return withCommittedClaimlessHistory(scenario);
+  });
 };
 
 // Mirrors the private extractor in services/ai/turnInterpretationAdapter.ts (identical at the
@@ -174,6 +238,7 @@ export type RawCandidateProjection = {
   targetPropositionMatchesCommittedClaim: boolean;
   targetPropositionEqualsTargetTurnText: boolean;
   acceptedBySideMerge: boolean;
+  claimDroppedAsUnverifiable: boolean;
   rejectionReason: string;
 };
 
@@ -241,8 +306,12 @@ export const projectRawCandidates = ({
       { responseRelation: { candidates: [{ ...raw, evidence: [ACCEPTANCE_MARKER] }] } },
       context ?? undefined
     );
-    const markerSurvived = candidatesOf(merged).some((item) =>
+    const survivor = candidatesOf(merged).find((item) =>
       asArray(item.evidence).includes(ACCEPTANCE_MARKER)
+    );
+    const markerSurvived = Boolean(survivor);
+    const claimDroppedAsUnverifiable = asArray(survivor?.evidence).some((item) =>
+      typeof item === "string" && item.includes(UNVERIFIABLE_CLAIM_DROPPED_EVIDENCE_FRAGMENT)
     );
     const absorbedByDeterministic = !markerSurvived && candidatesOf(deterministic).some((item) =>
       item.relation === raw.relation && (item.targetTurnId ?? null) === targetTurnId
@@ -261,6 +330,7 @@ export const projectRawCandidates = ({
       ),
       targetPropositionEqualsTargetTurnText: Boolean(proposition && targetTurn?.content === proposition),
       acceptedBySideMerge: accepted,
+      claimDroppedAsUnverifiable,
       rejectionReason: absorbedByDeterministic
         ? "absorbed_by_deterministic_candidate"
         : accepted ? "none" : rejectionReasonMirror(raw, context),
@@ -506,12 +576,21 @@ export const summarizeDiagnosticCells = (cells: DiagnosticCell[]) => {
   }
   const rawRelations: Record<string, number> = {};
   const rejectionReasons: Record<string, number> = {};
+  let claimDroppedAsUnverifiable = 0;
   for (const candidate of cells.flatMap((cell) => cell.rawModel.candidates)) {
     rawRelations[candidate.relation] = (rawRelations[candidate.relation] ?? 0) + 1;
+    if (candidate.claimDroppedAsUnverifiable) claimDroppedAsUnverifiable += 1;
     if (!candidate.acceptedBySideMerge) {
       const key = `${candidate.relation}:${candidate.rejectionReason}`;
       rejectionReasons[key] = (rejectionReasons[key] ?? 0) + 1;
     }
   }
-  return { cells: cells.length, stages, byScenario, rawRelations, rejectionReasons };
+  return {
+    cells: cells.length,
+    stages,
+    byScenario,
+    rawRelations,
+    rejectionReasons,
+    claimDroppedAsUnverifiable,
+  };
 };
