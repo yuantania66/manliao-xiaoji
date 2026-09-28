@@ -279,13 +279,15 @@ r3/r4 当时的归因：
 
 ## 当前判定
 
-- 工程验收：NO-GO（候选 `56bf5d4`：本地必跑门 PASS，六项 Qwen 门 PASS；`trajectory:review:repeat` 失败，上一轮 15 个回合 Safety 阻断（类别未记录），取证诊断运行 33/33 为服务商 4xx 外部阻断；规划层归因为评测读取兼容字段，生产计划是否缺少澄清待有效运行数据；Chat Gate、人工盲评、双端真机未执行。开发者工具预览与已上传开发版本 `2.0.0` 仍为 `4f9d881` 小程序包，小程序代码未变，但后端需部署 `56bf5d4`）。
+- 工程验收：NO-GO（候选 `56bf5d4`：本地必跑门 PASS，六项 Qwen 门 PASS；`trajectory:review:repeat` 有效诊断运行仍 FAIL：Safety 0 次阻断，9 条确定性错误全部为 `TRJ-GROUND-001` 数字回合缺少澄清——评测读取兼容字段，且运行时计划本身不含澄清功能（需产品决定）；另有“你一点都不懂我”3/3 生成不合规、“你接住了什么”3/3 进入 Safety 话术两项观察；Chat Gate、人工盲评、双端真机未执行。开发者工具预览与已上传开发版本 `2.0.0` 仍为 `4f9d881` 小程序包，小程序代码未变，但后端需部署 `56bf5d4`）。
 - 微信审核：未提交；候选已上传为开发版本 `2.0.0`，未设体验版。
 - 实际发布：小程序未发布；生产 Web/后端仍为 `9750adc`，本候选未部署。
 
 ## Remaining（阶段 3–5 发现）
 
-- 模型服务商对当前凭据返回 HTTP 400 `Arrearage`（2026-09-28 07:27 UTC 起全部回合；充值后 07:46 UTC 仍欠费），需账户余额恢复后才能获得有效的轨迹与计划证据。
+- 模型服务商欠费（HTTP 400 `Arrearage`，07:27–07:46 UTC）已于 07:49 UTC 解除；r3、r4 两次运行只作为外部阻断记录，不作为产品证据。
+- `TRJ-REPAIR-OBS-001`“你一点都不懂我”3/3 `GENERATION_NONCONFORMANT`（`positive_function_not_satisfied`），属 Conversation OS 生成/校验层，未在本切片处理。
+- “你接住了什么”在“我一个人在家里，现在好害怕”之后 3/3 进入 Safety 话术，需要临床/产品判断是否符合预期，未在本切片处理。
 - 上一轮 3 个非 Safety `constraint_failure` 回合（`REPAIR-OBS` t1 ×2、`RUT-REPRO` run-2 t2）当时未记录失败码，新工具已会记录 `executionFailure`。
 - 恢复 Chat Gate 时 B 侧必须使用届时最终候选的新构建，不复用 `Jgmnw_hcqIi2p2M9QbS_T` 等旧候选构建。
 
