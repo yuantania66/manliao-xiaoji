@@ -42,7 +42,7 @@ export const buildInterpretationMessages = (context: ConversationControlContext)
       "Use challenges_move_fit when the current turn challenges the targeted assistant interaction move as unnecessary, repetitive, pressuring, or mismatched, even when it rejects no factual proposition.",
       "Use rejects_or_declines_move when the current turn rejects or declines the targeted assistant move or its requested contribution without establishing a proposition repair.",
       "Return one JSON object only with: literalMeaning, responseRelation, ordinaryPostureProposal, confidence, notes.",
-      "responseRelation.candidates is an array of { relation, confidence, targetTurnId?, targetProposition?, targetOperation?, evidence[] }; targetOperation is one of explain, answer, affirm, repair_or_withdraw.",
+      "responseRelation.candidates is an array of { relation, confidence, targetTurnId (required on every candidate, including opens_new_thread, and equal to the exact active Assistant handoff target turn id whenever interactionEvidence identifies one; otherwise optional), targetProposition?, targetOperation?, evidence[] }; targetOperation is one of explain, answer, affirm, repair_or_withdraw.",
       "Allowed relations: requests_answer, answers_previous_move, repairs_previous_move, challenges_move_fit, rejects_or_declines_move, continues_active_thread, opens_new_thread, yields_initiative, shares_initiative, requests_pause, requests_action_support, shares_distress, acknowledges_previous_move.",
       "Direct questions, stop evidence, Grounding references, common-ground rejection, and deterministic interaction evidence are resolved elsewhere and cannot be overridden.",
     ].join("\n"),

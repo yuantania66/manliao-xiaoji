@@ -3,6 +3,7 @@ import { ExternalPromptRejectedError } from "./externalPromptInspection";
 import {
   createSafetyGeneration,
   isCrisisInput,
+  SAFETY_PROMPT_VERSION,
   triageSafety,
   type SafetySemanticProvider,
 } from "./chatSafety";
@@ -233,7 +234,7 @@ export const createChatReply = async ({
     const generation: AiGenerationResult = {
       text: "",
       model: "safety-gate",
-      promptVersion: "safety-semantic-triage-v2",
+      promptVersion: SAFETY_PROMPT_VERSION,
       latencyMs: 0,
       postProcessSteps: [],
       finalReplySource: "constraint_failure",

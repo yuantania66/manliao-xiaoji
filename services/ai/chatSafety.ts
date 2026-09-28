@@ -7,7 +7,7 @@ import {
 import { AppError } from "@/lib/errors";
 import type { AiConversationMessage, AiGenerationResult, AiModelMessage } from "./types";
 
-export const SAFETY_PROMPT_VERSION = "safety-semantic-triage-v2";
+export const SAFETY_PROMPT_VERSION = "safety-semantic-triage-v3";
 export const SAFETY_SCHEMA_VERSION = 1 as const;
 
 export type SafetyRiskLevel = "none" | "concern" | "imminent";
@@ -266,7 +266,7 @@ const buildSafetyMessages = ({
   return [
     {
       role: "developer",
-      content: `你是聊天入口的 Safety 风险分诊器，只做判定，不生成回复。输出必须是单个 JSON object，不得有 Markdown、解释或额外字段。\nexact schema: {"schemaVersion":1,"riskLevel":"none|concern|imminent","categories":["self_harm|suicide|harm_to_others|overdose|domestic_violence|immediate_physical_danger"],"currentness":"current|past|quoted|hypothetical|uncertain","evidence":[{"text":"当前用户消息中的唯一原文片段"}],"requiresSafetyResponse":true}\nevidence 每项只能有 text，必须逐字引用当前用户消息中只出现一次的非空原文片段；不要输出索引。\n只评估当前用户本人的现实风险；明确归属于朋友、访谈对象、作品角色或其他第三方的危险表达属于 quoted，不得当作当前用户风险。仅有引文或括注而无法确认主体时不得假定安全，应使用 uncertain 并路由 Safety。riskLevel=none 时 categories 与 evidence 必须为空且 requiresSafetyResponse=false；currentness 仍按风险内容的实际语境选择 current、past、quoted 或 hypothetical。concern/imminent 必须至少有一个 category 和 evidence，且 requiresSafetyResponse=true。无法可靠排除当前现实危险时使用 currentness=uncertain、riskLevel=concern、requiresSafetyResponse=true。纯引用、假设、明确过去且现在安全、明确否定且没有混合当前危险时输出 none。新闻/电影/否定词不能覆盖同一句中后续出现的当前危险。${repairInstruction}`,
+      content: `你是聊天入口的 Safety 风险分诊器，只做判定，不生成回复。输出必须是单个 JSON object，不得有 Markdown、解释或额外字段。\nexact schema: {"schemaVersion":1,"riskLevel":"none|concern|imminent","categories":["self_harm|suicide|harm_to_others|overdose|domestic_violence|immediate_physical_danger"],"currentness":"current|past|quoted|hypothetical|uncertain","evidence":[{"text":"当前用户消息中的唯一原文片段"}],"requiresSafetyResponse":true}\nevidence 每项只能有 text，必须逐字引用当前用户消息中只出现一次的非空原文片段；不要输出索引。\n只评估当前用户本人的现实风险；明确归属于朋友、访谈对象、作品角色或其他第三方的危险表达属于 quoted，不得当作当前用户风险。仅有引文或括注而无法确认主体时不得假定安全，应使用 uncertain 并路由 Safety。riskLevel=none 时 categories 与 evidence 必须为空且 requiresSafetyResponse=false，currentness 不得为 uncertain：消息含风险相关内容时按其实际语境选择 current、past、quoted 或 hypothetical；消息与相邻上下文都没有任何风险内容（如问候、数字、求建议、说不知道怎么说）时使用 current。uncertain 只用于无法可靠排除当前现实危险、必须路由 Safety 的情况。单独的自我否定、自责、自卑或低落本身不是自伤或自杀信号；当前消息与相邻上下文都没有伤害自己的意图、结束生命的想法、计划、手段准备或正在实施的行为时输出 none；出现任一此类信号时照常判定风险。concern/imminent 必须至少有一个 category 和 evidence，且 requiresSafetyResponse=true。无法可靠排除当前现实危险时使用 currentness=uncertain、riskLevel=concern、requiresSafetyResponse=true。纯引用、假设、明确过去且现在安全、明确否定且没有混合当前危险时输出 none。新闻/电影/否定词不能覆盖同一句中后续出现的当前危险。${repairInstruction}`,
     },
     {
       role: "user",
