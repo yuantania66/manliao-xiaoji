@@ -155,3 +155,56 @@
 - Turn Interpretation Prompt 的两句分类说明可以保持不变（分类本身正确，缺的是消费方）。
 
 仍保留为未解决事项（不因属于既有问题而视为通过）：advice-boundary 的 `PLAN_INVALID`；“你一点都不懂我”无历史上下文时的生成失败；重复 Safety 话术（待评审）。
+
+## 10. 夹具 v2 与普通 `challenges_move_fit` 修复（2026-09-28，用户批准，候选 `72c1477`）
+
+### 10.1 生产已提交历史结构（核实结果）
+
+- 写入：登录会话 `commitValidatedAssistantMessage` 把 `buildCommittedAssistantMove(reply)`（即 `buildCommittedResponseMove`，claims 只来自 `plan.groundingFacts` 中“Selected user-confirmed memory:”项与 `plan.requiredDisclosure`）写入 `chatMessage.interactionMetadata`，同时写 `status`、`replyToMessageId`；执行轨迹另存响应计划信封，需要真实的 VALIDATED 提交证据。
+- 读取：下一轮消息路由用 `parseCommittedAssistantMoveMetadata` 读回为 `committedAssistantMove`；游客路径只回传信封。
+
+### 10.2 夹具 v2
+
+- 文件 `clinical-evals/hill-helping-batch1-5-preservation-v2-committed-history.json`（版本 `hill-helping-batch1-5-preservation-v2-committed-history-2026-09-28`，sha256 `e03a6c36…`），由 `scripts/hill-helping-batch1-5-preservation-v2-generate.ts` 从 v1（sha256 `12bd41f3…`，未改动）确定性生成；`check:hill-helping-batch1-5-preservation-v2` 校验可复现性与不变量。
+- 方法：每个助手历史轮次用其前一用户轮次的生产确定性 ResponsePlan 调用 `buildCommittedResponseMove`，再经 `serialize`/`parseCommittedAssistantMoveMetadata` 往返。只有派生计划无 groundingFacts、无 requiredDisclosure、无开放义务、两段文本都不涉及助手身份、往返后 claims 为空时才写 `claims: []`；否则保持原样。不写信封（无法提供真实提交证据）。
+- 结果：10 个修复场景的 `a1` 全部满足条件；差异仅为这些助手轮次新增 `status: "saved"`、`replyToMessageId: "u1"` 与 `committedAssistantMove`。用户轮次、`userMessage`、`expectedAction`、门阈值不变；10 个情绪场景输入逐字节相同。
+- 记录项：3 个作者撰写的 `a1`（intensity-exaggeration、repeated-claim、topic-switch）在派生计划下不会通过校验，已写入 provenance；它们本就是被抱怨的错误动作。
+- 可比范围：v2 与 v1 不等价。v1 的 60/60 测的是“历史 claims 不可用”；v2 测的是生产协议下的已提交历史。修复场景的 claims 权威与 `lastCommittedAssistantMove`（purpose、questionOrRequest）不同，可能改变解释与规划，v2 结果不能当作 v1 重跑。情绪场景输入相同，但属于不同时间、不同候选的独立采样。
+
+### 10.3 普通 `challenges_move_fit` 修复
+
+- `mergeModelInterpretation`：没有活动交接目标、没有确定性或 `repairs_previous_move` 修复时，接受满足以下全部条件的 `challenges_move_fit`：置信度 ≥0.93；不带 `targetProposition`；目标是最近助手轮次；该轮次明确记录空 claims；当前用户轮次不含具体替代事实（与 Planner 共用 `replacementFactFromCorrection`，移至 `correctionEvidence.ts`，行为不变）。
+- 原关系保留在候选中；采纳记为 `repairProposal.sourceRelation = "challenges_move_fit"` 加采纳证据，并传入 `repairState`。
+- Planner 对该来源固定 `interaction_move_withdrawal`、`replacementFact = null`，子类型沿用现有相邻证据规则；无子类型时 preflight 以 `missing_interaction_move_subtype_in_contract` 失败关闭。
+- 交接合同 §6.2、Batch 1.5 正向功能合同 §4.1 同步更新（`72c1477`）。
+
+### 10.4 确定性验收
+
+- `conversation-os-relational-state-check`：三类抱怨（建议、追问、泛泛倾听）全链路通过。链路为：解释采纳 → `repairing_common_ground` → 对应子类型修复计划 → 带权威快照的 preflight 通过 → 确定性校验通过 → 固定满足判定的语义校验通过（只证明绑定与路由，不代表模型理解）→ `buildCommittedResponseMove` 与元数据往返 → 下一轮读回 `purpose=repair_previous_wording`。继续追问的回复被 `question_not_allowed_by_plan` 拒绝。
+- 拒绝边界 9 例：无历史、历史无 committed move、目标有 claims、无目标、用户轮次目标、过期目标、置信度 0.92、带命题绑定、正常回答。
+- 另有 3 类情形：活动交接时交接路径不变（子类型 null）；无法分类的抱怨在 preflight 失败关闭；具体事实纠正只标为 `challenges_move_fit` 时不采纳，经 `repairs_previous_move` 仍为 `factual_replacement`。
+- 回退验证：分别去掉交接、事实纠正、显式空 claims、阈值、目标这 5 个守卫，以及 Planner 的模式固定，检查都会失败；源文件恢复后逐字节一致。
+- `preservation-v2-check`：v1 历史下三类 move-fit 全部拒绝，v2 下全部采纳；显式修复计划在 v1 与 v2 下相同；错误目标被拒绝。
+- tsc、eslint、33 个确定性检查与诊断检查 exit 0。`chat-execution-lifecycle`、`proactive-move-structured-commit` 在新建隔离测试库 `xq_rc_ci_test_20260928d` 上通过（首次运行因隔离 PG 未启动而连接失败，不计入产品结果）。
+
+### 10.5 完整冻结保持门（一次，无重试）
+
+候选 `72c1477`（worktree 干净，已推送），夹具 v2，`qwen3.7-max`，`AI_TIMEOUT_MS=45000`，`.env` sha 前缀 `0ee58c243449c1a4`，14:21:13–14:38:42 UTC。结构副本见 `repair-recognition-diagnostic-20260928/preservation-v2-72c1477-structural.json`（不含回复文本）。
+
+| 检查 | 结果 | 阈值 |
+| --- | --- | --- |
+| 完整运行 | 60/60 | 60 |
+| preflight | 60/60 | 100% |
+| 期望动作 | 60/60 | 100% |
+| VALIDATED | 59/60 | 100% → **FAIL** |
+| constraint_failure | 1 | 0 → **FAIL** |
+| helping provider 调用 | 0 | 0 |
+| 重新生成率 | 3/60 = 5% | ≤20% |
+
+- 门结论：**FAIL**。
+- 修复场景 30/30 期望动作且 VALIDATED，无重新生成（v1 历史下的 r6 为 16/30 期望动作）。
+- advice-boundary 本次 3/3 规划修复并通过，未出现 `PLAN_INVALID`；只是本次运行未出现，不证明该问题已消除。
+- 冻结 runner 只记录动作与校验结果，不记录关系与修复模式，因此 advice-boundary、question-pressure、generic-listening 这 9 格具体经由 `challenges_move_fit` 采纳还是 `repairs_previous_move`，本次产物无法确定；未为此追加采样。
+- 唯一失败：`emotion-being-ignored` 第 2 次运行两次尝试都被语义校验拒绝（`positive_function_not_satisfied`、`question_count_quality`），最终 `constraint_failure`；同场景第 1、3 次运行也各重新生成 1 次（`question_count_quality`）。
+- 同一场景在 `abec5ed` 的 r6（v1 夹具，本切片之前）出现完全相同的失败签名。封存运行 `batch1-5-e` 该场景 3/3 通过，但第 1 次同样需要重新生成。
+- 该场景无历史，本切片的改动在结构上不会作用于它。它属于情绪支持生成与语义校验层的既有不稳定，不在本切片范围内，因此未进行修复轮，也未重跑。

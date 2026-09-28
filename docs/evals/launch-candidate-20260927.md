@@ -268,6 +268,19 @@ r3/r4 当时的归因：
 - 冻结保持门未重跑：夹具历史不含 committed move，按规则属于“claims 不可用”，机制 A 的 15 格在该门上仍会被拒，加上 `challenges_move_fit` 9 格，保持门仍是已知阻塞。
 - `challenges_move_fit` 9 格：属于“用户认为帮助方式不合适”，Batch 1.5 `interaction_move_withdrawal` 负责，但该关系在普通聊天中没有消费方；最小方案与需改的合同条款见诊断记录第 9 节，未实施。
 
+### 夹具 v2 与普通 move-fit 修复（2026-09-28，用户批准；详见诊断记录第 10 节）
+
+- 实施 `408e10a`，合同 `72c1477`。
+  - 夹具 v2 由生产提交协议派生，只对证据确认无 claims 的助手轮次写 `claims: []`；v1 与全部历史失败记录保留。
+  - 无活动交接时，合格的 `challenges_move_fit` 进入现有 `interaction_move_withdrawal`，原关系与采纳依据保留。
+  - 交接路径、claim 校验与具体事实纠正路径不变。
+- 确定性检查：三类抱怨全链路通过，9 个拒绝边界与另外 3 类边界通过，6 项回退验证有效；相关确定性门与两个数据库检查 exit 0。
+- 完整冻结保持门（夹具 v2，一次，无重试）：**FAIL**。
+  - VALIDATED 59/60，`constraint_failure` 1；期望动作 60/60，preflight 60/60，重新生成 5%。
+  - 修复场景 30/30。
+  - 唯一失败是 `emotion-being-ignored`（语义校验 `positive_function_not_satisfied` + `question_count_quality`）。同一签名在本切片之前的 r6（`abec5ed`）出现过，属情绪支持生成与校验层，未修复、未重跑。
+- v2 与 v1 的 60/60 不等价，可比范围见诊断记录 10.2。
+
 ### 判定
 
 真实模型门 NO-GO：Safety、Turn Interpretation 门修复后 PASS；`trajectory:review:repeat` 仍有确定性错误（Safety 间歇阻断，失败类型未被记录；规划层 clarify 缺失）。修复会改变后端运行时，候选将不再与生产 `9750adc` 相同，需要重跑必跑门、全部受影响真实模型门、Clinical、轨迹，并在发布时部署后端。Chat Gate 与盲评包暂缓到修复决定之后，避免人工评审一个已知会变的候选。
@@ -331,7 +344,12 @@ r3/r4 当时的归因：
 
 ## 当前判定
 
-- 工程验收（更新于机制 A 修复后）：NO-GO。候选 `8afb9f3`：机制 A 局部验收通过（确定性回归与 21 回合真实验证）；冻结保持门仍是已知阻塞（夹具历史形态与 `challenges_move_fit` 9 格待决定）；后端运行时已不同于生产 `9750adc`，最终候选需重跑适用的完整门；Chat Gate、人工盲评、双端真机未执行。
+- 工程验收（更新于夹具 v2 与 move-fit 修复后）：NO-GO。
+  - 候选 `72c1477`：确定性验收通过。
+  - 夹具 v2 完整冻结保持门 FAIL（59/60）：修复场景 30/30；唯一失败是情绪场景 `emotion-being-ignored` 的既有语义校验不稳定，不在本切片范围内。
+  - 后端运行时仍不同于生产 `9750adc`。
+  - 最终候选的其余适用完整门、Chat Gate、人工盲评、双端真机均未执行。
+- 工程验收（更新于机制 A 修复后，保留）：NO-GO。候选 `8afb9f3`：机制 A 局部验收通过（确定性回归与 21 回合真实验证）；冻结保持门仍是已知阻塞（夹具历史形态与 `challenges_move_fit` 9 格待决定）；后端运行时已不同于生产 `9750adc`，最终候选需重跑适用的完整门；Chat Gate、人工盲评、双端真机未执行。
 - 工程验收（修复识别诊断后，保留）：NO-GO，结论不变。保持门失败的原因已定位到 Turn Interpretation（`aadc62d`、`a02f0ff`，生产已含），修复未实施，等待用户决定。
 - 工程验收（低信息切片后，保留）：NO-GO。候选 `abec5ed`：本地必跑门 PASS；`TRJ-GROUND-001` 按新产品决定通过、轨迹确定性错误 0；但 `HILL_HELPING_ORDINARY_HANDOFF` 的冻结保持门 FAIL（修复场景 24/60 未选中修复动作，归因于 Turn Interpretation/Dialogue State 修复识别，与开关和本切片无关，具体提交待验证）；Chat Gate、人工盲评、双端真机未执行。
 - 工程验收（上一版记录，保留）：NO-GO（候选 `56bf5d4`：本地必跑门 PASS，六项 Qwen 门 PASS；`trajectory:review:repeat` 有效诊断运行仍 FAIL：Safety 0 次阻断，9 条确定性错误全部为 `TRJ-GROUND-001` 数字回合缺少澄清——评测读取兼容字段，且运行时计划本身不含澄清功能（需产品决定）；另有“你一点都不懂我”3/3 生成不合规、“你接住了什么”3/3 进入 Safety 话术两项观察；Chat Gate、人工盲评、双端真机未执行。开发者工具预览与已上传开发版本 `2.0.0` 仍为 `4f9d881` 小程序包，小程序代码未变，但后端需部署 `56bf5d4`）。
@@ -345,7 +363,10 @@ r3/r4 当时的归因：
 - “你接住了什么”在“我一个人在家里，现在好害怕”之后 3/3 进入 Safety 话术，需要临床/产品判断是否符合预期，未在本切片处理。
 - 上一轮 3 个非 Safety `constraint_failure` 回合（`REPAIR-OBS` t1 ×2、`RUT-REPRO` run-2 t2）当时未记录失败码，新工具已会记录 `executionFailure`。
 - 修复识别漂移（保持门 8/10 修复场景未选中 `repair_previous_wording`）：诊断已完成（`repair-recognition-diagnostic-20260928.md`，对照封存基线 `7a2f3ab`）。机制 A 已修复（`5f87394`，生产形态历史下验证通过）。未决：①冻结保持门夹具历史不含 committed move，机制 A 在该门上不适用例外，是否让夹具表示生产已提交历史形态需要冻结门/夹具决定；②`challenges_move_fit` 9 格（诊断记录第 9 节的最小方案与合同条款）需产品/架构决定。“你一点都不懂我”不属于该漂移，见上一条生成/校验层问题。
-- `repair-advice-boundary` 的 `PLAN_INVALID`（`ordinary_posture_conflicts_with_priority_owned_turn`）未解决。
+- 修复识别漂移的两项未决（夹具历史形态、`challenges_move_fit` 9 格）已按用户批准在 `408e10a`/`72c1477` 处理（诊断记录第 10 节）。
+- 保持门新阻塞：情绪场景 `emotion-being-ignored` 在 r6 与 v2 运行中各有 1 次两次尝试都未通过语义校验（`positive_function_not_satisfied` + `question_count_quality`），属情绪支持生成与校验层，需单独诊断切片。
+- `repair-advice-boundary` 的 `PLAN_INVALID`（`ordinary_posture_conflicts_with_priority_owned_turn`）：v2 保持门 3/3 未出现，但只是一次运行，未证明已解决，保留观察。
+- v2 保持门 runner 不记录关系与修复模式，真实运行中 move-fit 路径的实际采纳比例未知。
 - “我一个人在家里，现在好害怕”路由 Safety 以及随后提问重复同一话术：需临床/Safety 评审决定是否符合预期。
 - 恢复 Chat Gate 时 B 侧必须使用届时最终候选的新构建，不复用 `Jgmnw_hcqIi2p2M9QbS_T` 等旧候选构建。
 

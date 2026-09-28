@@ -1,0 +1,1570 @@
+{
+  "schemaVersion": 1,
+  "note": "Structural copy of the full frozen preservation gate run; reply texts omitted. Full local artifact kept outside the repository.",
+  "candidateHead": "72c1477",
+  "sourceId": "v2-72c1477",
+  "datasetPath": "clinical-evals/hill-helping-batch1-5-preservation-v2-committed-history.json",
+  "datasetVersion": "hill-helping-batch1-5-preservation-v2-committed-history-2026-09-28",
+  "datasetSha256": "e03a6c365c1fe16ea2279e7b9d084b881352c95eefe83975c17fdb2f305ccf59",
+  "provider": "qwen",
+  "model": "qwen3.7-max",
+  "aiTimeoutMs": 45000,
+  "envSha256Prefix": "0ee58c243449c1a4",
+  "retries": "none",
+  "startedAt": "2026-09-28T14:21:13.853Z",
+  "completedAt": "2026-09-28T14:38:42.795Z",
+  "gate": {
+    "runsPerScenario": 3,
+    "scenarioCount": 20,
+    "requiredValidatedRate": 1,
+    "requiredExpectedActionRate": 1,
+    "maximumConstraintFailures": 0,
+    "maximumHelpingProviderCalls": 0,
+    "maximumRegenerationRate": 0.2
+  },
+  "summary": {
+    "total": 60,
+    "validated": 59,
+    "validatedRate": 0.9833333333333333,
+    "preflightPassed": 60,
+    "preflightPassedRate": 1,
+    "expectedAction": 60,
+    "expectedActionRate": 1,
+    "constraintFailures": 1,
+    "helpingProviderCalls": 0,
+    "regenerations": 3,
+    "regenerationRate": 0.05
+  },
+  "checks": {
+    "completeRunCount": true,
+    "preflightPassed": true,
+    "validatedRate": false,
+    "expectedActionRate": true,
+    "constraintFailures": false,
+    "helpingProviderCalls": true,
+    "regenerationRate": true
+  },
+  "passed": false,
+  "rows": [
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15512
+    },
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15308
+    },
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 18124
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 21484
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15475
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 20205
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 18012
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15365
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16460
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 18704
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 18303
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 22680
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16164
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15942
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16387
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attemptValidationFailures": [
+        [
+          "planned_function_semantic:question_count_quality"
+        ],
+        [
+          "planned_function_semantic:question_count_quality"
+        ]
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 23261
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "FAILED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "constraint_failure",
+      "validationPassed": false,
+      "validationFailures": [
+        "planned_function_semantic:positive_function_not_satisfied",
+        "planned_function_semantic:question_count_quality"
+      ],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attemptValidationFailures": [
+        [
+          "planned_function_semantic:positive_function_not_satisfied",
+          "planned_function_semantic:question_count_quality"
+        ],
+        [
+          "planned_function_semantic:positive_function_not_satisfied",
+          "planned_function_semantic:question_count_quality"
+        ]
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 24115
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attemptValidationFailures": [
+        [
+          "planned_function_semantic:question_count_quality"
+        ],
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 23562
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 17289
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14270
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15074
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 19441
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15835
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15434
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 19879
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16445
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15478
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 20044
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16543
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15870
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 7437
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 11419
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 8291
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16154
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15512
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15048
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16746
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 21340
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 23548
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16955
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16077
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16630
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13781
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 19938
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 21819
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 17155
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16706
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 22331
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15010
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15359
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15343
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 24288
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 24682
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 19953
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 18758
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 17837
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15177
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14763
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 19474
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attemptValidationFailures": [
+        []
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14736
+    }
+  ]
+}
