@@ -186,6 +186,21 @@
 
 Safety 门已用满两轮修复预算，本轮停止修改 Safety。Chat Gate 与盲评包按用户“通过后继续”的条件未执行；A 侧构建（`tiJhhRe7M8QRa0wVhgj7x`）保留，B 侧需使用 `56bf5d4` 构建。
 
+### 评测取证切片（2026-09-28，用户批准；不改产品逻辑，不重置 Safety 修复预算）
+
+版本区分：受测产品 `56bf5d4`（运行前后 `git diff --quiet 56bf5d4 -- services conversation-os lib prisma app miniprogram-project` 均为真；运行器内产品源码指纹前后一致 `sha256:dfdc9573…ba7d90`）；评测工具 `fe64c2a`（runner `conversation-trajectory-runner-v1-forensics-1`，工具指纹 `sha256:9ffe57b7…fcd615`）。worktree 无其他写入者；`.env` 指纹 `0ee58c24…` 与上一轮相同。
+
+工具改动（仅 `scripts/conversation-trajectory-eval-{lib,runner,check}.ts`）：每个真实模式回合按 caseId / runIndex / turnId 记录 Safety 结果（`passed_to_planner`、`routed_safety_response`、`blocked_fail_closed`、`unknown`），失败类型与类别只从现有 `execution.failure.reason`（`safety_semantic_<category>`）和 `execution.transitions` 解析，未注册或缺失的值记为 `unknown`；逐次尝试的 `attemptTrace` 未透传到 `ChatReplyResult`，记为 `not_exposed_by_chat_reply_result`。同时并列记录评测字段来源 `clinicalTrace.selectedPlan`（是否存在）与运行时 `controlTrace.responsePlan`（planId、responseActions、questionPolicy、closurePolicy、clinicalStrategy 等枚举值），不做映射，原结构断言不变。非枚举文本一律记为 `unrecognized`，不写入原始 provider 错误、Prompt 或用户原文。确定性检查 `check:conversation-trajectories` 覆盖 7 种失败类别保留、缺失/格式异常记 unknown、原始 provider 文本不进报告、路由与阻断区分、评测字段保持未映射；`check:trajectory-experiments`、`tsc`、eslint 通过。
+
+上一轮记录更正（从 `r2` 备份报告逐回合统计）：Safety 阻断共 15 个回合，不是此前写的 4 个；它们从 run-2 `TRJ-RUT-REPRO-001` t3 起连续覆盖到运行结束，此前 18 个回合没有一次阻断。另有 3 个回合为模型判定进入 Safety 回复（run-1 `RUT-REPRO` t3、`META-REPRO` t1/t2），3 个回合为非 Safety 的 `constraint_failure`（run-1/2 `REPAIR-OBS` t1、run-2 `RUT-REPRO` t2，当时未记录失败码）。
+
+诊断运行（`trajectory:review:repeat`，冻结三次重复与原重试规则，07:27:30–07:27:50 UTC，exit 0）：33/33 回合 `blocked_fail_closed`，类型全部 `provider_error`，类别全部 `provider_4xx`（服务商拒绝请求，不可重试）。没有回合进入 Planner，因此本次不产生任何计划证据。按用户要求未追加采样，也未额外调用模型探测 4xx 的具体状态码。报告与取证 JSON 保存在本机 `~/.xq-rc-wx/gates/r3-*`，不提交。
+
+归因：
+
+- Safety：本次失败分类为服务商 4xx，属于外部阻断。上一轮 15 个回合“连续到运行结束”的形态与服务商在运行中途开始拒绝请求一致，但上一轮未记录类别，不能证实为同一原因。本次既未复现也未排除模型无效输出，不能据此判定 Safety 已修复。
+- Planner：评测读取的是兼容字段。代码显示 `clinicalTrace.selectedPlan` 只在 Response Planner 调用临床建议时写入，普通路径成功时计划位于 `controlTrace.responsePlan`；上一轮 7 个 `selectedResponseGoal: missing` 回合的 source 均为 `llm`/`llm_regenerate`，即已完成规划和生成。`ResponsePlan` 没有 responseGoal / responseIntent / questionFunction 字段，夹具期望 `clarify / clarify_meaning` 属于旧 ClinicalPlan 词表。生产计划是否缺少澄清功能尚未判定：上一轮未记录 responsePlan，本次因 4xx 没有计划数据。
+
 ### 判定
 
 真实模型门 NO-GO：Safety、Turn Interpretation 门修复后 PASS；`trajectory:review:repeat` 仍有确定性错误（Safety 间歇阻断，失败类型未被记录；规划层 clarify 缺失）。修复会改变后端运行时，候选将不再与生产 `9750adc` 相同，需要重跑必跑门、全部受影响真实模型门、Clinical、轨迹，并在发布时部署后端。Chat Gate 与盲评包暂缓到修复决定之后，避免人工评审一个已知会变的候选。
@@ -249,7 +264,7 @@ Safety 门已用满两轮修复预算，本轮停止修改 Safety。Chat Gate �
 
 ## 当前判定
 
-- 工程验收：NO-GO（本地必跑门、开发者工具预览、服务器 `audit:prod-env` PASS；真实模型门 Safety 与 Turn Interpretation 失败，Safety 对无风险短消息确定性阻断；Chat Gate、人工盲评、双端真机未执行）。
+- 工程验收：NO-GO（候选 `56bf5d4`：本地必跑门 PASS，六项 Qwen 门 PASS；`trajectory:review:repeat` 失败，上一轮 15 个回合 Safety 阻断（类别未记录），取证诊断运行 33/33 为服务商 4xx 外部阻断；规划层归因为评测读取兼容字段，生产计划是否缺少澄清待有效运行数据；Chat Gate、人工盲评、双端真机未执行。开发者工具预览与已上传开发版本 `2.0.0` 仍为 `4f9d881` 小程序包，小程序代码未变，但后端需部署 `56bf5d4`）。
 - 微信审核：未提交；候选已上传为开发版本 `2.0.0`，未设体验版。
 - 实际发布：小程序未发布；生产 Web/后端仍为 `9750adc`，本候选未部署。
 
