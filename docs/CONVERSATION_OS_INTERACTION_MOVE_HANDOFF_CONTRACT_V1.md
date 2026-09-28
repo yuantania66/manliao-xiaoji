@@ -344,6 +344,18 @@ lifecycle record.
   proposition exists in that exact committed Assistant event. The current User
   question can remain the obligation's `question`, but can never be substituted
   for its target proposition. Missing or mismatched claim bindings fail closed.
+- Claimless-target repair (clarified 2026-09-28): the exact-binding rule applies
+  when the target Assistant event has committed claims. When a
+  `repairs_previous_move` candidate targets the latest adjacent committed
+  Assistant event, meets the existing 0.93 repair threshold, uses
+  `targetOperation=repair_or_withdraw`, and that event explicitly records an
+  empty claim list (a valid committed move or valid move envelope with
+  `claims: []`), the unverifiable `targetProposition`/`targetOperation` are
+  discarded and the repair stays bound to that Assistant event as a whole. No
+  claim binding is created or inferred. The exception never applies when the
+  target is missing, unknown, a User event, or not the latest Assistant event, or
+  when committed-move data is absent or invalid: unavailable claims are not
+  absent claims. Other relations and operations keep exact binding.
 - `challenges_move_fit` covers rejection of an interaction move as unnecessary,
   repetitive, pressuring or mismatched. It does not require rejection of a
   concrete factual proposition.
