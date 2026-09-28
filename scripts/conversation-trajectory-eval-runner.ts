@@ -9,9 +9,11 @@ import type { AiConversationMessage } from "../services/ai/types";
 import {
   TRAJECTORY_REPORT_PATH,
   TRAJECTORY_RUNNER_VERSION,
+  buildCommittedHistoryEntry,
   buildTrajectoryChecks,
   buildTurnResult,
   collectForensicsRecords,
+  describeFeatureFlags,
   computeEvalToolFingerprint,
   computeProductSourceFingerprint,
   computeRelevantSourceFingerprint,
@@ -78,7 +80,8 @@ const run = async () => {
       const turns = [];
 
       for (const turn of trajectory.turns) {
-        recentMessages.push({ role: "user", content: turn.user });
+        const userTurnId = `trajectory-eval-${trajectory.id}-run-${runIndex}-${turn.turnId}`;
+        recentMessages.push({ id: userTurnId, role: "user", content: turn.user, status: "saved" });
 
         if (mode === "replay") {
           const replayTurn = buildTurnResult({ turn, assistant: turn.observedAssistant ?? null, mode });
@@ -93,6 +96,7 @@ const run = async () => {
             : recentMessages.slice(0, -1);
           const result = await createChatReply({
             conversationId: `trajectory-eval-${trajectory.id}-run-${runIndex}`,
+            currentTurnId: userTurnId,
             userId: "trajectory-eval-user",
             userMessage: turn.user,
             recentMessages: adaptedRecentMessages,
@@ -101,7 +105,8 @@ const run = async () => {
           });
           const assistant = result.generation.text;
           turns.push(buildTurnResult({ turn, assistant, result, mode }));
-          recentMessages.push({ role: "assistant", content: assistant, promptVersion: result.generation.promptVersion });
+          const committed = buildCommittedHistoryEntry(result, `${userTurnId}-assistant`);
+          if (committed) recentMessages.push(committed);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           turns.push(buildTurnResult({ turn, assistant: null, mode, error: message }));
@@ -155,6 +160,7 @@ const run = async () => {
       productUnderTest,
       productSourceFingerprint,
       evalToolFingerprint,
+      featureFlags: describeFeatureFlags(),
     },
     results
   );
@@ -172,6 +178,7 @@ const run = async () => {
           evalToolFingerprint,
           productUnderTest,
           productSourceFingerprint,
+          featureFlags: describeFeatureFlags(),
           summary: forensicsSummary,
           records: forensicsRecords,
         },
@@ -202,6 +209,7 @@ const run = async () => {
         productUnderTest,
         productSourceFingerprint,
         evalToolFingerprint,
+        featureFlags: describeFeatureFlags(),
         forensicsOutput,
         forensics: mode === "real" ? forensicsSummary : null,
       },

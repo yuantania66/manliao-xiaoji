@@ -4,8 +4,10 @@ import { existsSync, readFileSync } from "node:fs";
 import {
   TRAJECTORY_REPORT_PATH,
   TRAJECTORY_RUNNER_VERSION,
+  buildCommittedHistoryEntry,
   buildTrajectoryChecks,
   buildTurnResult,
+  checkOrdinaryPlan,
   collectForensicsRecords,
   computeRelevantSourceFingerprint,
   extractTurnForensics,
@@ -128,6 +130,13 @@ assert.equal(routedForensics.safety.outcome, "routed_safety_response");
 assert.equal(routedForensics.safety.failureCategory, "none");
 assert.equal(routedForensics.safety.routedDecision, "channel=semantic risk=concern categories=self_harm|suicide currentness=current");
 assert.equal(routedForensics.executionFailureCode, "none");
+function routedResultForPlanCheck() {
+  return makeResult({
+    finalSource: "safety",
+    clinicalTrace: { skippedBySafety: true },
+    execution: { turnId: "turn-routed", phase: "VALIDATED", attempts: [], transitions: [] },
+  });
+}
 
 const plannedResult = makeResult({
   finalSource: "llm",
@@ -159,9 +168,109 @@ assert.deepEqual(plannedTurn.forensics.plan.responseActions, ["acknowledge_witho
 assert.equal(plannedTurn.forensics.plan.questionPolicy, "one_low_pressure_question");
 assert.equal(plannedTurn.selectedResponseGoal, "missing", "evaluator field must stay unmapped");
 assert(
-  plannedTurn.machineCheckErrors.some((error) => error === "responseGoal mismatch: expected=clarify, actual=missing"),
-  "existing structure assertion must be unchanged"
+  !plannedTurn.machineCheckErrors.some((error) => error.startsWith("responseGoal mismatch")),
+  "GROUND-001 ordinary turns no longer read the legacy clinical structure"
 );
+assert(
+  plannedTurn.machineCheckErrors.includes("ordinaryPlan reply question count mismatch: expected=1, actual=0"),
+  "a plan that only permits a question does not complete calibration"
+);
+
+const ordinaryPlanResult = (overrides: {
+  responseActions: string[];
+  questionPolicy: string;
+  phase?: string;
+  failure?: { code: string; reason: string; retryable: boolean };
+}) =>
+  makeResult({
+    finalSource: overrides.phase === "FAILED" ? "constraint_failure" : "llm",
+    controlTrace: {
+      clinicalInvoked: false,
+      responsePlan: {
+        planId: "plan-ordinary",
+        behaviorSource: "ordinary_conversation",
+        planningDepth: "standard",
+        responseActions: overrides.responseActions,
+        questionPolicy: { mode: overrides.questionPolicy, reason: "synthetic" },
+        closurePolicy: { mode: "forbid_closure", reason: "synthetic" },
+        clinicalStrategy: null,
+        positiveFunctionContract: null,
+        interactionMoveHandoffPlan: null,
+        groundingFacts: [],
+        requiredDisclosure: [],
+        relevanceProvenance: [],
+      },
+    },
+    execution: {
+      requestId: "req-ordinary",
+      planId: "plan-ordinary",
+      turnId: "turn-ordinary",
+      phase: overrides.phase ?? "VALIDATED",
+      transitions: [],
+      attempts: [],
+      ...(overrides.failure ? { failure: overrides.failure } : {}),
+    },
+  });
+const calibrationExpectation = ground.turns[0].expectedPlan!;
+const entryExpectation = ground.turns[1].expectedPlan!;
+assert.deepEqual(calibrationExpectation, {
+  responseAction: "invite_low_pressure_calibration",
+  questionPolicy: "one_low_pressure_question",
+  replyQuestionCount: 1,
+});
+assert.deepEqual(entryExpectation, { responseAction: "offer_neutral_conversation_entry", questionPolicy: "none", replyQuestionCount: 0 });
+assert.deepEqual(ground.turns[2].expectedPlan, entryExpectation);
+const calibrationPlan = ordinaryPlanResult({ responseActions: ["invite_low_pressure_calibration"], questionPolicy: "one_low_pressure_question" });
+assert.deepEqual(
+  checkOrdinaryPlan(calibrationExpectation, calibrationPlan, "我还不确定该怎么接；你希望我先等你继续，还是给一个轻一点的开头？"),
+  []
+);
+assert(
+  checkOrdinaryPlan(calibrationExpectation, calibrationPlan, "嗯，看到了。").includes(
+    "ordinaryPlan reply question count mismatch: expected=1, actual=0"
+  )
+);
+assert(
+  checkOrdinaryPlan(
+    calibrationExpectation,
+    ordinaryPlanResult({ responseActions: ["acknowledge_without_psychologizing"], questionPolicy: "optional_after_answer" }),
+    "嗯，看到了？"
+  ).some((error) => error.startsWith("ordinaryPlan responseAction mismatch")),
+  "acknowledge must never be mapped onto calibration"
+);
+assert(
+  checkOrdinaryPlan(
+    calibrationExpectation,
+    ordinaryPlanResult({
+      responseActions: ["invite_low_pressure_calibration"],
+      questionPolicy: "one_low_pressure_question",
+      phase: "FAILED",
+      failure: { code: "GENERATION_NONCONFORMANT", reason: "ordinary_handoff:no_new_conversation_function", retryable: false },
+    }),
+    "你希望我怎么接？"
+  ).includes("ordinaryPlan not committed: phase=FAILED, failure=GENERATION_NONCONFORMANT")
+);
+assert(checkOrdinaryPlan(entryExpectation, routedResultForPlanCheck(), "")[0]!.startsWith("ordinaryPlan missing: source=safety"));
+
+assert.equal(
+  buildCommittedHistoryEntry(
+    ordinaryPlanResult({ responseActions: ["invite_low_pressure_calibration"], questionPolicy: "one_low_pressure_question", phase: "FAILED" }),
+    "assistant-failed"
+  ),
+  null,
+  "failed generations never enter history"
+);
+const committedCalibration = buildCommittedHistoryEntry(
+  makeResult({
+    ...calibrationPlan,
+    generation: { text: "你希望我先等你继续，还是给一个轻一点的开头？", model: "m", promptVersion: "p", latencyMs: 0, postProcessSteps: [], finalReplySource: "llm" },
+  }),
+  "assistant-committed"
+);
+assert(committedCalibration?.committedAssistantMove);
+assert(committedCalibration.committedAssistantMove.purpose.includes("invite_low_pressure_calibration"));
+assert.equal(committedCalibration.committedAssistantMove.questionOrRequest?.kind, "question");
+assert.equal(committedCalibration.id, "assistant-committed");
 
 const planInvalid = extractTurnForensics(
   makeResult({
@@ -202,7 +311,7 @@ assert.deepEqual(forensicSummary.safetyBlocked[0], {
   failureType: "provider_error",
   failureCategory: "timeout",
 });
-assert.equal(forensicSummary.structureCheckedTurnsWithoutEvaluatorPlan.length, 3);
+assert.equal(forensicSummary.structureCheckedTurnsWithoutEvaluatorPlan.length, 0);
 
 const metadata = {
   datasetVersion: dataset.datasetVersion,

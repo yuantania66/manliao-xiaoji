@@ -318,13 +318,78 @@ const run = async () => {
       }),
     });
   }
+  // Product decision 2026-09-28: one low-pressure calibration per continuous low-information
+  // stretch, then light entries; replaces the earlier invite/entry/invite alternation.
   assert.deepEqual(multiTurnActions, [
     "invite_low_pressure_calibration",
     "offer_neutral_conversation_entry",
-    "invite_low_pressure_calibration",
+    "offer_neutral_conversation_entry",
   ]);
-  assert.notEqual(multiTurnActions[0], multiTurnActions[1]);
-  assert.notEqual(multiTurnActions[1], multiTurnActions[2]);
+  const secondEntry = build({ userMessage: "3", recentMessages: multiTurnHistory.slice(0, 4) }).responsePlan;
+  assert.equal(secondEntry.questionPolicy.mode, "none");
+  assert.equal(
+    validateResponsePlanOutput({ plan: secondEntry, reply: "收到。" }).passed,
+    false,
+    "Entries after calibration must not collapse into bare receipts."
+  );
+
+  const uncommittedCalibration = build({
+    userMessage: "2",
+    recentMessages: [{ id: "failed-user-1", role: "user", content: "1" }],
+  }).responsePlan;
+  assert.equal(
+    handoffAction(uncommittedCalibration),
+    "invite_low_pressure_calibration",
+    "A calibration that was never committed must not count as already asked."
+  );
+
+  const topicSwitch = build({
+    userMessage: "3",
+    recentMessages: [
+      ...multiTurnHistory.slice(0, 4),
+      { id: "switch-user", role: "user", content: "其实我今天一直在想要不要换工作。" },
+      {
+        id: "switch-assistant",
+        role: "assistant",
+        content: "换工作这件事在你心里转了一整天。",
+        committedAssistantMove: committedMove({ purpose: ["acknowledge_without_psychologizing"], sourceTurnId: "switch-assistant" }),
+      },
+    ],
+  }).responsePlan;
+  assert.equal(handoffAction(topicSwitch), "continue_established_thread");
+  assert.equal(topicSwitch.questionPolicy.mode, "none");
+
+  const staleCalibrationHistory: ConversationMessage[] = [
+    { id: "stale-user-1", role: "user", content: "1" },
+    {
+      id: "stale-assistant-1",
+      role: "assistant",
+      content: "我还不确定该怎么接；你希望我先等你继续，还是给一个轻一点的开头？",
+      committedAssistantMove: committedMove({ purpose: ["invite_low_pressure_calibration"], question: true, sourceTurnId: "stale-assistant-1" }),
+    },
+    ...[2, 3, 4].flatMap((index) => [
+      { id: `stale-user-${index}`, role: "user" as const, content: String(index) },
+      {
+        id: `stale-assistant-${index}`,
+        role: "assistant" as const,
+        content: "我先起个头：今天最普通的一小段，也可以从那里说。",
+        committedAssistantMove: committedMove({ purpose: ["offer_neutral_conversation_entry"], sourceTurnId: `stale-assistant-${index}` }),
+      },
+    ]),
+  ];
+  assert.equal(
+    handoffAction(build({ userMessage: "5", recentMessages: staleCalibrationHistory }).responsePlan),
+    "invite_low_pressure_calibration",
+    "The one-calibration limit applies to the current low-information window, not the whole session."
+  );
+
+  const refusedAfterCalibration = build({
+    userMessage: "2",
+    recentMessages: multiTurnHistory.slice(0, 2),
+    boundary: uncertainBoundary(["no_questions"]),
+  }).responsePlan;
+  assert.equal(handoffAction(refusedAfterCalibration), "offer_neutral_conversation_entry");
+  assert.equal(refusedAfterCalibration.questionPolicy.mode, "none");
 
   const invitePlan = build({ userMessage: "1" }).responsePlan;
   assert.equal(validateResponsePlanOutput({ plan: invitePlan, reply: "收到。" }).passed, false);

@@ -3,6 +3,8 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { relative, resolve } from "node:path";
 
+import { buildCommittedResponseMove } from "../conversation-os/interactionMoveEnvelope";
+import type { ResponsePlan } from "../conversation-os/control/types";
 import type { AiConversationMessage } from "../services/ai/types";
 import type { ChatReplyResult } from "../services/ai/chatOrchestrationService";
 
@@ -19,6 +21,11 @@ export type TrajectoryTurn = {
     responseGoal: ExpectedValue;
     responseIntent: ExpectedValue;
     questionFunction: ExpectedValue;
+  };
+  expectedPlan?: {
+    responseAction: string;
+    questionPolicy: string;
+    replyQuestionCount: number;
   };
   allowedFacts: string[];
   forbiddenPatterns: string[];
@@ -125,11 +132,17 @@ export type TrajectoryReportMetadata = {
   productUnderTest?: string;
   productSourceFingerprint?: string;
   evalToolFingerprint?: string;
+  featureFlags?: string;
 };
 
 export const TRAJECTORY_DATASET_PATH = "clinical-evals/conversation-trajectories-v1.json";
 export const TRAJECTORY_REPORT_PATH = "docs/evals/conversation-trajectory-review-latest.md";
-export const TRAJECTORY_RUNNER_VERSION = "conversation-trajectory-runner-v1-forensics-1";
+export const TRAJECTORY_RUNNER_VERSION = "conversation-trajectory-runner-v1-forensics-2";
+
+export const describeFeatureFlags = (env: NodeJS.ProcessEnv = process.env) =>
+  ["HILL_HELPING_ORDINARY_HANDOFF", "HILL_HELPING_SHADOW"]
+    .map((name) => `${name}=${env[name]?.trim() || "unset"}`)
+    .join(" ");
 
 const ensureStringArray = (value: unknown, field: string) => {
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
@@ -163,6 +176,17 @@ export const loadTrajectoryDataset = (path = TRAJECTORY_DATASET_PATH): Trajector
         throw new Error(`${trajectory.id}/${turn.turnId} captured fixture requires observedAssistant.`);
       }
       if (!turn.expectedStructure) throw new Error(`${trajectory.id}/${turn.turnId} requires expectedStructure.`);
+      if (turn.machineChecks.includes("ordinary_plan_matches")) {
+        const expected = turn.expectedPlan;
+        if (
+          !expected ||
+          typeof expected.responseAction !== "string" ||
+          typeof expected.questionPolicy !== "string" ||
+          !Number.isInteger(expected.replyQuestionCount)
+        ) {
+          throw new Error(`${trajectory.id}/${turn.turnId} ordinary_plan_matches requires expectedPlan.`);
+        }
+      }
       ensureStringArray(turn.allowedFacts, `${trajectory.id}/${turn.turnId}.allowedFacts`);
       ensureStringArray(turn.forbiddenPatterns, `${trajectory.id}/${turn.turnId}.forbiddenPatterns`);
       ensureStringArray(turn.machineChecks, `${trajectory.id}/${turn.turnId}.machineChecks`);
@@ -352,6 +376,59 @@ export const locateRepeatedOpeningSkeletons = (turns: TurnRunResult[], threshold
     .map(([opening, count]) => ({ rule: "repeated_opening_skeleton_locator", matchedText: `${opening} (${count})` }));
 };
 
+const countQuestions = (text: string) => (text.match(/[？?]/gu) ?? []).length;
+
+// Ordinary-conversation plans are read from controlTrace.responsePlan. A plan that merely permits a
+// question does not prove calibration: the turn must also commit and realize the expected question count.
+export const checkOrdinaryPlan = (
+  expected: NonNullable<TrajectoryTurn["expectedPlan"]>,
+  result: ChatReplyResult,
+  replyText: string
+): string[] => {
+  const plan = result.controlTrace?.responsePlan;
+  if (!plan) {
+    return [`ordinaryPlan missing: source=${result.finalSource}, executionFailure=${result.execution?.failure?.code ?? "none"}`];
+  }
+  const errors: string[] = [];
+  if (!plan.responseActions.includes(expected.responseAction as ResponsePlan["responseActions"][number])) {
+    errors.push(`ordinaryPlan responseAction mismatch: expected=${expected.responseAction}, actual=${plan.responseActions.join("|") || "none"}`);
+  }
+  if (plan.questionPolicy.mode !== expected.questionPolicy) {
+    errors.push(`ordinaryPlan questionPolicy mismatch: expected=${expected.questionPolicy}, actual=${plan.questionPolicy.mode}`);
+  }
+  if (result.execution?.phase !== "VALIDATED") {
+    errors.push(`ordinaryPlan not committed: phase=${result.execution?.phase ?? "unknown"}, failure=${result.execution?.failure?.code ?? "none"}`);
+  }
+  const questions = countQuestions(replyText);
+  if (questions !== expected.replyQuestionCount) {
+    errors.push(`ordinaryPlan reply question count mismatch: expected=${expected.replyQuestionCount}, actual=${questions}`);
+  }
+  return errors;
+};
+
+// Mirrors the chat routes: only a validated reply is committed into history, carrying the same
+// committed Assistant move the authenticated route persists.
+export const buildCommittedHistoryEntry = (
+  result: ChatReplyResult,
+  assistantId: string
+): AiConversationMessage | null => {
+  if (result.execution.phase !== "VALIDATED") return null;
+  return {
+    id: assistantId,
+    role: "assistant",
+    content: result.generation.text,
+    promptVersion: result.generation.promptVersion,
+    status: "saved",
+    committedAssistantMove: buildCommittedResponseMove({
+      plan: result.controlTrace?.responsePlan,
+      replyText: result.generation.text,
+      sourceUserTurnId: result.execution.turnId,
+      planId: result.execution.planId,
+      requestId: result.execution.requestId,
+    }),
+  };
+};
+
 export const buildTurnResult = ({
   turn,
   assistant,
@@ -396,6 +473,9 @@ export const buildTurnResult = ({
         machineCheckErrors.push(`${field} mismatch: expected=${expected}, actual=${actual}`);
       }
     }
+  }
+  if (turn.machineChecks.includes("ordinary_plan_matches") && result && turn.expectedPlan) {
+    machineCheckErrors.push(...checkOrdinaryPlan(turn.expectedPlan, result, text));
   }
   if (turn.machineChecks.includes("forbidden_patterns_absent")) {
     for (const pattern of turn.forbiddenPatterns) {
@@ -544,6 +624,7 @@ export const renderTrajectoryReport = (metadata: TrajectoryReportMetadata, resul
     ...(metadata.productUnderTest ? [`- productUnderTest: ${metadata.productUnderTest}`] : []),
     ...(metadata.productSourceFingerprint ? [`- productSourceFingerprint: ${metadata.productSourceFingerprint}`] : []),
     ...(metadata.evalToolFingerprint ? [`- evalToolFingerprint: ${metadata.evalToolFingerprint}`] : []),
+    ...(metadata.featureFlags ? [`- featureFlags: ${metadata.featureFlags}`] : []),
     "",
     "Replay mode validates fixtures, report structure, and deterministic checks only. It is not evidence of current model quality.",
     "",
