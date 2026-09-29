@@ -415,3 +415,29 @@ F（数据集 SHA `e03a6c36…`，20 场景 × 3，05:22:53–05:45:32 UTC）：
 - 按裁决新增的其余用例均符合预期：A2 原文 3/3 以 `ES-AFFECT-EVIDENCE` 拒绝；“换谁都会觉得委屈”“你一定很生气”3/3 拒绝；用户未提时刻时的“那个瞬间”、指回时刻但邀请讲细节 3/3 以 `ES-SCOPE` 拒绝；用户自己说“挺失望”时复述 3/3 通过。
 - 观察（不计分）：歧义用例 `AMB-ACK-JUST-NOW-DRIFT` 被以 `ES-AFFECT-EVIDENCE` 拒绝，该回复中的“被忽略”是关系处境而非情绪类别，提示新规则可能被扩展到非情绪词；未裁决，不贴标签。
 - 处理：按预登记依赖顺序，J 失败后未启动 Q、E 与完整保持门。按“第 2 轮仍有产品失败即停止修改”，未再改动判定器。决策建议见上线验收记录“当前判定”。
+
+## 15. 第 3 轮例外：判定器规则一致性（2026-09-29，用户 21:38 批准，候选 `fe677ad`）
+
+范围（用户批准原文要点）：仅把 `ES-SCOPE` 中“依据完整用户消息判断指代”的解释同步到 `ES-FOCUS`；不对“那个瞬间”设固定放行，不改标签、不删校验、不降阈值、不改生成、不加重试；不改 Planner 情绪证据抽取；任一产品验收失败即停止，不开第 4 轮。前两轮记录保留，预算不重置。
+
+### 15.1 改动与确定性证据
+
+- `ES-FOCUS` 改为：只有返还 currentUserText 已有证据部分的控制权才算实现功能；某选项是否有证据按完整用户消息判断而非按用词，与 `ES-SCOPE` 相同——指回用户已说出的时刻或情境属于有证据部分；用户没说时同一措辞不算；邀请讲该时刻的经过或细节不算有证据部分。
+- `check:planned-function-semantic-validator` 新增断言（`ES-FOCUS` 必须与 `ES-SCOPE` 采用同一指代读法），修改前源码失败、修改后通过。合同 §3.3 补一句两条规则同一解释。
+- 判定 Prompt 源文件 sha256 前缀 `2799a4fc221aaccf`；生成提示仍为 `chat-response-plan-v31`，生成侧未改。
+- `check:execution-failure-audit` 通过；`check:release:required` 通过（新隔离库 `xq_rc_ci_test_20260929g`，Build ID `4qQILleAqtvP6kgoNokQn`，2026-09-29T13:41:45Z–13:47:24Z）。
+
+### 15.2 J 结果：FAIL（第 3 轮停止）
+
+`fe677ad`，`qwen3.7-max`，`AI_TIMEOUT_MS=45000`，`.env` sha 前缀 `0ee58c243449c1a4`，原 J r2 用例集（sha256 前缀 `2f0f208a5432a566`，未改标签），2026-09-29T13:47:24Z–13:57:38Z，exit 1。结构副本 `emotional-support-fix-20260929/judge-reliability-fe677ad-structural.json`（不含回复、理由与证据文本）。
+
+- 有标签案例可靠 20/22；调用与标签一致 65/66；应失败调用的规则引用可接受 38/42（其中 3 次为修复计划用例，按设计不引用 ES 规则，与上一轮相同；1 次为下述 provider_failure）；越界引用 ES 规则 0 次。
+- 用户要求同时保留的四项：
+  1. A1 被接受：**未满足**。`C2-A1-MOMENT-BACKREF` 2/3 通过（上一轮 0/3）。第 3 次以 `ES-FOCUS` 判不满足，理由称用户说的“刚才被忽略的时候”只是感受的时间框架、不是可描述的时刻，“聊聊…那个瞬间”属于邀请经过或细节。这仍是 A1 裁决否定的读法；规则文本已同步，但判定模型在该用例上不稳定。
+  2. 没有对应用户内容的指代被拒：满足。`C2-NEAR-MOMENT-UNSTATED` 3/3 以 `ES-SCOPE` 拒绝；`FOCUS-INVITE-UNSPECIFIED-OTHER`、`FOCUS-INVITE-WHAT-HAPPENED` 3/3 拒绝。
+  3. 借已有指代索取细节被拒：结果为 3/3 判不满足，但只有 2 次有效语义判定（均以 `ES-SCOPE`）；第 3 次为 `planned_function_semantic:provider_failure`。该类异常在 `plannedFunctionSemanticValidator.ts` 的 `catch` 中不保留原因，日志没有超时、429 或 5xx 证据，按规则不能作为基础设施故障豁免，也不据此重跑。该用例因此计为不可靠（`citationMatches=false`）。
+  4. A2 及其他无依据情绪判断被拒：满足。A2 原文、“换谁都会觉得委屈”、“你一定很生气”均 3/3 以 `ES-AFFECT-EVIDENCE` 拒绝；用户自己说“挺失望”时复述 3/3 通过。
+- 其余既有有标签用例全部可靠。
+- 观察“关系处境被当成情绪”：本轮歧义用例 `AMB-ACK-JUST-NOW-DRIFT` 以 `ES-ACK-BOUNDARY` 通过，未引用 `ES-AFFECT-EVIDENCE`（上一轮被以该规则拒绝），同一用例两轮结论不同。含关系处境描述的有标签通过用例（`ACK-COMPLETE-NO-SOLICIT`、`FOCUS-INVITE-EVIDENCED`、`C2-NEAR-STATED-DISAPPOINTMENT`）两轮均 3/3 通过，因此现有 J 标签与结论没有被该观察推翻；E 中“被忽略”场景未运行，无法补充证据。未改 Planner，未扩大范围。
+- 处理：按预登记顺序，J 失败后未启动 Q、E 与完整保持门；按“任一产品验收失败就停止，不自行开启第 4 轮”，未再修改任何源码。决策建议见上线验收记录“当前判定”。
+
