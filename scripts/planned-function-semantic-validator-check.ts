@@ -705,6 +705,12 @@ assert(
   "ES-SCOPE must judge back-references by context, not by a banned word"
 );
 assert(
+  judgeRubric.includes("Judge whether an option is evidenced by the full currentUserText, not by the word used, exactly as ES-SCOPE does") &&
+    judgeRubric.includes("the same wording is not evidenced when the User stated no such moment or situation") &&
+    judgeRubric.includes("an option that invites its sequence or details is not an evidenced part"),
+  "ES-FOCUS must use the same context-based back-reference reading as ES-SCOPE"
+);
+assert(
   judgeRubric.includes("The ES-* rules apply only when positiveFunctionBinding.action is offer_emotional_support.") &&
     judgeRubric.includes("Never apply or cite an ES-* rule in the handoff branch or for repair_previous_wording, establish_assistant_identity, or an absent positiveFunctionBinding"),
   "ES rules must be scoped to emotional-support verdicts"
