@@ -340,3 +340,38 @@ F（数据集 SHA `e03a6c36…`，20 场景 × 3，05:22:53–05:45:32 UTC）：
   1. 保持门 runner 记录 `execution.failure` 的 code 与固定原因文本；
   2. 把 ES-* 规则写明只适用于 `offer_emotional_support`，并区分“解除完整叙述负担”与“索取叙述”；
   3. 各重跑 J、Q、E 与完整保持门一次，本次 FAIL 保留在记录中。
+
+## 13. 第 2 轮修复：执行失败记账与 ES 规则适用范围（2026-09-29，用户批准，候选 `399edd0`）
+
+这是情绪支持链与保持门的第 2 轮，也是最后一轮修复。没有删除校验、降低门槛、增加产品内部重试或重置 Safety 预算。历史 59/60 FAIL 保留，不追认其原因。
+
+### 13.1 改动
+
+- 执行失败记账（`chatExecutionLifecycle.ts`、`chatOrchestrationService.ts`、新增 `scripts/execution-failure-audit.ts`）：
+  - `execution.failure` 新增脱敏类别 `category`：`timeout`（`AppError` 504）、`rate_limited`（服务商 429）、`provider_5xx`、`provider_4xx`；没有服务商状态证据时一律为 `unknown`，包括空回复与网络错误。失败码判定逻辑不变。
+  - 保持门 runner 与 E 脚本每行记录 `executionFailure`：失败码、类别、失败阶段（`plan_preflight`、`safety`、`before_surface_attempt`、`after_surface_attempt_started`、`validation`、`persistence`）、生成尝试次数与计划预检次数、是否符合预登记基础设施重跑条件（仅 timeout、429、5xx）。不记录原始错误文本。
+  - summary 新增只作观察的 `executionFailuresByKey`、`infrastructureRerunEligibleRows`、`semanticOutOfScopeRuleCitations`，门判定不变。
+- ES 规则适用范围（判定器 prompt 与合同 §3.3）：
+  - ES-* 只适用于 `positiveFunctionBinding.action = offer_emotional_support`；handoff 分支、`repair_previous_wording`、`establish_assistant_identity` 与无绑定时不得引用。
+  - ES-SCOPE：只为解除用户负担而提到“不用说清楚/不用讲完整/不用解释原因”，不算索取；解除的同时又请求、邀请或把叙述作为选项提供，仍违反。解除是否实现计划功能由 §3.2 功能互斥规则判断，不由 ES-SCOPE 判断。
+  - `semantic-verdict-audit` 新增 `outOfScopeRuleIds`，记录非情绪支持计划或 handoff 证据中出现的 ES 引用。
+
+### 13.2 确定性证据
+
+- `check:execution-failure-audit`（新增）：类别与阶段单元断言；通过 `createChatReply` 端到端桩注入 HTTP 429、503、400、空回复、网络错误、超时，逐一断言失败码、类别、阶段、尝试次数、重跑资格，以及记录中不含原始文本；无类别的历史失败记为 `unknown` 且不符合重跑条件。
+- `check:planned-function-semantic-validator` 新增 3 条 rubric 断言（适用范围、解除与索取、功能互斥归属）。
+- 回退验证：两个检查在修复前源码上失败，恢复修复后通过。
+- 本地必跑门 `check:release:required` 在 `399edd0` 的结果见上线验收记录 C5。
+
+### 13.3 判定可靠性用例（J r2，本地文件，不入库）
+
+在 r1 的 13 个用例上新增 7 个；计划由真实 `recentMessages` 生成，计划动作与用例声明不一致时脚本直接报错：
+- 误拒：解除叙述负担（“心里有点堵”“今晚莫名有点孤单”，`return_amount_control`），期望通过；
+- 误放：解除包裹着叙述请求、解除后追问“发生了什么”，期望以 ES-SCOPE/ES-FOCUS 失败；
+- 越界：修复计划（`repair_previous_wording`）合规回复期望通过，违规回复期望失败且不得引用任何 ES 规则；
+- 歧义：争议回复“这确实让人失望”，人工结论前不贴标签。
+合计有标签 15 个、歧义 5 个、50 次判定调用。新增 `ruleScopeViolation`：任一调用出现越界引用，该用例不可靠。
+
+### 13.4 待执行
+
+真实模型 J、Q、E 与完整保持门推迟到人工评审（C2）结论与候选冻结（C4）之后，按上线验收记录“最终验证计划”各运行一次。若第 2 轮仍出现产品失败，停止修改，报告证据与一个决策建议。
