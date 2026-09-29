@@ -104,6 +104,14 @@ Planner 选择上述功能时必须使用当前轮证据，而不是把 `return_
 的“别的/其他”选项属于引入未知内容（语义校验 `ES-SCOPE`/`ES-FOCUS`）。
 `acknowledge_current_relational_impact` 不适用本节的可选延续，见 3.2。
 
+解除叙述负担不是索取叙述（2026-09-29 用户批准的第 2 轮修复）：
+
+- 只为免除用户的负担而提到原因、整件事或完整经过（如“不用非得说清楚为什么”“不用把整件事说清楚”），不是引入或索取这些内容，不违反 `ES-SCOPE`。
+- 同一回复若在解除负担之外，又请求、邀请或以选项提供这些内容（如“不用说清楚，就从整件事怎么开始的讲起吧”），仍违反 `ES-SCOPE`。
+- 解除负担的句子是否实现了计划选定的支持功能，按 3.2 的功能互斥判断，不按 `ES-SCOPE` 判断。
+
+`ES-*` 规则的适用范围：只适用于 `positiveFunctionContract.action=offer_emotional_support` 的语义判定。修复（`repair_previous_wording`）、身份（`establish_assistant_identity`）、交接分支以及没有正向功能合同的计划，按各自规则判定，不适用也不得引用 `ES-*`。
+
 ### 3.4 完成条件
 
 同时满足以下条件才算完成：

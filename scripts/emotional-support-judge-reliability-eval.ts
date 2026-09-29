@@ -11,6 +11,7 @@ import {
   interpretTurnDeterministically,
 } from "../conversation-os/control";
 import { determineConversationState } from "../conversation-os/state";
+import type { ConversationMessage } from "../conversation-os/types";
 import { validatePlannedFunctionSemanticOutput } from "../services/ai/plannedFunctionSemanticValidator";
 import { semanticVerdictAuditFor, withoutEvidenceText } from "./semantic-verdict-audit";
 
@@ -20,6 +21,8 @@ type JudgeCase = {
   id: string;
   category: string;
   userMessage: string;
+  recentMessages?: ConversationMessage[];
+  expectedPlanAction?: string;
   reply: string;
   expected: "pass" | "fail" | "ambiguous";
   acceptedRuleIds?: string[];
@@ -36,13 +39,13 @@ const repetitions = Number(arg("repetitions") || "3");
 if (!casesPath || !outputPath) throw new Error("--cases and --output are required.");
 if (process.env.AI_PROVIDER !== "qwen") throw new Error("This evaluation must run against the real Qwen provider.");
 
-const planFor = (userMessage: string) => {
-  const conversationState = determineConversationState({ currentUserMessage: userMessage, recentMessages: [] });
+const planFor = (userMessage: string, recentMessages: ConversationMessage[]) => {
+  const conversationState = determineConversationState({ currentUserMessage: userMessage, recentMessages });
   const context = assembleConversationControlContext({
     conversationId: "judge-reliability",
     currentTurnId: "judge-reliability-turn",
     userMessage,
-    recentMessages: [],
+    recentMessages,
     conversationState,
   });
   const interpretation = interpretTurnDeterministically(context);
@@ -70,6 +73,7 @@ const run = async () => {
     category: string;
     expected: JudgeCase["expected"];
     repetition: number;
+    planAction: string | null;
     supportFunction: string | null;
     questionPolicy: string;
     outcome: "pass" | "fail";
@@ -78,10 +82,15 @@ const run = async () => {
     audit: ReturnType<typeof semanticVerdictAuditFor>;
     outcomeMatches: boolean | null;
     citationMatches: boolean | null;
+    ruleScopeViolation: boolean;
   }> = [];
   for (const testCase of cases) {
-    const plan = planFor(testCase.userMessage);
+    const recentMessages = testCase.recentMessages ?? [];
+    const plan = planFor(testCase.userMessage, recentMessages);
     const contract = plan.positiveFunctionContract;
+    if (testCase.expectedPlanAction && contract?.action !== testCase.expectedPlanAction) {
+      throw new Error(`${testCase.id}: fixture plan is ${contract?.action ?? "none"}, expected ${testCase.expectedPlanAction}.`);
+    }
     const reps = testCase.expected === "ambiguous" ? 1 : repetitions;
     for (let repetition = 1; repetition <= reps; repetition += 1) {
       const result = await validatePlannedFunctionSemanticOutput({
@@ -90,20 +99,22 @@ const run = async () => {
         semanticContext: {
           currentUserText: testCase.userMessage,
           handoffTargetAssistantText: null,
-          priorAssistantTurnAvailable: false,
+          priorAssistantTurnAvailable: recentMessages.some((message) => message.role === "assistant"),
         },
       });
       const audit = semanticVerdictAuditFor(result.verdict);
       const outcome = result.passed ? "pass" : "fail";
       const outcomeMatches = testCase.expected === "ambiguous" ? null : outcome === testCase.expected;
-      const citationMatches = testCase.expected !== "fail"
+      const citationMatches = testCase.expected !== "fail" || !testCase.acceptedRuleIds?.length
         ? null
         : Boolean(audit?.ruleIds.some((ruleId) => testCase.acceptedRuleIds?.includes(ruleId)));
+      const ruleScopeViolation = (audit?.outOfScopeRuleIds.length ?? 0) > 0;
       calls.push({
         caseId: testCase.id,
         category: testCase.category,
         expected: testCase.expected,
         repetition,
+        planAction: contract?.action ?? null,
         supportFunction: contract?.action === "offer_emotional_support" ? contract.supportFunction : null,
         questionPolicy: plan.questionPolicy.mode,
         outcome,
@@ -112,6 +123,7 @@ const run = async () => {
         audit,
         outcomeMatches,
         citationMatches,
+        ruleScopeViolation,
       });
       console.log(JSON.stringify({
         caseId: testCase.id,
@@ -119,6 +131,7 @@ const run = async () => {
         expected: testCase.expected,
         outcome,
         ruleIds: audit?.ruleIds ?? null,
+        outOfScopeRuleIds: audit?.outOfScopeRuleIds ?? null,
         hardFailureReasons: result.hardFailureReasons,
       }));
     }
@@ -131,9 +144,11 @@ const run = async () => {
       expected: testCase.expected,
       outcomes: caseCalls.map((call) => call.outcome),
       ruleIds: caseCalls.map((call) => call.audit?.ruleIds ?? null),
+      ruleScopeViolations: caseCalls.filter((call) => call.ruleScopeViolation).length,
       reliable: testCase.expected === "ambiguous"
         ? null
-        : caseCalls.every((call) => call.outcomeMatches && call.citationMatches !== false),
+        : caseCalls.every((call) =>
+          call.outcomeMatches && call.citationMatches !== false && !call.ruleScopeViolation),
     }];
   }));
   const summary = {
@@ -146,6 +161,7 @@ const run = async () => {
     labeledCalls: labeled.length,
     failCitationMatches: labeled.filter((call) => call.citationMatches === true).length,
     failLabeledCalls: labeled.filter((call) => call.expected === "fail").length,
+    ruleScopeViolationCalls: calls.filter((call) => call.ruleScopeViolation).length,
     reliableCases: Object.values(byCase).filter((item) => item.reliable === true).length,
     byCase,
   };

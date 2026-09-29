@@ -49,6 +49,7 @@
     "check:conversation-os-control": "tsx scripts/conversation-os-control-check.ts",
     "check:conversation-os-relational-state": "tsx scripts/conversation-os-relational-state-check.ts",
     "check:chat-execution-lifecycle": "tsx scripts/chat-execution-lifecycle-check.ts",
+    "check:execution-failure-audit": "tsx scripts/execution-failure-audit-check.ts",
     "check:chat-turn-result-authority": "tsx scripts/chat-turn-result-authority-check.ts",
     "check:client-turn-id": "tsx scripts/client-turn-id-check.ts",
     "check:interaction-move-envelope": "tsx scripts/interaction-move-envelope-check.ts",

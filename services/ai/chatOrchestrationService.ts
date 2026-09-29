@@ -851,6 +851,7 @@ export const createChatReply = async ({
         code: classified.code,
         reason: classified.reason,
         retryable: true,
+        category: classified.category,
       },
     };
 

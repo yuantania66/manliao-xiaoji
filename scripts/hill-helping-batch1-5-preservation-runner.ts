@@ -7,6 +7,7 @@ import { loadEnvConfig } from "@next/env";
 import { createChatReply } from "../services/ai/chatOrchestrationService";
 import { getAiProvider, getDefaultAiModel, isAiProviderConfigured } from "../services/ai/modelProvider";
 import { loadPreservationDataset, PRESERVATION_DATASET_PATH } from "./hill-helping-batch1-5-preservation-lib";
+import { executionFailureKey, executionFailureRecordFor } from "./execution-failure-audit";
 import { semanticVerdictAuditFor } from "./semantic-verdict-audit";
 
 loadEnvConfig(process.cwd());
@@ -73,6 +74,7 @@ const run = async () => {
         repairAdoption,
         reply: reply.generation.text,
         executionPhase: reply.execution.phase,
+        executionFailure: executionFailureRecordFor(reply.execution),
         planPreflightPassed: reply.execution.planPreflight.passed,
         planPreflightFailures: reply.execution.planPreflight.failureReasons,
         finalSource: reply.finalSource,
@@ -97,6 +99,7 @@ const run = async () => {
         scenarioId: row.scenarioId,
         runIndex: row.runIndex,
         executionPhase: row.executionPhase,
+        executionFailure: row.executionFailure,
         finalSource: row.finalSource,
         actualActions: row.actualActions,
         regenerateAttempted: row.regenerateAttempted,
@@ -130,6 +133,15 @@ const run = async () => {
       counts[key] = (counts[key] ?? 0) + 1;
       return counts;
     }, {}),
+    // Observational only: sanitized failure classes; never used to exempt a failed row.
+    executionFailuresByKey: rows.reduce<Record<string, number>>((counts, row) => {
+      const key = executionFailureKey(row.executionFailure);
+      if (key) counts[key] = (counts[key] ?? 0) + 1;
+      return counts;
+    }, {}),
+    infrastructureRerunEligibleRows: rows.filter((row) => row.executionFailure?.infrastructureRerunEligible).length,
+    semanticOutOfScopeRuleCitations: rows.reduce((count, row) =>
+      count + row.attempts.filter((attempt) => (attempt.semanticAudit?.outOfScopeRuleIds.length ?? 0) > 0).length, 0),
   };
   const checks = {
     completeRunCount: total === dataset.gate.scenarioCount * dataset.gate.runsPerScenario,

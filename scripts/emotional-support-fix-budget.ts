@@ -5,6 +5,7 @@ import { execSync } from "node:child_process";
 import { loadEnvConfig } from "@next/env";
 
 import { createChatReply } from "../services/ai/chatOrchestrationService";
+import { executionFailureRecordFor } from "./execution-failure-audit";
 import { semanticVerdictAuditFor, withoutEvidenceText } from "./semantic-verdict-audit";
 
 loadEnvConfig(process.cwd());
@@ -79,6 +80,7 @@ const run = async () => {
         questionPolicy: plan?.questionPolicy.mode ?? null,
         finalSource: reply.finalSource,
         executionPhase: reply.execution.phase,
+        executionFailure: executionFailureRecordFor(reply.execution),
         regenerateAttempted: reply.regenerateAttempted,
         promptVersion: reply.generation.promptVersion ?? null,
         attempts,
@@ -91,6 +93,7 @@ const run = async () => {
         runIndex,
         passed,
         finalSource: reply.finalSource,
+        executionFailure: executionFailureRecordFor(reply.execution),
         screen,
         attempts: attempts.map((a) => ({ failures: a.validationFailures, ruleIds: a.semanticAudit?.ruleIds ?? null })),
       }));

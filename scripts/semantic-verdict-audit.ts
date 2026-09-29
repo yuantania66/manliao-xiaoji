@@ -7,19 +7,30 @@ export type SemanticVerdictAudit = {
   containsContradictoryMove: boolean | null;
   semanticQuestionCount: number | null;
   ruleIds: string[];
+  // ES-* ids cited outside an offer_emotional_support positive-function verdict (rule-boundary violation).
+  outOfScopeRuleIds: string[];
   evidence: Array<{ start: number; end: number; text: string; reason: string }>;
 } | null;
+
+const ruleIdsIn = (evidence: Array<{ reason: string }>) =>
+  Array.from(new Set(evidence.flatMap((span) => span.reason.match(RULE_ID) ?? [])));
 
 export const semanticVerdictAuditFor = (
   verdict: PlannedFunctionSemanticVerdict | null | undefined
 ): SemanticVerdictAudit => {
   if (!verdict) return null;
   const evidence = verdict.positiveFunction?.evidence ?? [];
+  const ruleIds = ruleIdsIn(evidence);
+  const emotionalSupportVerdict = verdict.positiveFunction?.binding.action === "offer_emotional_support";
   return {
     status: verdict.positiveFunction?.status ?? null,
     containsContradictoryMove: verdict.positiveFunction?.containsContradictoryMove ?? null,
     semanticQuestionCount: verdict.semanticQuestionCount,
-    ruleIds: Array.from(new Set(evidence.flatMap((span) => span.reason.match(RULE_ID) ?? []))),
+    ruleIds,
+    outOfScopeRuleIds: Array.from(new Set([
+      ...(emotionalSupportVerdict ? [] : ruleIds),
+      ...ruleIdsIn(verdict.handoff?.evidence ?? []),
+    ])),
     evidence: evidence.map(({ start, end, text, reason }) => ({ start, end, text, reason })),
   };
 };

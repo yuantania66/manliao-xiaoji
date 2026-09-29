@@ -692,6 +692,21 @@ const judgeRubric = judgeMessages.join("\n");
 for (const ruleId of ["ES-SCOPE", "ES-FOCUS", "ES-ACK-BOUNDARY", "ES-ACK-NO-SOLICIT", "ES-ACK-NO-FABRICATION"]) {
   assert(judgeRubric.includes(`${ruleId}:`), `judge rubric must define ${ruleId}`);
 }
+assert(
+  judgeRubric.includes("The ES-* rules apply only when positiveFunctionBinding.action is offer_emotional_support.") &&
+    judgeRubric.includes("Never apply or cite an ES-* rule in the handoff branch or for repair_previous_wording, establish_assistant_identity, or an absent positiveFunctionBinding"),
+  "ES rules must be scoped to emotional-support verdicts"
+);
+assert(
+  judgeRubric.includes("Naming such content only to release the User from providing it") &&
+    judgeRubric.includes("solicits nothing and does not violate ES-SCOPE") &&
+    judgeRubric.includes("a release that also asks for, invites, or offers such content as an option still violates it"),
+  "ES-SCOPE must separate releasing a narrative burden from soliciting narrative"
+);
+assert(
+  judgeRubric.includes("Whether a release realizes the planned supportFunction is decided by the function-exclusivity rule above, not by ES-SCOPE."),
+  "function fit of a release stays with the exclusivity rule"
+);
 assert(judgeRubric.includes("\"priorAssistantTurnAvailable\":false"));
 const providerInputs: PlannedFunctionSemanticProviderInput[] = [];
 for (const semanticContext of [
