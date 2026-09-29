@@ -10,7 +10,7 @@ import {
   isProactiveGreetingPromptVersion,
 } from "@/lib/proactive-greeting";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v30";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v31";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -420,6 +420,7 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
         ? "Acknowledge the evidenced relational impact without judging it as okay, acceptable, normal, natural, right, or wrong."
         : "Acknowledge the evidenced feeling without judging it as okay, acceptable, normal, natural, right, or wrong. Permission language must modify the user's expression choice, such as how much or how completely to speak, never the feeling itself.",
       "Do not intensify the user's affect, claim complete empathy, or foreground that the assistant cannot fully understand or is working hard to understand.",
+      "Do not name or imply any emotion category the user did not state in the current turn, including impersonal wording that assigns a feeling to the situation or a characterization of the relational impact as causing a feeling. Describe the reported situation itself instead.",
       contract?.supportFunction === "acknowledge_current_relational_impact"
         ? "Do not turn the acknowledgement into a requirement to continue; no follow-up question is required."
         : "Realize the selected support function as permission and user control, not as a requirement to continue. The reply is complete once it acknowledges the evidenced feeling and grants that control; no follow-up question is required.",

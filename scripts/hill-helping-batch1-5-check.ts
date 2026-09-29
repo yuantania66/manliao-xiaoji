@@ -746,6 +746,12 @@ const run = async () => {
   assert(multiFocusSurfacePrompt.includes("without requiring the user to choose or answer"));
   assert(emotionSurfacePrompt.includes("making the user diagnose the assistant's mistake"));
   assert(emotionSurfacePrompt.includes("grants that control"));
+  assert(emotionSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"));
+  assert.equal(
+    repairSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"),
+    false,
+    "The emotion-label constraint is scoped to emotional-support plans."
+  );
   const noHistoryRelationalImpact = build({ userMessage: "你一点都不懂我" }).responsePlan;
   assert.equal(
     noHistoryRelationalImpact.positiveFunctionContract?.action === "offer_emotional_support"
@@ -762,6 +768,10 @@ const run = async () => {
       "Relational-impact acknowledgement must not be told that granting expression control completes it."
     );
     assert(relationalSurfacePrompt.includes("state the information boundary"));
+    assert(
+      relationalSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"),
+      "Relational-impact acknowledgement must not add an unevidenced emotion label."
+    );
     assert(relationalSurfacePrompt.includes("not focus or amount control"));
     assert.equal(relationalPlan.questionPolicy.mode, "none", "relational-impact acknowledgement adds no invitation");
     assert(relationalSurfacePrompt.includes("Do not add any request, whether phrased as a question or a statement"));

@@ -689,9 +689,21 @@ const inspectedJudge = await validatePlannedFunctionSemanticOutput({
 });
 assert.deepEqual(inspectedJudge.failureReasons, ["planned_function_semantic:provider_failure"]);
 const judgeRubric = judgeMessages.join("\n");
-for (const ruleId of ["ES-SCOPE", "ES-FOCUS", "ES-ACK-BOUNDARY", "ES-ACK-NO-SOLICIT", "ES-ACK-NO-FABRICATION"]) {
+for (const ruleId of ["ES-AFFECT-EVIDENCE", "ES-SCOPE", "ES-FOCUS", "ES-ACK-BOUNDARY", "ES-ACK-NO-SOLICIT", "ES-ACK-NO-FABRICATION"]) {
   assert(judgeRubric.includes(`${ruleId}:`), `judge rubric must define ${ruleId}`);
+  assert(judgeRubric.includes(`${ruleId},`) || judgeRubric.includes(`or ${ruleId})`), `judge citation list must include ${ruleId}`);
 }
+assert(
+  judgeRubric.includes("phrased impersonally as a quality of the situation") &&
+    judgeRubric.includes("presented as the Assistant's characterization of the relational impact") &&
+    judgeRubric.includes("Decide by whether an unevidenced emotion category is added, not by word lists."),
+  "ES-AFFECT-EVIDENCE must cover impersonal and relational-impact emotion labels without word lists"
+);
+assert(
+  judgeRubric.includes("Judge reference by the full currentUserText, not by the word used") &&
+    judgeRubric.includes("the same phrase introduces a scene when the User stated no such moment or situation"),
+  "ES-SCOPE must judge back-references by context, not by a banned word"
+);
 assert(
   judgeRubric.includes("The ES-* rules apply only when positiveFunctionBinding.action is offer_emotional_support.") &&
     judgeRubric.includes("Never apply or cite an ES-* rule in the handoff branch or for repair_previous_wording, establish_assistant_identity, or an absent positiveFunctionBinding"),
