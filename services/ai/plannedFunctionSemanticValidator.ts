@@ -14,6 +14,7 @@ import type { AiModelMessage } from "./types";
 export type PlannedFunctionSemanticContext = {
   currentUserText: string;
   handoffTargetAssistantText: string | null;
+  priorAssistantTurnAvailable?: boolean;
 };
 
 export type PlannedFunctionSemanticProviderInput = {
@@ -24,6 +25,7 @@ export type PlannedFunctionSemanticProviderInput = {
   handoffTargetAssistantText: string | null;
   candidateReply: string;
   ordinaryQuestionIndependentlySupported: boolean;
+  priorAssistantTurnAvailable?: boolean;
 };
 
 export type PlannedFunctionSemanticProvider = (
@@ -380,6 +382,12 @@ const buildSemanticValidationMessages = (
       "For offer_emotional_support, bind to the current-turn sourceText and affectEvidenceSpans and realize exactly supportFunction. A receipt, pure question, a different support function, affect category/intensity/object drift, reassurance, advice, pause, topic switch, or a later move that undoes the selected function is insufficient.",
       "The four emotional support functions are exclusive for this verdict: reduce_expression_burden releases the need to explain causes, analyze, organize, or give a complete account; merely choosing the focus or amount is a different function. return_focus_control returns which already-evidenced part receives attention and, when question policy is none, must be realized as permission/control rather than a semantic request. return_amount_control returns how much to express; merely pausing, deferring, or closing does not return amount control. acknowledge_current_relational_impact owns the current Assistant relationship impact while preserving the information boundary. If the candidate mainly realizes another function, mark not_satisfied.",
       "A later clause that recommends a preferred focus, requests causes/details, pressures continuation, pauses/closes the exchange, or otherwise takes back the promised control functionally undoes emotional support. Mark containsContradictoryMove=true and do not mark the positive contract satisfied.",
+      "Emotional-support rules. For every offer_emotional_support verdict that is not satisfied, is uncertain, or has containsContradictoryMove=true, include at least one evidence item quoting the exact deciding span and start its reason with the rule id (ES-SCOPE, ES-FOCUS, ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, or ES-ACK-NO-FABRICATION).",
+      "ES-SCOPE: every option, invitation, or permission may refer only to affect, relational impact, or parts already stated in currentUserText. Offering an unspecified alternative (such as something else or other parts), or introducing a cause, triggering event, what happened, the scene or circumstances, details, or a full account that the User did not state, is a contradictory move even when it appears inside an offered choice.",
+      "ES-FOCUS: return_focus_control is realized only by returning control over parts already evidenced in currentUserText; an option that is not evidenced does not count toward the function.",
+      "ES-ACK-BOUNDARY: acknowledge_current_relational_impact requires owning the relational impact the User reports and stating the information boundary: the Assistant does not yet know what it missed and does not claim to understand already.",
+      "ES-ACK-NO-SOLICIT: after that acknowledgement, any request in question or statement form for the User to explain, give an example, choose which part to say first or how much to say, or show where the Assistant missed is a contradictory move, unless it directly answers an explicit question or request in currentUserText.",
+      "ES-ACK-NO-FABRICATION: when priorAssistantTurnAvailable is false, stating or implying specific content of an earlier Assistant reply or a specific earlier mistake is not satisfied. A general acknowledgement that the User feels not understood remains allowed. When priorAssistantTurnAvailable is null, this rule does not apply.",
       "For repair_previous_wording, bind to targetTurnId/targetText, own the Assistant's error, and complete exactly repairMode. factual_replacement uses the confirmed replacementFact; proposition_withdrawal withdraws the exact rejected proposition; interaction_move_withdrawal withdraws the exact rejected move. Generic apology, self-defense, blaming the User, repeating/continuing the rejected content, or replacing repair with a question/advice is insufficient.",
       "For every positiveFunction verdict, realizedAction is the exact top-level action discriminator from positiveFunctionBinding (establish_assistant_identity, offer_emotional_support, or repair_previous_wording), never mode, supportFunction, or repairMode. Use that exact action only when status=satisfied and contractRealized=true; otherwise use null and false.",
       "The handoff and positiveFunction branches are independent. Do not let one satisfied branch hide failure or uncertainty in the other.",
@@ -402,6 +410,7 @@ const buildSemanticValidationMessages = (
         text: input.candidateReply,
       },
       ordinaryQuestionIndependentlySupported: input.ordinaryQuestionIndependentlySupported,
+      priorAssistantTurnAvailable: input.priorAssistantTurnAvailable ?? null,
       outputSchema: {
         schemaVersion: 1,
         planId: "exact caller planId",
@@ -543,6 +552,9 @@ export const validatePlannedFunctionSemanticOutput = async ({
       handoffTargetAssistantText: semanticContext.handoffTargetAssistantText,
       candidateReply: reply,
       ordinaryQuestionIndependentlySupported,
+      ...(semanticContext.priorAssistantTurnAvailable === undefined
+        ? {}
+        : { priorAssistantTurnAvailable: semanticContext.priorAssistantTurnAvailable }),
     };
     rawVerdict = provider
       ? await provider(providerInput)

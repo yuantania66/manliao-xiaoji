@@ -7,6 +7,7 @@ import { loadEnvConfig } from "@next/env";
 import { createChatReply } from "../services/ai/chatOrchestrationService";
 import { getAiProvider, getDefaultAiModel, isAiProviderConfigured } from "../services/ai/modelProvider";
 import { loadPreservationDataset, PRESERVATION_DATASET_PATH } from "./hill-helping-batch1-5-preservation-lib";
+import { semanticVerdictAuditFor } from "./semantic-verdict-audit";
 
 loadEnvConfig(process.cwd());
 
@@ -85,6 +86,7 @@ const run = async () => {
           validationPassed: reply.controlTrace?.validation[index]?.passed ?? false,
           validationFailures:
             reply.controlTrace?.validation[index]?.failureReasons ?? ["missing_attempt_validation"],
+          semanticAudit: semanticVerdictAuditFor(reply.plannedFunctionSemanticVerdicts?.[index]),
         })),
         helpingProviderAttempted: reply.helpingTrace.provider.attempted,
         interpretationProviderAttempted: reply.controlTrace?.interpretationModel.attempted ?? false,

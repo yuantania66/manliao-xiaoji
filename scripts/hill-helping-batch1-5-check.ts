@@ -763,7 +763,24 @@ const run = async () => {
     );
     assert(relationalSurfacePrompt.includes("state the information boundary"));
     assert(relationalSurfacePrompt.includes("not focus or amount control"));
+    assert.equal(relationalPlan.questionPolicy.mode, "none", "relational-impact acknowledgement adds no invitation");
+    assert(relationalSurfacePrompt.includes("Do not add any request, whether phrased as a question or a statement"));
+    assert(relationalSurfacePrompt.includes("With no earlier assistant reply, do not invent"));
+    assert.equal(relationalSurfacePrompt.includes("such as how much or how completely to speak"), false);
   }
+  assert.equal(multiFocusEmotion.questionPolicy.mode, "optional_after_answer");
+  assert.equal(emotion.questionPolicy.mode, "optional_after_answer");
+  const relationalImpactWithQuestion = build({ userMessage: "你一点都不懂我，你到底想说什么？" }).responsePlan;
+  assert.equal(
+    relationalImpactWithQuestion.positiveFunctionContract?.action === "offer_emotional_support"
+      ? relationalImpactWithQuestion.positiveFunctionContract.supportFunction
+      : null,
+    "acknowledge_current_relational_impact"
+  );
+  assert.equal(relationalImpactWithQuestion.questionPolicy.mode, "none");
+  assert(relationalImpactWithQuestion.responseActions.includes("answer_directly"));
+  assert.equal(relationalImpactWithQuestion.answerObligations.length, 1, "question policy none must not drop the current-turn answer obligation");
+  assert(formatResponsePlanForPrompt(relationalImpactWithQuestion).includes("answerObligations: [{"));
   assert(repairSurfacePrompt.includes("Complete the selected repair mode"));
   assert(repairSurfacePrompt.includes("proposition_withdrawal"));
   assert(repairSurfacePrompt.includes("Do not claim the relationship is repaired"));

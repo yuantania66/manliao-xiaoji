@@ -8,6 +8,7 @@ import {
   type PlannedFunctionSemanticContext,
   type PlannedFunctionSemanticProvider,
   type PlannedFunctionSemanticValidationPromptInspector,
+  type PlannedFunctionSemanticVerdict,
 } from "./plannedFunctionSemanticValidator";
 import {
   adaptInteractionMoveHandoffPromptInspector,
@@ -963,7 +964,7 @@ const EMOTIONAL_SUPPORT_FUNCTION_REGENERATION: Record<
   return_amount_control: () =>
     "把表达多少的控制权交给用户，明确允许只说一点或不说完整；不要改成选择先说哪部分、提问或另一个话题。",
   acknowledge_current_relational_impact: () =>
-    "承担助手这一轮没接住用户的当前影响，并说明信息边界：助手还不知道具体哪里没接住，也不把自己说成已经理解；不宣称已经修复，不要求用户指出哪里错。主要功能不能换成“说多少/先说哪部分”的许可。",
+    "承认用户现在感到没被助手理解这一关系影响，并如实说明信息边界：助手还不知道具体哪里没接住，也不把自己说成已经理解；不宣称已经修复。对话里没有之前的助手回复时，不要编造助手之前说了什么或错在哪里。说完即完成：不要用提问或陈述的方式让用户解释、举例、选择先说哪部分或说多少，或指出助手哪里没懂；用户本轮有明确问题或请求时仍要回答。",
 };
 
 const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, failure: string) => {
@@ -971,7 +972,7 @@ const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, fai
   if (contract?.action !== "offer_emotional_support") return null;
   const terms = contract.explicitAffectOrImpactTerms.map((term) => `“${term}”`).join("、") || "当前轮证据";
   const contentBoundary =
-    "不要询问或提供原因、触发事件、当时情形、具体经过作为选项，也不要提供“别的/其他”这类未知选项。";
+    "选项、邀请或许可只能指向用户本轮已说出的内容：不要询问或提供原因、触发事件、当时情形、具体经过作为选项，也不要提供“别的/其他”这类未知选项。";
   const invitationBoundary = plan.questionPolicy.mode === "none"
     ? "本计划禁止提问：不要提出任何需要用户回应的请求，包括没有问号的“你想……/要不要……”。"
     : "支持功能完成后可以保留至多一个低负担邀请，只能围绕“先表达哪一部分或表达多少”；不提问也能完成本轮。";
@@ -1204,6 +1205,7 @@ export const enforceResponsePlan = async ({
       ? adaptInteractionMoveHandoffPromptInspector(inspectHandoffExternalPrompt)
       : undefined
   );
+  const semanticVerdicts: Array<PlannedFunctionSemanticVerdict | null> = [];
   const validateCandidate = async (reply: string): Promise<ResponseValidationResult> => {
     const deterministic = validateResponsePlanOutput({ plan: executionPlan, reply });
     const semantic = await validatePlannedFunctionSemanticOutput({
@@ -1213,6 +1215,7 @@ export const enforceResponsePlan = async ({
       provider: semanticProvider,
       inspectExternalPrompt: semanticPromptInspector,
     });
+    semanticVerdicts.push(semantic.verdict);
     const hardFailureReasons = Array.from(new Set([
       ...(deterministic.hardFailureReasons ?? deterministic.failureReasons),
       ...semantic.hardFailureReasons,
@@ -1241,6 +1244,7 @@ export const enforceResponsePlan = async ({
       generation: first,
       attempts: [first],
       validations: [firstValidation],
+      semanticVerdicts,
       regenerateAttempted: false,
     };
   }
@@ -1269,6 +1273,7 @@ export const enforceResponsePlan = async ({
       },
       attempts: [first, second],
       validations: [firstValidation, secondValidation],
+      semanticVerdicts,
       regenerateAttempted: true,
     };
   }
@@ -1278,6 +1283,7 @@ export const enforceResponsePlan = async ({
     generation: constraintFailureGeneration(first, second, [...firstValidation.failureReasons, ...secondValidation.failureReasons]),
     attempts: [first, second],
     validations: [firstValidation, secondValidation],
+    semanticVerdicts,
     regenerateAttempted: true,
   };
 };

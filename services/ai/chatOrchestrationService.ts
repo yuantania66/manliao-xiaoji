@@ -44,7 +44,10 @@ import {
 } from "./purposeSubjectOwnershipAuthority";
 import { enforceResponsePlan } from "./responsePlanValidator";
 import type { InteractionMoveHandoffSemanticProvider } from "./interactionMoveHandoffOutputValidator";
-import type { PlannedFunctionSemanticProvider } from "./plannedFunctionSemanticValidator";
+import type {
+  PlannedFunctionSemanticProvider,
+  PlannedFunctionSemanticVerdict,
+} from "./plannedFunctionSemanticValidator";
 import {
   buildAttemptTransitions,
   classifyExecutionError,
@@ -117,6 +120,8 @@ export type ChatReplyResult = {
   helpingTrace: HillHelpingShadowTrace;
   controlTrace?: ConversationControlTrace;
   execution: ChatExecutionTrace;
+  /** Debug-trace only; aligned with controlTrace.validation attempts. */
+  plannedFunctionSemanticVerdicts?: Array<PlannedFunctionSemanticVerdict | null>;
 };
 
 const getFallbackRiskLevel = (content: string): AiRiskLevel => (isCrisisInput(content) ? "crisis" : "low");
@@ -629,6 +634,7 @@ export const createChatReply = async ({
       plannedFunctionSemanticContext: {
         currentUserText: userMessage,
         handoffTargetAssistantText: handoffTargetMessage?.content ?? null,
+        priorAssistantTurnAvailable: recentMessages.some((message) => message.role === "assistant"),
       },
       inspectPlannedFunctionExternalPrompt: inspectExternalPrompt
         ? ({ messages }) => inspectExternalPrompt({
@@ -752,6 +758,7 @@ export const createChatReply = async ({
       helpingTrace,
       controlTrace,
       execution,
+      ...(includeDebugTrace ? { plannedFunctionSemanticVerdicts: enforced.semanticVerdicts } : {}),
       debugTrace: buildMaybeDebugTrace({
         includeDebugTrace,
         userMessage,

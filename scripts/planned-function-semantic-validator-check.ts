@@ -663,6 +663,57 @@ assert.equal(emotionalRetryConstraints.length, 2);
 assert(emotionalRetryConstraints[1]?.includes("return_focus_control"));
 assert.equal(emotionalRetryConstraints[1]?.includes("修复校验项"), false);
 
+const acknowledgementPlan = basePlan();
+acknowledgementPlan.responseActions = ["offer_emotional_support"];
+acknowledgementPlan.positiveFunctionContract = emotionalContract("acknowledge_current_relational_impact");
+acknowledgementPlan.questionPolicy = { mode: "none", reason: "relational-impact acknowledgement adds no invitation" };
+const acknowledgementFeedback = formatResponsePlanRegenerateConstraint(
+  acknowledgementPlan,
+  ["planned_function_semantic:positive_function_not_satisfied"]
+);
+assert(acknowledgementFeedback.includes("不要用提问或陈述的方式让用户解释、举例、选择先说哪部分或说多少"));
+assert(acknowledgementFeedback.includes("没有之前的助手回复时，不要编造"));
+assert(acknowledgementFeedback.includes("用户本轮有明确问题或请求时仍要回答"));
+assert(acknowledgementFeedback.includes("没有问号"));
+assert.equal(acknowledgementFeedback.includes("至多一个低负担邀请"), false);
+
+const judgeMessages: string[] = [];
+const inspectedJudge = await validatePlannedFunctionSemanticOutput({
+  plan: acknowledgementPlan,
+  reply: "候选",
+  semanticContext: { ...context, priorAssistantTurnAvailable: false },
+  inspectExternalPrompt: ({ messages }) => {
+    judgeMessages.push(...messages.map((message) => message.content));
+    throw new Error("inspection only");
+  },
+});
+assert.deepEqual(inspectedJudge.failureReasons, ["planned_function_semantic:provider_failure"]);
+const judgeRubric = judgeMessages.join("\n");
+for (const ruleId of ["ES-SCOPE", "ES-FOCUS", "ES-ACK-BOUNDARY", "ES-ACK-NO-SOLICIT", "ES-ACK-NO-FABRICATION"]) {
+  assert(judgeRubric.includes(`${ruleId}:`), `judge rubric must define ${ruleId}`);
+}
+assert(judgeRubric.includes("\"priorAssistantTurnAvailable\":false"));
+const providerInputs: PlannedFunctionSemanticProviderInput[] = [];
+for (const semanticContext of [
+  { ...context, priorAssistantTurnAvailable: true },
+  context,
+]) {
+  await validatePlannedFunctionSemanticOutput({
+    plan: acknowledgementPlan,
+    reply: "让你觉得没被懂，我还不知道具体是哪里没对上。",
+    semanticContext,
+    provider: async (input) => {
+      providerInputs.push(input);
+      return verdictFor({ input });
+    },
+  });
+}
+assert.equal(providerInputs[0]?.priorAssistantTurnAvailable, true);
+assert.equal("priorAssistantTurnAvailable" in (providerInputs[1] ?? {}), false, "absent history evidence stays unknown");
+assert.equal(emotionalRetry.semanticVerdicts.length, 2, "one recorded semantic verdict per validated attempt");
+assert.equal(emotionalRetry.semanticVerdicts[0]?.positiveFunction?.status, "not_satisfied");
+assert.equal(emotionalRetry.semanticVerdicts[1]?.positiveFunction?.status, "satisfied");
+
 const providerFailure = await validatePlannedFunctionSemanticOutput({
   plan: firstContactPlan,
   reply: "候选",

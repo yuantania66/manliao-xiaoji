@@ -663,6 +663,9 @@ export const createResponsePlan = ({
           structurallyComplexConcurrent.length > 0
         ? "standard"
         : "minimal";
+  const acknowledgesRelationalImpact =
+    positiveFunctionContract?.action === "offer_emotional_support" &&
+    positiveFunctionContract.supportFunction === "acknowledge_current_relational_impact";
   const handoffInvitesCalibration = actions.includes("invite_low_pressure_calibration");
   const handoffRequiresNoQuestion = actions.some((action) =>
     action === "continue_established_frame" ||
@@ -674,6 +677,7 @@ export const createResponsePlan = ({
       ? "none"
       : "optional_after_answer"
     : hasActivity(dialogueState, "pausing") ||
+    acknowledgesRelationalImpact ||
     allowIdle ||
     simpleDirectAnswer ||
     (repairsAssistant && !takesTopicInitiative) ||
@@ -790,6 +794,8 @@ export const createResponsePlan = ({
             : "A question is optional only after the handoff function is completed and independently supported by the ordinary plan."
       : hasActivity(dialogueState, "pausing")
         ? "Interaction State is paused."
+        : acknowledgesRelationalImpact
+          ? "Relational-impact acknowledgement is complete once the impact and information boundary are stated; do not ask or invite the user to explain, choose, or show what the assistant missed. Current-turn answer obligations still apply."
         : handoffInvitesCalibration
           ? "Helping applicability is uncertain; ask one low-pressure calibration question without assigning meaning."
         : handoffRequiresNoQuestion

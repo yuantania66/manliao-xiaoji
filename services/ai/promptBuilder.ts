@@ -10,7 +10,7 @@ import {
   isProactiveGreetingPromptVersion,
 } from "@/lib/proactive-greeting";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v29";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v30";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -416,7 +416,9 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
       `Complete exactly the selected ordinary support function: ${contract?.supportFunction ?? "missing_contract"}. This is a required conversational function, not a suggested phrase.`,
       "A receipt, paraphrase, generic invitation, generic presence claim, or statement about the assistant trying to understand is not sufficient support.",
       "Do not use formulaic presence, simulated contact, generic normalization, reassurance, or unsolicited regulation advice as the support function (for example: 'I am here', 'hug you', 'this is normal', or 'take a breath').",
-      "Acknowledge the evidenced feeling without judging it as okay, acceptable, normal, natural, right, or wrong. Permission language must modify the user's expression choice, such as how much or how completely to speak, never the feeling itself.",
+      contract?.supportFunction === "acknowledge_current_relational_impact"
+        ? "Acknowledge the evidenced relational impact without judging it as okay, acceptable, normal, natural, right, or wrong."
+        : "Acknowledge the evidenced feeling without judging it as okay, acceptable, normal, natural, right, or wrong. Permission language must modify the user's expression choice, such as how much or how completely to speak, never the feeling itself.",
       "Do not intensify the user's affect, claim complete empathy, or foreground that the assistant cannot fully understand or is working hard to understand.",
       contract?.supportFunction === "acknowledge_current_relational_impact"
         ? "Do not turn the acknowledgement into a requirement to continue; no follow-up question is required."
@@ -444,7 +446,9 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
     } else if (contract?.supportFunction === "acknowledge_current_relational_impact") {
       constraints.push(
         "Acknowledge only the current relational impact and the lack of a supported correction target. Do not claim a completed repair or ask the user to diagnose the assistant.",
-        "This function is its own move, not focus or amount control: own that the assistant's reply did not land for the user right now, then state the information boundary plainly—the assistant does not yet know which part it missed and will not describe itself as already understanding. The boundary concerns missing context, not a claim that the assistant cannot understand the user. An expression-amount or focus permission may not replace this acknowledgement."
+        "This function is its own move, not focus or amount control: own the relational impact the user is reporting now—that the assistant has not understood them—then state the information boundary plainly: the assistant does not yet know which part it missed and will not describe itself as already understanding. The boundary concerns missing context, not a claim that the assistant cannot understand the user.",
+        "Refer to an earlier assistant reply only when one appears in the conversation. With no earlier assistant reply, do not invent what the assistant said or what it got wrong.",
+        "The function is complete once the acknowledgement and information boundary are stated. Do not add any request, whether phrased as a question or a statement, for the user to explain, give an example, choose which part to say first or how much to say, or show where the assistant missed. If the current user turn contains an explicit question or request, still answer it as the plan requires."
       );
     }
   }
