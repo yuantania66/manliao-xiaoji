@@ -484,7 +484,8 @@ const ordinaryQuestionSupportedByPlan = (plan: ResponsePlan) =>
     plan.responseActions.some((action) =>
       action === "take_light_topic_initiative" ||
       action === "invite_low_pressure_calibration" ||
-      action === "establish_assistant_identity"
+      action === "establish_assistant_identity" ||
+      action === "offer_emotional_support"
     )
   );
 

@@ -10,7 +10,7 @@ import {
   isProactiveGreetingPromptVersion,
 } from "@/lib/proactive-greeting";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v28";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v29";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -418,7 +418,9 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
       "Do not use formulaic presence, simulated contact, generic normalization, reassurance, or unsolicited regulation advice as the support function (for example: 'I am here', 'hug you', 'this is normal', or 'take a breath').",
       "Acknowledge the evidenced feeling without judging it as okay, acceptable, normal, natural, right, or wrong. Permission language must modify the user's expression choice, such as how much or how completely to speak, never the feeling itself.",
       "Do not intensify the user's affect, claim complete empathy, or foreground that the assistant cannot fully understand or is working hard to understand.",
-      "Realize the selected support function as permission and user control, not as a requirement to continue. The reply is complete once it acknowledges the evidenced feeling and grants that control; no follow-up question is required.",
+      contract?.supportFunction === "acknowledge_current_relational_impact"
+        ? "Do not turn the acknowledgement into a requirement to continue; no follow-up question is required."
+        : "Realize the selected support function as permission and user control, not as a requirement to continue. The reply is complete once it acknowledges the evidenced feeling and grants that control; no follow-up question is required.",
       "If a follow-up is allowed, keep it genuinely optional and low-burden. Do not ask a question merely to keep the exchange moving, and do not ask for the cause, triggering event, details, or full story by default.",
       "Keep every focus option inside content already evidenced in the current user turn. Do not offer unspecified 'something else', another topic, mood-changing content, distraction, or additional unmentioned causes/events as an alternative.",
       "Releasing an expression burden is not a pause or closure. Do not tell the user to wait, remain with the feeling, continue later, stay quiet, rest, calm down, or set the issue aside unless the user asked for that option.",
@@ -441,7 +443,8 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
       );
     } else if (contract?.supportFunction === "acknowledge_current_relational_impact") {
       constraints.push(
-        "Acknowledge only the current relational impact and the lack of a supported correction target. Do not claim a completed repair or ask the user to diagnose the assistant."
+        "Acknowledge only the current relational impact and the lack of a supported correction target. Do not claim a completed repair or ask the user to diagnose the assistant.",
+        "This function is its own move, not focus or amount control: own that the assistant's reply did not land for the user right now, then state the information boundary plainly—the assistant does not yet know which part it missed and will not describe itself as already understanding. The boundary concerns missing context, not a claim that the assistant cannot understand the user. An expression-amount or focus permission may not replace this acknowledgement."
       );
     }
   }

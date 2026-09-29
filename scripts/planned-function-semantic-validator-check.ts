@@ -13,7 +13,10 @@ import {
   type PlannedFunctionSemanticVerdict,
   type PositiveFunctionVerdictBinding,
 } from "../services/ai/plannedFunctionSemanticValidator";
-import { enforceResponsePlan } from "../services/ai/responsePlanValidator";
+import {
+  enforceResponsePlan,
+  formatResponsePlanRegenerateConstraint,
+} from "../services/ai/responsePlanValidator";
 import type { AiGenerationResult } from "../services/ai/types";
 
 const turnId = "user-turn-current";
@@ -523,6 +526,73 @@ assert.deepEqual(
   ["planned_function_semantic:question_count_quality"]
 );
 
+const emotionalInvitationPlan = basePlan();
+emotionalInvitationPlan.responseActions = ["offer_emotional_support"];
+emotionalInvitationPlan.positiveFunctionContract = emotionalContract("return_focus_control");
+emotionalInvitationPlan.questionPolicy = { mode: "optional_after_answer", reason: "contract §3.3 single invitation" };
+for (const [count, advisory] of [
+  [0, []],
+  [1, []],
+  [2, ["planned_function_semantic:question_count_quality"]],
+] as const) {
+  const result = await validatePlannedFunctionSemanticOutput({
+    plan: emotionalInvitationPlan,
+    reply: "这份难受先碰哪一部分由你定，想先说哪部分？",
+    semanticContext: context,
+    provider: async (input) => verdictFor({ input, semanticQuestionCount: count }),
+  });
+  assert.equal(result.passed, true, `emotional support question count ${count}`);
+  assert.deepEqual(result.advisoryFailureReasons, advisory, `emotional support question count ${count}`);
+}
+const unsupportedOrdinaryQuestionPlan = basePlan();
+unsupportedOrdinaryQuestionPlan.responseActions = ["repair_previous_wording"];
+unsupportedOrdinaryQuestionPlan.positiveFunctionContract = repairContract("proposition_withdrawal");
+unsupportedOrdinaryQuestionPlan.questionPolicy = { mode: "optional_after_answer", reason: "no independent question action" };
+const unsupportedOrdinaryQuestion = await validatePlannedFunctionSemanticOutput({
+  plan: unsupportedOrdinaryQuestionPlan,
+  reply: "那个判断我撤回，你怎么看？",
+  semanticContext: context,
+  provider: async (input) => verdictFor({ input, semanticQuestionCount: 1 }),
+});
+assert.deepEqual(
+  unsupportedOrdinaryQuestion.advisoryFailureReasons,
+  ["planned_function_semantic:question_count_quality"]
+);
+
+const semanticFeedbackCodes = [
+  "planned_function_semantic:positive_function_not_satisfied",
+  "planned_function_semantic:question_count_quality",
+];
+const emotionalFeedbacks = new Set<string>();
+for (const supportFunction of [
+  "reduce_expression_burden",
+  "return_focus_control",
+  "return_amount_control",
+  "acknowledge_current_relational_impact",
+] as const) {
+  const plan = structuredClone(emotionalInvitationPlan);
+  plan.positiveFunctionContract = emotionalContract(supportFunction);
+  const constraint = formatResponsePlanRegenerateConstraint(plan, semanticFeedbackCodes);
+  assert.equal(constraint.includes("修复校验项"), false, `${supportFunction} regeneration feedback must be concrete`);
+  assert(constraint.includes(supportFunction), supportFunction);
+  assert(constraint.includes("“难受”"), `${supportFunction} feedback must name the evidenced terms`);
+  assert(constraint.includes("原因、触发事件、当时情形、具体经过"), supportFunction);
+  assert(constraint.includes("至多一个低负担邀请"), supportFunction);
+  emotionalFeedbacks.add(constraint);
+}
+assert.equal(emotionalFeedbacks.size, 4, "each support function needs its own corrective instruction");
+const noQuestionEmotionalFeedback = formatResponsePlanRegenerateConstraint(
+  semanticRequestPlan,
+  ["planned_function_semantic:question_count_quality"]
+);
+assert(noQuestionEmotionalFeedback.includes("没有问号"));
+assert.equal(noQuestionEmotionalFeedback.includes("至多一个低负担邀请"), false);
+const identityFeedback = formatResponsePlanRegenerateConstraint(
+  firstContactPlan,
+  ["planned_function_semantic:positive_function_not_satisfied"]
+);
+assert.equal(identityFeedback.includes("情绪支持"), false, "emotional feedback must not leak into other positive functions");
+
 const generation = (text: string): AiGenerationResult => ({
   text,
   model: "offline-test",
@@ -574,6 +644,24 @@ const doubleFailure = await enforceResponsePlan({
 assert.equal(doubleFailure.outcome, "failed");
 assert.equal(doubleFailureCalls, 2);
 assert.equal(doubleFailure.generation.finalReplySource, "constraint_failure");
+
+const emotionalRetryConstraints: Array<string | null> = [];
+const emotionalRetry = await enforceResponsePlan({
+  plan: emotionalInvitationPlan,
+  plannedFunctionSemanticContext: context,
+  generate: async (constraint) => {
+    emotionalRetryConstraints.push(constraint);
+    return generation(constraint === null ? "你想先说说这份难受，还是当时具体发生了什么？" : "这份难受先碰哪一部分由你定。");
+  },
+  plannedFunctionSemanticProvider: async (input) => verdictFor({
+    input,
+    positiveStatus: input.candidateReply.includes("具体发生") ? "not_satisfied" : "satisfied",
+  }),
+});
+assert.equal(emotionalRetry.outcome, "validated");
+assert.equal(emotionalRetryConstraints.length, 2);
+assert(emotionalRetryConstraints[1]?.includes("return_focus_control"));
+assert.equal(emotionalRetryConstraints[1]?.includes("修复校验项"), false);
 
 const providerFailure = await validatePlannedFunctionSemanticOutput({
   plan: firstContactPlan,

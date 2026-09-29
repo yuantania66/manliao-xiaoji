@@ -43,6 +43,22 @@ const run = async () => {
       });
       const plan = reply.controlTrace?.responsePlan;
       const validation = reply.controlTrace?.validation.at(-1);
+      const repairState = reply.controlTrace?.dialogueState.repairState;
+      const repairContract = plan?.positiveFunctionContract?.action === "repair_previous_wording"
+        ? plan.positiveFunctionContract
+        : null;
+      const repairAdoption = {
+        status: repairState?.status ?? null,
+        ...(!repairState || repairState.status === "none"
+          ? { adoptedRelation: null, adoptionSource: "none" }
+          : repairState.sourceRelation === "challenges_move_fit"
+            ? { adoptedRelation: "challenges_move_fit", adoptionSource: "model_move_fit" }
+            : reply.controlTrace?.interpretation.correction
+              ? { adoptedRelation: null, adoptionSource: "deterministic_correction" }
+              : { adoptedRelation: "repairs_previous_move", adoptionSource: "model_repair" }),
+        repairMode: repairContract?.repairMode ?? null,
+        interactionMoveSubtype: repairContract?.interactionMoveSubtype ?? null,
+      };
       const row = {
         scenarioId: scenario.id,
         kind: scenario.kind,
@@ -53,6 +69,7 @@ const run = async () => {
         actualActions: plan?.responseActions ?? [],
         behaviorSource: plan?.behaviorSource ?? null,
         questionPolicy: plan?.questionPolicy.mode ?? null,
+        repairAdoption,
         reply: reply.generation.text,
         executionPhase: reply.execution.phase,
         planPreflightPassed: reply.execution.planPreflight.passed,
@@ -81,6 +98,7 @@ const run = async () => {
         finalSource: row.finalSource,
         actualActions: row.actualActions,
         regenerateAttempted: row.regenerateAttempted,
+        repairAdoption: row.repairAdoption,
       }));
     }
   }
@@ -104,6 +122,12 @@ const run = async () => {
     helpingProviderCalls,
     regenerations,
     regenerationRate: regenerations / total,
+    // Observational only: which repair path was adopted, independent of whether the row passed.
+    repairAdoptionBySource: rows.reduce<Record<string, number>>((counts, row) => {
+      const key = `${row.repairAdoption.adoptionSource}:${row.repairAdoption.repairMode ?? "none"}`;
+      counts[key] = (counts[key] ?? 0) + 1;
+      return counts;
+    }, {}),
   };
   const checks = {
     completeRunCount: total === dataset.gate.scenarioCount * dataset.gate.runsPerScenario,

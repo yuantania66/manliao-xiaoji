@@ -952,7 +952,44 @@ export const validateResponsePlanOutput = ({ plan, reply }: { plan: ResponsePlan
   };
 };
 
+const EMOTIONAL_SUPPORT_FUNCTION_REGENERATION: Record<
+  Extract<NonNullable<ResponsePlan["positiveFunctionContract"]>, { action: "offer_emotional_support" }>["supportFunction"],
+  (terms: string) => string
+> = {
+  reduce_expression_burden: () =>
+    "明确说出用户不需要解释原因、分析或一次讲完整，然后结束；不要改成选择先说哪部分、表达多少，也不要暂停或结束话题。",
+  return_focus_control: (terms) =>
+    `把先碰哪一部分的控制权交给用户，可选范围只能是这些已表达内容本身：${terms}；不要把其中任何一项改写成要用户讲的事情经过或细节，不要追加第二个话题，也不要让用户必须二选一。`,
+  return_amount_control: () =>
+    "把表达多少的控制权交给用户，明确允许只说一点或不说完整；不要改成选择先说哪部分、提问或另一个话题。",
+  acknowledge_current_relational_impact: () =>
+    "承担助手这一轮没接住用户的当前影响，并说明信息边界：助手还不知道具体哪里没接住，也不把自己说成已经理解；不宣称已经修复，不要求用户指出哪里错。主要功能不能换成“说多少/先说哪部分”的许可。",
+};
+
+const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, failure: string) => {
+  const contract = plan.positiveFunctionContract;
+  if (contract?.action !== "offer_emotional_support") return null;
+  const terms = contract.explicitAffectOrImpactTerms.map((term) => `“${term}”`).join("、") || "当前轮证据";
+  const contentBoundary =
+    "不要询问或提供原因、触发事件、当时情形、具体经过作为选项，也不要提供“别的/其他”这类未知选项。";
+  const invitationBoundary = plan.questionPolicy.mode === "none"
+    ? "本计划禁止提问：不要提出任何需要用户回应的请求，包括没有问号的“你想……/要不要……”。"
+    : "支持功能完成后可以保留至多一个低负担邀请，只能围绕“先表达哪一部分或表达多少”；不提问也能完成本轮。";
+  if (
+    failure === "planned_function_semantic:positive_function_not_satisfied" ||
+    failure === "planned_function_semantic:positive_function_uncertain"
+  ) {
+    return `候选没有完成情绪支持功能“${contract.supportFunction}”。只使用用户本轮已表达的${terms}，保持原有情绪类别和强度。${EMOTIONAL_SUPPORT_FUNCTION_REGENERATION[contract.supportFunction](terms)}${contentBoundary}${invitationBoundary}`;
+  }
+  if (failure === "planned_function_semantic:question_count_quality") {
+    return `情绪支持功能“${contract.supportFunction}”的语义请求超出计划。${invitationBoundary}${contentBoundary}`;
+  }
+  return null;
+};
+
 const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
+  const emotionalSupportInstruction = emotionalSupportSemanticRegenerationInstruction(plan, failure);
+  if (emotionalSupportInstruction) return emotionalSupportInstruction;
   if (failure === "assistant_voice:mechanical_receipt_or_presence") {
     return "删除“收到、我在、随时都在”或只重复问候的客服式收条。按当前 ResponsePlan 完成一个具体会话功能：允许提问时给出一个容易回答的自然话头；禁止提问时则贴住用户本轮内容并向前推进，不要只宣布在线。";
   }

@@ -745,6 +745,25 @@ const run = async () => {
   assert(multiFocusSurfacePrompt.includes("return_focus_control"));
   assert(multiFocusSurfacePrompt.includes("without requiring the user to choose or answer"));
   assert(emotionSurfacePrompt.includes("making the user diagnose the assistant's mistake"));
+  assert(emotionSurfacePrompt.includes("grants that control"));
+  const noHistoryRelationalImpact = build({ userMessage: "你一点都不懂我" }).responsePlan;
+  assert.equal(
+    noHistoryRelationalImpact.positiveFunctionContract?.action === "offer_emotional_support"
+      ? noHistoryRelationalImpact.positiveFunctionContract.supportFunction
+      : null,
+    "acknowledge_current_relational_impact"
+  );
+  for (const relationalPlan of [relationalImpactEmotion, noHistoryRelationalImpact]) {
+    const relationalSurfacePrompt = formatResponsePlanForPrompt(relationalPlan);
+    assert(relationalSurfacePrompt.includes("acknowledge_current_relational_impact"));
+    assert.equal(
+      relationalSurfacePrompt.includes("grants that control"),
+      false,
+      "Relational-impact acknowledgement must not be told that granting expression control completes it."
+    );
+    assert(relationalSurfacePrompt.includes("state the information boundary"));
+    assert(relationalSurfacePrompt.includes("not focus or amount control"));
+  }
   assert(repairSurfacePrompt.includes("Complete the selected repair mode"));
   assert(repairSurfacePrompt.includes("proposition_withdrawal"));
   assert(repairSurfacePrompt.includes("Do not claim the relationship is repaired"));
