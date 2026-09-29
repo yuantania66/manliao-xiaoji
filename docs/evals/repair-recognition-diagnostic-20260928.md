@@ -208,3 +208,48 @@
 - 唯一失败：`emotion-being-ignored` 第 2 次运行两次尝试都被语义校验拒绝（`positive_function_not_satisfied`、`question_count_quality`），最终 `constraint_failure`；同场景第 1、3 次运行也各重新生成 1 次（`question_count_quality`）。
 - 同一场景在 `abec5ed` 的 r6（v1 夹具，本切片之前）出现完全相同的失败签名。封存运行 `batch1-5-e` 该场景 3/3 通过，但第 1 次同样需要重新生成。
 - 该场景无历史，本切片的改动在结构上不会作用于它。它属于情绪支持生成与语义校验层的既有不稳定，不在本切片范围内，因此未进行修复轮，也未重跑。
+
+## 11. 情绪支持生成与校验链诊断与最小修复（2026-09-29，用户批准，候选 `e3428a4`）
+
+### 11.1 诊断（只用既有产物，未追加采样）
+
+| 项 | `emotion-being-ignored` | 无历史“你一点都不懂我”（`TRJ-REPAIR-OBS-001` t1） |
+| --- | --- | --- |
+| Planner 要求 | `offer_emotional_support` / `return_focus_control`（两个证据目标：被忽略、挺难受），`optional_after_answer` | `offer_emotional_support` / `acknowledge_current_relational_impact`，`optional_after_answer` |
+| 生成器实际收到 | 焦点控制约束齐全，含“不制造 A/B 选择、不问原因/触发事件/细节” | 通用约束写着“以许可与用户控制完成功能……给出控制即完成”，与合同 §3.2 对该功能的定义（承认关系影响与信息边界）冲突 |
+| 首次回复实际完成 | v2/r6 共 6 行几乎都是“你想先说说 X，还是聊聊 Y”，Y 常为“当时具体发生了什么／情形／别的部分”，违反提示与合同 §3.3 | r6 3/3 给出表达量许可（“你想说多少、怎么说，都由你来决定”），无信息边界 |
+| 校验依据 | 失败行 `positive_function_not_satisfied`（与合同一致）；另有 4 行仅因 advisory `question_count_quality` 触发再生成：单个低负担邀请在合同 §3.3 与 VAL-SEM-04 下是允许的，校验实现把情绪支持计划排除在允许单问的动作之外 | `positive_function_not_satisfied`：判定回复实现了另一种支持功能，与合同一致 |
+| 再生成反馈 | 只有“修复校验项 planned_function_semantic:…”，无功能级纠正；r6 第 2 次运行两次尝试逐字相同 | 同左 |
+
+结论：三个根因，两个场景不同根因、共享第 1 项。
+
+1. 再生成反馈缺失（两场景共享）。
+2. 校验实现偏离既有合同：情绪支持计划的一个低负担邀请被记为超额（只影响 `emotion-being-ignored` 的非必要再生成）。
+3. 提示冲突：通用“给出控制即完成”作用于 `acknowledge_current_relational_impact`（只影响“你一点都不懂我”）。
+
+### 11.2 最小修复（`e3428a4`）
+
+- `plannedFunctionSemanticValidator.ts`：`offer_emotional_support` 在 `questionPolicy` 允许时可带至多 1 个语义请求；`none` 仍要求 0，上限未放宽。
+- `responsePlanValidator.ts`：情绪支持语义失败按支持功能给出具体中文纠正，含证据词、内容边界、邀请边界（`none` 时禁止无问号请求）。
+- `promptBuilder.ts`（`chat-response-plan-v29`）：通用“给出控制即完成”不再作用于 `acknowledge_current_relational_impact`；该功能增加“承认没接住＋信息边界，不以表达量/焦点许可替代”。
+- 未改阈值、未删校验、未加重试、无固定兜底回复；失败回复仍不提交。
+- 确定性回归：换回 HEAD 源文件时三项回归分别失败（F1 `emotional support question count 1`、F2 `regeneration feedback must be concrete`、F3 `must not be told that granting expression control completes it`），当前代码通过；tsc、eslint、`check:release:required`（新隔离库 `xq_rc_ci_test_20260929a`）exit 0。固定 verdict 的测试只证明链路连接。
+- runner 可观察性：保持门 runner 每行记录 `repairAdoption`（`adoptedRelation`、`adoptionSource`、`repairMode`、`interactionMoveSubtype`），汇总 `repairAdoptionBySource` 只作观察，不参与门判定。
+
+### 11.3 预先固定的真实模型预算（一次，无重试）
+
+预算：两场景各 5 次，无历史；通过标准为 10/10 VALIDATED、0 `constraint_failure`、计划与期望支持功能一致。脚本 `scripts/emotional-support-fix-budget.ts`，`e3428a4`，`qwen3.7-max`，`AI_TIMEOUT_MS=45000`，`.env` sha 前缀 `0ee58c243449c1a4`。结构副本 `emotional-support-fix-20260929/budget-e3428a4-structural.json`（不含回复文本）。
+
+| 场景 | 通过 | 再生成 | 首次即通过 |
+| --- | --- | --- | --- |
+| `emotion-being-ignored` | 4/5 | 1 | 4/5（修复前 v2+r6 为 0/6） |
+| 无历史“你一点都不懂我” | 1/5 | 4 | 1/5 |
+
+- 预算结论：**FAIL**（5/10）。完整冻结保持门的前置条件未满足，未运行。
+- F1 生效：advisory 不再触发非必要再生成。
+- F3 部分生效：4/5 回复已包含“没接住＋还不知道具体哪里没对上”的信息边界（修复前 0/3）。但这 4 条都在后面追加了“你想说多少、先说哪部分都可以”，两次尝试都被判 `positive_function_not_satisfied`；唯一通过的一条没有这一尾句。
+- `emotion-being-ignored`：判定方向不一致。第 1、4 次提供未知选项“别的部分”仍判通过（判定规则写明只能是已表达部分）；第 5 次两个选项都是已表达内容（“这份难受”“被忽略的感觉”），两次尝试都被拒绝。
+
+### 11.4 停止点（证据不足以判断回复与校验谁错）
+
+合同 §3.2 要求“恰好一个主要功能”，§3.3 允许在功能完成后追加至多一个围绕“先表达哪一部分或表达多少”的低负担邀请，同时禁止“要求用户证明助手哪里没懂”。紧跟在“还不知道哪里没对上”之后的“先说哪部分”尾句，既可读作 §3.3 允许的邀请，也可读作请用户指出哪里没懂。本次产物未记录判定证据片段，重放判定属于新采样。因此没有进入修复轮，两个修复轮预算都未消耗，需先由产品决定合同解释。
