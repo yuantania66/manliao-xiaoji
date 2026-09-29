@@ -303,6 +303,7 @@ r3/r4 当时的归因：
   - 合同 §3.2/§3.3 同步。
 - 确定性回归在修复前失败、修复后通过；`check:release:required` exit 0。
 - 判定验证 J：PASS（31 次，9/9 有标签案例可靠）。冻结真实判定门 Q：PASS（41/0）。端到端 E：PASS（10/10，3 次再生成，冻结筛查违规 0；2 条歧义回复待人工复核）。
+  - 2026-09-29 C2 人工裁决追加（原结果保留）：E 已提交的 10 条中，A1 两条“刚才被忽略的那个瞬间”裁定符合；A2 三条（r2、r4、r5）“这确实让人失望”裁定**不符合** §3.2(1)（并与 §3.1、§3.4 不一致）。因此该次 E 的已提交内容不是全部合规：按预登记机械标准记为 PASS，按人工裁决有 3/10 条内容违规。
 - 完整冻结保持门 F：**FAIL**。
   - 59/60；期望动作 60/60；再生成 10%；advice-boundary 3/3 无 `PLAN_INVALID`。
   - 唯一失败 `emotion-lonely` r3 是候选产生前的执行层异常（`PROVIDER_ERROR`/`TIMEOUT` 类），具体子类型因 runner 不记录 `execution.failure` 而未知；未重试。
@@ -384,20 +385,20 @@ r3/r4 当时的归因：
 | # | 事项 | 当前证据与状态 | 剩余动作与完成标准 | 执行人 | 前置 | 工作耗时 | 外部等待 | 需要用户 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | C1 | 第 2 轮产品修复 | 代码完成 `399edd0`（详见诊断记录第 13 节）。确定性回归修复前失败、修复后通过；tsc、eslint 通过。真实模型验证归入 C6（未运行） | ①②③已实现，C5 已通过；剩余：J/Q/E 在 C4 冻结后执行 | Cursor | 无 | 已用约 1 小时 | 无 | 否 |
-| C2 | 5 条争议回复人工裁决 | 材料已备（本机 `~/.xq-rc-wx/review/human-review-pack-20260929.md` A 部分）；未裁决前不贴标签 | A1（“那个瞬间”×2）、A2（“这确实让人失望”×3）各给出符合/不符合及条款 | 用户 | 无 | 15–20 分钟 | 取决于用户 | **是** |
-| C3 | Safety 重复话术评审 | 材料已备（同文件 B 部分）；Safety 预算已用完 | 临床与产品负责人回答 B3 四个问题；若需改动，另行决定预算与重验范围 | 临床/心理专业人员 + 产品/Safety 负责人 | 无 | 30–60 分钟 | 未知 | **是**（指定评审人） |
-| C4 | 冻结最终候选 | 未开始 | 记录 commit、提示版本、模型 `qwen3.7-max`、`AI_TIMEOUT_MS=45000`、开关（B 侧 `HILL_HELPING_ORDINARY_HANDOFF=true`）、夹具版本与 SHA、`.env` 指纹 | Cursor | C1、C2（若 C2 导致修改则含其修复） | 10 分钟 | 无 | 否 |
-| C5 | 局部确定性 + `check:release:required` | `399edd0` 通过（2026-09-29T12:26:42Z–12:31:30Z；新隔离库 `xq_rc_ci_test_20260929e`，21 个迁移；Node 22.23.3；worktree `.env` 置空，进程无模型密钥；exit 0；lint 0 error / 3 既有警告；Next build 44/44）。另单独运行 `check:execution-failure-audit`、`check:planned-function-semantic-validator` 通过。 | C4 若只有文档差异则复用；有源码差异则在新隔离库重跑，exit 0 | Cursor | C4 | 复用 0；重跑 20 分钟 | 无 | 否 |
-| C6 | J / Q / E | `693f9ee` 均通过，C1 改动判定 Prompt 后失效 | J：全部有标签案例可靠（含新增误拒/误放/越界案例）；Q：0 失败；E：10/10、0 `constraint_failure`、冻结筛查 0、按 C2 裁决判定争议类 | Cursor | C5 | 25 分钟 | 无 | 否 |
+| C2 | 5 条争议回复人工裁决 | **已完成**（2026-09-29 20:40 UTC+8，用户）：A1 符合；A2 不符合 §3.2(1)（并与 §3.1、§3.4 不一致）。理由见诊断记录第 14 节 | 裁决已纳入 J 用例与第 2 轮修复（`91d3d90`） | 用户 | 无 | — | — | 完成 |
+| C3 | Safety 重复话术评审 | **保留为发布阻塞，不豁免**（用户 2026-09-29）。代码与既有日志取证已完成（见下方“C3 取证”），未采样、未修改 Safety | 临床/心理专业人员与产品/Safety 负责人回答 B3 四个问题；若需改动，另行决定预算与重验范围 | 真人评审（E5，待输入） | E5 | 30–60 分钟 | 未知 | **是**（评审人待输入） |
+| C4 | 冻结最终候选 | **已冻结** `91d3d90`（见下方“C4 冻结记录”） | — | Cursor | C1、C2 | — | 无 | 否 |
+| C5 | 局部确定性 + `check:release:required` | `91d3d90` **通过**（2026-09-29T13:03:58Z–13:08:59Z；新隔离库 `xq_rc_ci_test_20260929f`，21 个迁移；Node 22.23.3；worktree `.env` 置空、进程无模型密钥；exit 0；lint 0 error / 3 既有警告；Next build 44/44，Build ID `6gpa8W-LWfdFTiUgjOwYT`）。`check:execution-failure-audit` 同次执行通过，日志本机保存 `~/.xq-rc-wx/gates/r2c-execution-failure-audit-91d3d90.log`。`399edd0` 的结果被取代 | — | Cursor | C4 | — | 无 | 否 |
+| C6 | J / Q / E | **J FAIL**（`91d3d90`，21/22 有标签案例可靠；唯一失败为 A1 原文被 `ES-FOCUS` 3/3 拒绝，见诊断记录 14.4）。Q、E 按依赖规则未启动 | 需要你的决定（见“当前判定”）后才能继续 | Cursor | C5 | — | 无 | **是**（决定） |
 | C7 | 完整冻结保持门 v2 | `693f9ee` 59/60 FAIL（保留，不追认原因） | 冻结门自身标准；advice-boundary 按既定要求记录 | Cursor | C6 | 23 分钟（基础设施重跑 +23） | 无 | 否 |
 | C8 | 其余适用完整门 | 六项 Qwen 门的导入闭包自上次通过后均有变化（`conversation-os/control` 等），不复用 | Safety、交接 surface/structured/TI、主动消息门各自标准；`clinical:model-eval` 观察记录；`trajectory:review:repeat` 确定性错误 0 | Cursor | C7 | 25 分钟 | 无 | 否 |
 | C9 | Chat Gate A/B | A 侧 `3e34257c` 构建已存在；B 侧须用 C4 冻结候选新构建 | 各 `--repeat=3`，生成盲评包 | Cursor | C8 | 约 45 分钟（估算） | 无 | 否 |
 | C10 | 人工盲评 | 未开始 | 24 个片段运行按合同评分；记录评审者与规则 | 用户（单人评审，已决定） | C9 | 60–90 分钟 | 取决于用户 | **是** |
 | C11 | Chat Gate 评估 | 未开始 | `chat-gate:v0:evaluate` 达到 `gateContract` 全部阈值 | Cursor | C10 | 10 分钟 | 无 | 否 |
-| C12 | 真机测试环境（候选后端） | 候选后端已不同于生产 `9750adc`，原“用生产后端做真机”的前提失效 | 见“外部依赖”E1：获授权环境部署冻结候选，健康检查与版本核对通过 | Cursor（授权后） | C4、E1、E2 | 2–3 小时 | DNS/证书/后台配置 | **是**（环境决定与授权） |
+| C12 | 真机测试环境（候选后端） | 用户选择 S 作为准备方向；方案已写（子域名、资源与费用、隔离、配置清单、凭据来源）。新发现：服务器磁盘剩余 872M，放不下新 release | E0 磁盘空间授权；DNS A 记录；W1/W2 微信凭据决定；模型测试密钥；授权后约 2 小时 | Cursor（授权后） | C4、E0、E1、E2 | 约 2 小时 | DNS 生效、证书 | **是**（E0、DNS、凭据） |
 | C13 | 测试成员与设备 | 开发版本 `2.0.0`（`4f9d881` 包；小程序代码此后无变化）已上传，未设体验版 | E2、E3 就绪 | 管理员、操作人 | 无 | 30 分钟 | 取决于管理员 | **是** |
 | C14 | iOS/Android 真机验收 | BLOCKED | 阶段 4 清单 15 项在两台设备全部记录预期/实际 | 操作人（Cursor 备步骤、收证据） | C7、C8 通过；C12、C13 | 2–3 小时（两机并行） | 操作人时间 | **是** |
-| C15 | 备份与恢复验证 | 本地合成演练 PASS；生产未见真实恢复演练；受管媒体目录无备份记录 | E4：在隔离库恢复最近一次生产备份并核对计数（不导出明文），媒体目录备份方案落地 | Cursor（授权后） | E4 | 1–2 小时 | 无 | **是**（授权） |
+| C15 | 备份与恢复验证 | 本地合成演练 PASS；生产恢复演练与 uploads 备份方案已写到可审核状态（下方 E4），未执行 | 授权后执行恢复演练并落地 uploads 备份 | Cursor（授权后） | E0、E4 | 约 1.5 小时 | 无 | **是**（授权） |
 | C16 | 发布方案可审核 | 草案已写（下方“发布与测试环境方案”，含预发布、生产部署、回滚、`smoke:prod`、2 小时观察与停止条件、提审核对、媒体备份、恢复演练），未执行 | C4 冻结后填入 commit 与开关值，供用户审核 | Cursor | C4 | 15 分钟 | 无 | 否（最后审核） |
 | C17 | 生产部署、复验、提审、发布 | 未授权 | 最后按 C16 方案逐项申请授权 | 用户授权 | C5–C16 全部通过 | — | 微信审核（不估算） | **是** |
 
@@ -406,14 +407,44 @@ r3/r4 当时的归因：
 - C1 完成后仍有产品失败（含 C2 裁决“不符合”导致的修复在第 2 轮内未通过），停止修改，给出证据和一个决策建议。
 - 基础设施异常与产品失败分开记账：有明确证据的超时、429、5xx 允许一次预先记录的基础设施重跑，重跑必须是完整一次运行，不拼接样本。原因未知、空回复、普通 4xx、语义失败不豁免。再次外部阻塞即报告。
 
-时间估计（20:20 重排，从 2026-09-29 20:20 UTC+8 起，不含微信审核）：
-- 与 13:55 版相比：C1 比原假设晚约 4 小时完成；关键路径仍是“C2 裁决 → 机器链 → 盲评”与“测试环境 → 真机”两条链，最早完成时间不变，保守时间不变。
+C4 冻结记录（2026-09-29 21:00 UTC+8）：
+- commit `91d3d90151b222c2043add765da20646e4545a47`（其后只允许文档提交）；
+- 生成提示 `chat-response-plan-v31`；判定 Prompt 源文件 `services/ai/plannedFunctionSemanticValidator.ts` sha256 前缀 `b5204cb352500656`；Safety Prompt `safety-semantic-triage-v3`（未改）；
+- 模型 `qwen3.7-max`（`.env` sha256 前缀 `0ee58c243449c1a4`），`AI_TIMEOUT_MS=45000`；
+- `HILL_HELPING_ORDINARY_HANDOFF`：保持门 runner 与 E 脚本在调用中固定 `helpingOrdinaryHandoffEnabled: true`；Chat Gate B 侧 true，A 侧与生产不设置；
+- 保持门夹具 v2 sha256 `e03a6c365c1fe16ea2279e7b9d084b881352c95eefe83975c17fdb2f305ccf59`；J 用例 r2（含 C2 裁决）sha256 前缀 `2f0f208a5432a566`。
+- `check:execution-failure-audit` 是否纳入长期必跑入口：`docs/RELEASE_TEST_CHECKLIST.md` §1 规定实验与报告工具不是发布门，只在冻结切片引用时作为补充证据。该检查主要覆盖评测 runner 的失败记账，因此本轮作为切片证据执行并保存结果，不改长期入口；产品侧的失败类别分类目前只由它覆盖，记入 Remaining。
+
+C3 取证（只用代码与既有日志；未采样，未修改 Safety；不把“自我延续”当作已证实原因）：
+- 分诊输入的组成（代码，`services/ai/chatSafety.ts` 的 `buildSafetyMessages`）：取已提交历史中最后 2 条 user/assistant 消息作为“相邻已提交上下文”，加上当前用户消息。
+- Safety 回复是否进入历史：
+  - 登录用户正式路径：Safety 回复以 `SAVED` 状态提交（`chatReplyService.ts`，`envelopeOrigin=safety_override`）；下一回合的历史查询包含 `SAVED`（`app/api/chat/sessions/[sessionId]/messages/route.ts`）。因此下一回合分诊的相邻上下文包含上一条 Safety 模板全文。
+  - 轨迹评测：r5（`56bf5d4`）runner 无条件把回复加入历史；r6（`abec5ed`）只加入 `VALIDATED` 回复，而 t1 的阶段为 `validated`（取证记录 `r5/r6-trajectory-forensics.json`）。两次运行中，t2 分诊的相邻上下文都是“user：我一个人在家里，现在好害怕 / assistant：Safety 模板全文”，当前消息为“你接住了什么”。
+  - 游客路径使用客户端提交的历史，本次未核实客户端是否包含 Safety 回复。
+- 已证实：t2 分诊确实收到了助手安全话术全文，同时也收到了 t1 用户原话。r5、r6 各 3 次，t1 与 t2 的判定都是 `concern / immediate_physical_danger / uncertain`。`chatSafety.ts` 自 `56bf5d4` 起未修改，候选 `91d3d90` 的分诊输入组成与 r5/r6 相同。
+- 未证实：t2 的判定是由 Safety 模板驱动，还是仅由 t1 用户原话按现行“相邻上下文已有风险信号时视为延续”规则触发。既有日志未保存分诊原始输入输出与证据片段（`attemptTrace=not_exposed_by_chat_reply_result`），区分二者需要消融采样，本轮不做。
+- 这些事实供评审参考，不构成结论；B3 四个问题仍需真人评审回答。
+
+关键路径与暂停规则（21:10 更新）：哪个步骤缺人工或外部输入，就只暂停哪个步骤，其余已授权工作继续。
+- 机器链：C5 已通过 → C6 J **FAIL（21:20）** → Q → E → C7 完整保持门 → C8 → C9 Chat Gate A/B。J 失败后其后各门未启动，**暂停等待你对“当前判定”中决策建议的决定**。
+- 暂停中的步骤及其所缺输入：
+  - C3 Safety 评审：缺 E5 评审人（真人）。阻塞发布，不阻塞机器链；
+  - C10 盲评：缺你的评审时间段（E5）；C9 生成盲评包后开始；
+  - C12 预发布环境：缺 E0 磁盘空间授权、`staging` 子域名的 DNS A 记录、W1/W2 微信凭据决定、模型测试密钥；
+  - C13 测试成员：缺 E2 管理员操作；
+  - C14 双端真机：缺 C12、C13 与 E3 设备、测试微信号、操作人；
+  - C15 恢复演练与 uploads 备份：缺 E0 与 E4 授权；
+  - C17 生产部署、提审、发布：缺全部前置与最终授权。
+
+时间估计（21:10 重排，从 2026-09-29 21:10 UTC+8 起，不含微信审核）：
+- 与 20:20 版相比：C2 已在 20:40 返回，其中 A2 需修复，已在第 2 轮内完成并冻结（`91d3d90`）；新发现服务器磁盘剩余 872M，给测试环境链增加前置条件 E0。最早与保守时间不变，但最早时间的前提多了 E0。
+- 机器链预计（21:20 更新）：若 22:00 前批准例外修复，修复与 C5 重跑约 20 分钟，J 约 11 分钟、Q 6 分钟、E 4 分钟、完整保持门 23 分钟、C8 约 30 分钟、Chat Gate 与盲评包约 45 分钟（估算），约 00:30 完成。最早时间仍可成立；决定每推迟 1 小时，机器链顺延 1 小时，但在 9/30 上午前不影响最早时间（测试环境链更晚）。若不批准，本路径 NO-GO，没有完成时间。
 - **最早**：工程验收结论 9/30 约 18:00。
-  - 假设：C2 今晚 21:30 前返回且两项均不需修改；C4 21:40 冻结，C5 证据复用；C6–C9 机器链约 2 小时，23:45 前生成盲评包；C10 盲评 9/30 上午完成；E1–E3 今晚答复，9/30 上午 3 小时内完成测试环境，下午两台设备真机验收无缺陷；C3 在 9/30 前给出不需改动的结论；E4 授权后 1–2 小时并行完成。
+  - 假设：机器链全部一次通过；9/30 09:00 前完成 E0 授权、DNS 记录、W1 决定、模型测试密钥与 E2 管理员操作，11:00 预发布就绪；E3 两台设备 13:00–16:00 完成真机验收且无缺陷；C10 盲评 9/30 上午完成；C3 评审 9/30 给出不需改动的结论。
 - **保守**：10/3 晚。
-  - 假设：C2 今晚返回但其中一项需在第 2 轮内修改，修改后 J/Q/E 与 F 重跑一次；F 与轨迹各发生一次预先记录的基础设施重跑；盲评 9/30 晚；测试环境 9/30–10/1；真机 10/2 发现缺陷，修复并于 10/3 复测。
+  - 假设：完整保持门与轨迹门各发生一次预先登记的基础设施重跑；E0 清理与 DNS 在 10/1 完成；真机 10/2 发现缺陷，修复后 10/3 复测。
   - 若管理员、操作人或临床评审在 10/1–10/7 国庆假期不可用，外部项顺延到 10/8 之后，结论约 10/9–10/10。
-- 不在估计内：第 2 轮后仍有产品失败（停止待决）；C3 要求修改 Safety（预算已用完，需新决定，至少再加 1 天重验）；微信审核时长。
+- 不在估计内：第 2 轮后仍有产品失败（停止待决）；C3 要求修改 Safety（预算已用完，需新决定，至少再加 1 天重验）；选择 W2 时清单第 4 项推迟到生产部署后补测；微信审核时长。
 
 ### 最终验证计划（C4 冻结后一次执行；前置失败即停止，不启动依赖它的昂贵模型门）
 
@@ -422,9 +453,9 @@ r3/r4 当时的归因：
 | 顺序 | 门 | 预算（真实调用 / 耗时） | 通过标准 | 证据复用条件 |
 | --- | --- | --- | --- | --- |
 | 1 | C5 局部确定性 + `check:release:required` | 无模型调用；约 10 分钟 | tsc、eslint、`check:execution-failure-audit`、`check:planned-function-semantic-validator` 与全新隔离库全量必跑门 exit 0 | `399edd0` 的结果可复用，前提是冻结 commit 与之相比只改文档 |
-| 2 | C6-J 判定验证（r2 案例集） | 15 个有标签案例 × 3 + 5 个歧义案例 × 1 = 50 次判定；约 10 分钟 | 15/15 案例可靠：每次与标签一致；应失败调用引用可接受规则编号；任何调用都不得在非情绪支持判定中引用 `ES-*`。歧义案例（含 A1、A2 类）只记录 | 不复用（判定 Prompt 已变） |
+| 2 | C6-J 判定验证（r2 案例集，含 C2 裁决） | 22 个有标签案例 × 3 + 3 个歧义案例 × 1 = 69 次判定；约 14 分钟 | 22/22 案例可靠：每次与标签一致；应失败调用引用可接受规则编号；任何调用都不得在非情绪支持判定中引用 `ES-*`。3 个未裁决歧义案例只记录 | 不复用（判定 Prompt 已变） |
 | 3 | C6-Q `check:planned-function-semantic-qwen-real` | 41 例 × 1；约 6 分钟 | 0 失败 | 不复用；C8 不重复运行 |
-| 4 | C6-E 端到端（`emotional-support-fix-budget.ts`） | 2 场景 × 5 回合 = 10 回合；约 4 分钟 | 10/10 VALIDATED 并提交、计划与支持功能一致、冻结筛查违规 0；A1/A2 类按 C2 裁决计入通过或失败 | 不复用 |
+| 4 | C6-E 端到端（`emotional-support-fix-budget.ts`） | 2 场景 × 5 回合 = 10 回合；约 4 分钟 | 10/10 VALIDATED 并提交、计划与支持功能一致、冻结筛查违规 0；已提交回复按 C2 裁决人工复核：出现 A2 类未证实情绪标签即计为失败，A1 类指回已说内容计为符合 | 不复用 |
 | 5 | C7 完整冻结保持门 v2 | 60 回合 × 1；约 23 分钟 | 门自身标准：完成 60/60、VALIDATED 100%、期望动作 100%、preflight 100%、`constraint_failure` 0、再生成 ≤20%、Helping provider 0；advice-boundary 按原要求记录 | 不复用；历史 59/60 FAIL 保留 |
 | 6 | C8 Safety、交接 surface / structured / TI、主动消息门 | 各门冻结用例 × 1；合计约 8 分钟 | 各门自身标准 | 不复用（导入闭包自上次通过后均有变化） |
 | 7 | C8 `clinical:model-eval` | 冻结用例 × 1；约 3 分钟 | 观察记录，不单独决定 GO | — |
@@ -441,11 +472,11 @@ r3/r4 当时的归因：
 - 重跑再次出现外部阻塞：停止并报告，不再运行。
 
 外部依赖（一次集中列出；能在现有授权下准备的已准备）：
-- E1 真机测试环境：候选后端与生产不同，不能再用生产后端做真机。
-  - 核实（`miniprogram-project/config/api.js`）：只有开发版读取本机存储 `xinqing_api_base_url` 覆盖 API 地址；体验版与正式版固定连 `https://manliaoxiaoji.com`。
-  - 选项 S（推荐）：同服务器新建隔离预发布实例，部署冻结候选。需要：子域名 DNS 与 HTTPS 证书；独立空数据库并执行 21 个迁移；把生产环境文件中的微信 AppID/AppSecret 与模型密钥复制到预发布环境文件的授权（只复制键值，不导出生产数据）。方案步骤见下方“发布与测试环境方案（草案）”。
-  - 选项 S2：复用服务器已有的 `test.manliaoxiaoji.com`（其他会话的隔离测试环境）。可省去 DNS 与证书时间，但会覆盖该环境当前版本，需要你确认。
-  - 选项 P：先部署候选到生产再用体验版测试。会让 Web 生产用户提前使用未完成真机验收的后端，不推荐。
+- E1 真机测试环境（2026-09-29 用户选择 S 作为准备方向；资源创建与凭据配置以明确授权为准）：
+  - 背景：候选后端与生产不同；只有开发版读取本机存储 `xinqing_api_base_url`，体验版与正式版固定连 `https://manliaoxiaoji.com`（`miniprogram-project/config/api.js`）。
+  - 具体方案见下方“预发布实例（E1 选项 S）”：子域名、资源与费用、隔离方式、配置清单与凭据来源。
+  - **新发现的前置条件 E0（只读核查，2026-09-29 21:05 UTC+8）**：服务器根分区 40G 已用 98%，剩余 872M；单个 release 目录 0.8–1.2G，新建预发布或生产 release 都放不下。另外每日数据库备份也写在同一分区（`/var/www/manliaoxiaoji/backups`）。清理属于生产服务器操作，方案见下方“磁盘空间（E0）”，未执行。
+- E0 磁盘空间授权：见下方方案；未获授权前 C12 与 C17 都无法开始。
 - E2 微信后台管理员：
   - 把预发布域名加入 request、uploadFile、downloadFile 合法域名；
   - 把两名测试操作人加为**开发者**（开发版预览与真机调试需要，体验成员不够）；
@@ -459,14 +490,40 @@ r3/r4 当时的归因：
 
 以下每一步都需要对应授权后才执行。`<C4>` 指冻结候选的 commit。相对生产 `9750adc`，`prisma` 目录无差异，部署不需要迁移。
 
+磁盘空间（E0，只读核查结果与方案）：
+- 现状：`/` 40G，已用 37G（98%），剩余 872M。占用：`/var/www/manliaoxiaoji` 8.3G（`releases/` 下 14 个目录，每个 0.8–1.2G）、`/root` 9.3G（内容未查）、`/var/log` 2.0G、`/var/www/xinqing-test` 896M、`/var/www/manliaoxiaoji-test` 437M。
+- 必须保留：`9750adc`（当前线上 3103）、`4c0b72e`（3102）、`dc1d010`（3101）、`5625262`（3100），它们是 `DEPLOYMENT.md` 记载的在线即时回滚版本。
+- 方案（待授权）：先只读列出其余 10 个 release 目录，确认没有被任何 PM2 进程或 Nginx 站点引用（`pm2 jlist` 的 `pm_cwd`、`/etc/nginx/sites-enabled`）；确认后删除最早的 4 个未引用目录，预计释放约 4G。`/root` 与日志先只读列出大文件清单，由你决定是否处理。
+- 完成标准：`/` 剩余不少于 4G（可容纳预发布与生产各一个 release，加备份余量）。
+
 预发布实例（E1 选项 S）：
-1. 在服务器新建 `/var/www/manliaoxiaoji-staging/releases/<C4>`，从 origin 检出 `<C4>`；`npm ci` 后执行 `next build`，记录 Build ID。
-2. 新建空库 `manliaoxiaoji_staging`，由独立数据库用户拥有，不授予生产库权限；执行 `prisma migrate deploy`（21 个）。
-3. 新建 `/var/www/manliaoxiaoji-staging/shared/.env`（权限 600）。只从生产环境文件复制以下键：微信 AppID/AppSecret、模型服务商相关键；`DATABASE_URL` 指向预发布库；`HILL_HELPING_ORDINARY_HANDOFF` 与 `AI_TIMEOUT_MS` 按 C4 冻结值设置。其余键不复制。
-4. 用 PM2 进程 `manliaoxiaoji-staging` 在一个未占用的本机端口运行（执行前用 `ss -ltn` 确认；已知占用 3100–3103、3120）。
-5. Nginx 新站点 `<预发布子域名>` 反代到该端口；certbot 申请证书；不修改生产站点配置。
-6. 验证：`/api/health` 返回 database connected（该接口不返回版本）；PM2 进程工作目录为 `releases/<C4>`，且其 `.next/BUILD_ID` 与第 1 步一致；以 `SMOKE_BASE_URL=https://<预发布子域名>` 运行 `smoke:prod`。
-7. 真机验收结束后停止 PM2 进程；预发布库保留到发布完成后删除（删除另行确认）。
+- 子域名：`staging.manliaoxiaoji.com`。域名 DNS 托管在阿里云（NS 为 `dns11/dns12.hichina.com`）。需要域名账号持有人新增一条 A 记录指向 `106.54.21.202`（本机网络经代理，无法从这里确认该子域名当前是否已有记录）。
+- 资源：复用现有腾讯云 CVM（4 核、3.7G 内存，当前可用约 2.0G）与本机 PostgreSQL 16；不新购云资源。构建期间内存峰值较高，安排在低峰时段执行。
+- 费用：DNS 记录与 Let's Encrypt 证书免费；同机运行不增加云主机费用。唯一新增费用是真机验收的模型调用：两台设备、15 项清单，按每个聊天回合约 4 次模型调用（Safety、理解、生成、语义校验）估算，总计数百次调用。单价以模型服务商控制台为准，建议给测试密钥设置额度上限。
+- 隔离方式：
+  - 目录：`/var/www/manliaoxiaoji-staging/{releases,shared,uploads}`，不与生产目录共享；
+  - 进程：PM2 `manliaoxiaoji-staging`，端口 3130（只读核查时未被占用；已占用 3000、3001、3100–3103、3120、5432）；
+  - 数据库：新建库 `manliaoxiaoji_staging` 与独立数据库用户，只授予该库权限，不授予生产库任何权限；只写入测试账号与合成内容；
+  - Nginx：新增独立 server 块，不修改生产站点配置；
+  - 媒体：`UPLOAD_DIR` 指向预发布自己的 uploads 目录。
+- 配置清单（`shared/.env`，权限 600；只列键名）与凭据来源：
+  - 预发布自行生成、不复制生产：`SESSION_SECRET`、`ACCOUNT_CANCELLATION_CLEANUP_SECRET`、`DATABASE_URL`（预发布库）、`UPLOAD_DIR`、`UPLOAD_PUBLIC_BASE_URL`（`https://staging.manliaoxiaoji.com/...`）、`APP_ENV`（`staging`）、`ALLOW_WEB_MOCK_LOGIN=false`、`GUEST_AI_IP_DAILY_LIMIT`；
+  - 冻结值：`AI_PROVIDER=qwen`、`AI_MAIN_MODEL=qwen3.7-max`、`AI_TIMEOUT_MS=45000`、`HILL_HELPING_ORDINARY_HANDOFF=true`（与候选评测一致；生产是否开启另行决定）；
+  - 模型密钥 `QWEN_API_KEY`、`QWEN_BASE_URL`：优先使用独立测试密钥（在模型服务商控制台新建专用 API Key 并设置额度上限），不复制生产密钥。需要你提供或授权创建；
+  - 微信 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`：**无法做到“独立测试凭据 + 测试同一个小程序”**。`code2Session` 与 `getPhoneNumber` 要求后端使用开发版所属小程序的 AppSecret；同一 AppID 只有一个 AppSecret，重置会使生产登录失效。两种做法（需你决定）：
+    - W1：预发布使用本小程序的 AppID/AppSecret（作为唯一例外，只复制这两项，授权后执行）。可完整覆盖清单 15 项。
+    - W2：另注册测试小程序或使用微信测试号，使用独立凭据。代价：开发版必须改用测试 AppID 重新打包，不再是待提审的同一个包；测试号不支持 `getPhoneNumber`，清单第 4 项无法在预发布验证，需在生产部署后补测。
+  - 短信相关键不配置（当前候选短信延后，`audit:prod-env` 允许全缺失）。
+- 步骤（授权后执行）：
+  1. E0 完成；DNS A 记录生效。
+  2. 在 `releases/<C4>` 检出冻结 commit，`npm ci` 后构建，记录 Build ID。
+  3. 建库、建用户，执行 `prisma migrate deploy`（21 个）。
+  4. 写入 `shared/.env`（按上表），执行 `PROD_ENV_FILE=<预发布 env> npm run audit:prod-env`。
+  5. PM2 以端口 3130 启动；Nginx 新站点加 certbot 证书。
+  6. 验证：`/api/health` 返回 database connected（该接口不返回版本）；PM2 进程工作目录为 `releases/<C4>`，其 `.next/BUILD_ID` 与第 2 步一致；以 `SMOKE_BASE_URL=https://staging.manliaoxiaoji.com` 运行 `smoke:prod`。
+  7. 管理员把 `staging.manliaoxiaoji.com` 加入合法域名（E2）；各设备以真机调试写入一次 `xinqing_api_base_url`。
+  8. 真机验收结束后停止 PM2 进程；预发布库与目录保留到发布完成，删除另行确认。
+- 工作耗时：E0 完成且 DNS、凭据就绪后约 2 小时（含构建与验证）。
 
 生产部署（C17，最后申请授权）：
 1. 部署前：手动触发一次 `manliaoxiaoji-postgres-backup`，并用 `pg_restore --list` 检查；打包受管媒体目录 `/var/www/manliaoxiaoji/uploads`。
@@ -479,13 +536,31 @@ r3/r4 当时的归因：
 
 小程序提审（C17）：体验版真机验收通过后，由管理员把开发版本 `2.0.0`（或 C4 重新上传的版本）提交审核。提审材料核对清单：隐私保护指引与代码中的收集项一致；服务类目；测试账号说明。审核时间不估算。
 
-受管媒体备份（E4）：新增每日 timer，把 `/var/www/manliaoxiaoji/uploads` 打包到现有数据库备份目录并保留 14 份；首次运行后用 `tar -tzf` 校验并核对文件数。
+受管媒体备份（E4，待审核，未执行）：
+- 现状（只读核查）：`/var/www/manliaoxiaoji/uploads` 当前 12K；数据库备份由 `manliaoxiaoji-postgres-backup.timer` 每日 03:26 左右执行，`pg_dump --format=custom` 写入 `/var/www/manliaoxiaoji/backups`，与系统同一分区（见 E0）。
+- 方案：新增 `manliaoxiaoji-uploads-backup.service/.timer`，每日在数据库备份之后运行：`tar -czf <backups>/uploads-<UTC 时间>.tar.gz -C /var/www/manliaoxiaoji uploads`，先写临时文件，再 `tar -tzf` 校验通过后改名；保留最近 14 份。
+- 验证：首次手动运行一次，记录归档文件数与源目录文件数一致；`systemctl list-timers` 显示下次运行时间。
+- 已知限制：备份与生产数据在同一台机器、同一分区，不能防整机或磁盘故障。异地副本（如对象存储）需要新增云资源与费用，本方案不包含，需要你另行决定。
 
-恢复演练（E4）：新建隔离库 `restore_drill_<日期>`，用最近一次备份执行 `pg_restore`；只输出各表行数与 `prisma migrate status`，与生产的只读计数对比；演练结束后删除该库。不导出、不读取明文。
+恢复演练（E4，待审核，未执行）：
+1. 前置：E0 完成，剩余空间不少于最近一次备份文件大小的 3 倍。
+2. 只读记录最近一次备份文件名、大小与 `pg_restore --list` 的对象数。
+3. 以管理员身份新建隔离库 `restore_drill_<YYYYMMDD>`，不授予应用用户权限；`pg_restore --no-owner --no-acl -d restore_drill_<YYYYMMDD> <备份文件>`。
+4. 在演练库执行 `prisma migrate status`，应显示 21 个迁移均已应用；逐表 `count(*)`，只输出表名与行数。
+5. 对生产库做同样的逐表只读计数（会话设置 `default_transaction_read_only=on`）。差异只应来自备份时间之后的新写入。
+6. 媒体：把最新 uploads 归档解压到 `/tmp/restore_drill_uploads`，比较文件数后删除。
+7. 删除演练库与临时目录；记录开始和结束时间、行数对比、恢复耗时。全程不导出、不读取消息正文。
+- 工作耗时：约 1 小时。
 
 ## 当前判定
 
-- 工程验收（更新于第 2 轮修复代码完成后）：NO-GO。
+- 工程验收（更新于 C2 裁决修复与 J 运行后，2026-09-29 21:20 UTC+8）：NO-GO。
+  - 候选 `91d3d90` 已冻结；C5 通过。
+  - C6 J **FAIL**：21/22 有标签案例可靠。A1 原文（人工裁定符合）3/3 被判定器以 `ES-FOCUS` 拒绝。根因是 A1 的上下文指代规则只写进 `ES-SCOPE`，并列的 `ES-FOCUS` 未同步。A2 与全部新增反例按预期判定，越界引用 0。
+  - 按依赖规则未启动 Q、E、完整保持门及其后各门。第 2 轮仍有产品失败，已停止修改。
+  - 决策建议（一个）：批准一次明确记为“第 3 轮、仅限判定器”的例外修复：把与 `ES-SCOPE` 相同的“指代按完整用户消息判断”一句加入 `ES-FOCUS`，不改生成、不删校验、不降门槛；然后按原顺序各运行一次 J、Q、E 与完整保持门，任一失败即停止。若不批准，本路径保持 NO-GO，A1 类合规回复在生产中会被拒绝并触发再生成。
+  - C3 保留为发布阻塞；预发布环境新增前置条件 E0（服务器磁盘剩余 872M）。
+- 工程验收（更新于第 2 轮修复代码完成后，保留）：NO-GO。
   - 候选 `399edd0`：确定性验收与本地必跑门通过（C5）。
   - 真实模型 J、Q、E 与完整保持门尚未对第 2 轮修复运行，等待 C2 人工结论与 C4 冻结；历史 59/60 FAIL 保留。
   - 5 条争议回复与 Safety 重复话术待人工评审；Chat Gate、盲评、双端真机、预发布环境未执行。
@@ -549,4 +624,7 @@ r3/r4 当时的归因：
 - 服务器上另有未写入 `DEPLOYMENT.md` 的 `test.manliaoxiaoji.com` → `127.0.0.1:3120`（systemd `manliaoxiaoji-test.service`，`/var/www/manliaoxiaoji-test/releases/growth-v1-20260910`，其他会话的隔离测试环境，版本与本候选不同）。本次未触碰，也不作为候选证据。
 - 生产入口进程错误日志中约 3.5k 条 Next.js Server Action 扫描探测错误，属外部噪声，不影响本候选。
 - `check:execution-failure-audit` 未纳入 `check:release:required`，失败类别记账的回归目前只靠单独运行。是否纳入必跑入口属于门定义变更，留待 C4 冻结时决定。
+- Planner 对“你一点都不懂我，我挺失望的”只抽取关系影响片段，未抽取用户说出的“失望”（Conversation OS 证据抽取层）。第 2 轮生成约束按“用户本轮说出的内容”表述，以免与证据片段冲突；抽取缺口本身未处理。
+- 产品侧执行失败类别（`chatExecutionLifecycle.ts` 的 `category`）目前只由 `check:execution-failure-audit` 覆盖，该检查不在长期必跑入口；是否在 `check:chat-execution-lifecycle` 中补充断言，留待后续切片。
+- `ES-AFFECT-EVIDENCE` 在未裁决歧义用例中把关系处境“被忽略”当作情绪类别引用（1 次，只记录）。
 - 2026-09-29 `399edd0` 必跑门前三次启动分别因测试库变量、`.env` 占位与 `PROACTIVE_COMMIT_TEST_ALLOW_DDL` 缺失，在测试前置检查处退出，属执行环境配置错误，不是产品失败，也不计入门结果。
