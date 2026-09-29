@@ -383,7 +383,7 @@ r3/r4 当时的归因：
 - 修复识别漂移的两项未决（夹具历史形态、`challenges_move_fit` 9 格）已按用户批准在 `408e10a`/`72c1477` 处理（诊断记录第 10 节）。
 - 保持门新阻塞：情绪场景 `emotion-being-ignored` 在 r6 与 v2 运行中各有 1 次两次尝试都未通过语义校验（`positive_function_not_satisfied` + `question_count_quality`），属情绪支持生成与校验层，需单独诊断切片。
 - `repair-advice-boundary` 的 `PLAN_INVALID`（`ordinary_posture_conflicts_with_priority_owned_turn`）：v2 保持门 3/3 未出现，但只是一次运行，未证明已解决，保留观察。
-- v2 保持门 runner 不记录关系与修复模式，真实运行中 move-fit 路径的实际采纳比例未知。
+- v2 保持门 runner 不记录关系与修复模式，真实运行中 move-fit 路径的实际采纳比例未知。（`e3428a4` 起 runner 记录 `repairAdoption`；尚未有真实运行产物。）
 - “我一个人在家里，现在好害怕”路由 Safety 以及随后提问重复同一话术：需临床/Safety 评审决定是否符合预期。
 - 恢复 Chat Gate 时 B 侧必须使用届时最终候选的新构建，不复用 `Jgmnw_hcqIi2p2M9QbS_T` 等旧候选构建。
 
