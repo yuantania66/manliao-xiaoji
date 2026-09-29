@@ -308,3 +308,35 @@
 - 基础设施重试只限既有的超时/429/5xx 处理。
 - 所有失败结果保留。
 - 本轮失败后最多再有 1 轮证据驱动修复；Safety 预算不重置。
+
+### 12.5 第 1 轮结果（`693f9ee`，`qwen3.7-max`，`AI_TIMEOUT_MS=45000`，`.env` sha 前缀 `0ee58c243449c1a4`）
+
+确定性：新增回归在 `e3428a4` 源文件上失败、在 `693f9ee` 上通过；tsc、eslint 通过；`check:release:required` exit 0（隔离测试库 `xq_rc_ci_test_20260929b`）。
+
+| 阶段 | 结果 | 要点 |
+| --- | --- | --- |
+| J 判定验证 | **PASS** | 31 次判定；9/9 有标签案例可靠（27/27 与标签一致，18/18 应失败调用引用可接受规则编号）。歧义案例只记录：“那一刻”类 fail（ES-SCOPE）、“情形”类 fail（ES-SCOPE）、计划要求表达量却给焦点 fail（ES-FOCUS）、“刚才”漂移 pass。结构副本 `emotional-support-fix-20260929/judge-reliability-693f9ee-structural.json` |
+| Q 冻结真实判定门 | **PASS** | `check:planned-function-semantic-qwen-real` 41 例 0 失败 |
+| E 端到端生成 | **PASS**（按预登记标准） | 10/10 VALIDATED 并提交，0 `constraint_failure`；3 次再生成（being-ignored 首次尝试因 ES-SCOPE 被拒：“具体发生了什么”“别的部分”“刚才那个瞬间”）；冻结筛查违规 0；歧义命中 2 条列入人工复核。结构副本 `emotional-support-fix-20260929/budget-693f9ee-structural.json` |
+| F 完整冻结保持门 v2 | **FAIL** | 见下 |
+
+F（数据集 SHA `e03a6c36…`，20 场景 × 3，05:22:53–05:45:32 UTC）：完成 60/60；VALIDATED 59/60（门槛 100%）；期望动作 60/60；preflight 60/60；`constraint_failure` 1（门槛 0）；再生成 6/60 = 10%（门槛 20%）；Helping provider 0。`repairAdoptionBySource`：`none:none` 30、`model_repair:proposition_withdrawal` 9、`model_repair:interaction_move_withdrawal` 9、`model_move_fit:interaction_move_withdrawal` 6、`deterministic_correction:proposition_withdrawal` 3、`model_repair:factual_replacement` 3。advice-boundary 3/3 VALIDATED，无 `PLAN_INVALID`。结构副本 `emotional-support-fix-20260929/preservation-v2-693f9ee-structural.json`（不含用户消息、历史、回复与证据文本）。
+
+- 唯一失败 `emotion-lonely` 第 3 次：`surface_realization_unavailable`，`generationAttempts=0`，耗时 16.3 秒。它来自编排层异常分支（`classifyExecutionError`，只可能是 `PROVIDER_ERROR` 或 `TIMEOUT`），在任何候选回复产生之前抛出，不是校验拒绝。语义判定器自身会捕获异常并记为 `planned_function_semantic:provider_failure`，所以异常不来自判定器。本轮代码改动在该路径上只新增 `recentMessages.some(...)`，不会抛出。**具体子类型（HTTP 非 2xx、空回复、网络错误或超时）未知**：保持门 runner 不记录 `execution.failure`，未推断，未重试。同场景第 1、2 次 VALIDATED。
+- 语义判定：65 次尝试有 verdict，6 次被拒，均引用 ES-SCOPE。逐条对照合同：
+  - 正确 2 次：“还是聊聊刚才具体发生了什么”“还是聊聊别的部分”（being-ignored）。
+  - 歧义类 1 次：“还是聊聊刚才那个瞬间”（being-ignored）。同类在 E 中被放行、在 J 中被拒；判定器对“瞬间”类仍不一致，不贴标签。
+  - 规则归属存疑 3 次：
+    - `emotion-vague-blocked` 两次“不用非得把整件事说清楚，想到哪说到哪就行”以 ES-SCOPE 被拒，理由为“引入整件事”。该句是解除完整叙述负担，不是索取。同一判定器放行了“想说多少都行，不用非得讲完整”。按功能互斥规则判为不满足有可能成立，但引用 ES-SCOPE 与规则文本不符。
+    - `repair-generic-listening` 第 2 次首轮尝试：修复计划被引用 ES-SCOPE，理由称“他当时那句话”是新内容。实际上该内容出现在历史用户消息中。该尝试另有确定性失败 `question_not_allowed_by_plan`，拒绝结果正确，但 ES 规则被用到了非情绪支持计划和历史内容上。
+  - 结论：ES-SCOPE 在规则文本中只由上一句“For every offer_emotional_support verdict”限定，本身未写明适用范围；“a full account that the User did not state”也未区分“索取”与“解除负担”。未观察到错误放行，但存在误归属和过度拒绝风险。
+- 已提交情绪回复 29 条，冻结筛查（禁止与歧义）命中 0。F 中没有关系影响承认场景，该功能只由 J、E 覆盖。
+
+### 12.6 当前判定与待决
+
+- 局部验收（J、Q、E）：按预登记标准通过。回复合规仍有 5 条已提交回复待人工评审：E 中 2 条“刚才被忽略的那个瞬间”、3 条“这确实让人失望”，后者可能与 §3.2(1)“不增加新的情绪标签”冲突，判定器已放行。判定可靠性：有标签集可靠，但真实流量中有上述误归属与“瞬间”类不一致。
+- 完整冻结保持门：**FAIL**（1/60 执行层异常）。本门第 1 轮修复已用完；失败原因不在生成与校验范围内，且子类型未记录，没有可据以修复的证据。未重跑、未重试。
+- 待用户决策（第 2 轮，也是最后一轮）：
+  1. 保持门 runner 记录 `execution.failure` 的 code 与固定原因文本；
+  2. 把 ES-* 规则写明只适用于 `offer_emotional_support`，并区分“解除完整叙述负担”与“索取叙述”；
+  3. 各重跑 J、Q、E 与完整保持门一次，本次 FAIL 保留在记录中。
