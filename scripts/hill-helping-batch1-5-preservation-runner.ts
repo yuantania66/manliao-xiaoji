@@ -88,7 +88,11 @@ const run = async () => {
           validationPassed: reply.controlTrace?.validation[index]?.passed ?? false,
           validationFailures:
             reply.controlTrace?.validation[index]?.failureReasons ?? ["missing_attempt_validation"],
-          semanticAudit: semanticVerdictAuditFor(reply.plannedFunctionSemanticVerdicts?.[index]),
+          semanticAudit: semanticVerdictAuditFor(
+            reply.plannedFunctionSemanticVerdicts?.[index],
+            reply.plannedFunctionSemanticDiagnostics?.[index]
+          ),
+          semanticProviderFailure: reply.plannedFunctionSemanticDiagnostics?.[index]?.providerFailure ?? null,
         })),
         helpingProviderAttempted: reply.helpingTrace.provider.attempted,
         interpretationProviderAttempted: reply.controlTrace?.interpretationModel.attempted ?? false,

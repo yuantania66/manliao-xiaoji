@@ -1,6 +1,8 @@
-# 情绪支持判定器修正方案（待审核，未实施）
+# 情绪支持判定器修正方案
 
-日期：2026-09-29。状态：**方案，不构成实现或采样授权**。候选 `fe677ad` 保持冻结；A1/A2 裁决、J 用例与标签、J 通过标准均不修改。本方案只使用已有结果：J `91d3d90`（2026-09-29T13:09Z–13:19Z）与 J `fe677ad`（13:47Z–13:57Z）的逐次判定记录（本机 `~/.xq-rc-wx/gates/judge-reliability-{91d3d90,fe677ad}.json`，含回复与判定理由原文，不入库），以及源码只读分析。未追加任何模型调用。
+日期：2026-09-29。**状态更新（2026-09-30）**：用户有条件批准方案 B，允许一次实施和一次固定预算验收，要求先修正第 2 节汇总表与合同的冲突。修正后的汇总表见第 2 节，实施与验收记录见第 6 节。以下第 1–5 节保留 09-29 的方案原文，第 2 节汇总表除外（已按批准条件改写）。
+
+原状态（09-29）：方案，不构成实现或采样授权。候选 `fe677ad` 保持冻结；A1/A2 裁决、J 用例与标签、J 通过标准均不修改。本方案只使用已有结果：J `91d3d90`（2026-09-29T13:09Z–13:19Z）与 J `fe677ad`（13:47Z–13:57Z）的逐次判定记录（本机 `~/.xq-rc-wx/gates/judge-reliability-{91d3d90,fe677ad}.json`，含回复与判定理由原文，不入库），以及源码只读分析。未追加任何模型调用。
 
 下文引用判定理由时只做转述；回复原文只引用已在合同中出现的短语。
 
@@ -41,34 +43,60 @@
 
 ## 2. 三个问题分别判定
 
-把 `offer_emotional_support` 分支的判定拆成逐项、逐问的结构化回答，由程序汇总结论：
+把 `offer_emotional_support` 分支的判定拆成逐项、逐问的结构化回答，由程序汇总结论。
 
-对回复中的每一个选项、邀请或许可（`options[]`），模型分别回答：
-- **指代依据**（`userAnchor`）：该项指向用户本轮已说出的哪一段。要求返回 currentUserText 的精确片段；没有依据则为 `null`；无法判断为 `uncertain`。
+**09-30 修正**：原表对所有选项、许可都无条件要求用户原文锚点，这与合同 §3.3 冲突（纯粹解除负担、不引入事实也不索取的表达本来就是允许的）。另外，原表把 `releaseOnly` 作为索取一行的例外条件，存在被当作整条回复豁免开关的风险。修正办法是改为按项分类：
+
+对回复中的每一个选项、邀请、请求或许可（`options[]`），模型先给出类型 `kind`：
+- `content_reference`：指向具体内容；
+- `expression_permission`：只返还是否表达、何时表达、表达多少或表达节奏；
+- `burden_release`：只为免除负担而提到内容，不索取任何内容。解除负担又同时索取的，不属于此类，索取部分要单独列为 `content_reference`。
+
+然后分别回答三问：
+- **指代依据**（`userAnchor`）：currentUserText 的精确片段，没有依据为 `null`，无法判断为 `uncertain`。只有 `content_reference` 需要依据。
 - **是否新增内容**（`addsUnstatedContent`）：`none | cause | event_or_scene | details | unspecified_other | uncertain`。
-- **是否索取**（`solicitsNewContent`）：`none | cause | sequence_or_details | full_account | example | location_of_miss | uncertain`，以及 `releaseOnly`（只为免除负担而提到）。
+- **是否索取**（`solicitsNewContent`）：`none | cause | sequence_or_details | full_account | example | location_of_miss | uncertain`，与指代依据独立作答。
 
-每一问都有自己的证据片段和一句理由，不能用一段理由覆盖三问。
+每项另有 `answersExplicitUserRequest`（是否直接回应用户本轮的明确请求），以及三问各一句理由（`reasons.anchor / content / solicitation`），不能用一段理由覆盖三问。
 
-对回复中命名或暗示的每一个情绪类别（`emotionMentions[]`），模型给出回复片段与用户依据片段（或 `null`）。
+对回复中命名或暗示的每一个情绪类别（`emotionMentions[]`），模型给出回复片段与用户依据片段（或 `null`/`uncertain`）。另有 `priorTurnFabrication`（`none | present | uncertain | not_applicable`）与 `otherContradiction`（推荐关注点、施压继续、暂停或结束、建议、安慰、换话题，或 `none`/`uncertain`）。
 
-支持功能是否实现（`supportFunctionRealized`）仍由模型整体判断，但不再承担上述三问。
+支持功能是否实现（`contractRealized`、`targetAddressed`）仍由模型整体判断，并明确要求独立于上述各问作答。
 
-程序汇总规则（固定表，写入合同）：
+程序汇总规则（固定表，已写入合同 §3.3；逐项适用，一项的结论不影响另一项）：
 
 | 条件 | 结果 | 映射到现有规则编号（沿用 J 引用标准） |
 | --- | --- | --- |
-| 任一问为 `uncertain` | 硬失败 `es_uncertain` | 按该问所属规则 |
-| 某选项 `userAnchor=null` | 硬失败 `es_reference_unanchored` | `ES-SCOPE`（focus 功能同时记 `ES-FOCUS`） |
-| `addsUnstatedContent≠none` | 硬失败 `es_adds_unstated_content` | `ES-SCOPE` |
-| `solicitsNewContent≠none` 且 `releaseOnly=false` | 硬失败 `es_solicits_new_content` | `ES-SCOPE`；关系影响承认功能记 `ES-ACK-NO-SOLICIT` |
-| 关系影响承认功能下存在任何非 `releaseOnly` 的选项或邀请 | 硬失败 | `ES-ACK-NO-SOLICIT`（合同 §3.2 已规定该功能不含选择邀请） |
+| 任一问为 `uncertain`（含整体 `status=uncertain`） | 硬失败 `es_uncertain` | 按该问所属规则 |
+| `content_reference` 且 `userAnchor=null` | 硬失败 `es_reference_unanchored` | `ES-SCOPE`（focus 功能同时记 `ES-FOCUS`） |
+| `expression_permission` / `burden_release` 且 `userAnchor=null` | 不因此失败（合同 §3.3 解除负担条款） | — |
+| 任一项 `addsUnstatedContent≠none`（含 `burden_release`） | 硬失败 `es_adds_unstated_content` | `ES-SCOPE` |
+| 任一项 `solicitsNewContent≠none`（含 `burden_release`，没有例外） | 硬失败 `es_solicits_new_content` | `ES-SCOPE`；关系影响承认功能同时记 `ES-ACK-NO-SOLICIT`（直接回应明确请求的除外） |
+| 关系影响承认功能下存在任何非 `burden_release` 的项，且不是直接回应明确请求 | 硬失败 `es_ack_invitation` | `ES-ACK-NO-SOLICIT` |
 | 情绪类别无用户依据 | 硬失败 `es_affect_unanchored` | `ES-AFFECT-EVIDENCE` |
-| 功能未实现 | 硬失败 `es_function_not_realized` | `ES-FOCUS` / `ES-ACK-BOUNDARY` / 功能互斥规则 |
-| 虚构之前的助手回复 | 硬失败 | `ES-ACK-NO-FABRICATION` |
-| 各问均无问题，但模型整体给出 `not_satisfied` | 硬失败 `es_unattributed_rejection` | 无（单独记录） |
+| `priorAssistantTurnAvailable=false` 且虚构之前的助手回复 | 硬失败 `es_prior_turn_fabrication` | `ES-ACK-NO-FABRICATION` |
+| `otherContradiction≠none` | 硬失败 `es_other_contradiction` | 无（通用矛盾动作条款） |
+| 功能未实现（`contractRealized`、`targetAddressed`、`realizedAction`、非空证据任一不满足） | 硬失败 `es_function_not_realized` | focus 记 `ES-FOCUS`；承认功能记 `ES-ACK-BOUNDARY`；其他功能无 |
+| 各问均无问题且功能已实现，但模型整体给出 `not_satisfied`；或标记了矛盾动作却没有任何对应的逐问失败 | 硬失败 `es_unattributed_rejection` | 无（单独记录） |
+| 模型整体判为满足，但自己的逐问答案有失败 | 按逐问失败处理，另记不一致 `satisfied_with_failed_answers` | 按逐问失败 |
 
-最后一行保证拆分不会把硬拒绝变成默认放行：模型说不满足但说不出是哪一问时，仍按失败处理，只是单独记账，便于发现“含混拒绝”。
+倒数第二行保证拆分不会把硬拒绝变成默认放行：模型说不满足但说不出是哪一问时，仍按失败处理，只是单独记账，便于发现“含混拒绝”。
+
+确定性反例（`scripts/planned-function-semantic-validator-check.ts` 的 `emotionalSupportAggregationChecks`，只用合成判定结果，不含 A1 原文，也不按词放行）。它们证明汇总程序原样保留模型的正确判定：模型判对的通过不会被重新判错，模型判对的拒绝也不会被放行。
+- 纯表达许可＋纯解除负担，两项都没有锚点 → 通过；
+- 解除负担一项自身又索取 → 只记 `es_solicits_new_content`；
+- 先解除负担、后另起一项索取经过 → 只在第二项上记三类失败，第一项无失败；
+- 解除负担中新增事实 → `es_adds_unstated_content`；
+- 两项都有锚点的关注点选择 → 通过；同一回复若模型判定其中一项索取经过 → 记 `es_solicits_new_content`（`ES-SCOPE`），不记 `ES-FOCUS`；
+- 未指明的“其他”项 → `ES-SCOPE`＋`ES-FOCUS`；锚点 `uncertain` → `es_uncertain`；
+- 承认功能：表达许可 → `es_ack_invitation`；只有解除负担 → 通过；回应明确请求 → 通过；
+- 情绪无依据 → `ES-AFFECT-EVIDENCE`；有依据 → 通过；
+- 虚构之前的回复：历史为 false 时失败，历史未知时不适用；
+- 功能未实现但各问无问题 → 只记 `es_function_not_realized`；
+- 含混拒绝、无归属的矛盾标记 → `es_unattributed_rejection`；整体判满足但逐问有失败 → 失败，并记两类不一致；
+- 锚点不是用户原文切片、项片段不是回复切片 → `evidence_mismatch`；缺情绪支持结构、情绪支持分支用 `schemaVersion=1`、未知枚举、缺逐问理由、修复分支出现情绪支持结构 → `malformed_verdict`。
+
+这些断言在冻结版 `fe677ad` 的判定器上失败（v2 结构被判为 `malformed_verdict`），在新实现上通过。
 
 效果边界：拆分只保证“拒在哪一问”可见，并且规则优先级由程序决定而不是由模型挑选引用。它不能保证 A1 通过。若模型在“是否索取”一问上仍把“聊聊那个已说出的时刻”判为索取经过，A1 仍会失败，但失败会被准确记为 `es_solicits_new_content`，而不是混在 `ES-FOCUS` 名下。
 

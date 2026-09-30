@@ -21,6 +21,8 @@ import {
 import { formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
 import { validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
 
+import { withEmotionalSupportSchema } from "./emotional-support-verdict-fixture";
+
 const uncertainBoundary = (
   userBoundaries: OrdinaryHandoffBoundary["userBoundaries"] = []
 ): OrdinaryHandoffBoundary => ({
@@ -84,7 +86,7 @@ const validatePositiveSemanticFixture = async ({
       currentUserText: "sourceText" in contract ? contract.sourceText : "identity fixture",
       handoffTargetAssistantText: null,
     },
-    provider: async (input) => ({
+    provider: async (input) => withEmotionalSupportSchema({
       schemaVersion: 1,
       planId: input.planId,
       handoff: null,

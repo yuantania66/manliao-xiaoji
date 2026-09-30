@@ -12,7 +12,11 @@ import {
 } from "../conversation-os/control";
 import { determineConversationState } from "../conversation-os/state";
 import type { ConversationMessage } from "../conversation-os/types";
-import { validatePlannedFunctionSemanticOutput } from "../services/ai/plannedFunctionSemanticValidator";
+import {
+  validatePlannedFunctionSemanticOutput,
+  type PlannedFunctionSemanticProviderFailure,
+  type PositiveFunctionSemanticVerdict,
+} from "../services/ai/plannedFunctionSemanticValidator";
 import { semanticVerdictAuditFor, withoutEvidenceText } from "./semantic-verdict-audit";
 
 loadEnvConfig(process.cwd());
@@ -38,6 +42,22 @@ const structuralPath = arg("structural-output");
 const repetitions = Number(arg("repetitions") || "3");
 if (!casesPath || !outputPath) throw new Error("--cases and --output are required.");
 if (process.env.AI_PROVIDER !== "qwen") throw new Error("This evaluation must run against the real Qwen provider.");
+
+const countBy = (values: string[]) =>
+  values.reduce<Record<string, number>>((counts, value) => ({ ...counts, [value]: (counts[value] ?? 0) + 1 }), {});
+
+const latencySummary = (values: number[]) => {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const at = (quantile: number) => sorted[Math.min(sorted.length - 1, Math.floor(quantile * sorted.length))];
+  return {
+    count: sorted.length,
+    meanMs: Math.round(sorted.reduce((sum, value) => sum + value, 0) / sorted.length),
+    p50Ms: at(0.5),
+    p90Ms: at(0.9),
+    maxMs: sorted[sorted.length - 1],
+  };
+};
 
 const planFor = (userMessage: string, recentMessages: ConversationMessage[]) => {
   const conversationState = determineConversationState({ currentUserMessage: userMessage, recentMessages });
@@ -80,6 +100,13 @@ const run = async () => {
     hardFailureReasons: string[];
     advisoryFailureReasons: string[];
     audit: ReturnType<typeof semanticVerdictAuditFor>;
+    providerFailure: PlannedFunctionSemanticProviderFailure | null;
+    // Local-only copy of the model's per-question answers; never written to the structural file.
+    positiveVerdict: PositiveFunctionSemanticVerdict | null;
+    // Every outbound judge call, including the schema-repair call; latency runs to the next call or the end.
+    modelCalls: Array<{ call: "initial" | "schema_repair"; latencyMs: number }>;
+    validationLatencyMs: number;
+    formatFailure: boolean;
     outcomeMatches: boolean | null;
     citationMatches: boolean | null;
     ruleScopeViolation: boolean;
@@ -93,6 +120,8 @@ const run = async () => {
     }
     const reps = testCase.expected === "ambiguous" ? 1 : repetitions;
     for (let repetition = 1; repetition <= reps; repetition += 1) {
+      const callStarts: number[] = [];
+      const startedAt = Date.now();
       const result = await validatePlannedFunctionSemanticOutput({
         plan,
         reply: testCase.reply,
@@ -101,8 +130,23 @@ const run = async () => {
           handoffTargetAssistantText: null,
           priorAssistantTurnAvailable: recentMessages.some((message) => message.role === "assistant"),
         },
+        inspectExternalPrompt: () => {
+          callStarts.push(Date.now());
+        },
       });
-      const audit = semanticVerdictAuditFor(result.verdict);
+      const endedAt = Date.now();
+      const modelCalls = callStarts.map((start, index) => ({
+        call: index === 0 ? "initial" as const : "schema_repair" as const,
+        latencyMs: (callStarts[index + 1] ?? endedAt) - start,
+      }));
+      const formatFailure = modelCalls.length > 1 ||
+        result.hardFailureReasons.some((reason) =>
+          reason === "planned_function_semantic:malformed_verdict" ||
+          reason === "planned_function_semantic:evidence_mismatch");
+      const audit = semanticVerdictAuditFor(result.verdict, {
+        providerFailure: result.providerFailure ?? null,
+        emotionalSupportAssessment: result.emotionalSupportAssessment ?? null,
+      });
       const outcome = result.passed ? "pass" : "fail";
       const outcomeMatches = testCase.expected === "ambiguous" ? null : outcome === testCase.expected;
       const citationMatches = testCase.expected !== "fail" || !testCase.acceptedRuleIds?.length
@@ -121,6 +165,11 @@ const run = async () => {
         hardFailureReasons: result.hardFailureReasons,
         advisoryFailureReasons: result.advisoryFailureReasons,
         audit,
+        providerFailure: result.providerFailure ?? null,
+        positiveVerdict: result.verdict?.positiveFunction ?? null,
+        modelCalls,
+        validationLatencyMs: endedAt - startedAt,
+        formatFailure,
         outcomeMatches,
         citationMatches,
         ruleScopeViolation,
@@ -132,7 +181,11 @@ const run = async () => {
         outcome,
         ruleIds: audit?.ruleIds ?? null,
         outOfScopeRuleIds: audit?.outOfScopeRuleIds ?? null,
+        esFailures: audit?.emotionalSupportFailures?.map((failure) => failure.category) ?? null,
         hardFailureReasons: result.hardFailureReasons,
+        providerFailure: result.providerFailure ?? null,
+        modelCalls: modelCalls.length,
+        validationLatencyMs: endedAt - startedAt,
       }));
     }
   }
@@ -163,6 +216,25 @@ const run = async () => {
     failLabeledCalls: labeled.filter((call) => call.expected === "fail").length,
     ruleScopeViolationCalls: calls.filter((call) => call.ruleScopeViolation).length,
     reliableCases: Object.values(byCase).filter((item) => item.reliable === true).length,
+    // Diagnostics only; they never relax the reliability standard above.
+    diagnostics: {
+      totalModelCalls: calls.reduce((sum, call) => sum + call.modelCalls.length, 0),
+      schemaRepairCalls: calls.reduce(
+        (sum, call) => sum + call.modelCalls.filter((modelCall) => modelCall.call === "schema_repair").length, 0),
+      formatFailureValidations: calls.filter((call) => call.formatFailure).length,
+      malformedOrEvidenceMismatchValidations: calls.filter((call) => call.hardFailureReasons.some((reason) =>
+        reason === "planned_function_semantic:malformed_verdict" ||
+        reason === "planned_function_semantic:evidence_mismatch")).length,
+      semanticMisjudgments: labeled.filter((call) => call.outcomeMatches === false).length,
+      citationMisses: labeled.filter((call) => call.citationMatches === false).length,
+      providerFailures: countBy(calls.flatMap((call) =>
+        call.providerFailure ? [`${call.providerFailure.category}:${call.providerFailure.call ?? "unattributed"}`] : [])),
+      esFailureCategories: countBy(calls.flatMap((call) =>
+        call.audit?.emotionalSupportFailures?.map((failure) => failure.category) ?? [])),
+      esInconsistencies: countBy(calls.flatMap((call) => call.audit?.emotionalSupportInconsistencies ?? [])),
+      validationLatencyMs: latencySummary(calls.map((call) => call.validationLatencyMs)),
+      modelCallLatencyMs: latencySummary(calls.flatMap((call) => call.modelCalls.map((modelCall) => modelCall.latencyMs))),
+    },
     byCase,
   };
   mkdirSync(dirname(outputPath), { recursive: true });
@@ -172,10 +244,14 @@ const run = async () => {
     writeFileSync(structuralPath, `${JSON.stringify({
       note: "Structural copy; synthetic case replies and evidence text kept locally.",
       summary,
-      cases: cases.map(({ id, category, expected, acceptedRuleIds, rationale, derivation }) => ({
-        id, category, expected, acceptedRuleIds, rationale, derivation,
+      cases: cases.map(({ id, category, expected, acceptedRuleIds }) => ({
+        id, category, expected, acceptedRuleIds,
       })),
-      calls: calls.map((call) => ({ ...call, audit: withoutEvidenceText(call.audit) })),
+      calls: calls.map(({ positiveVerdict, ...call }) => ({
+        ...call,
+        esItemKinds: positiveVerdict?.emotionalSupport?.options.map((item) => item.kind) ?? null,
+        audit: withoutEvidenceText(call.audit),
+      })),
     }, null, 2)}\n`);
   }
   console.log(JSON.stringify(summary, null, 2));

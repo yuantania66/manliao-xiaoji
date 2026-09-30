@@ -45,6 +45,7 @@ import {
 import { enforceResponsePlan } from "./responsePlanValidator";
 import type { InteractionMoveHandoffSemanticProvider } from "./interactionMoveHandoffOutputValidator";
 import type {
+  PlannedFunctionSemanticDiagnostics,
   PlannedFunctionSemanticProvider,
   PlannedFunctionSemanticVerdict,
 } from "./plannedFunctionSemanticValidator";
@@ -122,6 +123,8 @@ export type ChatReplyResult = {
   execution: ChatExecutionTrace;
   /** Debug-trace only; aligned with controlTrace.validation attempts. */
   plannedFunctionSemanticVerdicts?: Array<PlannedFunctionSemanticVerdict | null>;
+  /** Debug-trace only; sanitized judge failure category and emotional-support attribution per attempt. */
+  plannedFunctionSemanticDiagnostics?: PlannedFunctionSemanticDiagnostics[];
 };
 
 const getFallbackRiskLevel = (content: string): AiRiskLevel => (isCrisisInput(content) ? "crisis" : "low");
@@ -758,7 +761,12 @@ export const createChatReply = async ({
       helpingTrace,
       controlTrace,
       execution,
-      ...(includeDebugTrace ? { plannedFunctionSemanticVerdicts: enforced.semanticVerdicts } : {}),
+      ...(includeDebugTrace
+        ? {
+            plannedFunctionSemanticVerdicts: enforced.semanticVerdicts,
+            plannedFunctionSemanticDiagnostics: enforced.semanticDiagnostics,
+          }
+        : {}),
       debugTrace: buildMaybeDebugTrace({
         includeDebugTrace,
         userMessage,

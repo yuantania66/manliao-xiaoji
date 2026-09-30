@@ -18,6 +18,7 @@ import {
   formatResponsePlanRegenerateConstraint,
   validateResponsePlanOutput,
 } from "../services/ai/responsePlanValidator";
+import { withEmotionalSupportSchema } from "./emotional-support-verdict-fixture";
 import {
   loadPreservationDataset,
   type PreservationScenario,
@@ -370,7 +371,7 @@ const validateExactNegativeThroughCanonicalSemanticBoundary = async (
       assert.equal(input.currentUserText, contract.sourceText);
       assert.equal(input.handoffBinding, null);
       assert.deepEqual(input.positiveFunctionBinding, contract);
-      return {
+      return withEmotionalSupportSchema({
         schemaVersion: 1,
         planId: testCase.plan.planId,
         handoff: null,
@@ -384,7 +385,7 @@ const validateExactNegativeThroughCanonicalSemanticBoundary = async (
           evidence: [],
         },
         semanticQuestionCount: 0,
-      };
+      });
     },
   });
   assert.deepEqual(
@@ -566,7 +567,7 @@ const validateCandidate3ExactNegative = async ({
       assert.equal(input.planId, plan.planId);
       assert.equal(input.candidateReply, wiring.reply);
       assert.deepEqual(input.positiveFunctionBinding, contract);
-      return {
+      return withEmotionalSupportSchema({
         schemaVersion: 1,
         planId: plan.planId,
         handoff: null,
@@ -582,7 +583,7 @@ const validateCandidate3ExactNegative = async ({
             : [],
         },
         semanticQuestionCount: 0,
-      };
+      });
     },
   });
   assert.deepEqual(

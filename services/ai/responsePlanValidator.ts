@@ -6,6 +6,7 @@ import { collectUnsupportedMeaningFailureReasons } from "./semanticEvidenceReply
 import {
   validatePlannedFunctionSemanticOutput,
   type PlannedFunctionSemanticContext,
+  type PlannedFunctionSemanticDiagnostics,
   type PlannedFunctionSemanticProvider,
   type PlannedFunctionSemanticValidationPromptInspector,
   type PlannedFunctionSemanticVerdict,
@@ -1206,6 +1207,7 @@ export const enforceResponsePlan = async ({
       : undefined
   );
   const semanticVerdicts: Array<PlannedFunctionSemanticVerdict | null> = [];
+  const semanticDiagnostics: PlannedFunctionSemanticDiagnostics[] = [];
   const validateCandidate = async (reply: string): Promise<ResponseValidationResult> => {
     const deterministic = validateResponsePlanOutput({ plan: executionPlan, reply });
     const semantic = await validatePlannedFunctionSemanticOutput({
@@ -1216,6 +1218,10 @@ export const enforceResponsePlan = async ({
       inspectExternalPrompt: semanticPromptInspector,
     });
     semanticVerdicts.push(semantic.verdict);
+    semanticDiagnostics.push({
+      providerFailure: semantic.providerFailure ?? null,
+      emotionalSupportAssessment: semantic.emotionalSupportAssessment ?? null,
+    });
     const hardFailureReasons = Array.from(new Set([
       ...(deterministic.hardFailureReasons ?? deterministic.failureReasons),
       ...semantic.hardFailureReasons,
@@ -1245,6 +1251,7 @@ export const enforceResponsePlan = async ({
       attempts: [first],
       validations: [firstValidation],
       semanticVerdicts,
+      semanticDiagnostics,
       regenerateAttempted: false,
     };
   }
@@ -1274,6 +1281,7 @@ export const enforceResponsePlan = async ({
       attempts: [first, second],
       validations: [firstValidation, secondValidation],
       semanticVerdicts,
+      semanticDiagnostics,
       regenerateAttempted: true,
     };
   }
@@ -1284,6 +1292,7 @@ export const enforceResponsePlan = async ({
     attempts: [first, second],
     validations: [firstValidation, secondValidation],
     semanticVerdicts,
+    semanticDiagnostics,
     regenerateAttempted: true,
   };
 };

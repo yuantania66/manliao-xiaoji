@@ -59,7 +59,11 @@ const run = async () => {
         attempt: index + 1,
         text: attempt.text,
         validationFailures: validations[index]?.failureReasons ?? ["missing_attempt_validation"],
-        semanticAudit: semanticVerdictAuditFor(reply.plannedFunctionSemanticVerdicts?.[index]),
+        semanticAudit: semanticVerdictAuditFor(
+          reply.plannedFunctionSemanticVerdicts?.[index],
+          reply.plannedFunctionSemanticDiagnostics?.[index]
+        ),
+        semanticProviderFailure: reply.plannedFunctionSemanticDiagnostics?.[index]?.providerFailure ?? null,
       }));
       const committed = reply.finalSource !== "constraint_failure";
       const screenRules = screens[scenario.supportFunction];
@@ -119,11 +123,17 @@ const run = async () => {
     const structuralRows = rows.map((row) => ({
       ...row,
       reply: undefined,
-      attempts: (row.attempts as Array<{ attempt: number; validationFailures: string[]; semanticAudit: ReturnType<typeof semanticVerdictAuditFor> }>)
-        .map(({ attempt, validationFailures, semanticAudit }) => ({
+      attempts: (row.attempts as Array<{
+        attempt: number;
+        validationFailures: string[];
+        semanticAudit: ReturnType<typeof semanticVerdictAuditFor>;
+        semanticProviderFailure: unknown;
+      }>)
+        .map(({ attempt, validationFailures, semanticAudit, semanticProviderFailure }) => ({
           attempt,
           validationFailures,
           semanticAudit: withoutEvidenceText(semanticAudit),
+          semanticProviderFailure,
         })),
     }));
     mkdirSync(dirname(structuralPath), { recursive: true });

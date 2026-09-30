@@ -8,6 +8,7 @@ import {
 import { createChatReply } from "../services/ai/chatOrchestrationService";
 import type { SafetySemanticProvider } from "../services/ai/chatSafety";
 import type { PlannedFunctionSemanticVerdict } from "../services/ai/plannedFunctionSemanticValidator";
+import { classifyProviderFailureCategory } from "../services/ai/providerFailureCategory";
 import { executionFailureKey, executionFailureRecordFor } from "./execution-failure-audit";
 import { semanticVerdictAuditFor, withoutEvidenceText } from "./semantic-verdict-audit";
 
@@ -26,6 +27,26 @@ abortLike.name = "AbortError";
 assert.equal(classifyExecutionError(abortLike).code, "TIMEOUT");
 assert.equal(classifyExecutionError(abortLike).category, "unknown", "a timeout-looking message without status evidence is not a timeout category");
 assert.equal(classifyExecutionError("not an error").category, "unknown");
+// The planned-function judge shares the same classifier, so a judge-side failure keeps the same semantics.
+for (const error of [
+  new AppError("AI_GENERATION_FAILED", "AI 服务调用超时", 504),
+  providerError(429),
+  providerError(503),
+  providerError(400),
+  new AppError("AI_GENERATION_FAILED", "AI 回复为空", 502),
+  new AppError("AI_GENERATION_FAILED", "AI provider 不支持请求的响应格式", 502, { provider: "qwen", responseFormat: "json_object" }),
+  abortLike,
+  "not an error",
+]) {
+  assert.equal(classifyProviderFailureCategory(error), classifyExecutionError(error).category);
+}
+assert.equal(
+  classifyProviderFailureCategory(
+    new AppError("AI_GENERATION_FAILED", "AI provider 不支持请求的响应格式", 502, { provider: "qwen", responseFormat: "json_object" })
+  ),
+  "unknown",
+  "a locally wrapped 502 is not evidence of a provider 5xx"
+);
 
 const traceWith = (
   failure: ChatExecutionTrace["failure"],
@@ -209,6 +230,26 @@ const emotionalVerdict = semanticVerdictAuditFor(verdictWith({
 }));
 assert.deepEqual(emotionalVerdict?.ruleIds, ["ES-SCOPE"]);
 assert.deepEqual(emotionalVerdict?.outOfScopeRuleIds, []);
+// With the program aggregation available, rule ids come from the aggregation table, not from reason text.
+const aggregatedEmotionalVerdict = semanticVerdictAuditFor(verdictWith({
+  binding: { action: "offer_emotional_support", supportFunction: "return_focus_control", sourceTurnId: "u" },
+  status: "not_satisfied",
+  realizedAction: "offer_emotional_support",
+  targetAddressed: true,
+  contractRealized: true,
+  containsContradictoryMove: true,
+  evidence: [span("ES-FOCUS: model-chosen citation")],
+}), {
+  providerFailure: null,
+  emotionalSupportAssessment: {
+    passed: false,
+    failures: [{ category: "es_solicits_new_content", ruleIds: ["ES-SCOPE"], source: "option", index: 0 }],
+    ruleIds: ["ES-SCOPE"],
+    inconsistencies: [],
+  },
+});
+assert.deepEqual(aggregatedEmotionalVerdict?.ruleIds, ["ES-SCOPE"]);
+assert.deepEqual(aggregatedEmotionalVerdict?.emotionalSupportFailures?.map((failure) => failure.category), ["es_solicits_new_content"]);
 const repairVerdict = semanticVerdictAuditFor(verdictWith({
   binding: { action: "repair_previous_wording", repairMode: "interaction_move_withdrawal", sourceTurnId: "u", targetTurnId: "a" },
   status: "not_satisfied",

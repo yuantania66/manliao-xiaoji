@@ -14,6 +14,7 @@ import { preflightResponsePlan } from "../services/ai/chatExecutionLifecycle";
 import { validatePlannedFunctionSemanticOutput } from "../services/ai/plannedFunctionSemanticValidator";
 import { formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
 import { validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
+import { withEmotionalSupportSchema } from "./emotional-support-verdict-fixture";
 import { loadPreservationDataset } from "./hill-helping-batch1-5-preservation-lib";
 
 const main = async () => {
@@ -207,7 +208,7 @@ const validateC202ThroughCanonicalSemanticBoundary = async ({
       assert.equal(input.currentUserText, currentUserText);
       assert.equal(input.handoffBinding, null);
       assert.deepEqual(input.positiveFunctionBinding, contract);
-      return {
+      return withEmotionalSupportSchema({
         schemaVersion: 1,
         planId: plan.planId,
         handoff: null,
@@ -225,7 +226,7 @@ const validateC202ThroughCanonicalSemanticBoundary = async ({
           evidence: [],
         },
         semanticQuestionCount: 0,
-      };
+      });
     },
   });
   assert.deepEqual(
@@ -559,7 +560,7 @@ const validateEmotionalNegativeThroughCanonicalSemanticBoundary = async ({
       assert.equal(input.currentUserText, wiring.sourceText);
       assert.equal(input.handoffBinding, null);
       assert.deepEqual(input.positiveFunctionBinding, contract);
-      return {
+      return withEmotionalSupportSchema({
         schemaVersion: 1,
         planId: plan.planId,
         handoff: null,
@@ -577,7 +578,7 @@ const validateEmotionalNegativeThroughCanonicalSemanticBoundary = async ({
           evidence: [],
         },
         semanticQuestionCount: 0,
-      };
+      });
     },
   });
   assert.deepEqual(

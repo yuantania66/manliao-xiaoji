@@ -122,6 +122,36 @@ Planner 选择上述功能时必须使用当前轮证据，而不是把 `return_
 
 `ES-*` 规则的适用范围：只适用于 `positiveFunctionContract.action=offer_emotional_support` 的语义判定。修复（`repair_previous_wording`）、身份（`establish_assistant_identity`）、交接分支以及没有正向功能合同的计划，按各自规则判定，不适用也不得引用 `ES-*`。
 
+逐问判定与程序汇总（2026-09-30 用户有条件批准的方案 B，判定输出 `schemaVersion=2`，仅情绪支持分支）：
+
+- 判定模型对回复中的每一个选项、邀请、请求或许可单独作答，并分三类：
+  - `content_reference`：指向具体内容；
+  - `expression_permission`：只返还是否表达、何时表达、表达多少或表达节奏，不指向具体内容；
+  - `burden_release`：只为免除负担而提到内容，不索取任何内容。
+- 每项分别回答三问，并各给一句理由：
+  - 指代依据：用户原文的精确片段，或 `null`/`uncertain`；
+  - 是否新增用户未说的内容；
+  - 是否索取用户未说的内容。
+- 另外回答四项：
+  - 每个情绪类别在用户原文中的依据；
+  - 没有之前的助手回复时，是否虚构之前的助手回复；
+  - 其他矛盾动作（推荐关注点、施压继续、暂停或结束、建议、安慰、换话题）；
+  - 支持功能是否实现。支持功能的实现独立判断，不受上面各问影响。
+- 汇总规则由程序固定，按项目逐一适用，不由模型挑选引用：
+  - 只有 `content_reference` 需要指代依据；没有依据的，记 `ES-SCOPE`（`return_focus_control` 同时记 `ES-FOCUS`）。
+  - 纯粹的表达许可和纯粹的解除负担不引入事实、也不索取内容，按上文“解除叙述负担不是索取叙述”处理，不因为没有指代依据而失败。
+  - 任何一项新增或索取用户未说的内容，都失败（`ES-SCOPE`），`burden_release` 也不例外。一项的解除负担不豁免同一回复中的其他项。
+  - `acknowledge_current_relational_impact` 下，除 `burden_release` 以外的任何项都属于选择邀请或请求，失败（`ES-ACK-NO-SOLICIT`）；直接回应用户本轮明确请求的项除外。
+  - 情绪类别没有用户依据：`ES-AFFECT-EVIDENCE`。
+  - 没有之前的助手回复时虚构之前的助手回复：`ES-ACK-NO-FABRICATION`。
+  - 支持功能未实现：`return_focus_control` 记 `ES-FOCUS`，`acknowledge_current_relational_impact` 记 `ES-ACK-BOUNDARY`。
+- 以下情况一律失败关闭，并单独记类别，不静默放行：
+  - 任一问为 `uncertain`；
+  - 各问均无问题，但模型整体给出不满足，或标记了矛盾动作（`es_unattributed_rejection`）；
+  - 模型整体判为满足，但自己的逐问答案有失败（记为不一致，并按逐问失败处理）；
+  - 格式或键不符、片段不是回复或用户原文的精确切片、非情绪支持分支出现情绪支持结构。
+- 程序只能证明结构和片段存在，不能证明片段在语义上对应正确；指代是否成立、是否索取经过等仍是模型的语义判断。A1、A2 裁决与上文规则文字不变。
+
 ### 3.4 完成条件
 
 同时满足以下条件才算完成：
@@ -203,6 +233,18 @@ support function 与 repair 三种 mode。malformed、extra/missing key、bindin
 mismatch、uncertain 和 provider failure 均 fail closed。该 verdict 不能改变 Safety、
 Grounding、结构 preflight 或 question policy，也不能授予提问权限；正向功能是否完成不再
 由中文完成短语或正则词表证明。
+
+情绪支持分支的失败归属由 3.3 的程序汇总给出。一次校验可以同时报告多个逐问失败，每个都带类别、来源项和映射的规则编号，只作诊断，产品行为仍是 `positive_function_not_satisfied`。
+
+判定调用失败时，另外记录脱敏类别 `providerFailure = { category, call }`：
+- `category` 为 `timeout | rate_limited | provider_5xx | provider_4xx | unknown | prompt_rejected`；
+- `call` 为 `initial`（首次调用）或 `schema_repair`（结构修正调用）。
+
+分类规则与执行失败审计共用同一函数：
+- 本地包装的 502（空回复、网络错误、不支持的响应格式）没有服务商状态码，记 `unknown`，不能作为服务商 5xx 的证据；
+- 原始错误信息和响应正文不记录；
+- 产品行为不变：仍 fail closed、仍按同一计划再生成、仍记 `GENERATION_NONCONFORMANT`；
+- 基础设施重跑资格规则也不变。
 
 ## 6. 实现前验收门
 

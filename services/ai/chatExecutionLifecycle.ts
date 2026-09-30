@@ -10,8 +10,8 @@ import {
   type ResponsePlanPreflightAuthoritySnapshot,
 } from "@/conversation-os/control/responsePlanPreflightAuthority";
 import { projectAffectEvidenceTerms } from "@/conversation-os/state";
-import { AppError } from "@/lib/errors";
 
+import { classifyProviderFailureCategory, type ProviderFailureCategory } from "./providerFailureCategory";
 import type { AiGenerationResult } from "./types";
 
 export type ChatExecutionPhase =
@@ -31,13 +31,7 @@ export type ChatExecutionFailureCode =
   | "TIMEOUT"
   | "PERSISTENCE_ERROR";
 
-// Sanitized provider-failure class; "unknown" whenever the error carries no provider status evidence.
-export type ChatExecutionFailureCategory =
-  | "timeout"
-  | "rate_limited"
-  | "provider_5xx"
-  | "provider_4xx"
-  | "unknown";
+export type ChatExecutionFailureCategory = ProviderFailureCategory;
 
 export type ChatExecutionAttempt = {
   attemptId: string;
@@ -496,22 +490,6 @@ export const buildAttemptTransitions = ({
   return transitions;
 };
 
-const classifyFailureCategory = (error: unknown): ChatExecutionFailureCategory => {
-  if (!(error instanceof AppError)) return "unknown";
-  if (error.status === 504) return "timeout";
-  const providerStatus = typeof error.details === "object" && error.details !== null
-    ? (error.details as { status?: unknown }).status
-    : undefined;
-  if (providerStatus === 429) return "rate_limited";
-  if (typeof providerStatus === "number" && providerStatus >= 500 && providerStatus <= 599) {
-    return "provider_5xx";
-  }
-  if (typeof providerStatus === "number" && providerStatus >= 400 && providerStatus <= 499) {
-    return "provider_4xx";
-  }
-  return "unknown";
-};
-
 export const classifyExecutionError = (error: unknown): {
   code: Extract<ChatExecutionFailureCode, "PROVIDER_ERROR" | "TIMEOUT">;
   reason: string;
@@ -519,7 +497,7 @@ export const classifyExecutionError = (error: unknown): {
 } => {
   const reason = error instanceof Error ? error.message : "Unknown provider failure";
   const name = error instanceof Error ? error.name : "";
-  const category = classifyFailureCategory(error);
+  const category = classifyProviderFailureCategory(error);
   return /timeout|timed out|abort|超时/i.test(`${name} ${reason}`)
     ? { code: "TIMEOUT", reason, category }
     : { code: "PROVIDER_ERROR", reason, category };
