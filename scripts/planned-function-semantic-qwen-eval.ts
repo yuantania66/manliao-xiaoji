@@ -450,7 +450,7 @@ const verdictRecordFor = (result: PlannedFunctionSemanticValidationResult) => {
       containsContradictoryMove: handoff.containsContradictoryMove,
       handoffCompletionClaimed: handoff.handoffCompletionClaimed,
       optionalQuestionAfterRequiredFunction: handoff.optionalQuestionAfterRequiredFunction,
-      evidenceCount: handoff.evidence.length,
+      evidence: handoff.evidence.map(({ start, end, text, reason }) => ({ start, end, text, reason })),
     },
     audit: semanticVerdictAuditFor(result.verdict),
   };
@@ -600,7 +600,14 @@ const main = async () => {
       })),
       rows: rows.map((row) => ({
         ...row,
-        verdict: row.verdict && { ...row.verdict, audit: withoutEvidenceText(row.verdict.audit) },
+        verdict: row.verdict && {
+          ...row.verdict,
+          handoff: row.verdict.handoff && {
+            ...row.verdict.handoff,
+            evidence: row.verdict.handoff.evidence.map(({ start, end }) => ({ start, end })),
+          },
+          audit: withoutEvidenceText(row.verdict.audit),
+        },
       })),
     }, null, 2)}\n`);
   }

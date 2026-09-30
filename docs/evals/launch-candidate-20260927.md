@@ -730,7 +730,7 @@ C3 取证（只用代码与既有日志；未采样，未修改 Safety；不把�
     - 前置：执行失败审计通过；`check:release:required` 通过（08:23:02–08:30:53Z，新库 `xq_rc_ci_test_20260930d`，21 个迁移，`.env` 置空、无模型变量，Build ID `C5ncwpz03zI94jTcSP89y`）。
     - 请求记录：41 次判定请求，全部是 `qwen3.8-max-0902`，带 `response_format=json_object`，`enable_thinking=false`，`temperature=0`，developer 消息 sha256 `0776a9ae…`，与离线 J 和 `bf34cc6` 的 Q 一致；另有 2 次后置矛盾检查用 `qwen3.7-max`。全部 HTTP 200。Token 输入 91,417、输出 8,395，约 1.40 元。
     - 修正后的 `emotional-return_focus_control-two-targets-positive` 通过（判定 `satisfied`，引用 `ES-FOCUS`）。
-    - 唯一失败：`dual-both-satisfied`（问候交接加首次身份的双合同放行样例），`planned_function_semantic:handoff_not_satisfied`。结构记录：身份分支 `satisfied`；交接分支 `not_satisfied`，`targetAddressed`、`relationAddressed`、`requiredFunctionRealized` 均为 false，`realizedFunction=null`，没有矛盾动作或完成声明，引用 1 条证据。交接分支的证据原文不在本次记录字段内，拒绝依据仍未知。
+    - 唯一失败：`dual-both-satisfied`（问候交接加首次身份的双合同放行样例），`planned_function_semantic:handoff_not_satisfied`。结构记录：身份分支 `satisfied`；交接分支 `not_satisfied`，`targetAddressed`、`relationAddressed`、`requiredFunctionRealized` 均为 false，`realizedFunction=null`，没有矛盾动作或完成声明，引用 1 条证据。交接分支的证据原文不在本次记录字段内，拒绝依据仍未知。这是 `8c7ee39` 记录字段的缺口：交接分支只记了证据条数。之后的提交已补上：本地完整记录保存交接证据的原文与理由，结构副本只保存位置。不重新采样补这次的记录。
     - 这条样例本次没有改动，判定输入、判定 Prompt 和请求配置都与 `bf34cc6` 那次 Q 相同，那次它通过了。这是同一配置下同一输入的结论不一致，只有两次观测，不能据此给出稳定性比例。
     - 语义失败，HTTP 200，没有服务商失败，按规则不能重跑。按停止条件：E、F、C8、C9 未启动；没有追加采样、没有改判定器、Prompt、标签或门槛。
     - 结构证据：`docs/evals/planned-function-semantic-qwen/q-8c7ee39-structural.json`（0 个中文字符）；完整本地记录与日志在 `~/.xq-rc-wx/gates/*-8c7ee39.*`。
