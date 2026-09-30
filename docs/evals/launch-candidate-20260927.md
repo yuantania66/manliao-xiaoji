@@ -721,6 +721,22 @@ C3 取证（只用代码与既有日志；未采样，未修改 Safety；不把�
     - Q 新增分支级检查（在夹具段之外；夹具段与 `8c7ee39` 逐字节相同，标签不变）：三个 dual 样例除最终结论外，两个分支各自的结果也必须符合预期，否则记为 `branch_mismatch` 并使 Q 失败。预期来自 `docs/tasks/planned-function-semantic-validation-analysis.md` 第 156 行的双分支 AND 设计：`dual-both-satisfied` 两支都满足；`dual-handoff-only` 交接满足、身份不满足；`dual-positive-only` 身份满足、交接不满足（必须在第一阶段交接分支被拒，不能靠后置矛盾检查兜住）。
     - 记录检查新增“掩盖”用例：交接分支判错、但最终结论仍靠身份分支或后置矛盾检查与标签一致时，分支检查必须报不一致。
   - **真实模型验证预算（运行前固定）**：J 完整 1 次（22 例 × 3 次 = 66 次顶层校验，约 2.5 元）；Q 完整 1 轮（41 次顶层校验，约 1.4 元，含分支级检查）。估算不是费用保证。任一失败即停止，不追加 Prompt 修复或采样；通过后继续 E → F → C8 → C9。
+  - **候选 `43043b9` 结果**（产品源码相对 `bf34cc6` 只改判定器文件，源码指纹 `d23b8e481ff017ec`；生成模型 `qwen3.7-max`，`.env` 指纹 `0ee58c243449c1a4`；判定模型 `AI_SEMANTIC_VALIDATOR_MODEL=qwen3.8-max-0902`，模型快照 + JSON 模式；新判定 developer 消息 sha256 `abd30bd2…`）：
+    - 执行失败审计通过；`check:release:required` 通过（09:16:19–09:25:01Z，新库 `xq_rc_ci_test_20260930f`，21 个迁移，Build ID `ebB8oVe-it1tSS2TtSJ-S`）。
+    - **J：PASS 22/22**（09:25:02–09:30:34Z）：66/66 结论正确，误拒 0、误放 0，越界引用 0，格式失败 0，结构修正 0，服务异常 0；歧义用例 3 例不计入标准。69 次请求全部为 `qwen3.8-max-0902` + JSON 模式、HTTP 200。Token 173,931 / 14,659，约 2.61 元。（J 摘要的 `judgeModelEnv` 字段读的是 `AI_MAIN_MODEL`，显示 `qwen3.7-max`；实际判定模型以请求记录为准。）
+    - **Q：PASS 41/41**（09:30:34–09:33:45Z），含分支级检查：
+      - `dual-both-satisfied`：身份满足、交接满足（交接理由：没有重复问候，从相互接触自然过渡到介绍与低压力邀请），后置矛盾 `clear`。
+      - `dual-handoff-only`：交接满足（理由：确认问候已完成并释放到对话，没有再问候）、身份不满足（没有以小慢介绍自己）。
+      - `dual-positive-only`：身份满足；交接在第一阶段即判不满足，`containsContradictoryMove=true`，证据是结尾的“你好呀！”（释放仪式后重新发起接触）；后置矛盾检查未参与。
+      - 41 次判定请求全部 `abd30bd2…`、HTTP 200；Token 100,152 / 8,288，约 1.50 元。
+    - **E：PASS 10/10**（09:33:45–09:37:18Z）：约束失败 0，再生成 6 次，禁用筛查命中 0，待人工复核的歧义回复 0。约 1.39 元。
+    - **F：FAIL**（09:37:18–09:47:54Z）：60 行中通过 39 行，失败 21 行（1 行 `PROVIDER_ERROR/provider_4xx`，发生在生成开始后；20 行 `SAFETY_BLOCKED`，发生在 Safety 阶段、生成之前）。
+      - 请求记录：09:37:19–09:47:47Z 的 166 次请求全部 HTTP 200；09:47:48–09:47:54Z 的 22 次请求全部 HTTP 400，两个模型都有（`qwen3.7-max` 21 次、`qwen3.8-max-0902` 1 次）。21 个失败行正是最后运行的 21 行（全部为 `ordinary_repair`）；它们之前的 39 行全部验证通过、预期动作一致、无执行失败。
+      - 400 的具体原因未记录（记录器不保存响应正文）。按规则，普通 4xx 不能按基础设施故障豁免，不能重跑；F 判 FAIL。没有追加任何探测调用。
+      - 约 3.98 元。
+    - 按停止条件：C8、C9 未启动；没有追加 Prompt 修复或采样。
+    - 本次真实模型调用合计约 9.5 元（按价目）。
+    - 结构证据：`docs/evals/emotional-support-fix-20260929/judge-reliability-43043b9-qwen3.8-max-0902-structural.json`、`docs/evals/planned-function-semantic-qwen/q-43043b9-structural.json`、`docs/evals/emotional-support-fix-20260929/budget-43043b9-structural.json`（均 0 个中文字符）；完整本地记录与日志在 `~/.xq-rc-wx/gates/*-43043b9*`。
 
 - Q 固定预算稳定性测量（2026-09-30，用户 16:39 批准；只交付测量结论）：
   - **定位**：这三轮是诊断测量，不是新增的“三轮全过”发布门；Q 的验收仍是既定的单轮 41 例。
