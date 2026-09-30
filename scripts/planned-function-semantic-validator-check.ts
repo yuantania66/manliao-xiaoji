@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import type {
   PositiveFunctionContract,
   ResponsePlan,
 } from "../conversation-os/control";
 import { AppError } from "../lib/errors";
+import { getMainModel } from "../services/ai/aiService";
 import { ExternalPromptRejectedError } from "../services/ai/externalPromptInspection";
 import {
   defaultPlannedFunctionSemanticProvider,
@@ -871,6 +874,68 @@ try {
 } finally {
   globalThis.fetch = originalFetch;
   for (const [name, value] of Object.entries(previousProviderEnv)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+}
+
+// AI_SEMANTIC_VALIDATOR_MODEL selects the judge model for both judge calls; empty or unset keeps AI_MAIN_MODEL.
+const modelEnvNames = ["AI_PROVIDER", "AI_MAIN_MODEL", "AI_SEMANTIC_VALIDATOR_MODEL", "QWEN_API_KEY"] as const;
+const previousModelEnv = Object.fromEntries(modelEnvNames.map((name) => [name, process.env[name]]));
+const fetchBeforeModelChecks = globalThis.fetch;
+try {
+  process.env.AI_PROVIDER = "qwen";
+  process.env.AI_MAIN_MODEL = "qwen3.7-max";
+  process.env.QWEN_API_KEY = "judge-model-test-key";
+  const judgeBodies: Array<Record<string, unknown>> = [];
+  globalThis.fetch = async (_input, init) => {
+    judgeBodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+    const content = judgeBodies.length % 2 === 1
+      ? "not json"
+      : JSON.stringify(verdictFor({ input: capturedJudgeInput }));
+    return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+  const judgeWithRepair = async (validatorModel: string | undefined) => {
+    if (validatorModel === undefined) delete process.env.AI_SEMANTIC_VALIDATOR_MODEL;
+    else process.env.AI_SEMANTIC_VALIDATOR_MODEL = validatorModel;
+    judgeBodies.length = 0;
+    const result = await validatePlannedFunctionSemanticOutput({
+      plan: firstContactPlan,
+      reply: "候选",
+      semanticContext: context,
+    });
+    assert.equal(result.passed, true);
+    assert.equal(judgeBodies.length, 2, "first call plus the existing single schema-repair call");
+    return judgeBodies.map(({ model, response_format, enable_thinking, temperature }) =>
+      ({ model, response_format, enable_thinking, temperature }));
+  };
+  const configured = await judgeWithRepair("qwen3.8-max-0902");
+  const configuredCall = {
+    model: "qwen3.8-max-0902",
+    response_format: { type: "json_object" },
+    enable_thinking: false,
+    temperature: 0,
+  };
+  assert.deepEqual(configured, [configuredCall, configuredCall], "both judge calls use the configured judge model");
+  const legacyCall = { model: "qwen3.7-max", response_format: undefined, enable_thinking: false, temperature: 0 };
+  assert.deepEqual(await judgeWithRepair(undefined), [legacyCall, legacyCall], "unset keeps AI_MAIN_MODEL");
+  assert.deepEqual(await judgeWithRepair("  "), [legacyCall, legacyCall], "blank keeps AI_MAIN_MODEL");
+
+  process.env.AI_SEMANTIC_VALIDATOR_MODEL = "qwen3.8-max-0902";
+  assert.equal(getMainModel(), "qwen3.7-max", "generation model selection ignores the judge model");
+  const sourceRoots = ["services", "conversation-os", "lib", "app"];
+  const readers = sourceRoots.flatMap((root) =>
+    readdirSync(root, { recursive: true, encoding: "utf8" })
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .map((file) => join(root, file))
+      .filter((file) => readFileSync(file, "utf8").includes("AI_SEMANTIC_VALIDATOR_MODEL")));
+  assert.deepEqual(readers, ["services/ai/plannedFunctionSemanticValidator.ts"], "only the semantic validator reads the judge model");
+} finally {
+  globalThis.fetch = fetchBeforeModelChecks;
+  for (const [name, value] of Object.entries(previousModelEnv)) {
     if (value === undefined) delete process.env[name];
     else process.env[name] = value;
   }

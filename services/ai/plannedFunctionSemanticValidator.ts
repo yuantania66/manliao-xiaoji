@@ -465,7 +465,9 @@ export const defaultPlannedFunctionSemanticProvider = async (
       messages: outboundMessages,
     });
     return callModel({
-      model: process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
+      model: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() ||
+        process.env.AI_MAIN_MODEL?.trim() ||
+        getDefaultAiModel(),
       messages: outboundMessages,
       temperature: 0,
       responseFormat: "json_object",

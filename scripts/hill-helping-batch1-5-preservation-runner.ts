@@ -162,6 +162,7 @@ const run = async () => {
     datasetSha256,
     provider: getAiProvider(),
     model: process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
+    judgeModel: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() || process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
     startedAt,
     completedAt: new Date().toISOString(),
     gate: dataset.gate,

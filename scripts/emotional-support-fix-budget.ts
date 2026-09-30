@@ -102,6 +102,8 @@ const run = async () => {
   }
   const summary = {
     head,
+    model: process.env.AI_MAIN_MODEL?.trim() || null,
+    judgeModel: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() || process.env.AI_MAIN_MODEL?.trim() || null,
     runsPerScenario: RUNS,
     total: rows.length,
     passed: rows.filter((r) => r.passed).length,

@@ -425,6 +425,7 @@ const main = async () => {
   );
   console.log(JSON.stringify({
     model: process.env.AI_MAIN_MODEL || "provider-default",
+    judgeModel: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() || process.env.AI_MAIN_MODEL || "provider-default",
     cases: selectedCases.length,
     categoryTotals,
     failures,
