@@ -15,7 +15,6 @@ import type { ConversationMessage } from "../conversation-os/types";
 import {
   validatePlannedFunctionSemanticOutput,
   type PlannedFunctionSemanticProviderFailure,
-  type PositiveFunctionSemanticVerdict,
 } from "../services/ai/plannedFunctionSemanticValidator";
 import { semanticVerdictAuditFor, withoutEvidenceText } from "./semantic-verdict-audit";
 
@@ -101,8 +100,6 @@ const run = async () => {
     advisoryFailureReasons: string[];
     audit: ReturnType<typeof semanticVerdictAuditFor>;
     providerFailure: PlannedFunctionSemanticProviderFailure | null;
-    // Local-only copy of the model's per-question answers; never written to the structural file.
-    positiveVerdict: PositiveFunctionSemanticVerdict | null;
     // Every outbound judge call, including the schema-repair call; latency runs to the next call or the end.
     modelCalls: Array<{ call: "initial" | "schema_repair"; latencyMs: number }>;
     validationLatencyMs: number;
@@ -143,10 +140,7 @@ const run = async () => {
         result.hardFailureReasons.some((reason) =>
           reason === "planned_function_semantic:malformed_verdict" ||
           reason === "planned_function_semantic:evidence_mismatch");
-      const audit = semanticVerdictAuditFor(result.verdict, {
-        providerFailure: result.providerFailure ?? null,
-        emotionalSupportAssessment: result.emotionalSupportAssessment ?? null,
-      });
+      const audit = semanticVerdictAuditFor(result.verdict);
       const outcome = result.passed ? "pass" : "fail";
       const outcomeMatches = testCase.expected === "ambiguous" ? null : outcome === testCase.expected;
       const citationMatches = testCase.expected !== "fail" || !testCase.acceptedRuleIds?.length
@@ -166,7 +160,6 @@ const run = async () => {
         advisoryFailureReasons: result.advisoryFailureReasons,
         audit,
         providerFailure: result.providerFailure ?? null,
-        positiveVerdict: result.verdict?.positiveFunction ?? null,
         modelCalls,
         validationLatencyMs: endedAt - startedAt,
         formatFailure,
@@ -181,7 +174,6 @@ const run = async () => {
         outcome,
         ruleIds: audit?.ruleIds ?? null,
         outOfScopeRuleIds: audit?.outOfScopeRuleIds ?? null,
-        esFailures: audit?.emotionalSupportFailures?.map((failure) => failure.category) ?? null,
         hardFailureReasons: result.hardFailureReasons,
         providerFailure: result.providerFailure ?? null,
         modelCalls: modelCalls.length,
@@ -229,9 +221,6 @@ const run = async () => {
       citationMisses: labeled.filter((call) => call.citationMatches === false).length,
       providerFailures: countBy(calls.flatMap((call) =>
         call.providerFailure ? [`${call.providerFailure.category}:${call.providerFailure.call ?? "unattributed"}`] : [])),
-      esFailureCategories: countBy(calls.flatMap((call) =>
-        call.audit?.emotionalSupportFailures?.map((failure) => failure.category) ?? [])),
-      esInconsistencies: countBy(calls.flatMap((call) => call.audit?.emotionalSupportInconsistencies ?? [])),
       validationLatencyMs: latencySummary(calls.map((call) => call.validationLatencyMs)),
       modelCallLatencyMs: latencySummary(calls.flatMap((call) => call.modelCalls.map((modelCall) => modelCall.latencyMs))),
     },
@@ -247,11 +236,7 @@ const run = async () => {
       cases: cases.map(({ id, category, expected, acceptedRuleIds }) => ({
         id, category, expected, acceptedRuleIds,
       })),
-      calls: calls.map(({ positiveVerdict, ...call }) => ({
-        ...call,
-        esItemKinds: positiveVerdict?.emotionalSupport?.options.map((item) => item.kind) ?? null,
-        audit: withoutEvidenceText(call.audit),
-      })),
+      calls: calls.map((call) => ({ ...call, audit: withoutEvidenceText(call.audit) })),
     }, null, 2)}\n`);
   }
   console.log(JSON.stringify(summary, null, 2));

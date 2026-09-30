@@ -1218,10 +1218,7 @@ export const enforceResponsePlan = async ({
       inspectExternalPrompt: semanticPromptInspector,
     });
     semanticVerdicts.push(semantic.verdict);
-    semanticDiagnostics.push({
-      providerFailure: semantic.providerFailure ?? null,
-      emotionalSupportAssessment: semantic.emotionalSupportAssessment ?? null,
-    });
+    semanticDiagnostics.push({ providerFailure: semantic.providerFailure ?? null });
     const hardFailureReasons = Array.from(new Set([
       ...(deterministic.hardFailureReasons ?? deterministic.failureReasons),
       ...semantic.hardFailureReasons,

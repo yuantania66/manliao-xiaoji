@@ -123,7 +123,7 @@ export type ChatReplyResult = {
   execution: ChatExecutionTrace;
   /** Debug-trace only; aligned with controlTrace.validation attempts. */
   plannedFunctionSemanticVerdicts?: Array<PlannedFunctionSemanticVerdict | null>;
-  /** Debug-trace only; sanitized judge failure category and emotional-support attribution per attempt. */
+  /** Debug-trace only; sanitized judge provider-failure category per attempt. */
   plannedFunctionSemanticDiagnostics?: PlannedFunctionSemanticDiagnostics[];
 };
 

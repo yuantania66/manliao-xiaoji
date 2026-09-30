@@ -59,10 +59,7 @@ const run = async () => {
         attempt: index + 1,
         text: attempt.text,
         validationFailures: validations[index]?.failureReasons ?? ["missing_attempt_validation"],
-        semanticAudit: semanticVerdictAuditFor(
-          reply.plannedFunctionSemanticVerdicts?.[index],
-          reply.plannedFunctionSemanticDiagnostics?.[index]
-        ),
+        semanticAudit: semanticVerdictAuditFor(reply.plannedFunctionSemanticVerdicts?.[index]),
         semanticProviderFailure: reply.plannedFunctionSemanticDiagnostics?.[index]?.providerFailure ?? null,
       }));
       const committed = reply.finalSource !== "constraint_failure";

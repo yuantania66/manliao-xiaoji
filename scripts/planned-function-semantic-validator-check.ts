@@ -5,14 +5,12 @@ import type {
   ResponsePlan,
 } from "../conversation-os/control";
 import { AppError } from "../lib/errors";
+import { ExternalPromptRejectedError } from "../services/ai/externalPromptInspection";
 import {
+  defaultPlannedFunctionSemanticProvider,
   normalizePlannedFunctionSemanticEvidence,
   parsePlannedFunctionSemanticProviderOutput,
-  PlannedFunctionSemanticProviderCallError,
   validatePlannedFunctionSemanticOutput,
-  type EmotionalSupportAnswers,
-  type EmotionalSupportItemAnswer,
-  type EmotionMentionAnswer,
   type PlannedFunctionSemanticProvider,
   type PlannedFunctionSemanticProviderInput,
   type PlannedFunctionSemanticVerdict,
@@ -23,7 +21,6 @@ import {
   formatResponsePlanRegenerateConstraint,
 } from "../services/ai/responsePlanValidator";
 import type { AiGenerationResult } from "../services/ai/types";
-import { cleanEmotionalSupportAnswers as cleanEmotionalSupport } from "./emotional-support-verdict-fixture";
 
 const turnId = "user-turn-current";
 const handoffTargetId = "assistant-move-target";
@@ -152,9 +149,8 @@ const verdictFor = ({
     : [];
   const handoff = input.handoffBinding;
   const positive = input.positiveFunctionBinding;
-  const emotionalSupportBranch = positive?.action === "offer_emotional_support";
   return {
-    schemaVersion: emotionalSupportBranch ? 2 : 1,
+    schemaVersion: 1,
     planId: input.planId,
     handoff: handoff
       ? {
@@ -188,7 +184,6 @@ const verdictFor = ({
           contractRealized: positiveStatus === "satisfied",
           containsContradictoryMove: false,
           evidence,
-          ...(emotionalSupportBranch ? { emotionalSupport: cleanEmotionalSupport() } : {}),
         }
       : null,
     semanticQuestionCount,
@@ -197,398 +192,6 @@ const verdictFor = ({
 };
 
 const context = { currentUserText, handoffTargetAssistantText: null };
-
-// Synthetic model answers only; the aggregation table must reproduce the model's per-question judgment.
-const emotionalSupportAggregationChecks = async () => {
-  const userText = "下午被打断的时候很烦，也有点委屈";
-  const spanIn = (source: string, text: string) => {
-    const start = source.indexOf(text);
-    assert(start >= 0, `fixture slice missing: ${text}`);
-    return { start, end: start + text.length, text };
-  };
-  type SupportFunction = Extract<PositiveFunctionContract, { action: "offer_emotional_support" }>["supportFunction"];
-  const planFor = (supportFunction: SupportFunction) => {
-    const plan = basePlan();
-    plan.planId = `es-aggregation-${supportFunction}`;
-    plan.responseActions = ["offer_emotional_support"];
-    plan.positiveFunctionContract = emotionalContract(supportFunction);
-    return plan;
-  };
-  const item = (
-    reply: string,
-    text: string,
-    kind: EmotionalSupportItemAnswer["kind"],
-    anchorText: string | null | "uncertain",
-    overrides: Partial<EmotionalSupportItemAnswer> = {}
-  ): EmotionalSupportItemAnswer => ({
-    span: spanIn(reply, text),
-    kind,
-    userAnchor: anchorText === null || anchorText === "uncertain" ? anchorText : spanIn(userText, anchorText),
-    addsUnstatedContent: "none",
-    solicitsNewContent: "none",
-    answersExplicitUserRequest: false,
-    reasons: { anchor: "synthetic", content: "synthetic", solicitation: "synthetic" },
-    ...overrides,
-  });
-  const mention = (reply: string, text: string, anchorText: string | null | "uncertain"): EmotionMentionAnswer => ({
-    span: spanIn(reply, text),
-    userAnchor: anchorText === null || anchorText === "uncertain" ? anchorText : spanIn(userText, anchorText),
-    reason: "synthetic",
-  });
-  const run = async ({
-    supportFunction,
-    reply,
-    answers,
-    status = "satisfied",
-    contractRealized = true,
-    containsContradictoryMove = false,
-    priorAssistantTurnAvailable,
-  }: {
-    supportFunction: SupportFunction;
-    reply: string;
-    answers: Partial<EmotionalSupportAnswers>;
-    status?: "satisfied" | "not_satisfied" | "uncertain";
-    contractRealized?: boolean;
-    containsContradictoryMove?: boolean;
-    priorAssistantTurnAvailable?: boolean;
-  }) => validatePlannedFunctionSemanticOutput({
-    plan: planFor(supportFunction),
-    reply,
-    semanticContext: {
-      currentUserText: userText,
-      handoffTargetAssistantText: null,
-      ...(priorAssistantTurnAvailable === undefined ? {} : { priorAssistantTurnAvailable }),
-    },
-    provider: async (input) => {
-      const verdict = verdictFor({ input, positiveStatus: status });
-      assert(verdict.positiveFunction);
-      verdict.positiveFunction.contractRealized = contractRealized;
-      verdict.positiveFunction.targetAddressed = contractRealized;
-      verdict.positiveFunction.realizedAction = contractRealized ? "offer_emotional_support" : null;
-      verdict.positiveFunction.containsContradictoryMove = containsContradictoryMove;
-      verdict.positiveFunction.emotionalSupport = { ...cleanEmotionalSupport(), ...answers };
-      return verdict;
-    },
-  });
-  const categoriesOf = (result: Awaited<ReturnType<typeof run>>) =>
-    result.emotionalSupportAssessment?.failures.map((failure) => failure.category) ?? null;
-
-  // Pure permission and pure release need no user-text anchor (contract §3.3).
-  const releaseReply = "很烦也有点委屈，想说多少都行，不用非得把前因后果讲清楚。";
-  const pureRelease = await run({
-    supportFunction: "return_amount_control",
-    reply: releaseReply,
-    answers: {
-      options: [
-        item(releaseReply, "想说多少都行", "expression_permission", null),
-        item(releaseReply, "不用非得把前因后果讲清楚", "burden_release", null),
-      ],
-      emotionMentions: [mention(releaseReply, "很烦", "很烦"), mention(releaseReply, "委屈", "委屈")],
-    },
-  });
-  assert.equal(pureRelease.passed, true, pureRelease.failureReasons.join(", "));
-  assert.deepEqual(categoriesOf(pureRelease), []);
-  assert.deepEqual(pureRelease.emotionalSupportAssessment?.ruleIds, []);
-
-  // A release item that also asks is not exempt.
-  const releaseAlsoAsks = await run({
-    supportFunction: "return_amount_control",
-    reply: releaseReply,
-    status: "not_satisfied",
-    containsContradictoryMove: true,
-    answers: {
-      options: [item(releaseReply, "不用非得把前因后果讲清楚", "burden_release", null, { solicitsNewContent: "full_account" })],
-    },
-  });
-  assert.equal(releaseAlsoAsks.passed, false);
-  assert.deepEqual(categoriesOf(releaseAlsoAsks), ["es_solicits_new_content"]);
-  assert.deepEqual(releaseAlsoAsks.emotionalSupportAssessment?.ruleIds, ["ES-SCOPE"]);
-
-  // A release never exempts another item in the same reply.
-  const releaseThenAskReply = "很烦，不用一次说完整，可以先从当时发生了什么说起。";
-  const releaseThenAsk = await run({
-    supportFunction: "return_amount_control",
-    reply: releaseThenAskReply,
-    status: "not_satisfied",
-    containsContradictoryMove: true,
-    answers: {
-      options: [
-        item(releaseThenAskReply, "不用一次说完整", "burden_release", null),
-        item(releaseThenAskReply, "可以先从当时发生了什么说起", "content_reference", null, {
-          addsUnstatedContent: "event_or_scene",
-          solicitsNewContent: "sequence_or_details",
-        }),
-      ],
-    },
-  });
-  assert.equal(releaseThenAsk.passed, false);
-  assert.deepEqual(categoriesOf(releaseThenAsk), [
-    "es_reference_unanchored", "es_adds_unstated_content", "es_solicits_new_content",
-  ]);
-  assert(releaseThenAsk.emotionalSupportAssessment?.failures.every((failure) => failure.index === 1));
-
-  // A release that introduces an unstated fact is not a pure release.
-  const releaseAddsFact = await run({
-    supportFunction: "reduce_expression_burden",
-    reply: releaseReply,
-    status: "not_satisfied",
-    containsContradictoryMove: true,
-    answers: {
-      options: [item(releaseReply, "不用非得把前因后果讲清楚", "burden_release", null, { addsUnstatedContent: "event_or_scene" })],
-    },
-  });
-  assert.deepEqual(categoriesOf(releaseAddsFact), ["es_adds_unstated_content"]);
-
-  // Anchored back-references the model accepts stay accepted; the model's own solicitation judgment still decides.
-  const focusReply = "被打断确实很烦。被打断的那一下和这份委屈，先说哪个由你定。";
-  const focusOptions = [
-    item(focusReply, "被打断的那一下", "content_reference", "下午被打断的时候"),
-    item(focusReply, "这份委屈", "content_reference", "委屈"),
-  ];
-  const anchoredFocus = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    answers: { options: focusOptions, emotionMentions: [mention(focusReply, "很烦", "很烦")] },
-  });
-  assert.equal(anchoredFocus.passed, true, anchoredFocus.failureReasons.join(", "));
-  const anchoredButSolicits = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    status: "not_satisfied",
-    containsContradictoryMove: true,
-    answers: { options: [{ ...focusOptions[0], solicitsNewContent: "sequence_or_details" }, focusOptions[1]] },
-  });
-  assert.deepEqual(categoriesOf(anchoredButSolicits), ["es_solicits_new_content"]);
-  assert.deepEqual(anchoredButSolicits.emotionalSupportAssessment?.ruleIds, ["ES-SCOPE"]);
-  const unanchoredFocus = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    status: "not_satisfied",
-    containsContradictoryMove: true,
-    answers: { options: [focusOptions[0], { ...focusOptions[1], userAnchor: null, addsUnstatedContent: "unspecified_other" }] },
-  });
-  assert.deepEqual(categoriesOf(unanchoredFocus), ["es_reference_unanchored", "es_adds_unstated_content"]);
-  assert.deepEqual(unanchoredFocus.emotionalSupportAssessment?.ruleIds, ["ES-SCOPE", "ES-FOCUS"]);
-  const uncertainAnchor = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    status: "uncertain",
-    containsContradictoryMove: false,
-    answers: { options: [{ ...focusOptions[0], userAnchor: "uncertain" }, focusOptions[1]] },
-  });
-  assert.equal(uncertainAnchor.passed, false);
-  assert(categoriesOf(uncertainAnchor)?.includes("es_uncertain"));
-
-  // Acknowledgement: any non-release item is an invitation unless it answers an explicit user request.
-  const ackReply = "让你这样难受是我没接住，我还不知道具体哪里没对上，想说多少都行，不用解释。";
-  const ackInvitation = await run({
-    supportFunction: "acknowledge_current_relational_impact",
-    reply: ackReply,
-    status: "not_satisfied",
-    containsContradictoryMove: true,
-    answers: { options: [item(ackReply, "想说多少都行", "expression_permission", null)] },
-  });
-  assert.deepEqual(categoriesOf(ackInvitation), ["es_ack_invitation"]);
-  assert.deepEqual(ackInvitation.emotionalSupportAssessment?.ruleIds, ["ES-ACK-NO-SOLICIT"]);
-  const ackReleaseOnly = await run({
-    supportFunction: "acknowledge_current_relational_impact",
-    reply: ackReply,
-    answers: { options: [item(ackReply, "不用解释", "burden_release", null)] },
-  });
-  assert.equal(ackReleaseOnly.passed, true, ackReleaseOnly.failureReasons.join(", "));
-  const ackAnswersRequest = await run({
-    supportFunction: "acknowledge_current_relational_impact",
-    reply: ackReply,
-    answers: { options: [item(ackReply, "想说多少都行", "expression_permission", null, { answersExplicitUserRequest: true })] },
-  });
-  assert.equal(ackAnswersRequest.passed, true, ackAnswersRequest.failureReasons.join(", "));
-
-  // Affect evidence.
-  const affectReply = "被打断很烦，也难免失望。";
-  const unanchoredAffect = await run({
-    supportFunction: "reduce_expression_burden",
-    reply: affectReply,
-    status: "not_satisfied",
-    answers: { emotionMentions: [mention(affectReply, "很烦", "很烦"), mention(affectReply, "失望", null)] },
-  });
-  assert.deepEqual(categoriesOf(unanchoredAffect), ["es_affect_unanchored"]);
-  assert.deepEqual(unanchoredAffect.emotionalSupportAssessment?.ruleIds, ["ES-AFFECT-EVIDENCE"]);
-  const anchoredAffect = await run({
-    supportFunction: "reduce_expression_burden",
-    reply: affectReply,
-    answers: { emotionMentions: [mention(affectReply, "很烦", "很烦")] },
-  });
-  assert.equal(anchoredAffect.passed, true, anchoredAffect.failureReasons.join(", "));
-
-  // Fabrication applies only when priorAssistantTurnAvailable is false.
-  const fabricated = await run({
-    supportFunction: "acknowledge_current_relational_impact",
-    reply: ackReply,
-    status: "not_satisfied",
-    priorAssistantTurnAvailable: false,
-    answers: { priorTurnFabrication: "present" },
-  });
-  assert.deepEqual(categoriesOf(fabricated), ["es_prior_turn_fabrication"]);
-  const fabricationNotApplicable = await run({
-    supportFunction: "acknowledge_current_relational_impact",
-    reply: ackReply,
-    answers: { priorTurnFabrication: "present" },
-  });
-  assert.equal(fabricationNotApplicable.passed, true, "fabrication rule does not apply with unknown history");
-
-  // Function realization is judged independently of the item answers.
-  const functionMissing = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    status: "not_satisfied",
-    contractRealized: false,
-    answers: { options: focusOptions },
-  });
-  assert.deepEqual(categoriesOf(functionMissing), ["es_function_not_realized"]);
-  assert.deepEqual(functionMissing.emotionalSupportAssessment?.ruleIds, ["ES-FOCUS"]);
-
-  // A rejected verdict may omit evidence without inventing a function failure; a clean pass may not.
-  const rejectedWithoutEvidence = await validatePlannedFunctionSemanticOutput({
-    plan: planFor("return_focus_control"),
-    reply: focusReply,
-    semanticContext: { currentUserText: userText, handoffTargetAssistantText: null },
-    provider: async (input) => {
-      const verdict = verdictFor({ input, positiveStatus: "not_satisfied" });
-      Object.assign(verdict.positiveFunction!, {
-        contractRealized: true,
-        targetAddressed: true,
-        realizedAction: "offer_emotional_support",
-        containsContradictoryMove: true,
-        evidence: [],
-        emotionalSupport: {
-          ...cleanEmotionalSupport(),
-          options: [{ ...focusOptions[0], solicitsNewContent: "sequence_or_details" }, focusOptions[1]],
-        },
-      });
-      return verdict;
-    },
-  });
-  assert.deepEqual(categoriesOf(rejectedWithoutEvidence), ["es_solicits_new_content"]);
-  const cleanWithoutEvidence = await validatePlannedFunctionSemanticOutput({
-    plan: planFor("return_focus_control"),
-    reply: focusReply,
-    semanticContext: { currentUserText: userText, handoffTargetAssistantText: null },
-    provider: async (input) => {
-      const verdict = verdictFor({ input });
-      verdict.positiveFunction!.evidence = [];
-      verdict.positiveFunction!.emotionalSupport = { ...cleanEmotionalSupport(), options: focusOptions };
-      return verdict;
-    },
-  });
-  assert.equal(cleanWithoutEvidence.passed, false);
-  assert.deepEqual(categoriesOf(cleanWithoutEvidence), ["es_function_not_realized"]);
-
-  // Unattributed or self-contradictory output fails closed with its own category.
-  const unattributed = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    status: "not_satisfied",
-    answers: { options: focusOptions },
-  });
-  assert.equal(unattributed.passed, false);
-  assert.deepEqual(categoriesOf(unattributed), ["es_unattributed_rejection"]);
-  const unattributedContradiction = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    status: "not_satisfied",
-    containsContradictoryMove: true,
-    answers: { options: focusOptions },
-  });
-  assert.deepEqual(categoriesOf(unattributedContradiction), ["es_unattributed_rejection"]);
-  const satisfiedDespiteFailure = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    answers: { options: [{ ...focusOptions[0], solicitsNewContent: "cause" }, focusOptions[1]] },
-  });
-  assert.equal(satisfiedDespiteFailure.passed, false);
-  assert.deepEqual(satisfiedDespiteFailure.emotionalSupportAssessment?.inconsistencies, [
-    "satisfied_with_failed_answers", "contradiction_flag_mismatch",
-  ]);
-  const otherContradiction = await run({
-    supportFunction: "return_amount_control",
-    reply: releaseReply,
-    status: "not_satisfied",
-    containsContradictoryMove: true,
-    answers: { otherContradiction: "pause_or_close" },
-  });
-  assert.deepEqual(categoriesOf(otherContradiction), ["es_other_contradiction"]);
-
-  // Structure: spans, anchors, versions, and branch ownership are program-verified.
-  const badAnchor = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    answers: {
-      options: [{ ...focusOptions[0], userAnchor: { start: 0, end: 2, text: "不存在" } }, focusOptions[1]],
-    },
-  });
-  assert.deepEqual(badAnchor.hardFailureReasons, ["planned_function_semantic:evidence_mismatch"]);
-  const badSpan = await run({
-    supportFunction: "return_focus_control",
-    reply: focusReply,
-    answers: { options: [{ ...focusOptions[0], span: { start: 0, end: 3, text: "不在回复里" } }] },
-  });
-  assert.deepEqual(badSpan.hardFailureReasons, ["planned_function_semantic:evidence_mismatch"]);
-  const malformedCases: Array<[string, (verdict: PlannedFunctionSemanticVerdict) => unknown]> = [
-    ["missing emotionalSupport", (verdict) => {
-      const positive = { ...verdict.positiveFunction! };
-      delete positive.emotionalSupport;
-      return { ...verdict, positiveFunction: positive };
-    }],
-    ["schemaVersion 1 on emotional support", (verdict) => ({ ...verdict, schemaVersion: 1 })],
-    ["unknown enum", (verdict) => ({
-      ...verdict,
-      positiveFunction: {
-        ...verdict.positiveFunction!,
-        emotionalSupport: { ...cleanEmotionalSupport(), otherContradiction: "something_else" },
-      },
-    })],
-    ["item without per-question reasons", (verdict) => ({
-      ...verdict,
-      positiveFunction: {
-        ...verdict.positiveFunction!,
-        emotionalSupport: {
-          ...cleanEmotionalSupport(),
-          options: [{ ...focusOptions[0], reasons: { anchor: "synthetic", content: "synthetic" } }],
-        },
-      },
-    })],
-  ];
-  for (const [name, mutate] of malformedCases) {
-    const result = await validatePlannedFunctionSemanticOutput({
-      plan: planFor("return_focus_control"),
-      reply: focusReply,
-      semanticContext: { currentUserText: userText, handoffTargetAssistantText: null },
-      provider: async (input) => mutate(verdictFor({ input })),
-    });
-    assert.deepEqual(result.hardFailureReasons, ["planned_function_semantic:malformed_verdict"], name);
-  }
-  const repairPlan = basePlan();
-  repairPlan.responseActions = ["repair_previous_wording"];
-  repairPlan.positiveFunctionContract = repairContract("proposition_withdrawal");
-  const emotionalStructureOutsideBranch = await validatePlannedFunctionSemanticOutput({
-    plan: repairPlan,
-    reply: "那句我收回。",
-    semanticContext: context,
-    provider: async (input) => {
-      const verdict = verdictFor({ input });
-      return { ...verdict, positiveFunction: { ...verdict.positiveFunction!, emotionalSupport: cleanEmotionalSupport() } };
-    },
-  });
-  assert.deepEqual(emotionalStructureOutsideBranch.hardFailureReasons, ["planned_function_semantic:malformed_verdict"]);
-  const repairAssessment = await validatePlannedFunctionSemanticOutput({
-    plan: repairPlan,
-    reply: "那句我收回。",
-    semanticContext: context,
-    provider: async (input) => verdictFor({ input }),
-  });
-  assert.equal(repairAssessment.passed, true);
-  assert.equal(repairAssessment.emotionalSupportAssessment, null);
-};
 
 const main = async () => {
 assert.deepEqual(parsePlannedFunctionSemanticProviderOutput(' {"ok":true} '), { ok: true });
@@ -1088,9 +691,11 @@ const inspectedJudge = await validatePlannedFunctionSemanticOutput({
   },
 });
 assert.deepEqual(inspectedJudge.failureReasons, ["planned_function_semantic:provider_failure"]);
+assert.deepEqual(inspectedJudge.providerFailure, { category: "prompt_rejected", call: "initial" });
 const judgeRubric = judgeMessages.join("\n");
 for (const ruleId of ["ES-AFFECT-EVIDENCE", "ES-SCOPE", "ES-FOCUS", "ES-ACK-BOUNDARY", "ES-ACK-NO-SOLICIT", "ES-ACK-NO-FABRICATION"]) {
-  assert(judgeRubric.includes(`${ruleId}`), `judge rubric must define ${ruleId}`);
+  assert(judgeRubric.includes(`${ruleId}:`), `judge rubric must define ${ruleId}`);
+  assert(judgeRubric.includes(`${ruleId},`) || judgeRubric.includes(`or ${ruleId})`), `judge citation list must include ${ruleId}`);
 }
 assert(
   judgeRubric.includes("phrased impersonally as a quality of the situation") &&
@@ -1100,12 +705,14 @@ assert(
 );
 assert(
   judgeRubric.includes("Judge reference by the full currentUserText, not by the word used") &&
-    judgeRubric.includes("the same phrase has no anchor when the User stated no such moment or situation"),
-  "the anchor question must judge back-references by context, not by a banned word"
+    judgeRubric.includes("the same phrase introduces a scene when the User stated no such moment or situation"),
+  "ES-SCOPE must judge back-references by context, not by a banned word"
 );
 assert(
-  judgeRubric.includes("Answer independently of userAnchor: an anchored item can still solicit, and a release that also asks still solicits."),
-  "reference, added content and solicitation are separate questions"
+  judgeRubric.includes("Judge whether an option is evidenced by the full currentUserText, not by the word used, exactly as ES-SCOPE does") &&
+    judgeRubric.includes("the same wording is not evidenced when the User stated no such moment or situation") &&
+    judgeRubric.includes("an option that invites its sequence or details is not an evidenced part"),
+  "ES-FOCUS must use the same context-based back-reference reading as ES-SCOPE"
 );
 assert(
   judgeRubric.includes("The ES-* rules apply only when positiveFunctionBinding.action is offer_emotional_support.") &&
@@ -1113,17 +720,14 @@ assert(
   "ES rules must be scoped to emotional-support verdicts"
 );
 assert(
-  judgeRubric.includes("kind=burden_release when it names content only to release the User from providing it") &&
-    judgeRubric.includes("An item that releases and also asks for, invites, or offers content is not burden_release"),
-  "a release is classified per item and never covers an asking part"
+  judgeRubric.includes("Naming such content only to release the User from providing it") &&
+    judgeRubric.includes("solicits nothing and does not violate ES-SCOPE") &&
+    judgeRubric.includes("a release that also asks for, invites, or offers such content as an option still violates it"),
+  "ES-SCOPE must separate releasing a narrative burden from soliciting narrative"
 );
 assert(
-  judgeRubric.includes("contractRealized and targetAddressed answer only whether the selected supportFunction is realized on the bound target, independently of"),
-  "function realization stays an independent judgment"
-);
-assert(
-  judgeRubric.includes("The caller's program, not you, combines these answers into the outcome and the cited rule ids."),
-  "the program, not the model, aggregates emotional-support answers"
+  judgeRubric.includes("Whether a release realizes the planned supportFunction is decided by the function-exclusivity rule above, not by ES-SCOPE."),
+  "function fit of a release stays with the exclusivity rule"
 );
 assert(judgeRubric.includes("\"priorAssistantTurnAvailable\":false"));
 const providerInputs: PlannedFunctionSemanticProviderInput[] = [];
@@ -1155,20 +759,17 @@ const providerFailure = await validatePlannedFunctionSemanticOutput({
 });
 assert.deepEqual(providerFailure.failureReasons, ["planned_function_semantic:provider_failure"]);
 assert.deepEqual(providerFailure.providerFailure, { category: "unknown", call: null });
-assert.deepEqual(inspectedJudge.providerFailure, { category: "prompt_rejected", call: "initial" });
 
 // Sanitized provider-failure category: only status evidence from the provider earns an infrastructure class.
 const rawProviderMessage = "raw-provider-body-must-not-leak";
 for (const [name, error, expected] of [
-  ["provider 503", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502, { provider: "qwen", status: 503 }), { category: "provider_5xx", call: null }],
-  ["provider 429", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502, { provider: "qwen", status: 429 }), { category: "rate_limited", call: null }],
-  ["provider 400", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502, { provider: "qwen", status: 400 }), { category: "provider_4xx", call: null }],
-  ["local timeout", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 504), { category: "timeout", call: null }],
-  ["local 502 empty reply", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502), { category: "unknown", call: null }],
-  ["local 502 unsupported format", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502, { provider: "qwen", responseFormat: "json_object" }), { category: "unknown", call: null }],
-  ["network error", new Error(rawProviderMessage), { category: "unknown", call: null }],
-  ["repair-call 500", new PlannedFunctionSemanticProviderCallError("schema_repair", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502, { provider: "qwen", status: 500 })), { category: "provider_5xx", call: "schema_repair" }],
-  ["initial-call unknown", new PlannedFunctionSemanticProviderCallError("initial", new Error(rawProviderMessage)), { category: "unknown", call: "initial" }],
+  ["provider 503", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502, { provider: "qwen", status: 503 }), "provider_5xx"],
+  ["provider 429", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502, { provider: "qwen", status: 429 }), "rate_limited"],
+  ["provider 400", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502, { provider: "qwen", status: 400 }), "provider_4xx"],
+  ["local timeout", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 504), "timeout"],
+  ["local 502 empty reply", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502), "unknown"],
+  ["local 502 unsupported format", new AppError("AI_GENERATION_FAILED", rawProviderMessage, 502, { provider: "qwen", responseFormat: "json_object" }), "unknown"],
+  ["network error", new Error(rawProviderMessage), "unknown"],
 ] as const) {
   const result = await validatePlannedFunctionSemanticOutput({
     plan: firstContactPlan,
@@ -1178,28 +779,102 @@ for (const [name, error, expected] of [
   });
   assert.equal(result.passed, false, name);
   assert.deepEqual(result.hardFailureReasons, ["planned_function_semantic:provider_failure"], name);
-  assert.deepEqual(result.providerFailure, expected, name);
+  assert.deepEqual(result.providerFailure, { category: expected, call: null }, name);
   assert.equal(JSON.stringify(result).includes(rawProviderMessage), false, `${name} must not carry raw provider text`);
 }
-// The default provider attributes a failure to the call that raised it (offline mock text forces the repair call).
-let defaultProviderCalls = 0;
-const previousAiProvider = process.env.AI_PROVIDER;
-process.env.AI_PROVIDER = "mock";
-const repairCallFailure = await validatePlannedFunctionSemanticOutput({
+
+// The default provider path: attribution by outbound call count; the thrown error itself stays unwrapped.
+let capturedJudgeInput!: PlannedFunctionSemanticProviderInput;
+await validatePlannedFunctionSemanticOutput({
   plan: firstContactPlan,
   reply: "候选",
   semanticContext: context,
-  inspectExternalPrompt: () => {
-    defaultProviderCalls += 1;
-    if (defaultProviderCalls === 2) throw new Error("reject repair prompt");
+  provider: async (input) => {
+    capturedJudgeInput = input;
+    return verdictFor({ input });
   },
 });
-if (previousAiProvider === undefined) delete process.env.AI_PROVIDER;
-else process.env.AI_PROVIDER = previousAiProvider;
-assert.equal(defaultProviderCalls, 2);
-assert.deepEqual(repairCallFailure.providerFailure, { category: "prompt_rejected", call: "schema_repair" });
+const providerEnvNames = ["AI_PROVIDER", "AI_MAIN_MODEL", "QWEN_API_KEY"] as const;
+const previousProviderEnv = Object.fromEntries(providerEnvNames.map((name) => [name, process.env[name]]));
+const originalFetch = globalThis.fetch;
+try {
+  process.env.AI_PROVIDER = "mock";
+  let defaultProviderCalls = 0;
+  const repairCallFailure = await validatePlannedFunctionSemanticOutput({
+    plan: firstContactPlan,
+    reply: "候选",
+    semanticContext: context,
+    inspectExternalPrompt: () => {
+      defaultProviderCalls += 1;
+      if (defaultProviderCalls === 2) throw new Error("reject repair prompt");
+    },
+  });
+  assert.equal(defaultProviderCalls, 2);
+  assert.deepEqual(repairCallFailure.hardFailureReasons, ["planned_function_semantic:provider_failure"]);
+  assert.deepEqual(repairCallFailure.providerFailure, { category: "prompt_rejected", call: "schema_repair" });
 
-await emotionalSupportAggregationChecks();
+  process.env.AI_PROVIDER = "qwen";
+  process.env.AI_MAIN_MODEL = "qwen3.7-max";
+  process.env.QWEN_API_KEY = "provider-failure-test-key";
+  const replies: Array<() => Response | never> = [];
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    const next = replies.shift();
+    if (!next) throw new Error("unexpected judge call");
+    return next();
+  };
+  const judgeOnce = () => validatePlannedFunctionSemanticOutput({
+    plan: firstContactPlan,
+    reply: "候选",
+    semanticContext: context,
+  });
+  const statusReply = (status: number) => () => new Response(rawProviderMessage, { status });
+  const unparseableReply = () => new Response(JSON.stringify({
+    choices: [{ message: { content: "not json" } }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+  fetchCalls = 0;
+  replies.push(statusReply(503));
+  const initial503 = await judgeOnce();
+  assert.equal(fetchCalls, 1, "a provider failure is not retried by the judge");
+  assert.deepEqual(initial503.hardFailureReasons, ["planned_function_semantic:provider_failure"]);
+  assert.deepEqual(initial503.providerFailure, { category: "provider_5xx", call: "initial" });
+
+  fetchCalls = 0;
+  replies.push(unparseableReply, statusReply(429));
+  const repair429 = await judgeOnce();
+  assert.equal(fetchCalls, 2, "only the existing single schema-repair call is made");
+  assert.deepEqual(repair429.providerFailure, { category: "rate_limited", call: "schema_repair" });
+
+  fetchCalls = 0;
+  replies.push(() => { throw new Error(rawProviderMessage); });
+  const networkFailure = await judgeOnce();
+  assert.deepEqual(networkFailure.providerFailure, { category: "unknown", call: "initial" });
+  assert.equal(JSON.stringify(networkFailure).includes(rawProviderMessage), false);
+
+  replies.push(statusReply(503));
+  await assert.rejects(
+    defaultPlannedFunctionSemanticProvider(capturedJudgeInput),
+    (error: unknown) =>
+      error instanceof AppError && (error.details as { status?: unknown } | undefined)?.status === 503,
+    "offline infrastructure-retry predicates still read the provider status from the thrown error"
+  );
+  process.env.AI_PROVIDER = "mock";
+  await assert.rejects(
+    defaultPlannedFunctionSemanticProvider(
+      capturedJudgeInput,
+      () => { throw new Error("rejected"); }
+    ),
+    ExternalPromptRejectedError
+  );
+} finally {
+  globalThis.fetch = originalFetch;
+  for (const [name, value] of Object.entries(previousProviderEnv)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+}
 
 const noFunctionPlan = basePlan();
 let noFunctionCalls = 0;

@@ -84,41 +84,6 @@ export type HandoffSemanticVerdict = {
   evidence: SemanticEvidenceSpan[];
 };
 
-export type SemanticTextSpan = {
-  start: number;
-  end: number;
-  text: string;
-};
-
-// A span of currentUserText, null when nothing the User stated is referenced, or "uncertain".
-export type EmotionalSupportUserAnchor = SemanticTextSpan | null | "uncertain";
-
-export type EmotionalSupportItemAnswer = {
-  span: SemanticTextSpan;
-  kind: "content_reference" | "expression_permission" | "burden_release";
-  userAnchor: EmotionalSupportUserAnchor;
-  addsUnstatedContent: "none" | "cause" | "event_or_scene" | "details" | "unspecified_other" | "uncertain";
-  solicitsNewContent:
-    | "none" | "cause" | "sequence_or_details" | "full_account" | "example" | "location_of_miss" | "uncertain";
-  answersExplicitUserRequest: boolean;
-  reasons: { anchor: string; content: string; solicitation: string };
-};
-
-export type EmotionMentionAnswer = {
-  span: SemanticTextSpan;
-  userAnchor: EmotionalSupportUserAnchor;
-  reason: string;
-};
-
-export type EmotionalSupportAnswers = {
-  options: EmotionalSupportItemAnswer[];
-  emotionMentions: EmotionMentionAnswer[];
-  priorTurnFabrication: "none" | "present" | "uncertain" | "not_applicable";
-  otherContradiction:
-    | "none" | "preferred_focus" | "pressure_to_continue" | "pause_or_close" | "advice" | "reassurance"
-    | "topic_switch" | "uncertain";
-};
-
 export type PositiveFunctionSemanticVerdict = {
   binding: PositiveFunctionVerdictBinding;
   status: "satisfied" | "not_satisfied" | "uncertain";
@@ -127,47 +92,14 @@ export type PositiveFunctionSemanticVerdict = {
   contractRealized: boolean;
   containsContradictoryMove: boolean;
   evidence: SemanticEvidenceSpan[];
-  // Present exactly when binding.action is offer_emotional_support (schemaVersion 2).
-  emotionalSupport?: EmotionalSupportAnswers;
 };
 
 export type PlannedFunctionSemanticVerdict = {
-  schemaVersion: 1 | 2;
+  schemaVersion: 1;
   planId: string;
   handoff: HandoffSemanticVerdict | null;
   positiveFunction: PositiveFunctionSemanticVerdict | null;
   semanticQuestionCount: number;
-};
-
-export type EmotionalSupportFailureCategory =
-  | "es_uncertain"
-  | "es_reference_unanchored"
-  | "es_adds_unstated_content"
-  | "es_solicits_new_content"
-  | "es_ack_invitation"
-  | "es_affect_unanchored"
-  | "es_prior_turn_fabrication"
-  | "es_other_contradiction"
-  | "es_function_not_realized"
-  | "es_unattributed_rejection";
-
-export type EmotionalSupportAssessment = {
-  passed: boolean;
-  failures: Array<{
-    category: EmotionalSupportFailureCategory;
-    ruleIds: string[];
-    source: "option" | "emotion_mention" | "reply";
-    index: number | null;
-  }>;
-  ruleIds: string[];
-  // Diagnostic only: the model's overall fields disagree with its own per-question answers.
-  inconsistencies: Array<"satisfied_with_failed_answers" | "contradiction_flag_mismatch">;
-};
-
-export type PlannedFunctionSemanticProviderFailure = {
-  category: ProviderFailureCategory | "prompt_rejected";
-  // null when a caller-supplied provider threw without call attribution.
-  call: "initial" | "schema_repair" | null;
 };
 
 export type PlannedFunctionSemanticValidationResult = {
@@ -177,23 +109,17 @@ export type PlannedFunctionSemanticValidationResult = {
   advisoryFailureReasons: string[];
   verdict: PlannedFunctionSemanticVerdict | null;
   providerFailure?: PlannedFunctionSemanticProviderFailure | null;
-  emotionalSupportAssessment?: EmotionalSupportAssessment | null;
+};
+
+export type PlannedFunctionSemanticProviderFailure = {
+  category: ProviderFailureCategory | "prompt_rejected";
+  // null when a caller-supplied provider threw (its calls are not observable here) or no call started.
+  call: "initial" | "schema_repair" | null;
 };
 
 export type PlannedFunctionSemanticDiagnostics = {
   providerFailure: PlannedFunctionSemanticProviderFailure | null;
-  emotionalSupportAssessment: EmotionalSupportAssessment | null;
 };
-
-export class PlannedFunctionSemanticProviderCallError extends Error {
-  constructor(
-    readonly call: "initial" | "schema_repair",
-    readonly providerError: unknown
-  ) {
-    super(`planned function semantic provider ${call} call failed`);
-    this.name = "PlannedFunctionSemanticProviderCallError";
-  }
-}
 
 const ROOT_KEYS = [
   "schemaVersion", "planId", "handoff", "positiveFunction", "semanticQuestionCount",
@@ -215,28 +141,6 @@ const IDENTITY_BINDING_KEYS = ["action", "mode", "sourceTurnId", "targetProposit
 const EMOTIONAL_BINDING_KEYS = ["action", "supportFunction", "sourceTurnId"] as const;
 const REPAIR_BINDING_KEYS = ["action", "repairMode", "sourceTurnId", "targetTurnId"] as const;
 const EVIDENCE_KEYS = ["start", "end", "text", "reason"] as const;
-const SPAN_KEYS = ["start", "end", "text"] as const;
-const EMOTIONAL_SUPPORT_KEYS = [
-  "options", "emotionMentions", "priorTurnFabrication", "otherContradiction",
-] as const;
-const EMOTIONAL_SUPPORT_ITEM_KEYS = [
-  "span", "kind", "userAnchor", "addsUnstatedContent", "solicitsNewContent",
-  "answersExplicitUserRequest", "reasons",
-] as const;
-const EMOTIONAL_SUPPORT_ITEM_REASON_KEYS = ["anchor", "content", "solicitation"] as const;
-const EMOTION_MENTION_KEYS = ["span", "userAnchor", "reason"] as const;
-const ITEM_KINDS = new Set<unknown>(["content_reference", "expression_permission", "burden_release"]);
-const ADDED_CONTENT = new Set<unknown>([
-  "none", "cause", "event_or_scene", "details", "unspecified_other", "uncertain",
-]);
-const SOLICITED_CONTENT = new Set<unknown>([
-  "none", "cause", "sequence_or_details", "full_account", "example", "location_of_miss", "uncertain",
-]);
-const FABRICATION_ANSWERS = new Set<unknown>(["none", "present", "uncertain", "not_applicable"]);
-const OTHER_CONTRADICTIONS = new Set<unknown>([
-  "none", "preferred_focus", "pressure_to_continue", "pause_or_close", "advice", "reassurance",
-  "topic_switch", "uncertain",
-]);
 
 const STATUSES = new Set<unknown>(["satisfied", "not_satisfied", "uncertain"]);
 const HANDOFF_FUNCTIONS = new Set<unknown>([
@@ -360,61 +264,11 @@ const parsePositiveBinding = (value: unknown): PositiveFunctionVerdictBinding | 
   return value as PositiveFunctionVerdictBinding;
 };
 
-const isSpan = (value: unknown): value is SemanticTextSpan =>
-  isRecord(value) &&
-  hasExactKeys(value, SPAN_KEYS) &&
-  Number.isInteger(value.start) &&
-  Number.isInteger(value.end) &&
-  Number(value.start) >= 0 &&
-  Number(value.end) > Number(value.start) &&
-  typeof value.text === "string";
-
-const isUserAnchor = (value: unknown): value is EmotionalSupportUserAnchor =>
-  value === null || value === "uncertain" || isSpan(value);
-
-const isNonEmptyString = (value: unknown) => typeof value === "string" && value.trim().length > 0;
-
-const isEmotionalSupportItem = (value: unknown): value is EmotionalSupportItemAnswer =>
-  isRecord(value) &&
-  hasExactKeys(value, EMOTIONAL_SUPPORT_ITEM_KEYS) &&
-  isSpan(value.span) &&
-  ITEM_KINDS.has(value.kind) &&
-  isUserAnchor(value.userAnchor) &&
-  ADDED_CONTENT.has(value.addsUnstatedContent) &&
-  SOLICITED_CONTENT.has(value.solicitsNewContent) &&
-  typeof value.answersExplicitUserRequest === "boolean" &&
-  isRecord(value.reasons) &&
-  hasExactKeys(value.reasons, EMOTIONAL_SUPPORT_ITEM_REASON_KEYS) &&
-  EMOTIONAL_SUPPORT_ITEM_REASON_KEYS.every((key) => isNonEmptyString((value.reasons as Record<string, unknown>)[key]));
-
-const isEmotionMention = (value: unknown): value is EmotionMentionAnswer =>
-  isRecord(value) &&
-  hasExactKeys(value, EMOTION_MENTION_KEYS) &&
-  isSpan(value.span) &&
-  isUserAnchor(value.userAnchor) &&
-  isNonEmptyString(value.reason);
-
-const isEmotionalSupportAnswers = (value: unknown): value is EmotionalSupportAnswers =>
-  isRecord(value) &&
-  hasExactKeys(value, EMOTIONAL_SUPPORT_KEYS) &&
-  Array.isArray(value.options) &&
-  value.options.every(isEmotionalSupportItem) &&
-  Array.isArray(value.emotionMentions) &&
-  value.emotionMentions.every(isEmotionMention) &&
-  FABRICATION_ANSWERS.has(value.priorTurnFabrication) &&
-  OTHER_CONTRADICTIONS.has(value.otherContradiction);
-
 const parsePositiveFunction = (
   value: unknown
 ): PositiveFunctionSemanticVerdict | null | undefined => {
   if (value === null) return null;
-  if (!isRecord(value)) return undefined;
-  const emotionalSupportBranch = isRecord(value.binding) &&
-    value.binding.action === "offer_emotional_support";
-  if (!hasExactKeys(value, emotionalSupportBranch ? [...POSITIVE_KEYS, "emotionalSupport"] : POSITIVE_KEYS)) {
-    return undefined;
-  }
-  if (emotionalSupportBranch && !isEmotionalSupportAnswers(value.emotionalSupport)) return undefined;
+  if (!isRecord(value) || !hasExactKeys(value, POSITIVE_KEYS)) return undefined;
   if (
     !parsePositiveBinding(value.binding) ||
     !STATUSES.has(value.status) ||
@@ -427,15 +281,12 @@ const parsePositiveFunction = (
   return value as PositiveFunctionSemanticVerdict;
 };
 
-const schemaVersionFor = (positiveFunction: PositiveFunctionSemanticVerdict | null) =>
-  positiveFunction?.binding.action === "offer_emotional_support" ? 2 : 1;
-
 const parseVerdict = (value: unknown): PlannedFunctionSemanticVerdict | null => {
   if (!isRecord(value) || !hasExactKeys(value, ROOT_KEYS)) return null;
   const handoff = parseHandoff(value.handoff);
   const positiveFunction = parsePositiveFunction(value.positiveFunction);
   if (
-    value.schemaVersion !== schemaVersionFor(positiveFunction ?? null) ||
+    value.schemaVersion !== 1 ||
     typeof value.planId !== "string" ||
     handoff === undefined ||
     positiveFunction === undefined ||
@@ -450,72 +301,16 @@ const evidenceMatchesReply = (evidence: SemanticEvidenceSpan[], reply: string) =
     span.end <= reply.length && reply.slice(span.start, span.end) === span.text
   );
 
-const spanMatches = (span: SemanticTextSpan, source: string) =>
-  span.end <= source.length && source.slice(span.start, span.end) === span.text;
-
-const anchorMatches = (anchor: EmotionalSupportUserAnchor, currentUserText: string) =>
-  anchor === null || anchor === "uncertain" || spanMatches(anchor, currentUserText);
-
-// Program-verifiable only: every reply span is an exact candidateReply slice and every
-// userAnchor an exact currentUserText slice. Whether an anchor semantically fits is not provable here.
-const emotionalSupportSpansMatch = (
-  answers: EmotionalSupportAnswers,
-  reply: string,
-  currentUserText: string
-) =>
-  answers.options.every((item) =>
-    spanMatches(item.span, reply) && anchorMatches(item.userAnchor, currentUserText)) &&
-  answers.emotionMentions.every((item) =>
-    spanMatches(item.span, reply) && anchorMatches(item.userAnchor, currentUserText));
-
 const verdictEvidenceMatchesReply = (
   verdict: PlannedFunctionSemanticVerdict,
-  reply: string,
-  currentUserText: string
+  reply: string
 ) =>
   (!verdict.handoff || evidenceMatchesReply(verdict.handoff.evidence, reply)) &&
-  (!verdict.positiveFunction || evidenceMatchesReply(verdict.positiveFunction.evidence, reply)) &&
-  (!verdict.positiveFunction?.emotionalSupport ||
-    emotionalSupportSpansMatch(verdict.positiveFunction.emotionalSupport, reply, currentUserText));
-
-const relocateSpan = <T extends SemanticTextSpan>(span: T, source: string, requireUnique: boolean): T | null => {
-  if (spanMatches(span, source)) return span;
-  if (!span.text) return null;
-  const start = source.indexOf(span.text);
-  if (start < 0 || (requireUnique && source.indexOf(span.text, start + 1) >= 0)) return null;
-  return { ...span, start, end: start + span.text.length };
-};
-
-const normalizeEmotionalSupportSpans = (
-  answers: EmotionalSupportAnswers,
-  reply: string,
-  currentUserText: string
-): EmotionalSupportAnswers | null => {
-  const anchor = (value: EmotionalSupportUserAnchor): EmotionalSupportUserAnchor | undefined => {
-    if (value === null || value === "uncertain") return value;
-    return relocateSpan(value, currentUserText, false) ?? undefined;
-  };
-  const options: EmotionalSupportItemAnswer[] = [];
-  for (const item of answers.options) {
-    const span = relocateSpan(item.span, reply, true);
-    const userAnchor = anchor(item.userAnchor);
-    if (!span || userAnchor === undefined) return null;
-    options.push({ ...item, span, userAnchor });
-  }
-  const emotionMentions: EmotionMentionAnswer[] = [];
-  for (const item of answers.emotionMentions) {
-    const span = relocateSpan(item.span, reply, true);
-    const userAnchor = anchor(item.userAnchor);
-    if (!span || userAnchor === undefined) return null;
-    emotionMentions.push({ ...item, span, userAnchor });
-  }
-  return { ...answers, options, emotionMentions };
-};
+  (!verdict.positiveFunction || evidenceMatchesReply(verdict.positiveFunction.evidence, reply));
 
 export const normalizePlannedFunctionSemanticEvidence = (
   verdict: PlannedFunctionSemanticVerdict,
-  reply: string,
-  currentUserText = ""
+  reply: string
 ): PlannedFunctionSemanticVerdict | null => {
   const normalize = (evidence: SemanticEvidenceSpan[]) => {
     const normalized: SemanticEvidenceSpan[] = [];
@@ -531,23 +326,15 @@ export const normalizePlannedFunctionSemanticEvidence = (
   const positiveEvidence = verdict.positiveFunction
     ? normalize(verdict.positiveFunction.evidence)
     : null;
-  const emotionalSupport = verdict.positiveFunction?.emotionalSupport
-    ? normalizeEmotionalSupportSpans(verdict.positiveFunction.emotionalSupport, reply, currentUserText)
-    : undefined;
   if (
     (verdict.handoff && !handoffEvidence) ||
-    (verdict.positiveFunction && !positiveEvidence) ||
-    emotionalSupport === null
+    (verdict.positiveFunction && !positiveEvidence)
   ) return null;
   return {
     ...verdict,
     handoff: verdict.handoff ? { ...verdict.handoff, evidence: handoffEvidence! } : null,
     positiveFunction: verdict.positiveFunction
-      ? {
-          ...verdict.positiveFunction,
-          evidence: positiveEvidence!,
-          ...(emotionalSupport ? { emotionalSupport } : {}),
-        }
+      ? { ...verdict.positiveFunction, evidence: positiveEvidence! }
       : null,
   };
 };
@@ -587,26 +374,6 @@ const handoffVerdictBindingFor = (handoff: InteractionMoveHandoffPlan) => ({
   questionPolicy: handoff.questionPolicy,
 });
 
-const EMOTIONAL_SUPPORT_OUTPUT_SCHEMA = {
-  options: [{
-    span: { start: "integer", end: "integer", text: "exact candidateReply slice" },
-    kind: "content_reference | expression_permission | burden_release",
-    userAnchor: "{start, end, text} exact currentUserText slice | null | \"uncertain\"",
-    addsUnstatedContent: "none | cause | event_or_scene | details | unspecified_other | uncertain",
-    solicitsNewContent: "none | cause | sequence_or_details | full_account | example | location_of_miss | uncertain",
-    answersExplicitUserRequest: "boolean",
-    reasons: { anchor: "short reason", content: "short reason", solicitation: "short reason" },
-  }],
-  emotionMentions: [{
-    span: { start: "integer", end: "integer", text: "exact candidateReply slice" },
-    userAnchor: "{start, end, text} exact currentUserText slice | null | \"uncertain\"",
-    reason: "short reason",
-  }],
-  priorTurnFabrication: "none | present | uncertain | not_applicable",
-  otherContradiction:
-    "none | preferred_focus | pressure_to_continue | pause_or_close | advice | reassurance | topic_switch | uncertain",
-} as const;
-
 const buildSemanticValidationMessages = (
   input: PlannedFunctionSemanticProviderInput
 ): AiModelMessage[] => [
@@ -624,23 +391,18 @@ const buildSemanticValidationMessages = (
       "For establish_assistant_identity/first_contact, satisfied requires both an introduction as exact displayName 小慢 and a natural low-pressure way directly into conversation. Bare identity, another greeting, receipt, presence, generic permission/open door, closing, product-name impersonation, or an unrelated question is insufficient.",
       "For establish_assistant_identity/identity_continuation, satisfied requires naturally continuing the exact targetProposition. Merely repeating 小慢, saying 嗯/听到了, generic confirmation, changing to a random/product name, or changing topic is insufficient.",
       "For establish_assistant_identity/identity_repair, satisfied requires distinguishing product name from Assistant name and giving canonical displayName 小慢; claiming to have no name is insufficient.",
-      "For offer_emotional_support, bind to the current-turn sourceText and affectEvidenceSpans and judge whether the candidate realizes exactly supportFunction on that target (contractRealized, targetAddressed). A receipt, pure question, a different support function, affect intensity/object drift, reassurance, advice, pause, topic switch, or a later move that undoes the selected function is insufficient.",
+      "For offer_emotional_support, bind to the current-turn sourceText and affectEvidenceSpans and realize exactly supportFunction. A receipt, pure question, a different support function, affect category/intensity/object drift, reassurance, advice, pause, topic switch, or a later move that undoes the selected function is insufficient.",
       "The four emotional support functions are exclusive for this verdict: reduce_expression_burden releases the need to explain causes, analyze, organize, or give a complete account; merely choosing the focus or amount is a different function. return_focus_control returns which already-evidenced part receives attention and, when question policy is none, must be realized as permission/control rather than a semantic request. return_amount_control returns how much to express; merely pausing, deferring, or closing does not return amount control. acknowledge_current_relational_impact owns the current Assistant relationship impact while preserving the information boundary. If the candidate mainly realizes another function, mark not_satisfied.",
-      "Emotional-support questions. The ES-* rules apply only when positiveFunctionBinding.action is offer_emotional_support. Never apply or cite an ES-* rule in the handoff branch or for repair_previous_wording, establish_assistant_identity, or an absent positiveFunctionBinding; judge those only by their own rules, and only an offer_emotional_support verdict contains positiveFunction.emotionalSupport. Answer each question below separately in emotionalSupport; one answer never decides another. The caller's program, not you, combines these answers into the outcome and the cited rule ids.",
-      "Items (emotionalSupport.options): list every option, invitation, request, or permission in candidateReply as its own item, including one inside a release sentence. span is the exact candidateReply slice. kind=content_reference when the item points at specific content as something to talk about, focus on, or provide (a part, a moment, a situation, a feeling, a cause, what happened, other parts); kind=expression_permission when it only returns whether, when, how much, or at what pace to express, without pointing at specific content; kind=burden_release when it names content only to release the User from providing it (for example, the User need not explain why, make the whole matter clear, or give a complete account) and asks for nothing. An item that releases and also asks for, invites, or offers content is not burden_release: list the asking part as its own content_reference item. Give one short reason per question in reasons.anchor, reasons.content, and reasons.solicitation.",
-      "ES-SCOPE anchor question (userAnchor): for a content_reference item, return the exact slice of currentUserText the item points back to, null when it points to nothing the User stated, or \"uncertain\". Judge reference by the full currentUserText, not by the word used: a phrase that points back to a moment or situation the User already stated (such as that moment, when the User said it happened just now) is anchored to that statement, while the same phrase has no anchor when the User stated no such moment or situation. An unspecified alternative (such as something else or other parts) has no anchor. expression_permission and burden_release items need no anchor; use null unless a slice is plainly referenced.",
-      "ES-SCOPE content question (addsUnstatedContent): whether the item introduces content the User did not state: cause, event_or_scene (a triggering event, what happened, the scene or circumstances), details, unspecified_other, none, or uncertain. For a burden_release item, the released category itself (why, the whole matter, a complete account) is not added content; a specific fact, event, or scene named inside the release is.",
-      "ES-SCOPE solicitation question (solicitsNewContent): whether the item asks for, invites, or offers the User to provide content beyond what the User stated: cause, sequence_or_details (what happened, how it unfolded, its details), full_account, example, location_of_miss (where the Assistant misunderstood), none, or uncertain. Inviting the User to talk about an already stated part itself is none; inviting its sequence or details is sequence_or_details. Answer independently of userAnchor: an anchored item can still solicit, and a release that also asks still solicits.",
-      "answersExplicitUserRequest is true only when the item directly answers an explicit question or request in currentUserText.",
-      "ES-AFFECT-EVIDENCE (emotionalSupport.emotionMentions): list every emotion category candidateReply names or implies, with span as the exact candidateReply slice and userAnchor as the exact currentUserText slice that evidences that category, null when the User did not state it, or \"uncertain\". Include a category attributed to the User, phrased impersonally as a quality of the situation (this is X, that makes one feel X, anyone would feel X), or presented as the Assistant's characterization of the relational impact. Restating the User's evidenced affect is anchored. Describing the reported relational situation without adding an emotion (for example, that the User feels not understood) is not an emotion mention. Decide by whether an unevidenced emotion category is added, not by word lists.",
-      "ES-FOCUS: return_focus_control is realized only by returning control over parts already evidenced in currentUserText; a content_reference item without an anchor does not count toward contractRealized.",
-      "ES-ACK-BOUNDARY: acknowledge_current_relational_impact requires owning the relational impact the User reports and stating the information boundary: the Assistant does not yet know what it missed and does not claim to understand already. Judge it in contractRealized.",
-      "ES-ACK-NO-SOLICIT: acknowledge_current_relational_impact offers no choice invitation and makes no request. List any request in question or statement form for the User to explain, give an example, choose which part to say first or how much to say, or show where the Assistant missed as an item; the program rejects every non-release item under this function unless answersExplicitUserRequest is true.",
-      "ES-ACK-NO-FABRICATION (emotionalSupport.priorTurnFabrication): when priorAssistantTurnAvailable is false, answer present when candidateReply states or implies specific content of an earlier Assistant reply or a specific earlier mistake, none otherwise, or uncertain. A general acknowledgement that the User feels not understood is none. When priorAssistantTurnAvailable is true or null, answer not_applicable.",
-      "emotionalSupport.otherContradiction: a later move that recommends a preferred focus, pressures continuation, pauses or closes the exchange, gives advice or reassurance, or switches topic: preferred_focus, pressure_to_continue, pause_or_close, advice, reassurance, topic_switch, none, or uncertain. Requests for causes, sequence, or details belong in items, not here.",
-      "For offer_emotional_support, contractRealized and targetAddressed answer only whether the selected supportFunction is realized on the bound target, independently of the item, emotion, fabrication, and otherContradiction answers; realizedAction is offer_emotional_support whenever contractRealized is true. containsContradictoryMove is true exactly when some item adds or solicits content, a content_reference item has no anchor, a non-release item appears under acknowledge_current_relational_impact, or otherContradiction is not none. status=satisfied only when contractRealized is true and every answer is clean.",
+      "A later clause that recommends a preferred focus, requests causes/details, pressures continuation, pauses/closes the exchange, or otherwise takes back the promised control functionally undoes emotional support. Mark containsContradictoryMove=true and do not mark the positive contract satisfied.",
+      "Emotional-support rules. The ES-* rules apply only when positiveFunctionBinding.action is offer_emotional_support. Never apply or cite an ES-* rule in the handoff branch or for repair_previous_wording, establish_assistant_identity, or an absent positiveFunctionBinding; judge those only by their own rules. For every offer_emotional_support verdict that is not satisfied, is uncertain, or has containsContradictoryMove=true, include at least one evidence item quoting the exact deciding span and start its reason with the rule id (ES-AFFECT-EVIDENCE, ES-SCOPE, ES-FOCUS, ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, or ES-ACK-NO-FABRICATION).",
+      "ES-AFFECT-EVIDENCE: every emotion category the candidate names or implies must be evidenced in currentUserText. Adding an emotion category the User did not state is affect drift and not satisfied, whether it is attributed to the User, phrased impersonally as a quality of the situation (this is X, that makes one feel X, anyone would feel X), or presented as the Assistant's characterization of the relational impact. Restating the User's evidenced affect, or describing the reported relational situation without adding an emotion (for example, that the User feels not understood), is allowed. Decide by whether an unevidenced emotion category is added, not by word lists.",
+      "ES-SCOPE: every option, invitation, or permission may refer only to affect, relational impact, or parts already stated in currentUserText. Offering an unspecified alternative (such as something else or other parts), or introducing a cause, triggering event, what happened, the scene or circumstances, details, or a full account that the User did not state, is a contradictory move even when it appears inside an offered choice. Judge reference by the full currentUserText, not by the word used: a phrase that points back to a moment or situation the User already stated (such as that moment, when the User said it happened just now) refers to stated content, while the same phrase introduces a scene when the User stated no such moment or situation, and inviting its sequence or details still introduces what happened. Naming such content only to release the User from providing it (for example, saying the User need not explain why, make the whole matter clear, or give a complete account) solicits nothing and does not violate ES-SCOPE; a release that also asks for, invites, or offers such content as an option still violates it. Whether a release realizes the planned supportFunction is decided by the function-exclusivity rule above, not by ES-SCOPE.",
+      "ES-FOCUS: return_focus_control is realized only by returning control over parts already evidenced in currentUserText; an option that is not evidenced does not count toward the function. Judge whether an option is evidenced by the full currentUserText, not by the word used, exactly as ES-SCOPE does: an option that points back to a moment or situation the User already stated refers to an evidenced part, while the same wording is not evidenced when the User stated no such moment or situation, and an option that invites its sequence or details is not an evidenced part.",
+      "ES-ACK-BOUNDARY: acknowledge_current_relational_impact requires owning the relational impact the User reports and stating the information boundary: the Assistant does not yet know what it missed and does not claim to understand already.",
+      "ES-ACK-NO-SOLICIT: after that acknowledgement, any request in question or statement form for the User to explain, give an example, choose which part to say first or how much to say, or show where the Assistant missed is a contradictory move, unless it directly answers an explicit question or request in currentUserText.",
+      "ES-ACK-NO-FABRICATION: when priorAssistantTurnAvailable is false, stating or implying specific content of an earlier Assistant reply or a specific earlier mistake is not satisfied. A general acknowledgement that the User feels not understood remains allowed. When priorAssistantTurnAvailable is null, this rule does not apply.",
       "For repair_previous_wording, bind to targetTurnId/targetText, own the Assistant's error, and complete exactly repairMode. factual_replacement uses the confirmed replacementFact; proposition_withdrawal withdraws the exact rejected proposition; interaction_move_withdrawal withdraws the exact rejected move. Generic apology, self-defense, blaming the User, repeating/continuing the rejected content, or replacing repair with a question/advice is insufficient.",
-      "For every positiveFunction verdict, realizedAction is the exact top-level action discriminator from positiveFunctionBinding (establish_assistant_identity, offer_emotional_support, or repair_previous_wording), never mode, supportFunction, or repairMode. Except for offer_emotional_support as defined above, use that exact action only when status=satisfied and contractRealized=true; otherwise use null and false.",
+      "For every positiveFunction verdict, realizedAction is the exact top-level action discriminator from positiveFunctionBinding (establish_assistant_identity, offer_emotional_support, or repair_previous_wording), never mode, supportFunction, or repairMode. Use that exact action only when status=satisfied and contractRealized=true; otherwise use null and false.",
       "The handoff and positiveFunction branches are independent. Do not let one satisfied branch hide failure or uncertainty in the other.",
       "semanticQuestionCount counts semantic requests for a User response even without question punctuation. A verdict reports this count but never grants question permission.",
     ].join("\n"),
@@ -663,7 +425,7 @@ const buildSemanticValidationMessages = (
       ordinaryQuestionIndependentlySupported: input.ordinaryQuestionIndependentlySupported,
       priorAssistantTurnAvailable: input.priorAssistantTurnAvailable ?? null,
       outputSchema: {
-        schemaVersion: input.positiveFunctionBinding?.action === "offer_emotional_support" ? 2 : 1,
+        schemaVersion: 1,
         planId: "exact caller planId",
         handoff: input.handoffBinding === null ? null : {
           binding: handoffVerdictBindingFor(input.handoffBinding),
@@ -685,9 +447,6 @@ const buildSemanticValidationMessages = (
           contractRealized: "boolean",
           containsContradictoryMove: "boolean",
           evidence: [{ start: "integer", end: "integer", text: "exact slice", reason: "semantic reason" }],
-          ...(input.positiveFunctionBinding.action === "offer_emotional_support"
-            ? { emotionalSupport: EMOTIONAL_SUPPORT_OUTPUT_SCHEMA }
-            : {}),
         },
         semanticQuestionCount: "non-negative integer",
       },
@@ -700,163 +459,41 @@ export const defaultPlannedFunctionSemanticProvider = async (
   inspectExternalPrompt?: PlannedFunctionSemanticValidationPromptInspector
 ) => {
   const messages = buildSemanticValidationMessages(input);
-  const callOnce = async (call: "initial" | "schema_repair", outboundMessages: AiModelMessage[]) => {
-    try {
-      await inspectPromptBeforeExternalCall(inspectExternalPrompt, {
-        stage: "planned_function_semantic_validation" as const,
-        messages: outboundMessages,
-      });
-      return await callModel({
-        model: process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
-        messages: outboundMessages,
-        temperature: 0,
-        responseFormat: "json_object",
-      });
-    } catch (error) {
-      throw new PlannedFunctionSemanticProviderCallError(call, error);
-    }
+  const callOnce = async (outboundMessages: AiModelMessage[]) => {
+    await inspectPromptBeforeExternalCall(inspectExternalPrompt, {
+      stage: "planned_function_semantic_validation" as const,
+      messages: outboundMessages,
+    });
+    return callModel({
+      model: process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
+      messages: outboundMessages,
+      temperature: 0,
+      responseFormat: "json_object",
+    });
   };
-  const first = await callOnce("initial", messages);
+  const first = await callOnce(messages);
   const firstParsed = parsePlannedFunctionSemanticProviderOutput(first.text);
   const firstVerdict = parseVerdict(firstParsed);
   const normalizedFirst = firstVerdict
-    ? normalizePlannedFunctionSemanticEvidence(firstVerdict, input.candidateReply, input.currentUserText)
+    ? normalizePlannedFunctionSemanticEvidence(firstVerdict, input.candidateReply)
     : null;
-  if (
-    normalizedFirst &&
-    verdictEvidenceMatchesReply(normalizedFirst, input.candidateReply, input.currentUserText)
-  ) {
+  if (normalizedFirst && verdictEvidenceMatchesReply(normalizedFirst, input.candidateReply)) {
     return normalizedFirst;
   }
 
-  const schemaVersion = input.positiveFunctionBinding?.action === "offer_emotional_support" ? 2 : 1;
   const repairMessages: AiModelMessage[] = [
     {
       ...messages[0],
-      content: `${messages[0].content}\nYour previous response failed exact-schema or exact-evidence validation. Re-evaluate the same input once. Return every required key, including schemaVersion=${schemaVersion}, with exact bindings. Recalculate every evidence and span start/end against candidateReply as UTF-16 offsets and verify candidateReply.slice(start,end) exactly equals its text; every userAnchor span must be an exact slice of currentUserText; use the supplied full-span reference when uncertain. Do not add keys, Markdown, or commentary.`,
+      content: `${messages[0].content}\nYour previous response failed exact-schema or exact-evidence validation. Re-evaluate the same input once. Return every required key, including schemaVersion=1, with exact bindings. Recalculate every evidence start/end against candidateReply as UTF-16 offsets and verify candidateReply.slice(start,end) exactly equals evidence.text; use the supplied full-span reference when uncertain. Do not add keys, Markdown, or commentary.`,
     },
     messages[1],
   ];
-  const repaired = await callOnce("schema_repair", repairMessages);
+  const repaired = await callOnce(repairMessages);
   const repairedParsed = parsePlannedFunctionSemanticProviderOutput(repaired.text);
   const repairedVerdict = parseVerdict(repairedParsed);
   return repairedVerdict
-    ? normalizePlannedFunctionSemanticEvidence(repairedVerdict, input.candidateReply, input.currentUserText)
+    ? normalizePlannedFunctionSemanticEvidence(repairedVerdict, input.candidateReply)
     : repairedParsed;
-};
-
-const semanticProviderFailureFor = (error: unknown): PlannedFunctionSemanticProviderFailure => {
-  const call = error instanceof PlannedFunctionSemanticProviderCallError ? error.call : null;
-  const providerError = error instanceof PlannedFunctionSemanticProviderCallError
-    ? error.providerError
-    : error;
-  return {
-    category: providerError instanceof ExternalPromptRejectedError
-      ? "prompt_rejected"
-      : classifyProviderFailureCategory(providerError),
-    call,
-  };
-};
-
-const addRuleIds = (target: string[], ...ruleIds: string[]) => {
-  for (const ruleId of ruleIds) if (!target.includes(ruleId)) target.push(ruleId);
-};
-
-// Fixed aggregation table (contract §3.3/§5). Each item is judged on its own: a burden_release
-// item needs no anchor, but it never exempts another item or its own addition/solicitation.
-export const assessEmotionalSupportVerdict = ({
-  branch,
-  supportFunction,
-  priorAssistantTurnAvailable,
-}: {
-  branch: PositiveFunctionSemanticVerdict;
-  supportFunction: EmotionalSupportFunction;
-  priorAssistantTurnAvailable: boolean | null;
-}): EmotionalSupportAssessment => {
-  const answers = branch.emotionalSupport;
-  const failures: EmotionalSupportAssessment["failures"] = [];
-  const fail = (
-    category: EmotionalSupportFailureCategory,
-    ruleIds: string[],
-    source: "option" | "emotion_mention" | "reply",
-    index: number | null
-  ) => failures.push({ category, ruleIds, source, index });
-  const acknowledgement = supportFunction === "acknowledge_current_relational_impact";
-  const focus = supportFunction === "return_focus_control";
-  if (!answers) {
-    fail("es_unattributed_rejection", [], "reply", null);
-  } else {
-    answers.options.forEach((item, index) => {
-      if (item.kind === "content_reference") {
-        if (item.userAnchor === "uncertain") fail("es_uncertain", ["ES-SCOPE"], "option", index);
-        else if (item.userAnchor === null) {
-          fail("es_reference_unanchored", focus ? ["ES-SCOPE", "ES-FOCUS"] : ["ES-SCOPE"], "option", index);
-        }
-      }
-      if (item.addsUnstatedContent === "uncertain") fail("es_uncertain", ["ES-SCOPE"], "option", index);
-      else if (item.addsUnstatedContent !== "none") {
-        fail("es_adds_unstated_content", ["ES-SCOPE"], "option", index);
-      }
-      const solicitRuleIds = acknowledgement && !item.answersExplicitUserRequest
-        ? ["ES-SCOPE", "ES-ACK-NO-SOLICIT"]
-        : ["ES-SCOPE"];
-      if (item.solicitsNewContent === "uncertain") fail("es_uncertain", solicitRuleIds, "option", index);
-      else if (item.solicitsNewContent !== "none") {
-        fail("es_solicits_new_content", solicitRuleIds, "option", index);
-      }
-      if (acknowledgement && item.kind !== "burden_release" && !item.answersExplicitUserRequest) {
-        fail("es_ack_invitation", ["ES-ACK-NO-SOLICIT"], "option", index);
-      }
-    });
-    answers.emotionMentions.forEach((mention, index) => {
-      if (mention.userAnchor === "uncertain") {
-        fail("es_uncertain", ["ES-AFFECT-EVIDENCE"], "emotion_mention", index);
-      } else if (mention.userAnchor === null) {
-        fail("es_affect_unanchored", ["ES-AFFECT-EVIDENCE"], "emotion_mention", index);
-      }
-    });
-    if (priorAssistantTurnAvailable === false) {
-      if (answers.priorTurnFabrication === "uncertain") {
-        fail("es_uncertain", ["ES-ACK-NO-FABRICATION"], "reply", null);
-      } else if (answers.priorTurnFabrication === "present") {
-        fail("es_prior_turn_fabrication", ["ES-ACK-NO-FABRICATION"], "reply", null);
-      }
-    }
-    if (answers.otherContradiction === "uncertain") fail("es_uncertain", [], "reply", null);
-    else if (answers.otherContradiction !== "none") fail("es_other_contradiction", [], "reply", null);
-  }
-
-  const contradictionCategories = new Set<EmotionalSupportFailureCategory>([
-    "es_reference_unanchored", "es_adds_unstated_content", "es_solicits_new_content",
-    "es_ack_invitation", "es_other_contradiction",
-  ]);
-  const attributedContradiction = failures.some((failure) => contradictionCategories.has(failure.category));
-  const attributedFailure = failures.length > 0;
-  const functionRealized = branch.contractRealized &&
-    branch.targetAddressed &&
-    branch.realizedAction === "offer_emotional_support";
-  const functionRuleIds = focus ? ["ES-FOCUS"] : acknowledgement ? ["ES-ACK-BOUNDARY"] : [];
-  if (branch.status === "uncertain") fail("es_uncertain", [], "reply", null);
-  if (!functionRealized) fail("es_function_not_realized", functionRuleIds, "reply", null);
-  if (
-    (branch.containsContradictoryMove && !attributedContradiction) ||
-    (branch.status === "not_satisfied" && !attributedFailure && functionRealized)
-  ) {
-    fail("es_unattributed_rejection", [], "reply", null);
-  }
-  // Evidence is only required for a pass; an otherwise clean verdict without evidence has not shown the function.
-  if (failures.length === 0 && branch.evidence.length === 0) {
-    fail("es_function_not_realized", functionRuleIds, "reply", null);
-  }
-
-  const inconsistencies: EmotionalSupportAssessment["inconsistencies"] = [];
-  if (branch.status === "satisfied" && failures.length > 0) inconsistencies.push("satisfied_with_failed_answers");
-  if (!branch.containsContradictoryMove && attributedContradiction) {
-    inconsistencies.push("contradiction_flag_mismatch");
-  }
-  const ruleIds: string[] = [];
-  for (const failure of failures) addRuleIds(ruleIds, ...failure.ruleIds);
-  return { passed: failures.length === 0, failures, ruleIds, inconsistencies };
 };
 
 const ordinaryQuestionSupportedByPlan = (plan: ResponsePlan) =>
@@ -919,6 +556,13 @@ export const validatePlannedFunctionSemanticOutput = async ({
 
   const ordinaryQuestionIndependentlySupported = ordinaryQuestionSupportedByPlan(plan);
   let rawVerdict: unknown;
+  // The default provider inspects every outbound call first, so the count names the failing call
+  // without changing the error it throws.
+  let outboundCalls = 0;
+  const countingInspector: PlannedFunctionSemanticValidationPromptInspector = (input) => {
+    outboundCalls += 1;
+    return inspectExternalPrompt?.(input);
+  };
   try {
     const providerInput: PlannedFunctionSemanticProviderInput = {
       planId: plan.planId,
@@ -934,7 +578,7 @@ export const validatePlannedFunctionSemanticOutput = async ({
     };
     rawVerdict = provider
       ? await provider(providerInput)
-      : await defaultPlannedFunctionSemanticProvider(providerInput, inspectExternalPrompt);
+      : await defaultPlannedFunctionSemanticProvider(providerInput, countingInspector);
   } catch (error) {
     return {
       passed: false,
@@ -942,7 +586,12 @@ export const validatePlannedFunctionSemanticOutput = async ({
       hardFailureReasons: ["planned_function_semantic:provider_failure"],
       advisoryFailureReasons: [],
       verdict: null,
-      providerFailure: semanticProviderFailureFor(error),
+      providerFailure: {
+        category: error instanceof ExternalPromptRejectedError
+          ? "prompt_rejected"
+          : classifyProviderFailureCategory(error),
+        call: provider || outboundCalls === 0 ? null : outboundCalls === 1 ? "initial" : "schema_repair",
+      },
     };
   }
 
@@ -998,7 +647,9 @@ export const validatePlannedFunctionSemanticOutput = async ({
   }
 
   const evidenceMismatch =
-    !verdictEvidenceMatchesReply(verdict, reply, semanticContext.currentUserText);
+    Boolean(verdict.handoff && !evidenceMatchesReply(verdict.handoff.evidence, reply)) ||
+    Boolean(verdict.positiveFunction &&
+      !evidenceMatchesReply(verdict.positiveFunction.evidence, reply));
   if (evidenceMismatch) {
     return {
       passed: false,
@@ -1042,24 +693,14 @@ export const validatePlannedFunctionSemanticOutput = async ({
     }
   }
 
-  let emotionalSupportAssessment: EmotionalSupportAssessment | null = null;
   if (positiveFunction && verdict.positiveFunction) {
     const branch = verdict.positiveFunction;
-    if (positiveFunction.action === "offer_emotional_support") {
-      emotionalSupportAssessment = assessEmotionalSupportVerdict({
-        branch,
-        supportFunction: positiveFunction.supportFunction,
-        priorAssistantTurnAvailable: semanticContext.priorAssistantTurnAvailable ?? null,
-      });
-    }
-    const positiveSatisfied = emotionalSupportAssessment
-      ? emotionalSupportAssessment.passed
-      : branch.status === "satisfied" &&
-        branch.realizedAction === positiveFunction.action &&
-        branch.targetAddressed &&
-        branch.contractRealized &&
-        !branch.containsContradictoryMove &&
-        branch.evidence.length > 0;
+    const positiveSatisfied = branch.status === "satisfied" &&
+      branch.realizedAction === positiveFunction.action &&
+      branch.targetAddressed &&
+      branch.contractRealized &&
+      !branch.containsContradictoryMove &&
+      branch.evidence.length > 0;
     if (!positiveSatisfied) {
       hardFailureReasons.push("planned_function_semantic:positive_function_not_satisfied");
     }
@@ -1095,6 +736,5 @@ export const validatePlannedFunctionSemanticOutput = async ({
     hardFailureReasons: uniqueHardFailures,
     advisoryFailureReasons: uniqueAdvisories,
     verdict,
-    emotionalSupportAssessment,
   };
 };
