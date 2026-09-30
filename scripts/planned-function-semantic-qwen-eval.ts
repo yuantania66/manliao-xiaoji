@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { performance } from "node:perf_hooks";
 
 import {
   assembleConversationControlContext,
@@ -17,9 +19,12 @@ import {
   type PlannedFunctionSemanticProviderInput,
   type PlannedFunctionSemanticValidationResult,
 } from "../services/ai/plannedFunctionSemanticValidator";
-import { classifyProviderFailureCategory } from "../services/ai/providerFailureCategory";
-import { validateLateContradiction } from "./late-contradiction-authority";
-import { semanticVerdictAuditFor, withoutEvidenceText } from "./semantic-verdict-audit";
+import {
+  classifyProviderFailureCategory,
+  type ProviderFailureCategory,
+} from "../services/ai/providerFailureCategory";
+import { validateLateContradiction, type LateContradictionProvider } from "./late-contradiction-authority";
+import { ruleIdsInReason, semanticVerdictAuditFor } from "./semantic-verdict-audit";
 
 type EvalCase = {
   id: string;
@@ -428,18 +433,29 @@ const inputFor = (testCase: EvalCase): PlannedFunctionSemanticProviderInput => (
 const arg = (name: string) =>
   process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3) ?? "";
 
-const verdictRecordFor = (result: PlannedFunctionSemanticValidationResult) => {
+type EvidenceSpan = { start: number; end: number; text: string; reason: string };
+const spansOf = (evidence: EvidenceSpan[]) =>
+  evidence.map(({ start, end, text, reason }) => ({ start, end, text, reason }));
+const positionOf = ({ start, end, reason }: EvidenceSpan) => ({ start, end, ruleIds: ruleIdsInReason(reason) });
+const unparsedOutputOf = (raw: unknown) =>
+  raw === undefined ? null : typeof raw === "string" ? raw : JSON.stringify(raw);
+
+const verdictRecordFor = (result: PlannedFunctionSemanticValidationResult, raw: unknown) => {
   const positive = result.verdict?.positiveFunction ?? null;
   const handoff = result.verdict?.handoff ?? null;
+  const audit = semanticVerdictAuditFor(result.verdict);
   return {
     failureReasons: result.failureReasons,
     providerFailure: result.providerFailure ?? null,
+    semanticQuestionCount: result.verdict?.semanticQuestionCount ?? null,
     positiveFunction: positive && {
+      action: positive.binding.action,
       status: positive.status,
       realizedAction: positive.realizedAction,
       targetAddressed: positive.targetAddressed,
       contractRealized: positive.contractRealized,
       containsContradictoryMove: positive.containsContradictoryMove,
+      evidence: spansOf(positive.evidence),
     },
     handoff: handoff && {
       status: handoff.status,
@@ -450,19 +466,163 @@ const verdictRecordFor = (result: PlannedFunctionSemanticValidationResult) => {
       containsContradictoryMove: handoff.containsContradictoryMove,
       handoffCompletionClaimed: handoff.handoffCompletionClaimed,
       optionalQuestionAfterRequiredFunction: handoff.optionalQuestionAfterRequiredFunction,
-      evidence: handoff.evidence.map(({ start, end, text, reason }) => ({ start, end, text, reason })),
+      evidence: spansOf(handoff.evidence),
     },
-    audit: semanticVerdictAuditFor(result.verdict),
+    ruleIds: audit?.ruleIds ?? [],
+    outOfScopeRuleIds: audit?.outOfScopeRuleIds ?? [],
+    unparsedOutput: result.verdict ? null : unparsedOutputOf(raw),
   };
 };
 
-const callWithOneInfrastructureRetry = async (input: PlannedFunctionSemanticProviderInput) => {
-  try {
-    return await defaultPlannedFunctionSemanticProvider(input);
-  } catch {
-    return defaultPlannedFunctionSemanticProvider(input);
+const lateContradictionRecordFor = (late: Awaited<ReturnType<typeof validateLateContradiction>>) => ({
+  passed: late.passed,
+  reason: late.reason,
+  status: late.verdict?.status ?? null,
+  completedRitual: late.verdict?.completedRitual ?? null,
+  reopenedRitual: late.verdict?.reopenedRitual ?? null,
+  completionEvidence: late.verdict ? spansOf([late.verdict.completionEvidence])[0] : null,
+  contradictionEvidence: late.verdict?.contradictionEvidence ? spansOf([late.verdict.contradictionEvidence])[0] : null,
+  unparsedOutput: "raw" in late ? unparsedOutputOf(late.raw) : null,
+});
+
+type JudgeProvider = typeof defaultPlannedFunctionSemanticProvider;
+
+const callJudgeWithOneInfrastructureRetry = async (
+  input: PlannedFunctionSemanticProviderInput,
+  provider: JudgeProvider
+) => {
+  const attempts: Array<{ modelCalls: number; latencyMs: number; errorCategory: ProviderFailureCategory | null }> = [];
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    let modelCalls = 0;
+    const startedAt = performance.now();
+    try {
+      const raw = await provider(input, () => {
+        modelCalls += 1;
+      });
+      attempts.push({ modelCalls, latencyMs: Math.round(performance.now() - startedAt), errorCategory: null });
+      return { ok: true as const, raw, attempts };
+    } catch (error) {
+      attempts.push({
+        modelCalls,
+        latencyMs: Math.round(performance.now() - startedAt),
+        errorCategory: classifyProviderFailureCategory(error),
+      });
+    }
   }
+  return { ok: false as const, attempts };
 };
+
+type CaseFailure = {
+  id: string;
+  category: EvalCase["category"];
+  failureCategory: "provider_failure" | "expectation_mismatch";
+  expectedPassed: boolean;
+  actualPassed?: boolean;
+  reasons?: string[];
+};
+
+export const evaluateCase = async (
+  testCase: EvalCase,
+  {
+    judgeProvider = defaultPlannedFunctionSemanticProvider,
+    lateContradictionProvider,
+  }: {
+    judgeProvider?: JudgeProvider;
+    lateContradictionProvider?: LateContradictionProvider;
+  } = {}
+) => {
+  const call = await callJudgeWithOneInfrastructureRetry(inputFor(testCase), judgeProvider);
+  const rowBase = {
+    id: testCase.id,
+    category: testCase.category,
+    expectedPassed: testCase.expectedPassed,
+    judgeAttempts: call.attempts,
+  };
+  if (!call.ok) {
+    return {
+      row: { ...rowBase, actualPassed: null, verdict: null, lateContradiction: null },
+      failure: testCase.expectedPassed
+        ? {
+            id: testCase.id,
+            category: testCase.category,
+            failureCategory: "provider_failure",
+            expectedPassed: testCase.expectedPassed,
+          } satisfies CaseFailure
+        : null,
+    };
+  }
+  const result = await validatePlannedFunctionSemanticOutput({
+    plan: testCase.plan,
+    reply: testCase.candidateReply,
+    semanticContext: {
+      currentUserText: testCase.currentUserText,
+      handoffTargetAssistantText: testCase.handoffTargetAssistantText,
+    },
+    provider: async () => call.raw,
+  });
+  let actualPassed = result.passed;
+  let lateContradiction: (ReturnType<typeof lateContradictionRecordFor> & { latencyMs: number }) | null = null;
+  if (
+    actualPassed &&
+    testCase.plan.interactionMoveHandoffPlan?.requiredFunction === "complete_reciprocal_contact" &&
+    testCase.plan.positiveFunctionContract?.action === "establish_assistant_identity" &&
+    testCase.plan.positiveFunctionContract.mode === "first_contact"
+  ) {
+    const startedAt = performance.now();
+    const late = await validateLateContradiction({
+      input: {
+        caseId: testCase.id,
+        planId: testCase.plan.planId,
+        candidateReply: testCase.candidateReply,
+      },
+      ...(lateContradictionProvider ? { provider: lateContradictionProvider } : {}),
+    });
+    lateContradiction = { ...lateContradictionRecordFor(late), latencyMs: Math.round(performance.now() - startedAt) };
+    actualPassed = late.passed;
+  }
+  return {
+    row: { ...rowBase, actualPassed, verdict: verdictRecordFor(result, call.raw), lateContradiction },
+    failure: actualPassed === testCase.expectedPassed
+      ? null
+      : {
+          id: testCase.id,
+          category: testCase.category,
+          failureCategory: "expectation_mismatch",
+          expectedPassed: testCase.expectedPassed,
+          actualPassed,
+          reasons: [...result.failureReasons, ...(lateContradiction?.reason ? [lateContradiction.reason] : [])],
+        } satisfies CaseFailure,
+  };
+};
+
+type CaseRow = Awaited<ReturnType<typeof evaluateCase>>["row"];
+
+export const structuralRowFor = (row: CaseRow) => ({
+  ...row,
+  verdict: row.verdict && {
+    ...row.verdict,
+    positiveFunction: row.verdict.positiveFunction && {
+      ...row.verdict.positiveFunction,
+      evidence: row.verdict.positiveFunction.evidence.map(positionOf),
+    },
+    handoff: row.verdict.handoff && {
+      ...row.verdict.handoff,
+      evidence: row.verdict.handoff.evidence.map(positionOf),
+    },
+    unparsedOutput: row.verdict.unparsedOutput === null ? null : "kept_locally",
+  },
+  lateContradiction: row.lateContradiction && {
+    ...row.lateContradiction,
+    completionEvidence: row.lateContradiction.completionEvidence && positionOf(row.lateContradiction.completionEvidence),
+    contradictionEvidence: row.lateContradiction.contradictionEvidence &&
+      positionOf(row.lateContradiction.contradictionEvidence),
+    unparsedOutput: row.lateContradiction.unparsedOutput === null ? null : "kept_locally",
+  },
+});
+
+export const casesSha256 = createHash("sha256").update(JSON.stringify(cases)).digest("hex");
+
+export { cases };
 
 const main = async () => {
   assert.equal(process.env.AI_PROVIDER, "qwen", "This gate must run against the real Qwen provider.");
@@ -471,112 +631,39 @@ const main = async () => {
     ? cases.filter((item) => item.id === requestedCaseId)
     : cases;
   assert(selectedCases.length > 0, "Requested Qwen eval case does not exist.");
-  const failures: Array<{
-    id: string;
-    category: EvalCase["category"];
-    failureCategory: "provider_failure" | "expectation_mismatch";
-    expectedPassed: boolean;
-    actualPassed?: boolean;
-    reasons?: string[];
-  }> = [];
   const outputPath = arg("output");
   const structuralPath = arg("structural-output");
-  const rows: Array<{
-    id: string;
-    category: EvalCase["category"];
-    expectedPassed: boolean;
-    actualPassed: boolean | null;
-    callErrorCategory: string | null;
-    lateContradictionReason: string | null;
-    verdict: ReturnType<typeof verdictRecordFor> | null;
-  }> = [];
+  const failures: CaseFailure[] = [];
+  const rows: CaseRow[] = [];
 
   for (const testCase of selectedCases) {
-    let raw: unknown;
-    try {
-      raw = await callWithOneInfrastructureRetry(inputFor(testCase));
-    } catch (error) {
-      rows.push({
-        id: testCase.id,
-        category: testCase.category,
-        expectedPassed: testCase.expectedPassed,
-        actualPassed: null,
-        callErrorCategory: classifyProviderFailureCategory(error),
-        lateContradictionReason: null,
-        verdict: null,
-      });
-      if (testCase.expectedPassed) {
-        failures.push({
-          id: testCase.id,
-          category: testCase.category,
-          failureCategory: "provider_failure",
-          expectedPassed: testCase.expectedPassed,
-        });
-      }
-      continue;
-    }
-    if (requestedCaseId) console.log(JSON.stringify({ id: testCase.id, raw }, null, 2));
-    const result = await validatePlannedFunctionSemanticOutput({
-      plan: testCase.plan,
-      reply: testCase.candidateReply,
-      semanticContext: {
-        currentUserText: testCase.currentUserText,
-        handoffTargetAssistantText: testCase.handoffTargetAssistantText,
-      },
-      provider: async () => raw,
-    });
-    let actualPassed = result.passed;
-    let lateContradictionReason: string | null = null;
-    if (
-      actualPassed &&
-      testCase.plan.interactionMoveHandoffPlan?.requiredFunction === "complete_reciprocal_contact" &&
-      testCase.plan.positiveFunctionContract?.action === "establish_assistant_identity" &&
-      testCase.plan.positiveFunctionContract.mode === "first_contact"
-    ) {
-      const lateContradiction = await validateLateContradiction({
-        input: {
-          caseId: testCase.id,
-          planId: testCase.plan.planId,
-          candidateReply: testCase.candidateReply,
-        },
-      });
-      if (requestedCaseId) {
-        console.log(JSON.stringify({ id: testCase.id, lateContradiction }, null, 2));
-      }
-      actualPassed = lateContradiction.passed;
-      lateContradictionReason = lateContradiction.reason;
-    }
-    rows.push({
-      id: testCase.id,
-      category: testCase.category,
-      expectedPassed: testCase.expectedPassed,
-      actualPassed,
-      callErrorCategory: null,
-      lateContradictionReason,
-      verdict: verdictRecordFor(result),
-    });
-    if (actualPassed !== testCase.expectedPassed) {
-      failures.push({
-        id: testCase.id,
-        category: testCase.category,
-        failureCategory: "expectation_mismatch",
-        expectedPassed: testCase.expectedPassed,
-        actualPassed,
-        reasons: [...result.failureReasons, ...(lateContradictionReason ? [lateContradictionReason] : [])],
-      });
-    }
+    const { row, failure } = await evaluateCase(testCase);
+    if (requestedCaseId) console.log(JSON.stringify(row, null, 2));
+    rows.push(row);
+    if (failure) failures.push(failure);
   }
 
   const categoryTotals = Object.fromEntries(
     ["first_contact", "identity_continuation", "emotional_support", "repair", "dual_and", "adversarial"]
       .map((category) => [category, selectedCases.filter((item) => item.category === category).length])
   );
+  const attempts = rows.flatMap((row) => row.judgeAttempts);
   const summary = {
+    round: arg("round") || null,
     model: process.env.AI_MAIN_MODEL || "provider-default",
     judgeModel: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() || process.env.AI_MAIN_MODEL || "provider-default",
+    casesSha256,
     cases: selectedCases.length,
     categoryTotals,
     retiredCases: retiredCases.map(({ id, replacedBy }) => ({ id, replacedBy })),
+    judgeCalls: {
+      attempts: attempts.length,
+      modelCalls: attempts.reduce((sum, attempt) => sum + attempt.modelCalls, 0),
+      schemaRepairAttempts: attempts.filter((attempt) => attempt.modelCalls > 1).length,
+      infrastructureRetryCases: rows.filter((row) => row.judgeAttempts.length > 1).length,
+      unjudgedCases: rows.filter((row) => row.actualPassed === null).length,
+      errorCategories: attempts.flatMap((attempt) => attempt.errorCategory ? [attempt.errorCategory] : []),
+    },
     failures,
   };
   if (outputPath) {
@@ -593,26 +680,16 @@ const main = async () => {
   if (structuralPath) {
     mkdirSync(dirname(structuralPath), { recursive: true });
     writeFileSync(structuralPath, `${JSON.stringify({
-      note: "Structural copy; synthetic fixture text, replies and evidence text kept locally.",
+      note: "Structural copy; synthetic fixture text, replies, evidence text, reasons and unparsed outputs kept locally.",
       summary,
       retiredCases: retiredCases.map(({ id, supportFunction, expectedPassed, retiredOn, reason, history, replacedBy }) => ({
         id, supportFunction, expectedPassed, retiredOn, reason, history, replacedBy,
       })),
-      rows: rows.map((row) => ({
-        ...row,
-        verdict: row.verdict && {
-          ...row.verdict,
-          handoff: row.verdict.handoff && {
-            ...row.verdict.handoff,
-            evidence: row.verdict.handoff.evidence.map(({ start, end }) => ({ start, end })),
-          },
-          audit: withoutEvidenceText(row.verdict.audit),
-        },
-      })),
+      rows: rows.map(structuralRowFor),
     }, null, 2)}\n`);
   }
   console.log(JSON.stringify(summary, null, 2));
   assert.deepEqual(failures, [], "Frozen Qwen planned-function semantic gate failed.");
 };
 
-void main();
+if (process.argv[1]?.endsWith("planned-function-semantic-qwen-eval.ts")) void main();

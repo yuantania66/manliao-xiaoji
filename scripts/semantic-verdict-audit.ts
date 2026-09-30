@@ -12,8 +12,10 @@ export type SemanticVerdictAudit = {
   evidence: Array<{ start: number; end: number; text: string; reason: string }>;
 } | null;
 
+export const ruleIdsInReason = (reason: string) => reason.match(RULE_ID) ?? [];
+
 const ruleIdsIn = (evidence: Array<{ reason: string }>) =>
-  Array.from(new Set(evidence.flatMap((span) => span.reason.match(RULE_ID) ?? [])));
+  Array.from(new Set(evidence.flatMap((span) => ruleIdsInReason(span.reason))));
 
 export const semanticVerdictAuditFor = (
   verdict: PlannedFunctionSemanticVerdict | null | undefined
