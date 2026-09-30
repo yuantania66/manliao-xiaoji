@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { execSync } from "node:child_process";
@@ -41,6 +42,47 @@ const structuralPath = arg("structural-output");
 const repetitions = Number(arg("repetitions") || "3");
 if (!casesPath || !outputPath) throw new Error("--cases and --output are required.");
 if (process.env.AI_PROVIDER !== "qwen") throw new Error("This evaluation must run against the real Qwen provider.");
+
+const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
+
+// Observes the provider requests the judge actually sends; hashes only, never message text.
+type JudgeRequestRecord = {
+  model: string | null;
+  responseFormat: string | null;
+  enableThinking: boolean | null;
+  temperature: number | null;
+  developerMessageSha256: string | null;
+  messagesSha256: string;
+  httpStatus: number | null;
+  promptTokens: number | null;
+  completionTokens: number | null;
+};
+const pendingRequests: JudgeRequestRecord[] = [];
+const originalFetch = globalThis.fetch;
+globalThis.fetch = async (input, init) => {
+  const body = typeof init?.body === "string" ? JSON.parse(init.body) as Record<string, unknown> : {};
+  const messages = Array.isArray(body.messages) ? body.messages as Array<{ content?: unknown }> : [];
+  const record: JudgeRequestRecord = {
+    model: typeof body.model === "string" ? body.model : null,
+    responseFormat: (body.response_format as { type?: string } | undefined)?.type ?? null,
+    enableThinking: typeof body.enable_thinking === "boolean" ? body.enable_thinking : null,
+    temperature: typeof body.temperature === "number" ? body.temperature : null,
+    developerMessageSha256: typeof messages[0]?.content === "string" ? sha256(messages[0].content) : null,
+    messagesSha256: sha256(JSON.stringify(messages)),
+    httpStatus: null,
+    promptTokens: null,
+    completionTokens: null,
+  };
+  pendingRequests.push(record);
+  const response = await originalFetch(input, init);
+  record.httpStatus = response.status;
+  const usage = await response.clone().json()
+    .then((data: { usage?: { prompt_tokens?: unknown; completion_tokens?: unknown } }) => data.usage)
+    .catch(() => undefined);
+  record.promptTokens = typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null;
+  record.completionTokens = typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null;
+  return response;
+};
 
 const countBy = (values: string[]) =>
   values.reduce<Record<string, number>>((counts, value) => ({ ...counts, [value]: (counts[value] ?? 0) + 1 }), {});
@@ -102,6 +144,7 @@ const run = async () => {
     providerFailure: PlannedFunctionSemanticProviderFailure | null;
     // Every outbound judge call, including the schema-repair call; latency runs to the next call or the end.
     modelCalls: Array<{ call: "initial" | "schema_repair"; latencyMs: number }>;
+    requests: JudgeRequestRecord[];
     validationLatencyMs: number;
     formatFailure: boolean;
     outcomeMatches: boolean | null;
@@ -118,6 +161,7 @@ const run = async () => {
     const reps = testCase.expected === "ambiguous" ? 1 : repetitions;
     for (let repetition = 1; repetition <= reps; repetition += 1) {
       const callStarts: number[] = [];
+      pendingRequests.length = 0;
       const startedAt = Date.now();
       const result = await validatePlannedFunctionSemanticOutput({
         plan,
@@ -161,6 +205,7 @@ const run = async () => {
         audit,
         providerFailure: result.providerFailure ?? null,
         modelCalls,
+        requests: pendingRequests.splice(0),
         validationLatencyMs: endedAt - startedAt,
         formatFailure,
         outcomeMatches,
@@ -198,6 +243,8 @@ const run = async () => {
   }));
   const summary = {
     head,
+    judgeModelEnv: process.env.AI_MAIN_MODEL ?? null,
+    casesSha256: sha256(readFileSync(casesPath, "utf8")),
     repetitions,
     labeledCases: cases.filter((testCase) => testCase.expected !== "ambiguous").length,
     ambiguousCases: cases.filter((testCase) => testCase.expected === "ambiguous").length,
@@ -223,6 +270,18 @@ const run = async () => {
         call.providerFailure ? [`${call.providerFailure.category}:${call.providerFailure.call ?? "unattributed"}`] : [])),
       validationLatencyMs: latencySummary(calls.map((call) => call.validationLatencyMs)),
       modelCallLatencyMs: latencySummary(calls.flatMap((call) => call.modelCalls.map((modelCall) => modelCall.latencyMs))),
+      providerRequests: calls.reduce((sum, call) => sum + call.requests.length, 0),
+      requestConfigs: countBy(calls.flatMap((call) => call.requests.map((request) =>
+        `model=${request.model};response_format=${request.responseFormat};enable_thinking=${request.enableThinking};temperature=${request.temperature}`))),
+      developerMessageSha256: countBy(calls.flatMap((call) =>
+        call.requests.map((request) => request.developerMessageSha256 ?? "none"))),
+      httpStatuses: countBy(calls.flatMap((call) => call.requests.map((request) => String(request.httpStatus)))),
+      promptTokens: calls.reduce((sum, call) =>
+        sum + call.requests.reduce((inner, request) => inner + (request.promptTokens ?? 0), 0), 0),
+      completionTokens: calls.reduce((sum, call) =>
+        sum + call.requests.reduce((inner, request) => inner + (request.completionTokens ?? 0), 0), 0),
+      requestsWithoutUsage: calls.reduce((sum, call) =>
+        sum + call.requests.filter((request) => request.promptTokens === null).length, 0),
     },
     byCase,
   };
