@@ -1,12 +1,25 @@
 import assert from "node:assert/strict";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
-import type { PositiveFunctionContract, ResponsePlan } from "../conversation-os/control";
+import {
+  assembleConversationControlContext,
+  buildDialogueState,
+  createResponsePlan,
+  interpretTurnDeterministically,
+  type PositiveFunctionContract,
+  type ResponsePlan,
+} from "../conversation-os/control";
+import { determineConversationState } from "../conversation-os/state";
 import {
   defaultPlannedFunctionSemanticProvider,
   validatePlannedFunctionSemanticOutput,
   type PlannedFunctionSemanticProviderInput,
+  type PlannedFunctionSemanticValidationResult,
 } from "../services/ai/plannedFunctionSemanticValidator";
+import { classifyProviderFailureCategory } from "../services/ai/providerFailureCategory";
 import { validateLateContradiction } from "./late-contradiction-authority";
+import { semanticVerdictAuditFor, withoutEvidenceText } from "./semantic-verdict-audit";
 
 type EvalCase = {
   id: string;
@@ -97,6 +110,48 @@ const withEmotional = (
     intensityCeiling: "current_user_expression",
     evidence: ["turn-local exact affect evidence"],
   };
+  return plan;
+};
+
+const plannerEmotionalContractFor = (sourceText: string) => {
+  const conversationState = determineConversationState({ currentUserMessage: sourceText, recentMessages: [] });
+  const context = assembleConversationControlContext({
+    conversationId: "qwen-eval",
+    currentTurnId: turnId,
+    userMessage: sourceText,
+    recentMessages: [],
+    conversationState,
+  });
+  const interpretation = interpretTurnDeterministically(context);
+  const contract = createResponsePlan({
+    context,
+    interpretation,
+    dialogueState: buildDialogueState(context, interpretation),
+    ordinaryHandoffBoundary: null,
+    clinicalAdviceProvider: ({ need }) => ({
+      strategy: "qwen-eval-fixture",
+      intent: need,
+      questionFunction: "none",
+      toneConstraints: [],
+      interventionBoundaries: [],
+      evidence: ["qwen-eval-fixture"],
+    }),
+  }).positiveFunctionContract;
+  assert(contract?.action === "offer_emotional_support", `${sourceText}: Planner did not select emotional support.`);
+  return contract;
+};
+
+const withPlannerEmotional = (id: string, sourceText: string) => {
+  const contract = plannerEmotionalContractFor(sourceText);
+  if (contract.supportFunction === "return_focus_control") {
+    assert(
+      new Set(contract.affectEvidenceSpans.map((span) => `${span.category}:${span.object}`)).size >= 2,
+      `${id}: return_focus_control requires at least two distinct affect targets.`
+    );
+  }
+  const plan = basePlan(id);
+  plan.responseActions = ["offer_emotional_support"];
+  plan.positiveFunctionContract = contract;
   return plan;
 };
 
@@ -201,7 +256,6 @@ const cases: EvalCase[] = [
   })),
   ...([
     ["reduce_expression_burden", "我很难受", "这份难受不需要先解释出原因。"],
-    ["return_focus_control", "我很难受", "这份难受里，表达重点不必跟着我的关注点走，放在哪一部分由你掌握。"],
     ["return_amount_control", "我很难受", "这份难受说多说少都由你来定。"],
     ["acknowledge_current_relational_impact", "你根本没懂我", "刚才我的回应确实没接住你，我不能把它说成已经理解。"],
   ] as const).map(([supportFunction, sourceText, candidateReply]) => ({
@@ -213,6 +267,15 @@ const cases: EvalCase[] = [
     candidateReply,
     expectedPassed: true,
   })),
+  {
+    id: "emotional-return_focus_control-two-targets-positive",
+    category: "emotional_support",
+    plan: withPlannerEmotional("emotional-return_focus_control-two-targets-positive", "我现在又委屈又生气"),
+    currentUserText: "我现在又委屈又生气",
+    handoffTargetAssistantText: null,
+    candidateReply: "这份委屈和生气里，表达重点不必跟着我的关注点走，放在哪一部分由你掌握。",
+    expectedPassed: true,
+  },
   ...([
     ["receipt", "reduce_expression_burden", "我听到了。"],
     ["wrong-function", "reduce_expression_burden", "这份难受先说哪一部分由你定。"],
@@ -315,6 +378,31 @@ const cases: EvalCase[] = [
   },
 ];
 
+const retiredCases = [
+  {
+    id: "emotional-return_focus_control-positive",
+    category: "emotional_support",
+    supportFunction: "return_focus_control",
+    currentUserText: "我很难受",
+    candidateReply: "这份难受里，表达重点不必跟着我的关注点走，放在哪一部分由你掌握。",
+    expectedPassed: true,
+    retiredOn: "2026-09-30",
+    reason: "Contract section 3.2 allows return_focus_control only with at least two distinct current-turn affect or relational-impact targets; this fixture binds it to one span, and the Planner selects return_amount_control for this text.",
+    history: "bf34cc6 Q 40/41: the only failure, positive_function_not_satisfied; fixture-contract conflict, actual rejection reason unknown.",
+    replacedBy: "emotional-return_focus_control-two-targets-positive",
+  },
+] as const;
+
+for (const retired of retiredCases) {
+  assert.notEqual(
+    plannerEmotionalContractFor(retired.currentUserText).supportFunction,
+    retired.supportFunction,
+    `${retired.id}: retirement premise no longer holds.`
+  );
+  assert(cases.some((item) => item.id === retired.replacedBy), `${retired.id}: replacement case missing.`);
+  assert(!cases.some((item) => item.id === retired.id), `${retired.id}: retired case must not run.`);
+}
+
 const inputFor = (testCase: EvalCase): PlannedFunctionSemanticProviderInput => ({
   planId: testCase.plan.planId,
   handoffBinding: testCase.plan.interactionMoveHandoffPlan,
@@ -336,6 +424,37 @@ const inputFor = (testCase: EvalCase): PlannedFunctionSemanticProviderInput => (
       )
     ),
 });
+
+const arg = (name: string) =>
+  process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3) ?? "";
+
+const verdictRecordFor = (result: PlannedFunctionSemanticValidationResult) => {
+  const positive = result.verdict?.positiveFunction ?? null;
+  const handoff = result.verdict?.handoff ?? null;
+  return {
+    failureReasons: result.failureReasons,
+    providerFailure: result.providerFailure ?? null,
+    positiveFunction: positive && {
+      status: positive.status,
+      realizedAction: positive.realizedAction,
+      targetAddressed: positive.targetAddressed,
+      contractRealized: positive.contractRealized,
+      containsContradictoryMove: positive.containsContradictoryMove,
+    },
+    handoff: handoff && {
+      status: handoff.status,
+      realizedFunction: handoff.realizedFunction,
+      targetAddressed: handoff.targetAddressed,
+      relationAddressed: handoff.relationAddressed,
+      requiredFunctionRealized: handoff.requiredFunctionRealized,
+      containsContradictoryMove: handoff.containsContradictoryMove,
+      handoffCompletionClaimed: handoff.handoffCompletionClaimed,
+      optionalQuestionAfterRequiredFunction: handoff.optionalQuestionAfterRequiredFunction,
+      evidenceCount: handoff.evidence.length,
+    },
+    audit: semanticVerdictAuditFor(result.verdict),
+  };
+};
 
 const callWithOneInfrastructureRetry = async (input: PlannedFunctionSemanticProviderInput) => {
   try {
@@ -360,12 +479,32 @@ const main = async () => {
     actualPassed?: boolean;
     reasons?: string[];
   }> = [];
+  const outputPath = arg("output");
+  const structuralPath = arg("structural-output");
+  const rows: Array<{
+    id: string;
+    category: EvalCase["category"];
+    expectedPassed: boolean;
+    actualPassed: boolean | null;
+    callErrorCategory: string | null;
+    lateContradictionReason: string | null;
+    verdict: ReturnType<typeof verdictRecordFor> | null;
+  }> = [];
 
   for (const testCase of selectedCases) {
     let raw: unknown;
     try {
       raw = await callWithOneInfrastructureRetry(inputFor(testCase));
-    } catch {
+    } catch (error) {
+      rows.push({
+        id: testCase.id,
+        category: testCase.category,
+        expectedPassed: testCase.expectedPassed,
+        actualPassed: null,
+        callErrorCategory: classifyProviderFailureCategory(error),
+        lateContradictionReason: null,
+        verdict: null,
+      });
       if (testCase.expectedPassed) {
         failures.push({
           id: testCase.id,
@@ -407,6 +546,15 @@ const main = async () => {
       actualPassed = lateContradiction.passed;
       lateContradictionReason = lateContradiction.reason;
     }
+    rows.push({
+      id: testCase.id,
+      category: testCase.category,
+      expectedPassed: testCase.expectedPassed,
+      actualPassed,
+      callErrorCategory: null,
+      lateContradictionReason,
+      verdict: verdictRecordFor(result),
+    });
     if (actualPassed !== testCase.expectedPassed) {
       failures.push({
         id: testCase.id,
@@ -423,13 +571,40 @@ const main = async () => {
     ["first_contact", "identity_continuation", "emotional_support", "repair", "dual_and", "adversarial"]
       .map((category) => [category, selectedCases.filter((item) => item.category === category).length])
   );
-  console.log(JSON.stringify({
+  const summary = {
     model: process.env.AI_MAIN_MODEL || "provider-default",
     judgeModel: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() || process.env.AI_MAIN_MODEL || "provider-default",
     cases: selectedCases.length,
     categoryTotals,
+    retiredCases: retiredCases.map(({ id, replacedBy }) => ({ id, replacedBy })),
     failures,
-  }, null, 2));
+  };
+  if (outputPath) {
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, `${JSON.stringify({
+      summary,
+      cases: selectedCases.map(({ id, category, currentUserText, candidateReply, expectedPassed }) => ({
+        id, category, currentUserText, candidateReply, expectedPassed,
+      })),
+      retiredCases,
+      rows,
+    }, null, 2)}\n`);
+  }
+  if (structuralPath) {
+    mkdirSync(dirname(structuralPath), { recursive: true });
+    writeFileSync(structuralPath, `${JSON.stringify({
+      note: "Structural copy; synthetic fixture text, replies and evidence text kept locally.",
+      summary,
+      retiredCases: retiredCases.map(({ id, supportFunction, expectedPassed, retiredOn, reason, history, replacedBy }) => ({
+        id, supportFunction, expectedPassed, retiredOn, reason, history, replacedBy,
+      })),
+      rows: rows.map((row) => ({
+        ...row,
+        verdict: row.verdict && { ...row.verdict, audit: withoutEvidenceText(row.verdict.audit) },
+      })),
+    }, null, 2)}\n`);
+  }
+  console.log(JSON.stringify(summary, null, 2));
   assert.deepEqual(failures, [], "Frozen Qwen planned-function semantic gate failed.");
 };
 
