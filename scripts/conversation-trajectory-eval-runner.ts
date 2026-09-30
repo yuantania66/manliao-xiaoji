@@ -22,6 +22,7 @@ import {
   locateRepeatedOpeningSkeletons,
   loadTrajectoryDataset,
   renderTrajectoryReport,
+  trajectoryGateExitCode,
   type TrajectoryRunMode,
   type TrajectoryRunResult,
 } from "./conversation-trajectory-eval-lib";
@@ -189,6 +190,16 @@ const run = async () => {
     );
   }
 
+  const deterministicErrors = results.flatMap((item) => [
+    ...item.turns.flatMap((turn) => turn.machineCheckErrors),
+    ...item.trajectoryMachineCheckErrors,
+  ]);
+  const gateExitCode = trajectoryGateExitCode({
+    mode,
+    experiment,
+    deterministicErrorCount: deterministicErrors.length,
+    safetyFailClosedCount: forensicsSummary.safetyBlocked.length,
+  });
   console.log(
     JSON.stringify(
       {
@@ -202,10 +213,8 @@ const run = async () => {
         trajectories: results.length,
         completedTurns: completed.length,
         pendingTurns: results.flatMap((item) => item.turns).filter((turn) => turn.status === "pending_reproduction").length,
-        deterministicErrors: results.flatMap((item) => [
-          ...item.turns.flatMap((turn) => turn.machineCheckErrors),
-          ...item.trajectoryMachineCheckErrors,
-        ]),
+        deterministicErrors,
+        gateExitCode,
         productUnderTest,
         productSourceFingerprint,
         evalToolFingerprint,
@@ -217,6 +226,7 @@ const run = async () => {
       2
     )
   );
+  if (gateExitCode !== 0) process.exitCode = gateExitCode;
 };
 
 run().catch((error) => {

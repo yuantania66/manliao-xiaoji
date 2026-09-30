@@ -9,8 +9,9 @@ import {
   explicitlyResumesPreGreetingHistory,
   isProactiveGreetingPromptVersion,
 } from "@/lib/proactive-greeting";
+import { prohibitsMessageFormMeaning } from "./semanticEvidenceReplyGuard";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v31";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v32";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -406,6 +407,11 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
         : "Do not ask the user to explain, choose a topic, or answer another question.",
       "Do not use receipt, presence, reassurance, positive, healing, gratitude, or counselling framing."
     );
+    if (prohibitsMessageFormMeaning(responsePlan.prohibitedClaims)) {
+      constraints.push(
+        "The entry is the assistant's own offer, not an explanation of the user's message. Do not state, guess, or ask why the user sent the current message or what its form or repetition means (for example testing, probing, checking whether messages arrive, counting, or scoring); hedged wording such as 'maybe', 'looks like', or 'are you' is still such an attribution. Do not offer to go along with an assumed purpose or input pattern."
+      );
+    }
   }
   if (responsePlan.responseActions.includes("offer_emotional_support")) {
     const contract = responsePlan.positiveFunctionContract?.action === "offer_emotional_support"

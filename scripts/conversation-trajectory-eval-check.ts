@@ -15,9 +15,18 @@ import {
   loadTrajectoryDataset,
   renderTrajectoryReport,
   summarizeForensics,
+  trajectoryGateExitCode,
   type TrajectoryRunResult,
 } from "./conversation-trajectory-eval-lib";
 import type { ChatReplyResult } from "../services/ai/chatOrchestrationService";
+
+const gate = (overrides: Partial<Parameters<typeof trajectoryGateExitCode>[0]> = {}) =>
+  trajectoryGateExitCode({ mode: "real", experiment: "canonical", deterministicErrorCount: 0, safetyFailClosedCount: 0, ...overrides });
+assert.equal(gate(), 0, "Clean canonical real run passes.");
+assert.equal(gate({ deterministicErrorCount: 2 }), 1, "Deterministic errors fail the gate.");
+assert.equal(gate({ safetyFailClosedCount: 1 }), 1, "Safety fail-closed blocks fail the gate.");
+assert.equal(gate({ mode: "replay", deterministicErrorCount: 3 }), 0, "Replay is a diagnostic, not the gate.");
+assert.equal(gate({ experiment: "exp-bl-012a", deterministicErrorCount: 3 }), 0, "Experiments are diagnostics, not the gate.");
 
 const dataset = loadTrajectoryDataset();
 assert.equal(dataset.schemaVersion, 1);

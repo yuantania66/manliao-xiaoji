@@ -18,8 +18,8 @@ import {
   validatePlannedFunctionSemanticOutput,
   type PositiveFunctionVerdictBinding,
 } from "../services/ai/plannedFunctionSemanticValidator";
-import { formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
-import { validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
+import { buildChatPrompt, formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
+import { formatResponsePlanRegenerateConstraint, validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
 
 const uncertainBoundary = (
   userBoundaries: OrdinaryHandoffBoundary["userBoundaries"] = []
@@ -332,6 +332,58 @@ const run = async () => {
     false,
     "Entries after calibration must not collapse into bare receipts."
   );
+
+  const neutralEntryAttributionConstraint =
+    "The entry is the assistant's own offer, not an explanation of the user's message.";
+  const promptTextFor = (userMessage: string, recentMessages: ConversationMessage[], responsePlan: ResponsePlan) =>
+    buildChatPrompt({ userMessage, recentMessages, responsePlan }).messages.map((message) => message.content).join("\n");
+  assert(promptTextFor("3", multiTurnHistory.slice(0, 4), secondEntry).includes(neutralEntryAttributionConstraint));
+  for (const reply of [
+    "你应该是在测试消息，我这边都收到了。",
+    "你可能在测试我能不能收到。",
+    "好像你在测试系统，我可以陪你接着发。",
+  ]) {
+    const validation = validateResponsePlanOutput({ plan: secondEntry, reply });
+    assert.equal(validation.passed, false, reply);
+    assert(validation.failureReasons.includes("unsupported_meaning:testing_or_probing"), reply);
+    const constraint = formatResponsePlanRegenerateConstraint(secondEntry, validation.failureReasons);
+    assert(constraint.includes(`planId=${secondEntry.planId}`), reply);
+    assert(constraint.includes("认定用户在测试、试探或检查助手/系统的反应"), reply);
+    assert(constraint.includes("弱化词仍是同一种意图归因"), reply);
+    assert(constraint.includes("不是对用户输入的解释或评论"), reply);
+    assert(constraint.includes("本计划禁止提问"), reply);
+    assert(!constraint.includes("修复校验项 unsupported_meaning"), reply);
+  }
+  assert.equal(
+    validateResponsePlanOutput({ plan: secondEntry, reply: "我先起个头：今天最普通的一小段，也可以从那里说。" }).passed,
+    true
+  );
+  assert(!promptTextFor("1", [], build({ userMessage: "1" }).responsePlan).includes(neutralEntryAttributionConstraint));
+
+  const scaleAnswer = build({
+    userMessage: "6",
+    recentMessages: [{
+      id: "scale-assistant",
+      role: "assistant",
+      content: "如果 0 到 10 分，你会打几分？",
+      committedAssistantMove: committedMove({ purpose: ["take_light_topic_initiative"], question: true, sourceTurnId: "scale-assistant" }),
+    }],
+  }).responsePlan;
+  const explicitTest = build({ userMessage: "我在测试消息能不能发出去" }).responsePlan;
+  for (const [plan, reply] of [
+    [answerFrame, "好，那就先想下一步。"],
+    [scaleAnswer, "6分，比中间高一点。"],
+    [explicitTest, "你在测试消息发送，这条能正常显示。"],
+  ] as const) {
+    assert(!plan.prohibitedClaims.some((claim) => claim.includes("message form or repetition")), reply);
+    assert(!promptTextFor("", [], plan).includes(neutralEntryAttributionConstraint), reply);
+    assert(
+      !validateResponsePlanOutput({ plan, reply }).failureReasons.some((reason) => reason.startsWith("unsupported_meaning:")),
+      reply
+    );
+  }
+  assert.equal(handoffAction(scaleAnswer), "continue_established_frame");
+  assert.equal(validateResponsePlanOutput({ plan: scaleAnswer, reply: "6分，比中间高一点。" }).passed, true);
 
   const uncommittedCalibration = build({
     userMessage: "2",

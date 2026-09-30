@@ -2,7 +2,12 @@ import { ASSISTANT_GROUNDING, type ResponsePlan, type ResponseValidationResult }
 import { extractAffectEvidence } from "@/conversation-os/state";
 import { explicitlyResumesPreGreetingHistory } from "@/lib/proactive-greeting";
 
-import { collectUnsupportedMeaningFailureReasons } from "./semanticEvidenceReplyGuard";
+import {
+  collectUnsupportedMeaningFailureReasons,
+  isSemanticEvidenceFailureReason,
+  prohibitsMessageFormMeaning,
+  unsupportedMeaningRegenerationInstruction,
+} from "./semanticEvidenceReplyGuard";
 import {
   validatePlannedFunctionSemanticOutput,
   type PlannedFunctionSemanticContext,
@@ -939,7 +944,7 @@ export const validateResponsePlanOutput = ({ plan, reply }: { plan: ResponsePlan
   if (/(?:我能|我可以|我会|我正在|我就在).{0,8}(?:看见|看到|听见|听到|触碰|碰到|抱到)/u.test(text)) {
     failureReasons.push("assistant_grounding:unsupported_perception_or_contact");
   }
-  if (plan.prohibitedClaims.some((claim) => claim.includes("message form or repetition"))) {
+  if (prohibitsMessageFormMeaning(plan.prohibitedClaims)) {
     failureReasons.push(...collectUnsupportedMeaningFailureReasons(text));
   }
   const uniqueFailureReasons = Array.from(new Set(failureReasons));
@@ -1116,6 +1121,12 @@ const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
   if (unsupportedEvaluation) {
     const term = unsupportedEvaluation[1];
     return `删掉助手自行添加的评价词“${term}”。用户没有评价该活动、偏好或经历时，不要替用户说它好、不错、舒服或有益；只承接用户明确说出的内容。`;
+  }
+  if (isSemanticEvidenceFailureReason(failure)) {
+    const plannedMove = plan.responseActions.includes("offer_neutral_conversation_entry")
+      ? "改由助手直接给出计划中的中性话题入口：它是助手自己提出的一个具体、低负担话头，不是对用户输入的解释或评论。"
+      : "只完成 ResponsePlan 已选定的动作，不解释或评论用户输入。";
+    return `${unsupportedMeaningRegenerationInstruction(failure)}${plannedMove}`;
   }
   if (failure === "proactive_greeting_response:stale_pre_greeting_content") {
     return "删除主动欢迎语之前的旧话题。只回应当前用户在欢迎语之后明确说出的内容；除非用户本轮主动重提，否则不要恢复更早的话题。";

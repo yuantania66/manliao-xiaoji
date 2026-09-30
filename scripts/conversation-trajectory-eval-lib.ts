@@ -534,6 +534,23 @@ const countBy = (values: string[]) =>
     return acc;
   }, {});
 
+// Gate standard for canonical real runs (`trajectory:review:repeat`): zero deterministic errors and zero
+// Safety fail-closed blocks. Replay and experiment runs are diagnostics and keep exit code 0.
+export const trajectoryGateExitCode = ({
+  mode,
+  experiment,
+  deterministicErrorCount,
+  safetyFailClosedCount,
+}: {
+  mode: TrajectoryRunMode;
+  experiment: string;
+  deterministicErrorCount: number;
+  safetyFailClosedCount: number;
+}) =>
+  mode === "real" && experiment === "canonical" && (deterministicErrorCount > 0 || safetyFailClosedCount > 0)
+    ? 1
+    : 0;
+
 export const summarizeForensics = (records: TurnForensicsRecord[]) => {
   const blocked = records.filter((record) => record.forensics.safety.outcome === "blocked_fail_closed");
   const evaluatorPlanAbsent = records.filter(
