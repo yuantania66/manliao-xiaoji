@@ -12,7 +12,7 @@ import {
   LATE_CONTRADICTION_CONTRACT_HASH,
   type LateContradictionProvider,
 } from "./late-contradiction-authority";
-import { cases, evaluateCase, structuralRowFor } from "./planned-function-semantic-qwen-eval";
+import { cases, dualBranchCheckFor, evaluateCase, structuralRowFor } from "./planned-function-semantic-qwen-eval";
 
 const caseById = (id: string) => {
   const found = cases.find((item) => item.id === id);
@@ -222,6 +222,68 @@ const run = async () => {
     });
     assert.equal(recovered.row.actualPassed, true);
     assert.deepEqual(recovered.row.judgeAttempts.map((attempt) => attempt.errorCategory), ["provider_5xx", null]);
+  }
+
+  // Dual branch checks: a wrong handoff verdict is reported even when the identity branch or late contradiction
+  // still produces the labelled final outcome.
+  {
+    const handoffOnly = caseById("dual-handoff-only");
+    const positiveOnly = caseById("dual-positive-only");
+    const lateDetected: LateContradictionProvider = async (input) => {
+      const split = input.candidateReply.lastIndexOf("。") + 1;
+      const clear = await lateClear(input) as Record<string, unknown>;
+      return {
+        ...clear,
+        status: "late_contradiction",
+        reopenedRitual: "first_contact_greeting_ritual",
+        completionEvidence: { start: 0, end: split, text: input.candidateReply.slice(0, split), reason: LATE_REASON },
+        contradictionEvidence: {
+          start: split,
+          end: input.candidateReply.length,
+          text: input.candidateReply.slice(split),
+          reason: LATE_REASON,
+        },
+      };
+    };
+
+    const maskedByLate = await evaluateCase(positiveOnly, {
+      judgeProvider: async (input) => verdictFor(input),
+      lateContradictionProvider: lateDetected,
+    });
+    assert.equal(maskedByLate.failure, null, "final outcome matches the label");
+    assert.equal(maskedByLate.row.lateContradiction?.status, "late_contradiction");
+    assert.deepEqual(dualBranchCheckFor(maskedByLate.row), {
+      id: positiveOnly.id,
+      expected: { handoff: false, positiveFunction: true },
+      actual: { handoff: true, positiveFunction: true },
+      matches: false,
+    });
+
+    const maskedByIdentity = await evaluateCase(handoffOnly, {
+      judgeProvider: async (input) => verdictFor(input, { handoffStatus: "not_satisfied", positiveStatus: "not_satisfied" }),
+    });
+    assert.equal(maskedByIdentity.failure, null, "final outcome matches the label");
+    assert.equal(dualBranchCheckFor(maskedByIdentity.row)?.matches, false);
+    assert.deepEqual(dualBranchCheckFor(maskedByIdentity.row)?.actual, { handoff: false, positiveFunction: false });
+
+    const handoffRejectedFirstStage = await evaluateCase(positiveOnly, {
+      judgeProvider: async (input) => verdictFor(input, { handoffStatus: "not_satisfied" }),
+      lateContradictionProvider: async () => {
+        throw new Error("late contradiction must not run after a failed first-stage verdict");
+      },
+    });
+    assert.equal(dualBranchCheckFor(handoffRejectedFirstStage.row)?.matches, true);
+
+    const bothSatisfied = await evaluateCase(dual, {
+      judgeProvider: async (input) => verdictFor(input),
+      lateContradictionProvider: lateClear,
+    });
+    assert.equal(dualBranchCheckFor(bothSatisfied.row)?.matches, true);
+
+    const unjudged = await evaluateCase(dual, { judgeProvider: async () => UNPARSED });
+    assert.deepEqual(dualBranchCheckFor(unjudged.row)?.actual, null);
+    assert.equal(dualBranchCheckFor(unjudged.row)?.matches, false);
+    assert.equal(dualBranchCheckFor((await evaluateCase(identity, { judgeProvider: async (input) => verdictFor(input) })).row), null);
   }
 
   // Real default provider: outbound calls per attempt count the existing schema-repair call.

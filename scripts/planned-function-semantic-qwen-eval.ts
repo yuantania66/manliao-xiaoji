@@ -515,9 +515,9 @@ const callJudgeWithOneInfrastructureRetry = async (
 type CaseFailure = {
   id: string;
   category: EvalCase["category"];
-  failureCategory: "provider_failure" | "expectation_mismatch";
+  failureCategory: "provider_failure" | "expectation_mismatch" | "branch_mismatch";
   expectedPassed: boolean;
-  actualPassed?: boolean;
+  actualPassed?: boolean | null;
   reasons?: string[];
 };
 
@@ -597,6 +597,35 @@ export const evaluateCase = async (
 
 type CaseRow = Awaited<ReturnType<typeof evaluateCase>>["row"];
 
+const dualBranchExpectations: Record<string, { handoff: boolean; positiveFunction: boolean }> = {
+  "dual-both-satisfied": { handoff: true, positiveFunction: true },
+  "dual-handoff-only": { handoff: true, positiveFunction: false },
+  "dual-positive-only": { handoff: false, positiveFunction: true },
+};
+
+const UNJUDGED_BRANCH_REASON =
+  /:(?:malformed_verdict|binding_mismatch|evidence_mismatch|provider_failure|missing_context|handoff_missing_context)$/u;
+
+export const dualBranchCheckFor = (row: CaseRow) => {
+  const expected = dualBranchExpectations[row.id];
+  if (!expected) return null;
+  const reasons = row.verdict?.failureReasons;
+  const actual = row.verdict && reasons && !reasons.some((reason) => UNJUDGED_BRANCH_REASON.test(reason))
+    ? {
+        handoff: row.verdict.handoff ? !reasons.some((reason) => reason.includes(":handoff_")) : null,
+        positiveFunction: row.verdict.positiveFunction
+          ? !reasons.some((reason) => reason.includes(":positive_function_"))
+          : null,
+      }
+    : null;
+  return {
+    id: row.id,
+    expected,
+    actual,
+    matches: actual?.handoff === expected.handoff && actual.positiveFunction === expected.positiveFunction,
+  };
+};
+
 export const structuralRowFor = (row: CaseRow) => ({
   ...row,
   verdict: row.verdict && {
@@ -641,6 +670,20 @@ const main = async () => {
     if (requestedCaseId) console.log(JSON.stringify(row, null, 2));
     rows.push(row);
     if (failure) failures.push(failure);
+    const branchCheck = dualBranchCheckFor(row);
+    if (branchCheck && !branchCheck.matches) {
+      failures.push({
+        id: row.id,
+        category: row.category,
+        failureCategory: "branch_mismatch",
+        expectedPassed: row.expectedPassed,
+        actualPassed: row.actualPassed,
+        reasons: [
+          `expected handoff=${branchCheck.expected.handoff} positiveFunction=${branchCheck.expected.positiveFunction}`,
+          `actual handoff=${branchCheck.actual?.handoff ?? "unjudged"} positiveFunction=${branchCheck.actual?.positiveFunction ?? "unjudged"}`,
+        ],
+      });
+    }
   }
 
   const categoryTotals = Object.fromEntries(
@@ -656,6 +699,10 @@ const main = async () => {
     cases: selectedCases.length,
     categoryTotals,
     retiredCases: retiredCases.map(({ id, replacedBy }) => ({ id, replacedBy })),
+    dualBranches: rows.flatMap((row) => {
+      const branchCheck = dualBranchCheckFor(row);
+      return branchCheck ? [branchCheck] : [];
+    }),
     judgeCalls: {
       attempts: attempts.length,
       modelCalls: attempts.reduce((sum, attempt) => sum + attempt.modelCalls, 0),

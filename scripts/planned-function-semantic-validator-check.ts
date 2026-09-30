@@ -24,6 +24,7 @@ import {
   formatResponsePlanRegenerateConstraint,
 } from "../services/ai/responsePlanValidator";
 import type { AiGenerationResult } from "../services/ai/types";
+import { cases as qwenEvalCases } from "./planned-function-semantic-qwen-eval";
 
 const turnId = "user-turn-current";
 const handoffTargetId = "assistant-move-target";
@@ -732,6 +733,30 @@ assert(
   judgeRubric.includes("Whether a release realizes the planned supportFunction is decided by the function-exclusivity rule above, not by ES-SCOPE."),
   "function fit of a release stays with the exclusivity rule"
 );
+assert(
+  judgeRubric.includes("complete_reciprocal_contact positively means: the User's reciprocal greeting already constitutes sufficient mutual contact; the Assistant does not need to greet again and should release the greeting ritual through an appropriate reply.") &&
+    judgeRubric.includes("It does not require the User to introduce a topic, answer a question, or continue."),
+  "the full contract 14.5 positive definition reaches the judge"
+);
+assert(
+  judgeRubric.includes("The candidate not greeting again, or not returning the User's greeting, is never a reason to set targetAddressed or relationAddressed to false or to mark the branch not satisfied."),
+  "a missing second greeting is not a handoff failure reason"
+);
+assert(
+  judgeRubric.includes("The User having reciprocated does not mean the candidate realized the function: a pure receipt, a presence or availability statement, a generic open door, an echo, or another greeting cannot substitute for the required function and cannot serve as evidence that it was realized") &&
+    judgeRubric.includes("never use the User's already-completed reciprocal relation as evidence that the candidate realized the function") &&
+    judgeRubric.includes("if it contains only another greeting, set handoff.status=not_satisfied"),
+  "the User's reciprocation still does not complete the candidate's function"
+);
+assert(
+  judgeRubric.includes("an identity introduction does not by itself prove that the handoff function was realized, and realizing the handoff function does not substitute for the positive function"),
+  "handoff and positive branches are judged independently and combined by AND"
+);
+for (const dualCase of qwenEvalCases.filter((item) => item.category === "dual_and")) {
+  for (const fragment of dualCase.candidateReply.split(/[。！？，]/u).filter((part) => part.length >= 4)) {
+    assert.equal(judgeRubric.includes(fragment), false, `judge prompt must not hard-code Q fixture text: ${dualCase.id}`);
+  }
+}
 assert(judgeRubric.includes("\"priorAssistantTurnAvailable\":false"));
 const providerInputs: PlannedFunctionSemanticProviderInput[] = [];
 for (const semanticContext of [

@@ -793,6 +793,18 @@ postcondition but leaves its Surface realization and same-plan positive
 validation to separately authorized slices; it freezes no sample wording,
 keyword list or case rule.
 
+Semantic validation carries this postcondition verbatim in meaning (2026-09-30,
+user-approved contract-consistency repair): the planned-function semantic judge
+is told that the User's reciprocal greeting is already sufficient mutual contact,
+that the Assistant need not greet again and should release the ritual through an
+appropriate reply, and that a missing second greeting is never a reason to mark
+the target or relation unaddressed. The opposite boundary is kept: the User's
+reciprocation does not mean the candidate realized the function, and a receipt,
+presence or availability statement, generic open door, echo or another greeting
+cannot substitute for it or serve as its evidence. The handoff and positive
+branches are judged independently and combined by AND. No phrase list, sample
+wording or case rule was added.
+
 ### 14.6 PHM-B implementation acceptance
 
 The implemented PHM-B runtime slice proves:
