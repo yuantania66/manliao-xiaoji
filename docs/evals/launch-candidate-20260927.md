@@ -710,6 +710,29 @@ C3 取证（只用代码与既有日志；未采样，未修改 Safety；不把�
 
 ## 当前判定
 
+- 低信息入口生成约束与再生成反馈修复（2026-09-30，用户 19:37 批准）：
+  - **用户裁决**：只读排查结论明确，`TRJ-GROUND-001` 第 3 次运行 t2、t3 的两条回复无依据地认定用户在测试消息，校验拒绝正确。判定模型、检查规则与夹具标签不改。
+  - **根因**：
+    - 生成侧：计划带有“不得从消息形式或重复推断含义”禁止声明时，`offer_neutral_conversation_entry` 的约束只要求给出中性入口，没有区分“助手提供聊天入口”与“解释用户为什么发这条消息”。
+    - 再生成侧：`unsupported_meaning:*` 在 `regenerationInstructionFor` 中没有专门说明，只落到兜底文字“修复校验项 unsupported_meaning:testing_or_probing”，模型拿不到具体的意图归因纠正。
+  - **实现**（Prompt 版本 `chat-response-plan-v31` → `v32`）：
+    - `services/ai/semanticEvidenceReplyGuard.ts`：新增 `prohibitsMessageFormMeaning`（原先内联在校验器里的同一判断）与按失败原因给出的意图归因纠正文字；弱化措辞（可能、也许、好像、看起来、是不是）明确仍属同一归因，不能代替删除。
+    - `services/ai/responsePlanValidator.ts`：`unsupported_meaning:*` 的再生成反馈使用上述纠正；中性入口计划另说明入口是助手自己提出的话头，不是对用户输入的解释。计划、一次再生成上限和失败关闭不变；校验规则未改。
+    - `services/ai/promptBuilder.ts`：只在计划带有该禁止声明时，给 `offer_neutral_conversation_entry` 加一条生成约束。没有固定回复，也没有针对具体数字的特判。
+    - 轨迹工具（`scripts/conversation-trajectory-eval-{lib,runner}.ts`）：正式门模式（真实模式 + 标准数据集）下，确定性错误或 Safety 失败即阻断任一不为 0 时退出码为 1，否则为 0；回放与实验模式仍为 0。这是门执行缺陷修复，标准不变。
+  - **确定性回归**（固定模拟，不代表真实生成质量）：
+    - `check:hill-helping-batch1-5` 新增：Planner 生成的第三轮入口计划的 Prompt 含新约束；三种违规写法（含“可能”“好像”弱化说法）仍被拒绝为 `unsupported_meaning:testing_or_probing`；再生成反馈含意图归因纠正，保持同一 planId 与禁止提问，不再落到兜底文字；有效入口回复通过；校准计划、编号选项回答、0–10 分量表回答和本轮明确说在测试的语境都不带禁止声明、Prompt 不含新约束、不产生 `unsupported_meaning`。
+    - 本地（原文不进仓库）：两条实际被拒回复在按原轨迹历史重建的 t2、t3 入口计划下仍被拒绝，再生成反馈含纠正且计划 ID 不变。
+    - 与未改动的 `43043b9` 对照：上述计划的全部校验结论与失败原因逐项相同；差别只在新约束与再生成文字。
+    - `check:conversation-trajectories` 新增退出码断言；本地运行器模拟（`AI_PROVIDER=mock`，拦截全部网络请求，0 次外呼）：真实模式有确定性错误时退出 1，回放模式退出 0。
+    - 破坏性验证：去掉再生成分支、去掉 Prompt 约束、让退出码忽略确定性错误，三者都会使对应检查失败。
+    - `tsc`、`eslint` 通过；`check:hill-helping-batch1-5`、`check:conversation-trajectories`、`check:semantic-evidence`、`check:natural-chat-control`、`check:ai-orchestration`、`check:conversation-os-control`、`check:hill-helping-batch1-5-preservation-v2` 通过。
+  - **证据复用核定**（按导入闭包是否包含这三个产品文件）：
+    - 可复用 `43043b9` 结果（闭包不含改动文件，执行代码逐字节相同）：J、Q、Safety 语义门、交接结构输出、交接回合解读、主动消息结构。
+    - 需要重跑：`check:release:required`、轨迹门、E、F、交接表层门、`clinical:model-eval`；C9 的 B 侧必须用新候选重新构建。
+  - **执行顺序**：本地必跑门 → 轨迹门一次（原配置，失败即停，不追加采样） → E → F → 交接表层门 → `clinical:model-eval` → C9 与盲评包。
+  - **观察（范围外，未修改）**：上一轮用户明确说“在测试”、本轮只发“1”时，Planner 仍把语义证据标为不足并附带禁止声明，因此“你在测试”这类回复会被拒绝。`43043b9` 上结论相同，不是本次改动引入。
+
 - 评测记录器修正与交接表层门授权重跑（2026-09-30，用户 19:11 明确授权；这是新授权，不是原失败自动获得豁免）：
   - **记录器修正**（只改评测预加载 `scripts/model-request-recorder.mjs`，产品代码未改，不是产品修复）：
     - 每条请求新增关联 ID（`进程号-序号`）和耗时。
