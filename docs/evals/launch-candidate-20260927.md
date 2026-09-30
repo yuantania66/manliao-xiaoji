@@ -389,7 +389,7 @@ r3/r4 当时的归因：
 | C3 | Safety 重复话术评审 | **保留为发布阻塞，不豁免**（用户 2026-09-29）。代码与既有日志取证已完成（见下方“C3 取证”），未采样、未修改 Safety；评审材料结构与答复表已准备（材料文件第 1 节；含上下文的评审包在本机，不入库） | 临床/心理专业人员与产品/Safety 负责人回答 B3 四个问题；若需改动，另行决定预算与重验范围 | 真人评审（E5，待输入） | E5 | 30–60 分钟 | 未知 | **是**（评审人待输入） |
 | C4 | 冻结最终候选 | **待验收候选** `bf34cc6`（2026-09-30；`8c7ee39` 只修正 Q 夹具和记录，产品代码相同，修正版 Q 仍未通过），绑定本地评测配置 `AI_SEMANTIC_VALIDATOR_MODEL=qwen3.8-max-0902`，`AI_MAIN_MODEL` 保持 `qwen3.7-max`。Q 未通过，仍不是已通过候选。此前 `3c76a80`（回退提交）。`fe677ad` 是历史冻结基线，J 未通过；`f338a75` 是已否决的方案 B。见下方“C4 冻结记录”和“当前判定” | — | Cursor | C1、C2 | — | 无 | 否 |
 | C5 | 局部确定性 + `check:release:required` | 候选 `bf34cc6` **通过**：2026-09-30T08:02:11Z–08:09:38Z；新隔离库 `xq_rc_ci_test_20260930c`，21 个迁移；Node 22.23.3；`.env` 置空、进程无模型密钥与判定模型变量；Build ID `f7bkP1ZYbnhqbnIF1rGts`；`check:execution-failure-audit` 同次通过；新增判定模型断言修改前失败、修改后通过。日志在本机 `~/.xq-rc-wx/gates/c-*-bf34cc6.log`。此前回退提交 `3c76a80` **通过**：2026-09-30T06:01:45Z–06:08:48Z；新隔离库 `xq_rc_ci_test_20260930b`，21 个迁移；Node 22.23.3；`.env` 置空、进程无模型密钥；lint 0 error / 3 既有警告；Build ID `SYsfdNvvg_6en4uXnx2bB`；`check:execution-failure-audit` 同次通过。日志在本机 `~/.xq-rc-wx/gates/rb-*-3c76a80.log`。此前方案 B 实施提交 `f338a75` **通过**：2026-09-30T04:59:16Z–05:05:57Z；新隔离库 `xq_rc_ci_test_20260930a`；Build ID `R5iI43GuvV4AsqngCD1RD`；`check:execution-failure-audit` 同次通过；新增断言修改前失败、修改后通过。该提交因 C6 未通过没有成为冻结候选。此前 `fe677ad` **通过**（2026-09-29T13:41:45Z–13:47:24Z；新隔离库 `xq_rc_ci_test_20260929g`，21 个迁移；Node 22.23.3；worktree `.env` 置空、进程无模型密钥；exit 0；lint 0 error / 3 既有警告；Next build 44/44，Build ID `4qQILleAqtvP6kgoNokQn`）。`check:execution-failure-audit` 同次执行通过，日志本机 `~/.xq-rc-wx/gates/r3-execution-failure-audit-fe677ad.log`。`91d3d90`、`399edd0` 的结果被取代 | — | Cursor | C4 | — | 无 | 否 |
-| C6 | J / Q / E | **修正版 Q（夹具 `8c7ee39`，产品代码同 `bf34cc6`，判定模型 `qwen3.8-max-0902` + JSON 模式）FAIL：40/41**（2026-09-30T08:30:54Z–08:34:13Z）。修正后的 `return_focus_control` 正例通过；唯一失败是 `dual-both-satisfied`（`handoff_not_satisfied`），它的输入与 `bf34cc6` 那次 Q 完全相同，当时通过。属语义失败，HTTP 200，不可重跑；E、F 未启动。详见“当前判定”。此前：**候选 `bf34cc6`（判定模型 `qwen3.8-max-0902` + JSON 模式）Q FAIL：40/41**（2026-09-30T08:09:38Z–08:13:03Z）。Q 未通过，失败项存在夹具合同冲突，实际拒绝原因未知：唯一失败项 `emotional-return_focus_control-positive` 的计划只绑定一个情绪证据，而合同 §3.2 要求 `return_focus_control` 至少有两个不同证据目标；既不认定为误拒，也不认定为正确拒绝。属语义失败，HTTP 200 共 45 次，不可重跑。夹具已按合同修正，修正版 Q 见“当前判定”。E、F 未启动。离线 J 通过 22/22 的结果按复用规则关联，产品调用请求与 J 一致（见“当前判定”）。此前：**离线替代判定模型对照 J PASS：22/22**（2026-09-30T06:46:39Z–06:52:36Z）。绑定条件：代码 `34818ed`（产品代码同 `3c76a80`，只多 J 测试脚本的请求记录）；判定模型 `qwen3.8-max-0902`；现有代码对该模型自动附带 `response_format=json_object`；`enable_thinking=false`，`temperature=0`，`AI_TIMEOUT_MS=45000`。该结果**不计入**仍使用 `qwen3.7-max` 判定的 `3c76a80`。生产调用链没有独立的判定模型配置，Q/E/F 未启动，见“当前判定”。此前：**`3c76a80` 未运行 J/Q/E**：本次授权不含真实模型调用。它的判定 Prompt、默认调用路径与判定逻辑和 `fe677ad` 逐字节一致，因此当前判定器的可靠性证据仍是 `fe677ad` 的 J FAIL（20/22）；这不构成对 `3c76a80` 的新验收。此前：**方案 B（`f338a75`）J FAIL：16/22**（2026-09-30，原用例集、原标签、原标准）。A2 与“委屈”3/3 误放行，“被忽略的感觉”对照 3/3 格式失败，A1 1/3。详见 `docs/tasks/es-judge-decomposition-proposal.md` 第 6 节。Q、E 未启动。历史保留：`fe677ad` J FAIL 20/22（A1 2/3，外加 1 次原因未记录的 `provider_failure`）；`91d3d90` J FAIL（A1 0/3） | 需要你的决定（见“当前判定”）；按批准条件不追加修复轮或采样 | Cursor | C5 | — | 无 | **是**（决定） |
+| C6 | J / Q / E | **Q 固定预算稳定性测量（记录工具 `170a741`，产品代码同 `bf34cc6`，夹具同 `8c7ee39`，3 轮 × 41）：41/41、40/41、40/41**。唯一翻转是 `dual-both-satisfied`（r2、r3 交接分支误拒）；误放 0，格式错误 0，服务异常 0。交接分支的自述拒绝依据与合同 §14.5 不一致，翻转不能自动归因于随机性。只交付测量结论，E、F 未启动。详见“当前判定”。此前：**修正版 Q（夹具 `8c7ee39`，产品代码同 `bf34cc6`，判定模型 `qwen3.8-max-0902` + JSON 模式）FAIL：40/41**（2026-09-30T08:30:54Z–08:34:13Z）。修正后的 `return_focus_control` 正例通过；唯一失败是 `dual-both-satisfied`（`handoff_not_satisfied`），它的输入与 `bf34cc6` 那次 Q 完全相同，当时通过。属语义失败，HTTP 200，不可重跑；E、F 未启动。详见“当前判定”。此前：**候选 `bf34cc6`（判定模型 `qwen3.8-max-0902` + JSON 模式）Q FAIL：40/41**（2026-09-30T08:09:38Z–08:13:03Z）。Q 未通过，失败项存在夹具合同冲突，实际拒绝原因未知：唯一失败项 `emotional-return_focus_control-positive` 的计划只绑定一个情绪证据，而合同 §3.2 要求 `return_focus_control` 至少有两个不同证据目标；既不认定为误拒，也不认定为正确拒绝。属语义失败，HTTP 200 共 45 次，不可重跑。夹具已按合同修正，修正版 Q 见“当前判定”。E、F 未启动。离线 J 通过 22/22 的结果按复用规则关联，产品调用请求与 J 一致（见“当前判定”）。此前：**离线替代判定模型对照 J PASS：22/22**（2026-09-30T06:46:39Z–06:52:36Z）。绑定条件：代码 `34818ed`（产品代码同 `3c76a80`，只多 J 测试脚本的请求记录）；判定模型 `qwen3.8-max-0902`；现有代码对该模型自动附带 `response_format=json_object`；`enable_thinking=false`，`temperature=0`，`AI_TIMEOUT_MS=45000`。该结果**不计入**仍使用 `qwen3.7-max` 判定的 `3c76a80`。生产调用链没有独立的判定模型配置，Q/E/F 未启动，见“当前判定”。此前：**`3c76a80` 未运行 J/Q/E**：本次授权不含真实模型调用。它的判定 Prompt、默认调用路径与判定逻辑和 `fe677ad` 逐字节一致，因此当前判定器的可靠性证据仍是 `fe677ad` 的 J FAIL（20/22）；这不构成对 `3c76a80` 的新验收。此前：**方案 B（`f338a75`）J FAIL：16/22**（2026-09-30，原用例集、原标签、原标准）。A2 与“委屈”3/3 误放行，“被忽略的感觉”对照 3/3 格式失败，A1 1/3。详见 `docs/tasks/es-judge-decomposition-proposal.md` 第 6 节。Q、E 未启动。历史保留：`fe677ad` J FAIL 20/22（A1 2/3，外加 1 次原因未记录的 `provider_failure`）；`91d3d90` J FAIL（A1 0/3） | 需要你的决定（见“当前判定”）；按批准条件不追加修复轮或采样 | Cursor | C5 | — | 无 | **是**（决定） |
 | C7 | 完整冻结保持门 v2 | `693f9ee` 59/60 FAIL（保留，不追认原因）；`fe677ad` 因 C6 失败未启动 | 冻结门自身标准；advice-boundary 按既定要求记录 | Cursor | C6 | 23 分钟（基础设施重跑 +23） | 无 | 否 |
 | C8 | 其余适用完整门 | 六项 Qwen 门的导入闭包自上次通过后均有变化（`conversation-os/control` 等），不复用 | Safety、交接 surface/structured/TI、主动消息门各自标准；`clinical:model-eval` 观察记录；`trajectory:review:repeat` 确定性错误 0 | Cursor | C7 | 25 分钟 | 无 | 否 |
 | C9 | Chat Gate A/B | A 侧 `3e34257c` 构建已存在；B 侧须用 C4 冻结候选新构建 | 各 `--repeat=3`，生成盲评包 | Cursor | C8 | 约 45 分钟（估算） | 无 | 否 |
@@ -710,6 +710,51 @@ C3 取证（只用代码与既有日志；未采样，未修改 Safety；不把�
 
 ## 当前判定
 
+- Q 固定预算稳定性测量（2026-09-30，用户 16:39 批准；只交付测量结论）：
+  - **范围**：41 条 Q、标签、Prompt、模型快照与请求配置全部固定，完整执行 3 轮，共 123 次顶层校验；不提前结束、不挑选轮次、不拼接通过样本、不追加失败重跑。
+  - **绑定**：记录工具提交 `170a741`；产品源码与 `bf34cc6` 相同（源码指纹 `ff7d6a2b0070a410`）；Q 夹具段与 `8c7ee39` 逐字节相同，三轮 `casesSha256` 均为 `8fc7d25a1ce409c0`；生成模型 `qwen3.7-max`（`.env` 指纹 `0ee58c243449c1a4`）；判定模型 `AI_SEMANTIC_VALIDATOR_MODEL=qwen3.8-max-0902`（模型快照 + JSON 模式），仅本地评测配置。
+  - **先确认记录完整**：`170a741` 只改评测记录工具，不改判定行为。
+    - 每例记录：各次尝试的外呼次数（含结构修正调用）、延迟、异常分类；身份、情绪支持、交接三个分支的状态、布尔字段和证据（本地保存原文与理由，结构副本只存位置和规则编号）；格式错误时的原始输出（仅本地）；后置矛盾检查的状态、原因码和证据。
+    - 新增确定性模拟检查 `scripts/planned-function-semantic-qwen-record-check.ts`：直接使用 Q 的真实夹具与逐例流程，覆盖双合同两分支通过、交接拒绝、后置矛盾格式错误、情绪支持拒绝、身份通过、判定格式错误、服务异常加原有一次重试、真实默认调用链下的结构修正计数，并检查结构副本不含中文、证据原文、理由或原始输出。两处人为破坏（结构副本泄露交接原文；本地丢失交接理由）都会让检查失败。
+    - `tsc`、`eslint` 通过；`check:release:required` 通过（08:45:51–08:54:29Z，新库 `xq_rc_ci_test_20260930e`，21 个迁移，Build ID `wGM6Rd9YDX98-6mc0-Q7X`）。
+  - **三轮结果**：
+
+    | 轮次 | 时间（UTC） | 结果 | 判定请求 | 其他请求 | Token 输入/输出 | 费用（按价目） | 判定延迟 p50/p90/最大 |
+    |---|---|---|---|---|---|---|---|
+    | r1 | 08:54:29–08:57:57 | 41/41 | 41 | 4 | 92,783 / 9,038 | 约 1.44 元 | 4.06 / 5.23 / 8.00 秒 |
+    | r2 | 08:57:57–09:01:16 | 40/41 | 41 | 2 | 91,417 / 8,461 | 约 1.40 元 | 4.17 / 5.36 / 8.25 秒 |
+    | r3 | 09:01:16–09:04:33 | 40/41 | 41 | 2 | 91,417 / 8,463 | 约 1.40 元 | 4.15 / 5.01 / 8.96 秒 |
+
+    - 合计约 4.24 元。123 次判定请求全部是 `qwen3.8-max-0902`，带 `response_format=json_object`，`enable_thinking=false`，`temperature=0`，developer 消息 sha256 `0776a9ae…`；“其他请求”是后置矛盾检查（`qwen3.7-max`，每次 2 条 developer 指纹之一）。全部 HTTP 200。
+    - 格式错误 0；结构修正调用 0；服务异常 0；原有一次基础设施重试触发 0；无法判定 0。
+  - **按类别**：
+    - 本批出现判定翻转：1 条，`dual-both-satisfied`（应放行）：r1 通过，r2、r3 误拒（`handoff_not_satisfied`）。
+    - 本批持续与标签不符：0 条。
+    - 因调用失败无法判断：0 条。
+    - 其余 40 条三轮结论与标签一致。误放 0（三轮）。
+    - “三轮一致”只说明本批 3 次观测一致，不证明稳定。
+  - **`dual-both-satisfied` 两个分支**（回复“很高兴认识你。我是小慢，还没形成完整话题也没关系，从眼前一点开始就好。”）：
+    - 身份分支：三轮都判满足，证据都是“我是小慢”与后半句进入对话的邀请，理由一致。
+    - 交接分支：r1 判满足，理由是回复超出了单纯问候，介绍自己并自然过渡，释放了问候仪式；r1 的后置矛盾检查为 `clear`。r2、r3 判不满足（r2 目标与关系均未回应；r3 目标已回应、关系未回应），两轮自述理由相同：回复有超出问候的功能，不触发“只有问候”的强制失败，但助手没有用自己的问候回应用户的“你好”，所以没有完成相互接触。
+    - 合同对照：`docs/CONVERSATION_OS_INTERACTION_MOVE_HANDOFF_CONTRACT_V1.md` §14.5 规定该功能是“接受用户的回应问候作为足够的相互接触……本次回复后释放问候仪式”，`docs/ARCHITECTURE_V1_FINAL.md` 写明释放时“不再问候、不做收到确认、不声明助手在场”。r2、r3 的自述拒绝依据要求助手回一句问候，与这段合同文字不一致。以上是判定器的自述理由，不是人工结论。
+  - **同一分支的相关观察**（结论未变，但交接分支的判断与上述同方向）：
+    - `dual-handoff-only`（应拒绝，三轮都正确拒绝，因为身份分支不满足）：交接分支 r1 判满足，r2、r3 判不满足，自述理由都是助手没有回应用户的问候。
+    - `dual-positive-only`（应拒绝，三轮都正确拒绝）：交接分支三轮都判满足，依据是结尾的“你好呀！”回应了用户的问候；三轮都靠后置矛盾检查判为 `late_contradiction` 才拒绝。按合同，这一句恰恰属于“再问候一次”。
+    - 因此不能把这次翻转自动归到模型随机性上：同一批里，交接分支有 7 次判断以“助手是否回了问候”为依据（`dual-both-satisfied` r2、r3，`dual-handoff-only` r2、r3，`dual-positive-only` r1–r3），而合同明确不要求再问候。判定 Prompt 或合同在 `complete_reciprocal_contact` 上可能存在歧义，现有证据无法区分这两种可能。
+  - **理由差异（结论未变）**：
+    - `first-contact-closing`：r1 在身份分支引用了 `ES-SCOPE`（`ES-*` 只适用于情绪支持，属越界引用）；r2、r3 未引用。`containsContradictoryMove` 三轮为 true/false/true。
+    - `identity-continuation-random-name`：`containsContradictoryMove` 为 false/false/true。
+    - `emotional-return_focus_control-two-targets-positive`：三轮都通过；引用规则分别为无、`ES-FOCUS,ES-AFFECT-EVIDENCE,ES-SCOPE`、`ES-FOCUS`。
+    - `emotional-undone`：引用规则 `ES-SCOPE,ES-FOCUS` / `ES-SCOPE` / `ES-SCOPE`。
+    - `emotional-topic-switch`：`targetAddressed` 为 false/true/false。
+    - `adversarial-no-punctuation-request`：r2 多出 `question_count_quality`（语义问句数 1）。
+    - `first-contact-natural-entry`、`first-contact-generic-open-door`、`first-contact-closing`：各有一轮证据切分不同。
+  - **需要单独标注的样例**：
+    - `emotional-intensification`、`emotional-advice`、`emotional-undone` 三轮都正确拒绝，但它们的计划前提与合同 §3.2 冲突，通过不能证明有效生产计划下的同类回复一定被正确拒绝。
+    - `emotional-reduce_expression_burden-positive`、`emotional-wrong-function` 三轮都与标签一致；按用户裁决，它们是冻结计划的 Validator 单元样例，不证明 Planner 的可达路径。
+  - **边界**：没有改源码、换模型、改 Prompt、夹具、标签或合同；没有启动 E/F；原两次 Q 40/41 与全部历史失败保留；整体 **NO-GO** 不变。
+  - 结构证据：`docs/evals/planned-function-semantic-qwen/stability-170a741-r{1,2,3}-structural.json`（均 0 个中文字符）；完整本地记录、请求日志与门禁日志在 `~/.xq-rc-wx/gates/*-170a741*`。
+
 - Q 夹具合同冲突修正（2026-09-30，用户 16:16 批准；不开启新一轮判定器修复）：
   - **历史结论更正**：`bf34cc6` 的 Q 40/41 记为“Q 未通过，失败项存在夹具合同冲突，实际拒绝原因未知”。之前“误拒”的说法撤回；既不认定为误拒，也不认定为正确拒绝。40/41 原记录保留，不被修正版覆盖。
   - **合同依据**：§3.2 规定“只有当前轮存在至少两个不同的情绪或关系影响证据目标时，才能选择 `return_focus_control`。单一情绪证据默认返回表达量控制”。原正例用户文本“我很难受”只有一个证据片段（`distress`），计划却绑定 `return_focus_control`，Planner 对这句话实际选择的是 `return_amount_control`。这个计划在产品链路中不可达。
@@ -723,7 +768,8 @@ C3 取证（只用代码与既有日志；未采样，未修改 Safety；不把�
     - `return_amount_control` 正例（“我很难受”）：与 Planner 的默认选择和 §3.2 一致，无冲突。
     - `acknowledge_current_relational_impact` 正例（“你根本没懂我”）：与 §3.2 一致（助手关系挑战、没有正式修复目标），无冲突。
     - `reduce_expression_burden` 正例（“我很难受”）：**需要产品解释，未修改**。Planner 只在出现显式“不想分析/不解释原因/不知道为什么”时选这个功能，对“我很难受”会选表达量控制；但 §3.2 对它只写了“优先选择”和“默认”，没有像 `return_focus_control` 那样写“只有……才能”。它是否属于不可达计划，需要你裁决。负例 `emotional-wrong-function` 的计划同属这个问题。
-    - 负例（不在本次核查范围内，只做记录）：`emotional-intensification`、`emotional-advice`、`emotional-undone` 同样把 `return_focus_control` 绑定到单一情绪“我很难受”，前提与 §3.2 冲突；但这三条回复在任何有效计划下都应拒绝（新增强度、给建议、索取原因），标签不受影响，未修改。
+      - **用户裁决（2026-09-30 16:39）**：“明确不想分析时优先选择 `reduce_expression_burden`”不是该功能的唯一合法入口。这条正例与 `emotional-wrong-function` 负例保留现有标签，标明为“冻结计划的 Validator 单元样例”：它们只检验 Validator 对给定冻结计划的判断，不证明 Planner 在产品链路中能生成该计划。夹具、标签、合同均未修改。
+    - 负例（不在本次核查范围内，只做记录）：`emotional-intensification`、`emotional-advice`、`emotional-undone` 同样把 `return_focus_control` 绑定到单一情绪“我很难受”，前提与 §3.2 冲突；但这三条回复在任何有效计划下都应拒绝（新增强度、给建议、索取原因），标签不受影响，未修改。按用户 16:39 要求单独标注：这三条负例的计划前提与合同冲突，它们通过**不能证明**有效生产计划下的同类回复一定会被正确拒绝。
   - **失败归因记录**：Q 新增可选参数 `--output=`（本地完整记录，含合成夹具文本、回复和证据片段）与 `--structural-output=`（仓库结构副本）。每例只从已有判定中取结构字段：`failureReasons`、`providerFailure`、正向功能与交接分支的状态和布尔字段、`ES-*` 规则编号与证据位置、后置矛盾检查的原因码、调用异常的分类。不重新采样补旧日志；`bf34cc6` 的 40/41 仍没有判定理由。
   - **修正版 Q 结果：FAIL，40/41**（首次验证修正后的夹具；不覆盖 `bf34cc6` 的 40/41）。
     - 绑定：夹具提交 `8c7ee39`；产品源码与 `bf34cc6` 相同（链路开始时核对 `git diff` 为空，源码指纹 `ff7d6a2b0070a410`）；生成模型 `qwen3.7-max`（`.env` 指纹 `0ee58c243449c1a4`，未改）；判定模型 `AI_SEMANTIC_VALIDATOR_MODEL=qwen3.8-max-0902`，仅本地评测配置。
