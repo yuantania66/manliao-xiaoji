@@ -447,7 +447,8 @@ export type EmotionalSupportFunction =
   | "return_focus_control"
   | "return_amount_control"
   | "acknowledge_current_relational_impact"
-  | "invite_optional_sharing";
+  | "invite_optional_sharing"
+  | "respect_declined_sharing";
 
 export type RepairCompletionMode =
   | "factual_replacement"

@@ -81,7 +81,10 @@ handoff 与 positive function 各自 exact-bind、各自提供 exact UTF-16 cand
    - `acknowledge_current_relational_impact`：仅在用户当前挑战助手、但没有足够相邻证据
      形成正式修复目标时，承认当前关系影响和信息边界，不宣称已经修复；
    - `invite_optional_sharing`：自然承接用户已说出的感受，再给至多一句容易拒绝的温和
-     邀请，让用户愿意的话多说一些（2026-10-01 用户产品决定，见下文）。
+     邀请，让用户愿意的话多说一些（2026-10-01 用户产品决定，见下文）；
+   - `respect_declined_sharing`：用户不想说或不想被问时，自然承接已说出的感受并尊重
+     这个拒绝，不邀请、不提问，也不给“想说多少、说哪部分、以后再说”这类表达许可
+     （2026-10-01 用户产品决定，见下文）。
 
 “听到了、我在、抱抱、按你的节奏、愿意聊聊”单独出现时不构成上述支持功能。
 它们只有在明确附着于已选择的内容范围、表达负担，或 `invite_optional_sharing` 中
@@ -106,9 +109,15 @@ Planner 选择上述功能时必须使用当前轮证据，而不是把 `return_
 - 不授权连续追问、要求详细经过、替用户推断原因或新增情绪。用户已说出具体事件时，
   邀请围绕该事件，不再当作不知道去问“发生了什么”，也不追问细节。
 - 用户本轮明确不想说、不想被问，或上一轮用户说过且本轮没有明确重新打开（如
-  “你问吧”），或会话处于暂停状态时，不给邀请：`questionPolicy=none`，功能降为
-  `return_amount_control`，合同证据记录 `sharingInvitationUnavailable=<原因>`。
-  `questionPolicy` 因其他既有规则为 `none`（如用户正在回答助手的问题）时同样降级。
+  “你问吧”）时，`questionPolicy=none`，原选的 `invite_optional_sharing`、
+  `return_amount_control` 或 `return_focus_control` 改为 `respect_declined_sharing`，
+  合同证据记录 `sharingInvitationUnavailable=<原因>`（同日第二项用户决定：拒绝时
+  不再给表达量许可）。用户自己明确选择的 `reduce_expression_burden`（如“不想讲原因”）
+  和关系影响承认不改；“不想多说”表示只说一点，仍是 `return_amount_control`。
+  答应不问或不聊这件事是本功能本身，不算暂停或结束对话；仍不得结束对话、建议休息
+  或用“我在、陪着你”这类套话代替承接。会话已进入既有暂停状态时按暂停规则处理。
+- `questionPolicy` 因其他既有规则为 `none`（如用户正在回答助手的问题）时，邀请降为
+  `return_amount_control`，是否也允许邀请待用户决定。
 - Safety、数字低信息输入、身份和关系修复的既定规则不在本决定范围内。
 - 同强度承接的解释补充：对已说感受做同效价、不更强、不更具体的泛化复述（如把
   “不太高兴”说成“不好受”）属于复述，不属于新增情绪类别（`ES-AFFECT-EVIDENCE`）。
@@ -158,7 +167,8 @@ Planner 选择上述功能时必须使用当前轮证据，而不是把 `return_
 - 回复中的情绪类别和强度有当前用户证据；
 - 至少一个由 Planner 选择的支持功能被实现；
 - 支持功能不是纯复述、纯收件、纯在场或纯问题（`invite_optional_sharing` 由承接加一句
-  可拒绝邀请组成，二者缺一即未完成）；
+  可拒绝邀请组成，二者缺一即未完成；`respect_declined_sharing` 由承接加尊重拒绝组成，
+  缺少承接、或附带邀请、提问、表达许可即未完成）；
 - 没有未经请求的建议、调节、暂停、转移注意力或结束话题；
 - 没有把用户的表达选择误判成情绪评价。
 

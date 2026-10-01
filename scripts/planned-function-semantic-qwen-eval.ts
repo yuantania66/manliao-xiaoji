@@ -289,6 +289,18 @@ const cases: EvalCase[] = [
       expectedPassed,
     };
   }),
+  ...([
+    ["respect_declined_sharing-positive", "嗯，知道你现在很难受。不想说就先不说。", true],
+    ["respect_declined_sharing-amount-permission", "难受的时候，想说多少都随你，不用非得讲完整。", false],
+  ] as const).map(([id, candidateReply, expectedPassed]) => ({
+    id: `emotional-${id}`,
+    category: "emotional_support" as const,
+    plan: withEmotional(`emotional-${id}`, "respect_declined_sharing", "我很难受，但不想说"),
+    currentUserText: "我很难受，但不想说",
+    handoffTargetAssistantText: null,
+    candidateReply,
+    expectedPassed,
+  })),
   {
     id: "emotional-return_focus_control-two-targets-positive",
     category: "emotional_support",

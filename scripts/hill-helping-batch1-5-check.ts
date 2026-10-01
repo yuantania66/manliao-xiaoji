@@ -653,22 +653,42 @@ const run = async () => {
     ["我有点难受，但不想说", "explicit unwillingness to talk"],
     ["我不太高兴，不想被问", "declines being asked"],
     ["心里有点堵，别再问我了", "declines further questions"],
+    ["我今天什么也不想说，有点难过", "declines talking where amount control was selected"],
+    ["我现在又委屈又生气，但不想被问", "declines questions where focus control was selected"],
   ] as const) {
     const declinedPlan = build({ userMessage }).responsePlan;
     assert(declinedPlan.responseActions.includes("offer_emotional_support"), `${userMessage} remains emotional support`);
-    assert.equal(supportFunctionOf(declinedPlan), "return_amount_control", `${userMessage}: ${reason} removes the invitation.`);
+    assert.equal(supportFunctionOf(declinedPlan), "respect_declined_sharing", `${userMessage}: ${reason} removes the invitation.`);
     assert.equal(declinedPlan.questionPolicy.mode, "none", `${userMessage}: ${reason} forbids questions.`);
     assert(
       declinedPlan.positiveFunctionContract?.evidence.includes(
         "sharingInvitationUnavailable=user_declined_questions_or_talking"
       )
     );
-    assert.equal(declinedPlan.positiveFunctionContract?.evidence.includes("supportFunction=invite_optional_sharing"), false);
+    assert(declinedPlan.positiveFunctionContract?.evidence.includes("supportFunction=respect_declined_sharing"));
     const declinedPrompt = formatResponsePlanForPrompt(declinedPlan);
     assert.equal(declinedPrompt.includes("at most one gentle invitation the user can easily decline"), false);
-    assert(formatResponsePlanRegenerateConstraint(declinedPlan, [
+    assert.equal(declinedPrompt.includes("Give the user control over how much to express"), false);
+    assert.equal(declinedPrompt.includes("grants that control"), false);
+    assert(declinedPrompt.includes("plainly respect their wish not to talk about it or not to be asked"));
+    assert(declinedPrompt.includes("do not give permission about how much, which part, or when to say anything"));
+    const declinedRegeneration = formatResponsePlanRegenerateConstraint(declinedPlan, [
+      "planned_function_semantic:positive_function_not_satisfied",
       "planned_function_semantic:question_count_quality",
-    ]).includes("本计划禁止提问"));
+    ]);
+    assert(declinedRegeneration.includes("本计划禁止提问"));
+    assert(declinedRegeneration.includes("尊重用户不想说或不想被问的意愿"));
+    assert(declinedRegeneration.includes("不要给“想说多少、说哪部分、以后再说”这类表达许可"));
+  }
+  for (const [userMessage, expected] of [
+    ["我心里有点难受，但不想讲原因", "reduce_expression_burden"],
+    ["我有点难受，不想多说", "return_amount_control"],
+  ] as const) {
+    assert.equal(
+      supportFunctionOf(build({ userMessage }).responsePlan),
+      expected,
+      `${userMessage}: an explicitly selected burden or partial-amount function is not a refusal to talk.`
+    );
   }
   const pausedThenLow = build({
     userMessage: "我今天有点不太高兴",
@@ -677,7 +697,7 @@ const run = async () => {
       { id: "pause-assistant", role: "assistant", content: "好，不问了。" },
     ],
   }).responsePlan;
-  assert.equal(supportFunctionOf(pausedThenLow), "return_amount_control", "A prior pause boundary removes the invitation.");
+  assert.equal(supportFunctionOf(pausedThenLow), "respect_declined_sharing", "A prior pause boundary removes the invitation.");
   assert.equal(pausedThenLow.questionPolicy.mode, "none");
   const reopenedAfterPause = build({
     userMessage: "你问吧，我今天有点不太高兴",
@@ -698,7 +718,7 @@ const run = async () => {
       { id: "earlier-assistant", role: "assistant", content: "好的。" },
     ],
   }).responsePlan;
-  assert.equal(supportFunctionOf(noTalkAfterInvite), "return_amount_control", "A prior refusal to talk carries into the next turn.");
+  assert.equal(supportFunctionOf(noTalkAfterInvite), "respect_declined_sharing", "A prior refusal to talk carries into the next turn.");
   const answeredAssistantQuestion = build({
     userMessage: "有点不太高兴",
     recentMessages: [{
@@ -720,6 +740,8 @@ const run = async () => {
   assert(validatorSource.includes("ES-SCOPE exception for invite_optional_sharing only"));
   assert(validatorSource.includes("asking what happened as though it were unknown"));
   assert(validatorSource.includes("is restating, not adding a category"));
+  assert(validatorSource.includes("respect_declined_sharing applies when the User declined to talk or to be asked"));
+  assert(validatorSource.includes("is this function itself, not a pause or closure that undoes support"));
   const candidate6FailureReplays = [
     {
       userMessage: "我今天有点不太高兴",

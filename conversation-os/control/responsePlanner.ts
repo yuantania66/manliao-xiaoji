@@ -2,6 +2,7 @@ import type {
   ClinicalStrategyAdvice,
   ConversationControlContext,
   DialogueState,
+  EmotionalSupportFunction,
   InteractionMoveSubtype,
   OrdinaryHandoffBoundary,
   OrdinaryPosturePlan,
@@ -232,17 +233,22 @@ const sharingInvitationDeclined = (context: ConversationControlContext) => {
 
 const withoutSharingInvitation = (
   contract: PositiveFunctionContract | null,
-  reason: string
+  {
+    replaces,
+    replacement,
+    reason,
+  }: { replaces: EmotionalSupportFunction[]; replacement: EmotionalSupportFunction; reason: string }
 ): PositiveFunctionContract | null => {
-  if (contract?.action !== "offer_emotional_support" || contract.supportFunction !== "invite_optional_sharing") {
+  if (contract?.action !== "offer_emotional_support" || !replaces.includes(contract.supportFunction)) {
     return contract;
   }
+  const replaced = contract.supportFunction;
   return {
     ...contract,
-    supportFunction: "return_amount_control",
+    supportFunction: replacement,
     evidence: [
       ...contract.evidence.map((item) =>
-        item === "supportFunction=invite_optional_sharing" ? "supportFunction=return_amount_control" : item
+        item === `supportFunction=${replaced}` ? `supportFunction=${replacement}` : item
       ),
       `sharingInvitationUnavailable=${reason}`,
     ],
@@ -726,9 +732,17 @@ export const createResponsePlan = ({
           ? "one_low_pressure_question"
           : "optional_after_answer";
   const positiveFunctionContract = emotionalSupportDeclinesInvitation
-    ? withoutSharingInvitation(selectedPositiveFunctionContract, "user_declined_questions_or_talking")
+    ? withoutSharingInvitation(selectedPositiveFunctionContract, {
+        replaces: ["invite_optional_sharing", "return_amount_control", "return_focus_control"],
+        replacement: "respect_declined_sharing",
+        reason: "user_declined_questions_or_talking",
+      })
     : questionMode === "none"
-      ? withoutSharingInvitation(selectedPositiveFunctionContract, "question_policy_none")
+      ? withoutSharingInvitation(selectedPositiveFunctionContract, {
+          replaces: ["invite_optional_sharing"],
+          replacement: "return_amount_control",
+          reason: "question_policy_none",
+        })
       : selectedPositiveFunctionContract;
   const ordinaryPosture = acceptedOrdinaryPosture({
     context,

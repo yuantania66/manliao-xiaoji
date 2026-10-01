@@ -36,17 +36,24 @@ const scenarios: Array<{
   { id: "ordinary-low", userMessage: "我今天有点不太高兴", recentMessages: [], expectedSupportFunction: "invite_optional_sharing", expectedQuestionPolicy: "optional_after_answer" },
   { id: "ordinary-stuck", userMessage: "心里有点堵", recentMessages: [], expectedSupportFunction: "invite_optional_sharing", expectedQuestionPolicy: "optional_after_answer" },
   { id: "stated-event", userMessage: "今天被领导当众批评了，有点不太高兴", recentMessages: [], expectedSupportFunction: "invite_optional_sharing", expectedQuestionPolicy: "optional_after_answer" },
-  { id: "declines-talking", userMessage: "我有点难受，但不想说", recentMessages: [], expectedSupportFunction: "return_amount_control", expectedQuestionPolicy: "none" },
-  { id: "declines-questions", userMessage: "我不太高兴，不想被问", recentMessages: [], expectedSupportFunction: "return_amount_control", expectedQuestionPolicy: "none" },
-  { id: "prior-pause", userMessage: "我今天有点不太高兴", recentMessages: pausedHistory, expectedSupportFunction: "return_amount_control", expectedQuestionPolicy: "none" },
+  { id: "declines-talking", userMessage: "我有点难受，但不想说", recentMessages: [], expectedSupportFunction: "respect_declined_sharing", expectedQuestionPolicy: "none" },
+  { id: "declines-questions", userMessage: "我不太高兴，不想被问", recentMessages: [], expectedSupportFunction: "respect_declined_sharing", expectedQuestionPolicy: "none" },
+  { id: "prior-pause", userMessage: "我今天有点不太高兴", recentMessages: pausedHistory, expectedSupportFunction: "respect_declined_sharing", expectedQuestionPolicy: "none" },
 ];
+const scenarioFilter = process.argv.find((a) => a.startsWith("--scenarios="))?.slice(12).split(",").filter(Boolean) ?? [];
+for (const id of scenarioFilter) {
+  if (!scenarios.some((scenario) => scenario.id === id)) throw new Error(`Unknown scenario ${id}.`);
+}
+const selectedScenarios = scenarioFilter.length
+  ? scenarios.filter((scenario) => scenarioFilter.includes(scenario.id))
+  : scenarios;
 const head = execSync("git rev-parse --short HEAD").toString().trim();
 
 const run = async () => {
   const rows: Array<Record<string, unknown> & { scenarioId: string; reply: string }> = [];
   let stoppedOn: { scenarioId: string; runIndex: number; failure: unknown } | null = null;
   let plannedIndex = 0;
-  outer: for (const scenario of scenarios) {
+  outer: for (const scenario of selectedScenarios) {
     for (let runIndex = 1; runIndex <= RUNS; runIndex += 1) {
       plannedIndex += 1;
       if (plannedIndex <= skipTurns) continue;
@@ -105,7 +112,8 @@ const run = async () => {
     model: process.env.AI_MAIN_MODEL?.trim() || null,
     judgeModel: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() || process.env.AI_MAIN_MODEL?.trim() || null,
     runsPerScenario: RUNS,
-    plannedTotal: scenarios.length * RUNS,
+    scenarios: selectedScenarios.map((scenario) => scenario.id),
+    plannedTotal: selectedScenarios.length * RUNS,
     skippedTurns: skipTurns,
     completed: rows.length,
     stoppedOn,
