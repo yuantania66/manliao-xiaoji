@@ -13,7 +13,10 @@ loadEnvConfig(process.cwd());
 
 const outputPath = process.argv.find((a) => a.startsWith("--output="))?.slice(9) ?? "";
 const structuralPath = process.argv.find((a) => a.startsWith("--structural-output="))?.slice(20) ?? "";
+// Continues a stopped run without repeating any planned turn that was already attempted.
+const skipTurns = Number(process.argv.find((a) => a.startsWith("--skip-turns="))?.slice(13) ?? "0");
 if (!outputPath) throw new Error("--output is required.");
+if (!Number.isInteger(skipTurns) || skipTurns < 0) throw new Error("--skip-turns must be a non-negative integer.");
 if (process.env.AI_PROVIDER !== "qwen") throw new Error("This demo must run against the real Qwen provider.");
 
 // Fixed before the run: every result is kept, none is selected or rerun. This is a tone demo for
@@ -42,8 +45,11 @@ const head = execSync("git rev-parse --short HEAD").toString().trim();
 const run = async () => {
   const rows: Array<Record<string, unknown> & { scenarioId: string; reply: string }> = [];
   let stoppedOn: { scenarioId: string; runIndex: number; failure: unknown } | null = null;
+  let plannedIndex = 0;
   outer: for (const scenario of scenarios) {
     for (let runIndex = 1; runIndex <= RUNS; runIndex += 1) {
+      plannedIndex += 1;
+      if (plannedIndex <= skipTurns) continue;
       const reply = await createChatReply({
         conversationId: `tone-demo:${head}:${scenario.id}:r${runIndex}`,
         currentTurnId: `${scenario.id}:r${runIndex}:t${scenario.recentMessages.length + 1}`,
@@ -100,6 +106,7 @@ const run = async () => {
     judgeModel: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() || process.env.AI_MAIN_MODEL?.trim() || null,
     runsPerScenario: RUNS,
     plannedTotal: scenarios.length * RUNS,
+    skippedTurns: skipTurns,
     completed: rows.length,
     stoppedOn,
     planMismatches: rows.filter((r) =>
