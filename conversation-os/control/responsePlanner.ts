@@ -12,7 +12,7 @@ import type {
   TurnInterpretation,
 } from "./types";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
-import { projectAffectEvidenceTerms } from "../state";
+import { declinesSharingInvitation, projectAffectEvidenceTerms, reopensInteraction } from "../state";
 import { parseCommittedAssistantMoveEnvelope } from "../interactionMoveEnvelope";
 import { planInteractionMoveHandoff } from "./interactionMoveHandoffPlanner";
 import { selectOrdinaryHandoffAction } from "./ordinaryHandoff";
@@ -217,7 +217,36 @@ const emotionalSupportFunctionFor = ({
     affectEvidence.map((span) => `${span.category}:${span.object}`)
   );
   if (distinctAffectTargets.size > 1) return "return_focus_control";
-  return "return_amount_control";
+  return "invite_optional_sharing";
+};
+
+const sharingInvitationDeclined = (context: ConversationControlContext) => {
+  if (declinesSharingInvitation(context.currentUserMessage)) return true;
+  const previousUserTurn = [...context.adjacentTurns].reverse().find((turn) => turn.role === "user");
+  return Boolean(
+    previousUserTurn &&
+    declinesSharingInvitation(previousUserTurn.content) &&
+    !reopensInteraction(context.currentUserMessage)
+  );
+};
+
+const withoutSharingInvitation = (
+  contract: PositiveFunctionContract | null,
+  reason: string
+): PositiveFunctionContract | null => {
+  if (contract?.action !== "offer_emotional_support" || contract.supportFunction !== "invite_optional_sharing") {
+    return contract;
+  }
+  return {
+    ...contract,
+    supportFunction: "return_amount_control",
+    evidence: [
+      ...contract.evidence.map((item) =>
+        item === "supportFunction=invite_optional_sharing" ? "supportFunction=return_amount_control" : item
+      ),
+      `sharingInvitationUnavailable=${reason}`,
+    ],
+  };
 };
 
 const interactionMoveSubtypeFor = ({
@@ -571,7 +600,7 @@ export const createResponsePlan = ({
   const clinicalStrategy = clinicalNeed
     ? clinicalAdviceProvider({ need: clinicalNeed, context, interpretation })
     : null;
-  const positiveFunctionContract =
+  const selectedPositiveFunctionContract =
     interactionMoveHandoffPlan?.requiredFunction === "withdraw_or_repair_targeted_move"
       ? typedHandoffRepairContractFor({
           context,
@@ -599,8 +628,8 @@ export const createResponsePlan = ({
           dialogueState,
         });
   if (
-    positiveFunctionContract?.action === "repair_previous_wording" &&
-    positiveFunctionContract.interactionMoveSubtype === "pressure_question"
+    selectedPositiveFunctionContract?.action === "repair_previous_wording" &&
+    selectedPositiveFunctionContract.interactionMoveSubtype === "pressure_question"
   ) {
     actions = actions.filter((action) => action !== "take_light_topic_initiative");
   }
@@ -664,8 +693,10 @@ export const createResponsePlan = ({
         ? "standard"
         : "minimal";
   const acknowledgesRelationalImpact =
-    positiveFunctionContract?.action === "offer_emotional_support" &&
-    positiveFunctionContract.supportFunction === "acknowledge_current_relational_impact";
+    selectedPositiveFunctionContract?.action === "offer_emotional_support" &&
+    selectedPositiveFunctionContract.supportFunction === "acknowledge_current_relational_impact";
+  const emotionalSupportDeclinesInvitation =
+    actions.includes("offer_emotional_support") && sharingInvitationDeclined(context);
   const handoffInvitesCalibration = actions.includes("invite_low_pressure_calibration");
   const handoffRequiresNoQuestion = actions.some((action) =>
     action === "continue_established_frame" ||
@@ -678,6 +709,7 @@ export const createResponsePlan = ({
       : "optional_after_answer"
     : hasActivity(dialogueState, "pausing") ||
     acknowledgesRelationalImpact ||
+    emotionalSupportDeclinesInvitation ||
     allowIdle ||
     simpleDirectAnswer ||
     (repairsAssistant && !takesTopicInitiative) ||
@@ -693,6 +725,11 @@ export const createResponsePlan = ({
         : takesTopicInitiative
           ? "one_low_pressure_question"
           : "optional_after_answer";
+  const positiveFunctionContract = emotionalSupportDeclinesInvitation
+    ? withoutSharingInvitation(selectedPositiveFunctionContract, "user_declined_questions_or_talking")
+    : questionMode === "none"
+      ? withoutSharingInvitation(selectedPositiveFunctionContract, "question_policy_none")
+      : selectedPositiveFunctionContract;
   const ordinaryPosture = acceptedOrdinaryPosture({
     context,
     interpretation,
@@ -796,6 +833,8 @@ export const createResponsePlan = ({
         ? "Interaction State is paused."
         : acknowledgesRelationalImpact
           ? "Relational-impact acknowledgement is complete once the impact and information boundary are stated; do not ask or invite the user to explain, choose, or show what the assistant missed. Current-turn answer obligations still apply."
+        : emotionalSupportDeclinesInvitation
+          ? "The user declined questions or talking in this turn, or in the previous turn without reopening; acknowledge without inviting, asking, or requesting more."
         : handoffInvitesCalibration
           ? "Helping applicability is uncertain; ask one low-pressure calibration question without assigning meaning."
         : handoffRequiresNoQuestion

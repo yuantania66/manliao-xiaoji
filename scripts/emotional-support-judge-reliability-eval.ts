@@ -27,6 +27,7 @@ type JudgeCase = {
   userMessage: string;
   recentMessages?: ConversationMessage[];
   expectedPlanAction?: string;
+  expectedSupportFunction?: string;
   reply: string;
   expected: "pass" | "fail" | "ambiguous";
   acceptedRuleIds?: string[];
@@ -157,6 +158,10 @@ const run = async () => {
     const contract = plan.positiveFunctionContract;
     if (testCase.expectedPlanAction && contract?.action !== testCase.expectedPlanAction) {
       throw new Error(`${testCase.id}: fixture plan is ${contract?.action ?? "none"}, expected ${testCase.expectedPlanAction}.`);
+    }
+    const supportFunction = contract?.action === "offer_emotional_support" ? contract.supportFunction : null;
+    if (testCase.expectedSupportFunction && supportFunction !== testCase.expectedSupportFunction) {
+      throw new Error(`${testCase.id}: fixture support function is ${supportFunction ?? "none"}, expected ${testCase.expectedSupportFunction}.`);
     }
     const reps = testCase.expected === "ambiguous" ? 1 : repetitions;
     for (let repetition = 1; repetition <= reps; repetition += 1) {

@@ -11,7 +11,7 @@ import {
 } from "@/lib/proactive-greeting";
 import { prohibitsMessageFormMeaning } from "./semanticEvidenceReplyGuard";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v32";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v33";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -417,20 +417,30 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
     const contract = responsePlan.positiveFunctionContract?.action === "offer_emotional_support"
       ? responsePlan.positiveFunctionContract
       : null;
+    const invitesSharing = contract?.supportFunction === "invite_optional_sharing";
     constraints.push(
       `Use only the turn-local affect or relational-impact spans in positiveFunctionContract; preserve each span's category, intensity, and object without strengthening it. Evidence spans: ${JSON.stringify(contract?.affectEvidenceSpans ?? [])}.`,
       `Complete exactly the selected ordinary support function: ${contract?.supportFunction ?? "missing_contract"}. This is a required conversational function, not a suggested phrase.`,
-      "A receipt, paraphrase, generic invitation, generic presence claim, or statement about the assistant trying to understand is not sufficient support.",
+      invitesSharing
+        ? "A receipt or paraphrase alone, a generic presence claim, or a statement about the assistant trying to understand is not sufficient support."
+        : "A receipt, paraphrase, generic invitation, generic presence claim, or statement about the assistant trying to understand is not sufficient support.",
       "Do not use formulaic presence, simulated contact, generic normalization, reassurance, or unsolicited regulation advice as the support function (for example: 'I am here', 'hug you', 'this is normal', or 'take a breath').",
+      "Speak in plain, warm everyday Chinese. Realize the function in everyday wording instead of naming conversation mechanics in instruction-like terms, such as organizing thoughts, amount of expression, focus, or control.",
       contract?.supportFunction === "acknowledge_current_relational_impact"
         ? "Acknowledge the evidenced relational impact without judging it as okay, acceptable, normal, natural, right, or wrong."
-        : "Acknowledge the evidenced feeling without judging it as okay, acceptable, normal, natural, right, or wrong. Permission language must modify the user's expression choice, such as how much or how completely to speak, never the feeling itself.",
+        : invitesSharing
+          ? "Acknowledge the evidenced feeling naturally without judging it as okay, acceptable, normal, natural, right, or wrong."
+          : "Acknowledge the evidenced feeling without judging it as okay, acceptable, normal, natural, right, or wrong. Permission language must modify the user's expression choice, such as how much or how completely to speak, never the feeling itself.",
       "Do not intensify the user's affect, claim complete empathy, or foreground that the assistant cannot fully understand or is working hard to understand.",
       "Do not name or imply any emotion category the user did not state in the current turn, including impersonal wording that assigns a feeling to the situation or a characterization of the relational impact as causing a feeling. Describe the reported situation itself instead.",
       contract?.supportFunction === "acknowledge_current_relational_impact"
         ? "Do not turn the acknowledgement into a requirement to continue; no follow-up question is required."
-        : "Realize the selected support function as permission and user control, not as a requirement to continue. The reply is complete once it acknowledges the evidenced feeling and grants that control; no follow-up question is required.",
-      "If a follow-up is allowed, keep it genuinely optional and low-burden. Do not ask a question merely to keep the exchange moving, and do not ask for the cause, triggering event, details, or full story by default.",
+        : invitesSharing
+          ? "The invitation must stay easy to decline; do not make continuing feel required."
+          : "Realize the selected support function as permission and user control, not as a requirement to continue. The reply is complete once it acknowledges the evidenced feeling and grants that control; no follow-up question is required.",
+      invitesSharing
+        ? "Do not ask more than one question or request. Do not ask why, for the cause, for specific details, for the sequence of events, or for a full account, and do not guess or suggest a cause or event."
+        : "If a follow-up is allowed, keep it genuinely optional and low-burden. Do not ask a question merely to keep the exchange moving, and do not ask for the cause, triggering event, details, or full story by default.",
       "Keep every focus option inside content already evidenced in the current user turn. Do not offer unspecified 'something else', another topic, mood-changing content, distraction, or additional unmentioned causes/events as an alternative.",
       "Releasing an expression burden is not a pause or closure. Do not tell the user to wait, remain with the feeling, continue later, stay quiet, rest, calm down, or set the issue aside unless the user asked for that option.",
       "When the user challenges the assistant but the plan has no supported correction target, acknowledge the current impact without inventing missing prior context, claiming a completed repair, or making the user diagnose the assistant's mistake."
@@ -449,6 +459,11 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
     } else if (contract?.supportFunction === "return_amount_control") {
       constraints.push(
         "Give the user control over how much to express; explicitly allow a partial or unfinished account without asking for the whole story. Amount control governs expression quantity only. Keep the feeling acknowledgement descriptive, and attach any 'okay/allowed' wording specifically to saying less, stopping before a complete account, or another expression-quantity choice. The quantity permission is complete on its own: do not turn it into a question, require the user to state an amount, add a content or focus choice, or offer another subject as an alternative."
+      );
+    } else if (invitesSharing) {
+      constraints.push(
+        "Naturally acknowledge the feeling the user stated, then add at most one gentle invitation the user can easily decline, as a question or a statement, for them to share more if they want. If the user has not said what happened, the invitation may be about what happened; if the user already stated the event, refer to that event instead of asking what happened as if it were unknown, and do not ask for its details.",
+        "You may add that there is no hurry. The function does not require talking about control, how much to say, or which part to choose."
       );
     } else if (contract?.supportFunction === "acknowledge_current_relational_impact") {
       constraints.push(

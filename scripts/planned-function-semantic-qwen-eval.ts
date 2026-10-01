@@ -272,6 +272,23 @@ const cases: EvalCase[] = [
     candidateReply,
     expectedPassed: true,
   })),
+  ...([
+    ["invite_optional_sharing-positive", "我很难受", "听起来你现在挺难受的。愿意的话，可以跟我说说怎么了。", true],
+    ["invite_optional_sharing-why", "我很难受", "听起来你现在挺难受的。是因为什么呢？", false],
+    ["invite_optional_sharing-two-questions", "我很难受", "你现在挺难受的。发生什么了？跟谁有关吗？", false],
+  ] as const).map(([id, sourceText, candidateReply, expectedPassed]) => {
+    const plan = withEmotional(`emotional-${id}`, "invite_optional_sharing", sourceText);
+    plan.questionPolicy = { mode: "optional_after_answer", reason: "invite_optional_sharing allows one declinable invitation" };
+    return {
+      id: `emotional-${id}`,
+      category: "emotional_support" as const,
+      plan,
+      currentUserText: sourceText,
+      handoffTargetAssistantText: null,
+      candidateReply,
+      expectedPassed,
+    };
+  }),
   {
     id: "emotional-return_focus_control-two-targets-positive",
     category: "emotional_support",

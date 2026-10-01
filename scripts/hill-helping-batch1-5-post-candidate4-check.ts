@@ -289,7 +289,8 @@ const planFor = (scenarioId: string) => {
 const planForFrozenSurfaceReplay = (scenarioId: string): ResponsePlan => {
   const plan = planFor(scenarioId);
   return plan.positiveFunctionContract?.action === "offer_emotional_support" &&
-    plan.positiveFunctionContract.supportFunction === "return_amount_control"
+    (plan.positiveFunctionContract.supportFunction === "return_amount_control" ||
+      plan.positiveFunctionContract.supportFunction === "invite_optional_sharing")
     ? {
         ...plan,
         positiveFunctionContract: {

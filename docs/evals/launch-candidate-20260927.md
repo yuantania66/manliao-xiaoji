@@ -710,6 +710,33 @@ C3 取证（只用代码与既有日志；未采样，未修改 Safety；不把�
 
 ## 当前判定
 
+- 普通情绪开场回复规则（2026-10-01，用户 14:35 产品决定；合同 `docs/HILL_HELPING_BATCH1_5_RESPONSE_PLAN_POSITIVE_FUNCTION_CONTRACT_V1.md` §3.2–§3.4 已记录）：**NO-GO 不变；`433cc26` 的门结果不适用于本切片之后的代码**。
+  - **核对出的缺口（修改前）**：
+    - 已有四个支持功能都表达不了“自然承接 + 一句可拒绝的邀请”。合同 §3.3 和判定规则 `ES-SCOPE` 把“发生了什么”一类邀请一律判为索取，生成约束又要求谈论表达多少或控制权。只换措辞无法得到用户认可的回应，因此新增功能 `invite_optional_sharing`，没有改写原有四个功能。
+    - 情绪计划没有表达“用户明确不想说、不想被问”：这类消息原先 `questionPolicy` 仍是可选邀请。
+  - **实现**（Prompt `chat-response-plan-v32` → `v33`；判定 Prompt 同步变化，developer 消息 sha256 将不同于 `0776a9ae…`）：
+    - Planner：单一情绪证据默认 `invite_optional_sharing`。用户本轮拒绝，或上一轮用户拒绝且本轮没有明确重新打开时，`questionPolicy=none`，功能降为 `return_amount_control` 并在合同证据中记录原因；`questionPolicy` 因其他既有规则为 `none` 时同样降级。两个以上证据目标、免除负担、“说不清”、关系影响四种既有选择不变。
+    - 生成约束、语义判定（功能定义、`ES-SCOPE` 例外、`ES-AFFECT-EVIDENCE` 泛化复述说明）、再生成反馈三处同步。新增一条通用口语约束：不用“整理、表达量、关注点、控制权”这类说明书式措辞。
+    - Safety、数字低信息输入、身份、关系修复规则未改。
+  - **确定性证据**：`tsc`、`eslint` 通过；33 个相关检查通过，覆盖 `hill-helping-batch1-5`（含新增回归）、保持门三套重放、`planned-function-semantic-validator`、`conversation-os-control`、`conversation-state`、`ai-orchestration`、轨迹、`chat-safety-semantic` 等。新增回归覆盖普通低落、明确不想谈、拒绝追问、上一轮暂停与明确重新打开、已说出具体事件、回答助手问题时降级、提示词与再生成文字、判定规则文字，以及参考语气不被确定性校验拦截。回归用的是固定提供方，只证明链路接线，不代表真实生成或判定质量。
+  - **历史重放的版本说明**：三套冻结重放（preservation、stage2、post-candidate4）原先把单一情绪默认值 `return_amount_control` 映射回历史的 `return_focus_control`。现在同样映射 `invite_optional_sharing`，只是让历史回复仍按当时的合同重放，标签未改。`hill-helping-batch1-5` 中 9 条单一情绪的期望由 `return_amount_control` 改为 `invite_optional_sharing`，理由是本产品决定。
+  - **评测按版本更新（均在任何真实运行前冻结）**：
+    - J：r2（sha256 前缀 `2f0f208a5432a566`）原样保留。r3 在本机（`~/.xq-rc-wx/gates/judge-reliability-cases-r3.json`，sha256 前缀 `574722abf35fae30`；退役说明 `judge-reliability-cases-r3-retired.json`，前缀 `4c0775115a857b8e`）：
+      - 退役 4 例：`R2-OVERREJECT-RELEASE-AMOUNT`、`R2-OVERREJECT-RELEASE-AMOUNT-LONELY`、`R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST`、`C2-NEAR-MOMENT-UNSTATED`。理由：其用户消息现在绑定 `invite_optional_sharing`，测的已不是原功能。
+      - 替换 4 例：用户消息加“不知道怎么说／说不清”，仍绑定 `return_amount_control`；回复与标签不变。
+      - 新增 13 例：邀请功能通过 3 例（含用户参考语气）、失败 9 例（问原因、索取经过、两个问题、事件已说仍问“发生了什么”、猜原因、施压、只复述、新增情绪、未说的“那个瞬间”），以及拒绝后仍邀请 1 例。
+      - 合计有标签 35 例、歧义 3 例。J 脚本新增 `expectedSupportFunction` 校验：夹具功能与期望不符时直接报错，不会悄悄改测别的功能。
+    - Q：新增邀请功能正例 1、反例 2（41 → 44 例），其余用例与标签不变。
+    - F：数据集标签只到动作层（`offer_emotional_support`），不受影响，不改。
+    - E、轨迹、交接表层、C9：场景与标签不改。生成与判定 Prompt 已变，最终候选上须重跑。
+  - **历史反馈**：12 组简评中有 7 组“两边都不满意”，属于偏好反馈，**不是正式 C10**。未补填评分，未改为通过，未解盲；旧反馈保留，不与新候选结果混合。
+  - **语气演示预算（运行前固定）**：
+    - 脚本 `scripts/emotional-opening-tone-demo.ts`，6 个场景 × 3 次 = 18 回合：普通低落 2 个、已说出具体事件 1 个、明确不想谈 1 个、拒绝追问 1 个、上一轮暂停后 1 个。
+    - 走产品调用链 `createChatReply`；绑定配置同上（生成 `qwen3.7-max`，判定 `qwen3.8-max-0902` + JSON 模式，`AI_TIMEOUT_MS=45000`，`HILL_HELPING_ORDINARY_HANDOFF=true`，记录器）。
+    - 预计约 90 次请求、约 2.5 元。不重跑，不挑选；服务商错误或超时即停止并报告。
+    - 全部结果在本机保留，入库的只有结构副本。这是给用户确认语气的演示，不是验收门，也不打分。
+  - **下一步顺序**：用户确认语气后，再在最终候选上安排受影响的门（J r3、Q 44 例、E、F、轨迹、交接表层、C9）和新版盲评包。确认前不重跑昂贵验收。
+
 - 工程验收（更新于候选 `433cc26` 自动门与 C9 后，2026-09-30 21:10 UTC+8）：**NO-GO 不变**。本轮所有需要重跑的自动门都通过，C9 完成，盲评包已生成；C3 评审、C10 人工盲评、C11 评估、C14 真机与部署准备仍未完成，不因本轮通过而豁免。
   - **绑定**：产品候选 `433cc26`（源码指纹 `81c49750bd805e06`，运行前后一致；Prompt `chat-response-plan-v32`）；运行时台账 HEAD `969bbde`（相对 `433cc26` 只改台账），C9 时 `f6d016e`（只多 E 结构证据）；生成模型 `qwen3.7-max`（`.env` 指纹 `0ee58c243449c1a4`）；判定模型 `AI_SEMANTIC_VALIDATOR_MODEL=qwen3.8-max-0902`（模型快照 + JSON 模式）；`AI_TIMEOUT_MS=45000`；轨迹、交接表层、临床与 C9 B 侧设置 `HILL_HELPING_ORDINARY_HANDOFF=true`（E、F 在脚本内强制开启）；记录器 sha256 前缀 `c2f3d3fc9649f948`；Node 22.23.3。轨迹门产品指纹 `sha256:93ee6a71…`，评测工具指纹 `sha256:422fb263…`。
   - **结果**（按顺序、失败即停；轨迹门只跑一次，未追加采样；各脚本只保留原有的有限重试，没有外层重跑）：
@@ -1041,6 +1068,13 @@ C3 取证（只用代码与既有日志；未采样，未修改 Safety；不把�
 - 实际发布：小程序未发布；生产 Web/后端仍为 `9750adc`，本候选未部署。
 
 ## Remaining（阶段 3–5 发现）
+
+- （2026-10-01 普通情绪开场切片发现，不在本切片处理，或待用户决定）
+  - 回合解读层把“我不太高兴，别问我为什么”识别出回答义务（`answer_directly`），回复仍可能被要求回答。本切片只保证不邀请、不提问。
+  - 用户正在回答助手的问题（如“你今天过得怎么样？”→“有点不太高兴”）时，既有“避免采访式循环”规则使 `questionPolicy=none`，邀请降为表达量控制。按新偏好这里是否也允许一句邀请，需要产品决定。
+  - 两个以上证据目标仍选 `return_focus_control`。它的生成措辞是否也会出现“关注点”一类说明书式表达，等语气演示后由用户判断。
+  - 拒绝识别是保守的固定模式：如“我不想说谎”会被当作拒绝（结果是少问，不是多问）。拒绝只延续一个用户回合，或由既有暂停状态延续。
+  - `ES-AFFECT-EVIDENCE` 的泛化复述说明（“不太高兴”→“不好受”）来自用户参考语气，待用户确认这一解释。
 
 - （2026-09-30 候选 `bf34cc6` 验收后新增，不在本切片处理）
   - Q 脚本不保存判定理由与规则编号，失败样例的拒绝依据无法事后核查。

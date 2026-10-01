@@ -227,8 +227,8 @@ const run = async () => {
     emotion.positiveFunctionContract?.action === "offer_emotional_support"
       ? emotion.positiveFunctionContract.supportFunction
       : null,
-    "return_amount_control",
-    "A single affect span must not default to focus control."
+    "invite_optional_sharing",
+    "A single affect span defaults to an optional sharing invitation, not focus control."
   );
 
   const multiFocusEmotion = build({ userMessage: "我现在又委屈又生气" }).responsePlan;
@@ -255,7 +255,7 @@ const run = async () => {
     repeatedSameAffect.positiveFunctionContract?.action === "offer_emotional_support"
       ? repeatedSameAffect.positiveFunctionContract.supportFunction
       : null,
-    "return_amount_control",
+    "invite_optional_sharing",
     "Repeated evidence for one affect target must not manufacture multiple focuses."
   );
   const multiAffectNoAnalysis = build({
@@ -617,10 +617,109 @@ const run = async () => {
       singleAffectPlan.positiveFunctionContract?.action === "offer_emotional_support"
         ? singleAffectPlan.positiveFunctionContract.supportFunction
         : null,
-      "return_amount_control",
+      "invite_optional_sharing",
       `${userMessage} must not manufacture a focus-selection task.`
     );
   }
+  const supportFunctionOf = (plan: ResponsePlan) =>
+    plan.positiveFunctionContract?.action === "offer_emotional_support"
+      ? plan.positiveFunctionContract.supportFunction
+      : null;
+  for (const userMessage of ["我今天有点不太高兴", "心里有点堵", "今天被领导当众批评了，有点不太高兴"]) {
+    const invitePlan = build({ userMessage }).responsePlan;
+    assert.equal(supportFunctionOf(invitePlan), "invite_optional_sharing", userMessage);
+    assert.equal(invitePlan.questionPolicy.mode, "optional_after_answer", `${userMessage} allows one optional invitation.`);
+    const invitePrompt = formatResponsePlanForPrompt(invitePlan);
+    assert(invitePrompt.includes("if the user already stated the event, refer to that event"));
+    assert(invitePrompt.includes("Do not ask why, for the cause, for specific details"));
+    const inviteRegeneration = formatResponsePlanRegenerateConstraint(invitePlan, [
+      "planned_function_semantic:positive_function_not_satisfied",
+      "planned_function_semantic:question_count_quality",
+    ]);
+    assert(inviteRegeneration.includes("至多一句容易拒绝的温和邀请"));
+    assert(inviteRegeneration.includes("整条回复至多一个邀请或问题"));
+    assert(inviteRegeneration.includes("不要问为什么或原因"));
+    assert.equal(inviteRegeneration.includes("本计划禁止提问"), false);
+  }
+  const referenceInviteReply = "听起来，你今天有些不好受。如果你愿意，可以和我说说发生了什么。不用着急，慢慢说就好。";
+  const ordinaryLowPlan = build({ userMessage: "我今天有点不太高兴" }).responsePlan;
+  const referenceDeterministic = validateResponsePlanOutput({ plan: ordinaryLowPlan, reply: referenceInviteReply });
+  assert.equal(
+    referenceDeterministic.passed,
+    true,
+    `The approved reference tone must not be blocked by deterministic validation: ${referenceDeterministic.failureReasons.join(",")}`
+  );
+  for (const [userMessage, reason] of [
+    ["我有点难受，但不想说", "explicit unwillingness to talk"],
+    ["我不太高兴，不想被问", "declines being asked"],
+    ["心里有点堵，别再问我了", "declines further questions"],
+  ] as const) {
+    const declinedPlan = build({ userMessage }).responsePlan;
+    assert(declinedPlan.responseActions.includes("offer_emotional_support"), `${userMessage} remains emotional support`);
+    assert.equal(supportFunctionOf(declinedPlan), "return_amount_control", `${userMessage}: ${reason} removes the invitation.`);
+    assert.equal(declinedPlan.questionPolicy.mode, "none", `${userMessage}: ${reason} forbids questions.`);
+    assert(
+      declinedPlan.positiveFunctionContract?.evidence.includes(
+        "sharingInvitationUnavailable=user_declined_questions_or_talking"
+      )
+    );
+    assert.equal(declinedPlan.positiveFunctionContract?.evidence.includes("supportFunction=invite_optional_sharing"), false);
+    const declinedPrompt = formatResponsePlanForPrompt(declinedPlan);
+    assert.equal(declinedPrompt.includes("at most one gentle invitation the user can easily decline"), false);
+    assert(formatResponsePlanRegenerateConstraint(declinedPlan, [
+      "planned_function_semantic:question_count_quality",
+    ]).includes("本计划禁止提问"));
+  }
+  const pausedThenLow = build({
+    userMessage: "我今天有点不太高兴",
+    recentMessages: [
+      { id: "pause-user", role: "user", content: "先别问了" },
+      { id: "pause-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+  }).responsePlan;
+  assert.equal(supportFunctionOf(pausedThenLow), "return_amount_control", "A prior pause boundary removes the invitation.");
+  assert.equal(pausedThenLow.questionPolicy.mode, "none");
+  const reopenedAfterPause = build({
+    userMessage: "你问吧，我今天有点不太高兴",
+    recentMessages: [
+      { id: "reopen-user", role: "user", content: "先别问了" },
+      { id: "reopen-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+  }).responsePlan;
+  assert.equal(
+    supportFunctionOf(reopenedAfterPause),
+    "invite_optional_sharing",
+    "An explicit reopen restores the optional invitation."
+  );
+  const noTalkAfterInvite = build({
+    userMessage: "我还是有点不太高兴",
+    recentMessages: [
+      { id: "earlier-user", role: "user", content: "我不想聊这个" },
+      { id: "earlier-assistant", role: "assistant", content: "好的。" },
+    ],
+  }).responsePlan;
+  assert.equal(supportFunctionOf(noTalkAfterInvite), "return_amount_control", "A prior refusal to talk carries into the next turn.");
+  const answeredAssistantQuestion = build({
+    userMessage: "有点不太高兴",
+    recentMessages: [{
+      id: "answer-target",
+      role: "assistant",
+      content: "你今天过得怎么样？",
+      committedAssistantMove: committedMove({ purpose: ["take_light_topic_initiative"], question: true, sourceTurnId: "answer-target" }),
+    }],
+  }).responsePlan;
+  if (answeredAssistantQuestion.questionPolicy.mode === "none") {
+    assert.equal(
+      supportFunctionOf(answeredAssistantQuestion),
+      "return_amount_control",
+      "A plan whose question policy is none must not carry an invitation function."
+    );
+    assert(answeredAssistantQuestion.positiveFunctionContract?.evidence.includes("sharingInvitationUnavailable=question_policy_none"));
+  }
+  const validatorSource = readFileSync("services/ai/plannedFunctionSemanticValidator.ts", "utf8");
+  assert(validatorSource.includes("ES-SCOPE exception for invite_optional_sharing only"));
+  assert(validatorSource.includes("asking what happened as though it were unknown"));
+  assert(validatorSource.includes("is restating, not adding a category"));
   const candidate6FailureReplays = [
     {
       userMessage: "我今天有点不太高兴",
@@ -791,13 +890,24 @@ const run = async () => {
   const emotionSurfacePrompt = formatResponsePlanForPrompt(emotion);
   const multiFocusSurfacePrompt = formatResponsePlanForPrompt(multiFocusEmotion);
   const repairSurfacePrompt = formatResponsePlanForPrompt(repair);
+  const amountSurfacePrompt = formatResponsePlanForPrompt(amountControlEmotion);
   assert(emotionSurfacePrompt.includes("Complete exactly the selected ordinary support function"));
-  assert(emotionSurfacePrompt.includes("return_amount_control"));
-  assert(emotionSurfacePrompt.includes("do not turn it into a question"));
+  assert(emotionSurfacePrompt.includes("invite_optional_sharing"));
+  assert(emotionSurfacePrompt.includes("at most one gentle invitation the user can easily decline"));
+  assert(emotionSurfacePrompt.includes("Do not ask why, for the cause, for specific details, for the sequence of events"));
+  assert(emotionSurfacePrompt.includes("does not require talking about control, how much to say, or which part"));
+  assert.equal(emotionSurfacePrompt.includes("grants that control"), false);
+  assert.equal(emotionSurfacePrompt.includes("do not turn it into a question"), false);
+  assert(amountSurfacePrompt.includes("return_amount_control"));
+  assert(amountSurfacePrompt.includes("do not turn it into a question"));
+  assert(amountSurfacePrompt.includes("grants that control"));
+  assert.equal(amountSurfacePrompt.includes("at most one gentle invitation the user can easily decline"), false);
+  for (const prompt of [emotionSurfacePrompt, amountSurfacePrompt, multiFocusSurfacePrompt]) {
+    assert(prompt.includes("Speak in plain, warm everyday Chinese"));
+  }
   assert(multiFocusSurfacePrompt.includes("return_focus_control"));
   assert(multiFocusSurfacePrompt.includes("without requiring the user to choose or answer"));
   assert(emotionSurfacePrompt.includes("making the user diagnose the assistant's mistake"));
-  assert(emotionSurfacePrompt.includes("grants that control"));
   assert(emotionSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"));
   assert.equal(
     repairSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"),

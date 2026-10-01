@@ -971,17 +971,23 @@ const EMOTIONAL_SUPPORT_FUNCTION_REGENERATION: Record<
     "把表达多少的控制权交给用户，明确允许只说一点或不说完整；不要改成选择先说哪部分、提问或另一个话题。",
   acknowledge_current_relational_impact: () =>
     "承认用户现在感到没被助手理解这一关系影响，并如实说明信息边界：助手还不知道具体哪里没接住，也不把自己说成已经理解；不宣称已经修复。对话里没有之前的助手回复时，不要编造助手之前说了什么或错在哪里。说完即完成：不要用提问或陈述的方式让用户解释、举例、选择先说哪部分或说多少，或指出助手哪里没懂；用户本轮有明确问题或请求时仍要回答。",
+  invite_optional_sharing: () =>
+    "先自然地接住用户说出的感受，再给至多一句容易拒绝的温和邀请，让用户愿意的话再多说一些；用户没说发生了什么时可以邀请说说发生了什么，已经说了事件时就围绕那件事，不要当作不知道再问，也不要问细节。不需要谈控制权、说多少或先说哪部分。",
 };
 
 const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, failure: string) => {
   const contract = plan.positiveFunctionContract;
   if (contract?.action !== "offer_emotional_support") return null;
   const terms = contract.explicitAffectOrImpactTerms.map((term) => `“${term}”`).join("、") || "当前轮证据";
-  const contentBoundary =
-    "选项、邀请或许可只能指向用户本轮已说出的内容：不要询问或提供原因、触发事件、当时情形、具体经过作为选项，也不要提供“别的/其他”这类未知选项。";
+  const invitesSharing = contract.supportFunction === "invite_optional_sharing";
+  const contentBoundary = invitesSharing
+    ? "不要问为什么或原因，不要问具体细节、先后经过或完整经过，不要猜测或暗示原因和事件，也不要提供“别的/其他”或另一个话题。"
+    : "选项、邀请或许可只能指向用户本轮已说出的内容：不要询问或提供原因、触发事件、当时情形、具体经过作为选项，也不要提供“别的/其他”这类未知选项。";
   const invitationBoundary = plan.questionPolicy.mode === "none"
     ? "本计划禁止提问：不要提出任何需要用户回应的请求，包括没有问号的“你想……/要不要……”。"
-    : "支持功能完成后可以保留至多一个低负担邀请，只能围绕“先表达哪一部分或表达多少”；不提问也能完成本轮。";
+    : invitesSharing
+      ? "整条回复至多一个邀请或问题，而且要容易拒绝。"
+      : "支持功能完成后可以保留至多一个低负担邀请，只能围绕“先表达哪一部分或表达多少”；不提问也能完成本轮。";
   if (
     failure === "planned_function_semantic:positive_function_not_satisfied" ||
     failure === "planned_function_semantic:positive_function_uncertain"
