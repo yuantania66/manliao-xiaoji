@@ -49,6 +49,16 @@ const selectedScenarios = scenarioFilter.length
   ? scenarios.filter((scenario) => scenarioFilter.includes(scenario.id))
   : scenarios;
 const head = execSync("git rev-parse --short HEAD").toString().trim();
+// Safety fails closed as SAFETY_BLOCKED when its provider call fails; these fixed reasons still identify a
+// provider failure, unlike safety_semantic_invalid_output, which means the provider did answer.
+const SAFETY_PROVIDER_FAILURE_REASONS: ReadonlySet<string> = new Set([
+  "safety_semantic_provider_error",
+  "safety_semantic_provider_4xx",
+  "safety_semantic_provider_5xx",
+  "safety_semantic_rate_limited",
+  "safety_semantic_timeout",
+  "safety_semantic_provider_unconfigured",
+]);
 
 const run = async () => {
   const rows: Array<Record<string, unknown> & { scenarioId: string; reply: string }> = [];
@@ -71,6 +81,11 @@ const run = async () => {
       const contract = plan?.positiveFunctionContract;
       const validations = reply.controlTrace?.validation ?? [];
       const executionFailure = executionFailureRecordFor(reply.execution);
+      const safetyProviderFailureReason =
+        reply.execution.failure?.code === "SAFETY_BLOCKED" &&
+        SAFETY_PROVIDER_FAILURE_REASONS.has(reply.execution.failure.reason)
+          ? reply.execution.failure.reason
+          : null;
       const row = {
         scenarioId: scenario.id,
         runIndex,
@@ -81,6 +96,7 @@ const run = async () => {
         expectedQuestionPolicy: scenario.expectedQuestionPolicy,
         finalSource: reply.finalSource,
         executionFailure,
+        safetyProviderFailureReason,
         regenerateAttempted: reply.regenerateAttempted,
         promptVersion: reply.generation.promptVersion ?? null,
         attempts: reply.generationAttempts.map((attempt, index) => ({
@@ -100,10 +116,15 @@ const run = async () => {
         questionPolicy: row.questionPolicy,
         finalSource: row.finalSource,
         executionFailure,
+        safetyProviderFailureReason,
         attempts: row.attempts.map((a) => ({ failures: a.validationFailures, ruleIds: a.semanticAudit?.ruleIds ?? null })),
       }));
-      if (executionFailure?.code === "PROVIDER_ERROR" || executionFailure?.code === "TIMEOUT") {
-        stoppedOn = { scenarioId: scenario.id, runIndex, failure: executionFailure };
+      if (
+        executionFailure?.code === "PROVIDER_ERROR" ||
+        executionFailure?.code === "TIMEOUT" ||
+        safetyProviderFailureReason !== null
+      ) {
+        stoppedOn = { scenarioId: scenario.id, runIndex, failure: { ...executionFailure, safetyProviderFailureReason } };
         break outer;
       }
     }
