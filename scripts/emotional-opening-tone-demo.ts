@@ -39,6 +39,7 @@ const scenarios: Array<{
   { id: "declines-talking", userMessage: "我有点难受，但不想说", recentMessages: [], expectedSupportFunction: "respect_declined_sharing", expectedQuestionPolicy: "none" },
   { id: "declines-questions", userMessage: "我不太高兴，不想被问", recentMessages: [], expectedSupportFunction: "respect_declined_sharing", expectedQuestionPolicy: "none" },
   { id: "prior-pause", userMessage: "我今天有点不太高兴", recentMessages: pausedHistory, expectedSupportFunction: "respect_declined_sharing", expectedQuestionPolicy: "none" },
+  { id: "reopened-after-pause", userMessage: "你问吧，我今天有点不太高兴", recentMessages: pausedHistory, expectedSupportFunction: "invite_optional_sharing", expectedQuestionPolicy: "optional_after_answer" },
 ];
 const scenarioFilter = process.argv.find((a) => a.startsWith("--scenarios="))?.slice(12).split(",").filter(Boolean) ?? [];
 for (const id of scenarioFilter) {

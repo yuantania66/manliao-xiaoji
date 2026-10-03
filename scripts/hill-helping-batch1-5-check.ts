@@ -671,18 +671,39 @@ const run = async () => {
     assert.equal(declinedPrompt.includes("at most one gentle invitation the user can easily decline"), false);
     assert.equal(declinedPrompt.includes("Give the user control over how much to express"), false);
     assert.equal(declinedPrompt.includes("grants that control"), false);
-    assert(declinedPrompt.includes("plainly respect their wish not to talk about it or not to be asked"));
-    assert(declinedPrompt.includes("a bare '嗯', '听到了', or '知道了' is a receipt, not an acknowledgement"));
-    assert(declinedPrompt.includes("repeating it never replaces acknowledging the feeling"));
-    assert(declinedPrompt.includes("do not give permission about how much, which part, or when to say anything"));
+    assert(declinedPrompt.includes("restating the feeling word is not required"));
+    assert(declinedPrompt.includes("responds to neither the feeling nor the boundary is not enough"));
+    assert(declinedPrompt.includes("respect not talking for now"));
+    assert(declinedPrompt.includes("do not decide for them that they will not share anything further"));
+    assert(declinedPrompt.includes("one statement that you will listen whenever they want to talk, as long as it asks for no response"));
+    assert(declinedPrompt.includes("including asking the user to tell you later, and do not give permission about how much or which part to say"));
+    assert(declinedPrompt.includes("claim physical or offline company"));
+    assert.equal(declinedPrompt.includes("by naming that feeling itself"), false, "Restating the feeling word is no longer required.");
+    assert.equal(declinedPrompt.includes("including saying it later"), false, "A no-response listening statement is no longer forbidden.");
     const declinedRegeneration = formatResponsePlanRegenerateConstraint(declinedPlan, [
       "planned_function_semantic:positive_function_not_satisfied",
       "planned_function_semantic:question_count_quality",
     ]);
     assert(declinedRegeneration.includes("本计划禁止提问"));
-    assert(declinedRegeneration.includes("尊重用户不想说或不想被问的意愿"));
-    assert(declinedRegeneration.includes("只说“嗯、听到了、知道了”不算接住"));
-    assert(declinedRegeneration.includes("不要给“想说多少、说哪部分、以后再说”这类表达许可"));
+    assert(declinedRegeneration.includes("不要求逐字复述情绪词"));
+    assert(declinedRegeneration.includes("既没回应感受也没回应边界不算完成"));
+    assert(declinedRegeneration.includes("不要把感受说成不该说的理由"));
+    assert(declinedRegeneration.includes("不要替用户决定不再表达，可以加一句不要求回应的倾听表态"));
+    assert(declinedRegeneration.includes("包括让用户以后再告诉你"));
+    assert(declinedRegeneration.includes("不要给“想说多少、说哪部分”这类表达许可"));
+    assert.equal(declinedRegeneration.includes("以后再说”这类表达许可"), false);
+    assert.equal(declinedRegeneration.includes("不要用“我在、陪着你”这类套话"), false);
+  }
+  for (const [userMessage, reply] of [
+    ["我有点难受，但不想说", "好，那就先不说，不用勉强自己。"],
+    ["我不太高兴，不想被问", "好，我不问，你想说的时候我听着。"],
+  ] as const) {
+    const referenceDeclined = validateResponsePlanOutput({ plan: build({ userMessage }).responsePlan, reply });
+    assert.equal(
+      referenceDeclined.passed,
+      true,
+      `The approved refusal tone must not be blocked by deterministic validation: ${referenceDeclined.failureReasons.join(",")}`
+    );
   }
   for (const [userMessage, expected] of [
     ["我心里有点难受，但不想讲原因", "reduce_expression_burden"],
@@ -711,16 +732,23 @@ const run = async () => {
     ],
     responsePlan: pausedThenLow,
   }).messages.map((message) => message.content).join("\n");
-  assert(pausedThenLowPrompt.includes("by naming that feeling itself, in the same or milder words"));
-  assert(pausedThenLowPrompt.includes("it need not repeat that agreement"));
-  assert(pausedThenLowPrompt.includes("repeating it never replaces acknowledging the feeling the user is sharing now"));
+  assert(pausedThenLowPrompt.includes("the user now shares a feeling without refusing again, respond naturally to that feeling"));
+  assert(pausedThenLowPrompt.includes("brief companionship within this conversation"));
+  assert(pausedThenLowPrompt.includes("It need not repeat the earlier agreement, and repeating it or offering company never replaces responding to that feeling"));
+  assert(pausedThenLowPrompt.includes("Do not invite them to talk again"));
   const pausedThenLowRegeneration = formatResponsePlanRegenerateConstraint(pausedThenLow, [
     "planned_function_semantic:positive_function_not_satisfied",
   ]);
   assert(pausedThenLowRegeneration.includes(`planId=${pausedThenLow.planId}`));
-  assert(pausedThenLowRegeneration.includes("只说“嗯、听到了、知道了”不算接住"));
-  assert(pausedThenLowRegeneration.includes("不必重复答应"));
+  assert(pausedThenLowRegeneration.includes("自然回应这份感受，可以简短陪伴，不必再答应一次，也不要重新邀请"));
+  assert(pausedThenLowRegeneration.includes("倾听或陪伴表态不能代替回应"));
   assert(pausedThenLowRegeneration.includes("本计划禁止提问"));
+  const pausedReference = validateResponsePlanOutput({ plan: pausedThenLow, reply: "今天有点不好受啊，陪你安静一会儿。" });
+  assert.equal(
+    pausedReference.passed,
+    true,
+    `The approved prior-pause tone must not be blocked by deterministic validation: ${pausedReference.failureReasons.join(",")}`
+  );
   const reopenedAfterPause = build({
     userMessage: "你问吧，我今天有点不太高兴",
     recentMessages: [
@@ -733,6 +761,10 @@ const run = async () => {
     "invite_optional_sharing",
     "An explicit reopen restores the optional invitation."
   );
+  assert.equal(reopenedAfterPause.questionPolicy.mode, "optional_after_answer");
+  const reopenedPrompt = formatResponsePlanForPrompt(reopenedAfterPause);
+  assert(reopenedPrompt.includes("at most one gentle invitation the user can easily decline"));
+  assert.equal(reopenedPrompt.includes("Do not invite them to talk again"), false, "An explicit reopen carries no refusal constraints.");
   const noTalkAfterInvite = build({
     userMessage: "我还是有点不太高兴",
     recentMessages: [
@@ -762,8 +794,17 @@ const run = async () => {
   assert(validatorSource.includes("ES-SCOPE exception for invite_optional_sharing only"));
   assert(validatorSource.includes("asking what happened as though it were unknown"));
   assert(validatorSource.includes("is restating, not adding a category"));
-  assert(validatorSource.includes("respect_declined_sharing applies when the User declined to talk or to be asked"));
+  assert(validatorSource.includes("respect_declined_sharing applies when the User declined to talk or to be asked, in currentUserText or in an earlier turn"));
+  assert(validatorSource.includes("restating the feeling word is not required"));
   assert(validatorSource.includes("is this function itself, not a pause or closure that undoes support"));
+  assert(validatorSource.includes("When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling"));
+  assert(validatorSource.includes("One statement of listening or brief in-conversation companionship that requires no response"));
+  assert(validatorSource.includes("a bare receipt that responds to neither the stated feeling nor the stated boundary"));
+  assert(validatorSource.includes("including asking the User to tell the Assistant later"));
+  assert(validatorSource.includes("presenting the feeling as the reason the User should not talk"));
+  assert(validatorSource.includes("deciding for the User that they will not share anything further"));
+  assert(validatorSource.includes("claiming physical or offline company"));
+  assert.equal(validatorSource.includes("when to say something (including saying it later)"), false);
   const candidate6FailureReplays = [
     {
       userMessage: "我今天有点不太高兴",

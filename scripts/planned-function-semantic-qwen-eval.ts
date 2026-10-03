@@ -290,13 +290,16 @@ const cases: EvalCase[] = [
     };
   }),
   ...([
-    ["respect_declined_sharing-positive", "嗯，知道你现在很难受。不想说就先不说。", true],
-    ["respect_declined_sharing-amount-permission", "难受的时候，想说多少都随你，不用非得讲完整。", false],
-  ] as const).map(([id, candidateReply, expectedPassed]) => ({
+    ["respect_declined_sharing-positive", "我很难受，但不想说", "嗯，知道你现在很难受。不想说就先不说。", true],
+    ["respect_declined_sharing-amount-permission", "我很难受，但不想说", "难受的时候，想说多少都随你，不用非得讲完整。", false],
+    ["respect_declined_sharing-boundary-only-positive", "我很难受，但不想说", "好，那就先不说，不用勉强自己。", true],
+    ["respect_declined_sharing-listening-positive", "我很难受，不想被问", "好，我不问，你想说的时候我听着。", true],
+    ["respect_declined_sharing-feeling-as-reason", "我很难受，但不想说", "难受就不说，没关系的。", false],
+  ] as const).map(([id, sourceText, candidateReply, expectedPassed]) => ({
     id: `emotional-${id}`,
     category: "emotional_support" as const,
-    plan: withEmotional(`emotional-${id}`, "respect_declined_sharing", "我很难受，但不想说"),
-    currentUserText: "我很难受，但不想说",
+    plan: withEmotional(`emotional-${id}`, "respect_declined_sharing", sourceText),
+    currentUserText: sourceText,
     handoffTargetAssistantText: null,
     candidateReply,
     expectedPassed,

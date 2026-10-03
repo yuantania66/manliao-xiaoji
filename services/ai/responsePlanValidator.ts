@@ -974,7 +974,7 @@ const EMOTIONAL_SUPPORT_FUNCTION_REGENERATION: Record<
   invite_optional_sharing: () =>
     "先自然地接住用户说出的感受，再给至多一句容易拒绝的温和邀请，让用户愿意的话再多说一些；用户没说发生了什么时可以邀请说说发生了什么，已经说了事件时就围绕那件事，不要当作不知道再问，也不要问细节。不需要谈控制权、说多少或先说哪部分。",
   respect_declined_sharing: () =>
-    "明确说出用户本轮的感受本身（可以用同等或更轻的说法），只说“嗯、听到了、知道了”不算接住；再尊重用户不想说或不想被问的意愿。之前已经答应过不问的，不必重复答应，接住感受、不提问即可；说完即完成。",
+    "自然回应用户表达的边界或感受，不要求逐字复述情绪词；只说“嗯、收到、听到了”而既没回应感受也没回应边界不算完成。用户说不想说时，尊重先不说，不要把感受说成不该说的理由；用户说不想被问时，停止追问，但不要替用户决定不再表达，可以加一句不要求回应的倾听表态。之前已经答应过不问、用户本轮只是说感受时，自然回应这份感受，可以简短陪伴，不必再答应一次，也不要重新邀请；说完即完成。",
 };
 
 const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, failure: string) => {
@@ -985,7 +985,7 @@ const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, fai
   const contentBoundary = invitesSharing
     ? "不要问为什么或原因，不要问具体细节、先后经过或完整经过，不要猜测或暗示原因和事件，也不要提供“别的/其他”或另一个话题。"
     : contract.supportFunction === "respect_declined_sharing"
-      ? "不要邀请、提问或提出请求，也不要给“想说多少、说哪部分、以后再说”这类表达许可；不要用“我在、陪着你”这类套话，也不要结束对话。"
+      ? "不要邀请、提问或提出请求（包括让用户以后再告诉你），也不要给“想说多少、说哪部分”这类表达许可；倾听或陪伴表态不能代替回应；不要新增情绪、推断原因或声称线下陪伴，也不要结束对话。"
       : "选项、邀请或许可只能指向用户本轮已说出的内容：不要询问或提供原因、触发事件、当时情形、具体经过作为选项，也不要提供“别的/其他”这类未知选项。";
   const invitationBoundary = plan.questionPolicy.mode === "none"
     ? "本计划禁止提问：不要提出任何需要用户回应的请求，包括没有问号的“你想……/要不要……”。"
