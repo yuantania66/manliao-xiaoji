@@ -2,12 +2,19 @@ import { ASSISTANT_GROUNDING, type ResponsePlan, type ResponseValidationResult }
 import { extractAffectEvidence } from "@/conversation-os/state";
 import { explicitlyResumesPreGreetingHistory } from "@/lib/proactive-greeting";
 
-import { collectUnsupportedMeaningFailureReasons } from "./semanticEvidenceReplyGuard";
+import {
+  collectUnsupportedMeaningFailureReasons,
+  isSemanticEvidenceFailureReason,
+  prohibitsMessageFormMeaning,
+  unsupportedMeaningRegenerationInstruction,
+} from "./semanticEvidenceReplyGuard";
 import {
   validatePlannedFunctionSemanticOutput,
   type PlannedFunctionSemanticContext,
+  type PlannedFunctionSemanticDiagnostics,
   type PlannedFunctionSemanticProvider,
   type PlannedFunctionSemanticValidationPromptInspector,
+  type PlannedFunctionSemanticVerdict,
 } from "./plannedFunctionSemanticValidator";
 import {
   adaptInteractionMoveHandoffPromptInspector,
@@ -937,7 +944,7 @@ export const validateResponsePlanOutput = ({ plan, reply }: { plan: ResponsePlan
   if (/(?:我能|我可以|我会|我正在|我就在).{0,8}(?:看见|看到|听见|听到|触碰|碰到|抱到)/u.test(text)) {
     failureReasons.push("assistant_grounding:unsupported_perception_or_contact");
   }
-  if (plan.prohibitedClaims.some((claim) => claim.includes("message form or repetition"))) {
+  if (prohibitsMessageFormMeaning(plan.prohibitedClaims)) {
     failureReasons.push(...collectUnsupportedMeaningFailureReasons(text));
   }
   const uniqueFailureReasons = Array.from(new Set(failureReasons));
@@ -952,7 +959,54 @@ export const validateResponsePlanOutput = ({ plan, reply }: { plan: ResponsePlan
   };
 };
 
+const EMOTIONAL_SUPPORT_FUNCTION_REGENERATION: Record<
+  Extract<NonNullable<ResponsePlan["positiveFunctionContract"]>, { action: "offer_emotional_support" }>["supportFunction"],
+  (terms: string) => string
+> = {
+  reduce_expression_burden: () =>
+    "明确说出用户不需要解释原因、分析或一次讲完整，然后结束；不要改成选择先说哪部分、表达多少，也不要暂停或结束话题。",
+  return_focus_control: (terms) =>
+    `把先碰哪一部分的控制权交给用户，可选范围只能是这些已表达内容本身：${terms}；不要把其中任何一项改写成要用户讲的事情经过或细节，不要追加第二个话题，也不要让用户必须二选一。`,
+  return_amount_control: () =>
+    "把表达多少的控制权交给用户，明确允许只说一点或不说完整；不要改成选择先说哪部分、提问或另一个话题。",
+  acknowledge_current_relational_impact: () =>
+    "承认用户现在感到没被助手理解这一关系影响，并如实说明信息边界：助手还不知道具体哪里没接住，也不把自己说成已经理解；不宣称已经修复。对话里没有之前的助手回复时，不要编造助手之前说了什么或错在哪里。说完即完成：不要用提问或陈述的方式让用户解释、举例、选择先说哪部分或说多少，或指出助手哪里没懂；用户本轮有明确问题或请求时仍要回答。",
+  invite_optional_sharing: () =>
+    "先自然地接住用户说出的感受，再给至多一句容易拒绝的温和邀请，让用户愿意的话再多说一些；用户没说发生了什么时可以邀请说说发生了什么，已经说了事件时就围绕那件事，不要当作不知道再问，也不要问细节。不需要谈控制权、说多少或先说哪部分。",
+  respect_declined_sharing: () =>
+    "自然回应用户表达的边界或感受，不要求逐字复述情绪词；只说“嗯、收到、听到了”而既没回应感受也没回应边界不算完成。用户说不想说时，尊重先不说，不要把感受说成不该说的理由；用户说不想被问时，停止追问，但不要替用户决定不再表达，可以加一句不要求回应的倾听表态。之前已经答应过不问、用户本轮只是说感受时，先用自己的话回应这份感受本身，像是对用户此刻状态的自然反应；只说“嗯、听到了”再接陪伴或倾听，不管怎么措辞，都不算回应这份感受。之后可以简短陪伴，不必再答应一次，也不要重新邀请；说完即完成。",
+};
+
+const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, failure: string) => {
+  const contract = plan.positiveFunctionContract;
+  if (contract?.action !== "offer_emotional_support") return null;
+  const terms = contract.explicitAffectOrImpactTerms.map((term) => `“${term}”`).join("、") || "当前轮证据";
+  const invitesSharing = contract.supportFunction === "invite_optional_sharing";
+  const contentBoundary = invitesSharing
+    ? "不要问为什么或原因，不要问具体细节、先后经过或完整经过，不要猜测或暗示原因和事件，也不要提供“别的/其他”或另一个话题。"
+    : contract.supportFunction === "respect_declined_sharing"
+      ? "不要邀请、提问或提出请求（包括让用户以后再告诉你），也不要给“想说多少、说哪部分”这类表达许可；倾听或陪伴表态不能代替回应；不要新增情绪、推断原因或声称线下陪伴，也不要结束对话。"
+      : "选项、邀请或许可只能指向用户本轮已说出的内容：不要询问或提供原因、触发事件、当时情形、具体经过作为选项，也不要提供“别的/其他”这类未知选项。";
+  const invitationBoundary = plan.questionPolicy.mode === "none"
+    ? "本计划禁止提问：不要提出任何需要用户回应的请求，包括没有问号的“你想……/要不要……”。"
+    : invitesSharing
+      ? "整条回复至多一个邀请或问题，而且要容易拒绝。"
+      : "支持功能完成后可以保留至多一个低负担邀请，只能围绕“先表达哪一部分或表达多少”；不提问也能完成本轮。";
+  if (
+    failure === "planned_function_semantic:positive_function_not_satisfied" ||
+    failure === "planned_function_semantic:positive_function_uncertain"
+  ) {
+    return `候选没有完成情绪支持功能“${contract.supportFunction}”。只使用用户本轮已表达的${terms}，保持原有情绪类别和强度。${EMOTIONAL_SUPPORT_FUNCTION_REGENERATION[contract.supportFunction](terms)}${contentBoundary}${invitationBoundary}`;
+  }
+  if (failure === "planned_function_semantic:question_count_quality") {
+    return `情绪支持功能“${contract.supportFunction}”的语义请求超出计划。${invitationBoundary}${contentBoundary}`;
+  }
+  return null;
+};
+
 const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
+  const emotionalSupportInstruction = emotionalSupportSemanticRegenerationInstruction(plan, failure);
+  if (emotionalSupportInstruction) return emotionalSupportInstruction;
   if (failure === "assistant_voice:mechanical_receipt_or_presence") {
     return "删除“收到、我在、随时都在”或只重复问候的客服式收条。按当前 ResponsePlan 完成一个具体会话功能：允许提问时给出一个容易回答的自然话头；禁止提问时则贴住用户本轮内容并向前推进，不要只宣布在线。";
   }
@@ -1078,6 +1132,12 @@ const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
     const term = unsupportedEvaluation[1];
     return `删掉助手自行添加的评价词“${term}”。用户没有评价该活动、偏好或经历时，不要替用户说它好、不错、舒服或有益；只承接用户明确说出的内容。`;
   }
+  if (isSemanticEvidenceFailureReason(failure)) {
+    const plannedMove = plan.responseActions.includes("offer_neutral_conversation_entry")
+      ? "改由助手直接给出计划中的中性话题入口：它是助手自己提出的一个具体、低负担话头，不是对用户输入的解释或评论。"
+      : "只完成 ResponsePlan 已选定的动作，不解释或评论用户输入。";
+    return `${unsupportedMeaningRegenerationInstruction(failure)}${plannedMove}`;
+  }
   if (failure === "proactive_greeting_response:stale_pre_greeting_content") {
     return "删除主动欢迎语之前的旧话题。只回应当前用户在欢迎语之后明确说出的内容；除非用户本轮主动重提，否则不要恢复更早的话题。";
   }
@@ -1167,6 +1227,8 @@ export const enforceResponsePlan = async ({
       ? adaptInteractionMoveHandoffPromptInspector(inspectHandoffExternalPrompt)
       : undefined
   );
+  const semanticVerdicts: Array<PlannedFunctionSemanticVerdict | null> = [];
+  const semanticDiagnostics: PlannedFunctionSemanticDiagnostics[] = [];
   const validateCandidate = async (reply: string): Promise<ResponseValidationResult> => {
     const deterministic = validateResponsePlanOutput({ plan: executionPlan, reply });
     const semantic = await validatePlannedFunctionSemanticOutput({
@@ -1176,6 +1238,8 @@ export const enforceResponsePlan = async ({
       provider: semanticProvider,
       inspectExternalPrompt: semanticPromptInspector,
     });
+    semanticVerdicts.push(semantic.verdict);
+    semanticDiagnostics.push({ providerFailure: semantic.providerFailure ?? null });
     const hardFailureReasons = Array.from(new Set([
       ...(deterministic.hardFailureReasons ?? deterministic.failureReasons),
       ...semantic.hardFailureReasons,
@@ -1204,6 +1268,8 @@ export const enforceResponsePlan = async ({
       generation: first,
       attempts: [first],
       validations: [firstValidation],
+      semanticVerdicts,
+      semanticDiagnostics,
       regenerateAttempted: false,
     };
   }
@@ -1232,6 +1298,8 @@ export const enforceResponsePlan = async ({
       },
       attempts: [first, second],
       validations: [firstValidation, secondValidation],
+      semanticVerdicts,
+      semanticDiagnostics,
       regenerateAttempted: true,
     };
   }
@@ -1241,6 +1309,8 @@ export const enforceResponsePlan = async ({
     generation: constraintFailureGeneration(first, second, [...firstValidation.failureReasons, ...secondValidation.failureReasons]),
     attempts: [first, second],
     validations: [firstValidation, secondValidation],
+    semanticVerdicts,
+    semanticDiagnostics,
     regenerateAttempted: true,
   };
 };

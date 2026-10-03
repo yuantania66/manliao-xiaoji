@@ -190,6 +190,7 @@ export type TurnStateUpdate = {
     targetTurnId: string;
     rejectedPropositionIds: string[];
     evidence: string[];
+    sourceRelation?: "challenges_move_fit";
   } | null;
 };
 
@@ -397,6 +398,7 @@ export type InteractionState = {
     targetTurnId?: string;
     rejectedPropositionIds: string[];
     evidence: string[];
+    sourceRelation?: "challenges_move_fit";
   };
 };
 
@@ -444,7 +446,9 @@ export type EmotionalSupportFunction =
   | "reduce_expression_burden"
   | "return_focus_control"
   | "return_amount_control"
-  | "acknowledge_current_relational_impact";
+  | "acknowledge_current_relational_impact"
+  | "invite_optional_sharing"
+  | "respect_declined_sharing";
 
 export type RepairCompletionMode =
   | "factual_replacement"

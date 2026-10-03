@@ -123,6 +123,10 @@
   line-height: 48rpx;
 }
 
+.revoke-button {
+  margin-top: 48rpx;
+}
+
 .quote-card text {
   display: block;
   margin-top: 28rpx;

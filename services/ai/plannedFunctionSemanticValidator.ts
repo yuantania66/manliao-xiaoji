@@ -7,13 +7,15 @@ import type {
 } from "@/conversation-os/control";
 import type { ProactiveGreetingHandoffFunction } from "@/conversation-os/interactionMoveEnvelope";
 
-import { inspectPromptBeforeExternalCall } from "./externalPromptInspection";
+import { ExternalPromptRejectedError, inspectPromptBeforeExternalCall } from "./externalPromptInspection";
 import { callModel, getDefaultAiModel } from "./modelProvider";
+import { classifyProviderFailureCategory, type ProviderFailureCategory } from "./providerFailureCategory";
 import type { AiModelMessage } from "./types";
 
 export type PlannedFunctionSemanticContext = {
   currentUserText: string;
   handoffTargetAssistantText: string | null;
+  priorAssistantTurnAvailable?: boolean;
 };
 
 export type PlannedFunctionSemanticProviderInput = {
@@ -24,6 +26,7 @@ export type PlannedFunctionSemanticProviderInput = {
   handoffTargetAssistantText: string | null;
   candidateReply: string;
   ordinaryQuestionIndependentlySupported: boolean;
+  priorAssistantTurnAvailable?: boolean;
 };
 
 export type PlannedFunctionSemanticProvider = (
@@ -105,6 +108,17 @@ export type PlannedFunctionSemanticValidationResult = {
   hardFailureReasons: string[];
   advisoryFailureReasons: string[];
   verdict: PlannedFunctionSemanticVerdict | null;
+  providerFailure?: PlannedFunctionSemanticProviderFailure | null;
+};
+
+export type PlannedFunctionSemanticProviderFailure = {
+  category: ProviderFailureCategory | "prompt_rejected";
+  // null when a caller-supplied provider threw (its calls are not observable here) or no call started.
+  call: "initial" | "schema_repair" | null;
+};
+
+export type PlannedFunctionSemanticDiagnostics = {
+  providerFailure: PlannedFunctionSemanticProviderFailure | null;
 };
 
 const ROOT_KEYS = [
@@ -153,7 +167,7 @@ const IDENTITY_MODES = new Set<unknown>([
 ]);
 const SUPPORT_FUNCTIONS = new Set<unknown>([
   "reduce_expression_burden", "return_focus_control", "return_amount_control",
-  "acknowledge_current_relational_impact",
+  "acknowledge_current_relational_impact", "invite_optional_sharing", "respect_declined_sharing",
 ]);
 const REPAIR_MODES = new Set<unknown>([
   "factual_replacement", "proposition_withdrawal", "interaction_move_withdrawal",
@@ -372,14 +386,24 @@ const buildSemanticValidationMessages = (
       "Return one exact JSON object matching outputSchema, without Markdown, surrounding text, missing keys, or extra keys. An absent binding requires the corresponding verdict to be null; a present binding requires a non-null independent verdict.",
       "Each present satisfied branch needs its own non-empty evidence array. Every evidence item must be an exact UTF-16 slice of candidateReply. Use the caller-provided full-span reference when the whole reply is evidence.",
       "For a handoff fulfill binding, satisfied requires addressing the exact target and relation, realizing requiredFunction, realizedFunction exactly equal to requiredFunction, and no later contradictory move. For defer, realizedFunction is null and requiredFunctionRealized is false. Never claim an internal handoff completed.",
+      "The handoff branch and the positiveFunction branch are judged independently and combined by AND: an identity introduction does not by itself prove that the handoff function was realized, and realizing the handoff function does not substitute for the positive function.",
+      "complete_reciprocal_contact positively means: the User's reciprocal greeting already constitutes sufficient mutual contact; the Assistant does not need to greet again and should release the greeting ritual through an appropriate reply. It does not require the User to introduce a topic, answer a question, or continue. The candidate not greeting again, or not returning the User's greeting, is never a reason to set targetAddressed or relationAddressed to false or to mark the branch not satisfied. The User having reciprocated does not mean the candidate realized the function: a pure receipt, a presence or availability statement, a generic open door, an echo, or another greeting cannot substitute for the required function and cannot serve as evidence that it was realized; a greeting that restarts contact after the reply has released the ritual is a later contradictory move.",
       "For complete_reciprocal_contact, apply this decision order before all other considerations: (1) inspect candidateReply alone for a visible conversational function beyond greeting; (2) if it contains only another greeting, set handoff.status=not_satisfied, requiredFunctionRealized=false and realizedFunction=null; never use the User's already-completed reciprocal relation as evidence that the candidate realized the function; (3) otherwise judge whether it releases the greeting ritual into a natural transition. This mandatory failure applies even when the repeated greeting is warm, reciprocal or polite. After completion, one low-pressure invitation asking what the User would like to discuss is allowed and is not a generic open door. A receipt, presence statement, availability statement, or closing is insufficient.",
       "answer_current_obligation must actually answer the committed targeted statement; erasing or disowning it is insufficient unless the plan separately requires repair.",
       "For establish_assistant_identity/first_contact, satisfied requires both an introduction as exact displayName 小慢 and a natural low-pressure way directly into conversation. Bare identity, another greeting, receipt, presence, generic permission/open door, closing, product-name impersonation, or an unrelated question is insufficient.",
       "For establish_assistant_identity/identity_continuation, satisfied requires naturally continuing the exact targetProposition. Merely repeating 小慢, saying 嗯/听到了, generic confirmation, changing to a random/product name, or changing topic is insufficient.",
       "For establish_assistant_identity/identity_repair, satisfied requires distinguishing product name from Assistant name and giving canonical displayName 小慢; claiming to have no name is insufficient.",
       "For offer_emotional_support, bind to the current-turn sourceText and affectEvidenceSpans and realize exactly supportFunction. A receipt, pure question, a different support function, affect category/intensity/object drift, reassurance, advice, pause, topic switch, or a later move that undoes the selected function is insufficient.",
-      "The four emotional support functions are exclusive for this verdict: reduce_expression_burden releases the need to explain causes, analyze, organize, or give a complete account; merely choosing the focus or amount is a different function. return_focus_control returns which already-evidenced part receives attention and, when question policy is none, must be realized as permission/control rather than a semantic request. return_amount_control returns how much to express; merely pausing, deferring, or closing does not return amount control. acknowledge_current_relational_impact owns the current Assistant relationship impact while preserving the information boundary. If the candidate mainly realizes another function, mark not_satisfied.",
+      "The six emotional support functions are exclusive for this verdict: reduce_expression_burden releases the need to explain causes, analyze, organize, or give a complete account; merely choosing the focus or amount is a different function. return_focus_control returns which already-evidenced part receives attention and, when question policy is none, must be realized as permission/control rather than a semantic request. return_amount_control returns how much to express; merely pausing, deferring, or closing does not return amount control. acknowledge_current_relational_impact owns the current Assistant relationship impact while preserving the information boundary. invite_optional_sharing naturally acknowledges the feeling the User stated and offers at most one gentle invitation, easy to decline, for the User to share more if they want; it does not need to mention control, how much to say, or which part to choose. For invite_optional_sharing, a bare receipt or paraphrase with no invitation, an invitation with no acknowledgement of the stated feeling, or an invitation that makes continuing feel required is not satisfied. respect_declined_sharing applies when the User declined to talk or to be asked, in currentUserText or in an earlier turn: it naturally responds to the boundary or the feeling the User expressed, judged in context; restating the feeling word is not required. When currentUserText itself states the refusal, naturally respecting that boundary (for example agreeing not to ask, or accepting not talking for now) completes the function; agreeing not to ask or not to talk about it, as the User requested, is this function itself, not a pause or closure that undoes support. When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement. Responding to that feeling means the reply itself takes in, in its own words, how the User is feeling now (a same-valence paraphrase or a natural reaction to the User's current state counts); a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded. One statement of listening or brief in-conversation companionship that requires no response (for example that the Assistant will listen whenever the User wants to talk, or keeping the User company quietly for a while) is allowed and is not an invitation, a permission about when to speak, a receipt, or a closure. For respect_declined_sharing, the following are not satisfied: a bare receipt that responds to neither the stated feeling nor the stated boundary; a repeated agreement or a companionship statement used in place of responding to a feeling stated without a refusal, including a receipt followed only by companionship or listening; any invitation, question, or request, including asking the User to tell the Assistant later; any permission about how much or which part to say; presenting the feeling as the reason the User should not talk; deciding for the User that they will not share anything further (accepting not talking for now, as the User asked, is not this); claiming physical or offline company; or ending the conversation. If the candidate mainly realizes another function, mark not_satisfied.",
       "A later clause that recommends a preferred focus, requests causes/details, pressures continuation, pauses/closes the exchange, or otherwise takes back the promised control functionally undoes emotional support. Mark containsContradictoryMove=true and do not mark the positive contract satisfied.",
+      "Emotional-support rules. The ES-* rules apply only when positiveFunctionBinding.action is offer_emotional_support. Never apply or cite an ES-* rule in the handoff branch or for repair_previous_wording, establish_assistant_identity, or an absent positiveFunctionBinding; judge those only by their own rules. For every offer_emotional_support verdict that is not satisfied, is uncertain, or has containsContradictoryMove=true, include at least one evidence item quoting the exact deciding span and start its reason with the rule id (ES-AFFECT-EVIDENCE, ES-SCOPE, ES-FOCUS, ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, or ES-ACK-NO-FABRICATION).",
+      "ES-AFFECT-EVIDENCE: every emotion category the candidate names or implies must be evidenced in currentUserText. Adding an emotion category the User did not state is affect drift and not satisfied, whether it is attributed to the User, phrased impersonally as a quality of the situation (this is X, that makes one feel X, anyone would feel X), or presented as the Assistant's characterization of the relational impact. Restating the User's evidenced affect, or describing the reported relational situation without adding an emotion (for example, that the User feels not understood), is allowed. A general same-valence paraphrase of the stated feeling at the same or lower intensity that names no more specific emotion (for example, rendering not happy as not feeling good) is restating, not adding a category. Decide by whether an unevidenced emotion category is added, not by word lists.",
+      "ES-SCOPE: every option, invitation, or permission may refer only to affect, relational impact, or parts already stated in currentUserText. Offering an unspecified alternative (such as something else or other parts), or introducing a cause, triggering event, what happened, the scene or circumstances, details, or a full account that the User did not state, is a contradictory move even when it appears inside an offered choice. Judge reference by the full currentUserText, not by the word used: a phrase that points back to a moment or situation the User already stated (such as that moment, when the User said it happened just now) refers to stated content, while the same phrase introduces a scene when the User stated no such moment or situation, and inviting its sequence or details still introduces what happened. Naming such content only to release the User from providing it (for example, saying the User need not explain why, make the whole matter clear, or give a complete account) solicits nothing and does not violate ES-SCOPE; a release that also asks for, invites, or offers such content as an option still violates it. Whether a release realizes the planned supportFunction is decided by the function-exclusivity rule above, not by ES-SCOPE.",
+      "ES-SCOPE exception for invite_optional_sharing only: one gentle, declinable, open invitation to share what happened or to say more is allowed and is not soliciting a cause or account. Still contradictory under ES-SCOPE for this function: more than one invitation or question; asking why or for the cause; asking for specific details, the sequence of events, who, when, or where, or a full account; guessing or suggesting a cause or event; offering an unspecified alternative or another topic; and, when currentUserText already states the event, asking what happened as though it were unknown or asking for its details. Inviting the User to say more about an event already stated, if they want, is allowed.",
+      "ES-FOCUS: return_focus_control is realized only by returning control over parts already evidenced in currentUserText; an option that is not evidenced does not count toward the function. Judge whether an option is evidenced by the full currentUserText, not by the word used, exactly as ES-SCOPE does: an option that points back to a moment or situation the User already stated refers to an evidenced part, while the same wording is not evidenced when the User stated no such moment or situation, and an option that invites its sequence or details is not an evidenced part.",
+      "ES-ACK-BOUNDARY: acknowledge_current_relational_impact requires owning the relational impact the User reports and stating the information boundary: the Assistant does not yet know what it missed and does not claim to understand already.",
+      "ES-ACK-NO-SOLICIT: after that acknowledgement, any request in question or statement form for the User to explain, give an example, choose which part to say first or how much to say, or show where the Assistant missed is a contradictory move, unless it directly answers an explicit question or request in currentUserText.",
+      "ES-ACK-NO-FABRICATION: when priorAssistantTurnAvailable is false, stating or implying specific content of an earlier Assistant reply or a specific earlier mistake is not satisfied. A general acknowledgement that the User feels not understood remains allowed. When priorAssistantTurnAvailable is null, this rule does not apply.",
       "For repair_previous_wording, bind to targetTurnId/targetText, own the Assistant's error, and complete exactly repairMode. factual_replacement uses the confirmed replacementFact; proposition_withdrawal withdraws the exact rejected proposition; interaction_move_withdrawal withdraws the exact rejected move. Generic apology, self-defense, blaming the User, repeating/continuing the rejected content, or replacing repair with a question/advice is insufficient.",
       "For every positiveFunction verdict, realizedAction is the exact top-level action discriminator from positiveFunctionBinding (establish_assistant_identity, offer_emotional_support, or repair_previous_wording), never mode, supportFunction, or repairMode. Use that exact action only when status=satisfied and contractRealized=true; otherwise use null and false.",
       "The handoff and positiveFunction branches are independent. Do not let one satisfied branch hide failure or uncertainty in the other.",
@@ -402,6 +426,7 @@ const buildSemanticValidationMessages = (
         text: input.candidateReply,
       },
       ordinaryQuestionIndependentlySupported: input.ordinaryQuestionIndependentlySupported,
+      priorAssistantTurnAvailable: input.priorAssistantTurnAvailable ?? null,
       outputSchema: {
         schemaVersion: 1,
         planId: "exact caller planId",
@@ -443,7 +468,9 @@ export const defaultPlannedFunctionSemanticProvider = async (
       messages: outboundMessages,
     });
     return callModel({
-      model: process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
+      model: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() ||
+        process.env.AI_MAIN_MODEL?.trim() ||
+        getDefaultAiModel(),
       messages: outboundMessages,
       temperature: 0,
       responseFormat: "json_object",
@@ -484,7 +511,8 @@ const ordinaryQuestionSupportedByPlan = (plan: ResponsePlan) =>
     plan.responseActions.some((action) =>
       action === "take_light_topic_initiative" ||
       action === "invite_low_pressure_calibration" ||
-      action === "establish_assistant_identity"
+      action === "establish_assistant_identity" ||
+      action === "offer_emotional_support"
     )
   );
 
@@ -533,6 +561,13 @@ export const validatePlannedFunctionSemanticOutput = async ({
 
   const ordinaryQuestionIndependentlySupported = ordinaryQuestionSupportedByPlan(plan);
   let rawVerdict: unknown;
+  // The default provider inspects every outbound call first, so the count names the failing call
+  // without changing the error it throws.
+  let outboundCalls = 0;
+  const countingInspector: PlannedFunctionSemanticValidationPromptInspector = (input) => {
+    outboundCalls += 1;
+    return inspectExternalPrompt?.(input);
+  };
   try {
     const providerInput: PlannedFunctionSemanticProviderInput = {
       planId: plan.planId,
@@ -542,17 +577,26 @@ export const validatePlannedFunctionSemanticOutput = async ({
       handoffTargetAssistantText: semanticContext.handoffTargetAssistantText,
       candidateReply: reply,
       ordinaryQuestionIndependentlySupported,
+      ...(semanticContext.priorAssistantTurnAvailable === undefined
+        ? {}
+        : { priorAssistantTurnAvailable: semanticContext.priorAssistantTurnAvailable }),
     };
     rawVerdict = provider
       ? await provider(providerInput)
-      : await defaultPlannedFunctionSemanticProvider(providerInput, inspectExternalPrompt);
-  } catch {
+      : await defaultPlannedFunctionSemanticProvider(providerInput, countingInspector);
+  } catch (error) {
     return {
       passed: false,
       failureReasons: ["planned_function_semantic:provider_failure"],
       hardFailureReasons: ["planned_function_semantic:provider_failure"],
       advisoryFailureReasons: [],
       verdict: null,
+      providerFailure: {
+        category: error instanceof ExternalPromptRejectedError
+          ? "prompt_rejected"
+          : classifyProviderFailureCategory(error),
+        call: provider || outboundCalls === 0 ? null : outboundCalls === 1 ? "initial" : "schema_repair",
+      },
     };
   }
 

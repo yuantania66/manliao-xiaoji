@@ -78,6 +78,24 @@ export const collectUnsupportedMeaningFailureReasons = (reply: string): Semantic
   return Array.from(reasons);
 };
 
+export const prohibitsMessageFormMeaning = (prohibitedClaims: readonly string[]) =>
+  prohibitedClaims.some((claim) => claim.includes("message form or repetition"));
+
+const UNSUPPORTED_MEANING_ATTRIBUTIONS: Record<SemanticEvidenceFailureReason, string> = {
+  "unsupported_meaning:testing_or_probing": "认定用户在测试、试探或检查助手/系统的反应",
+  "unsupported_meaning:scoring_or_counting": "把用户输入当成打分、评分或数数",
+  "unsupported_meaning:direction_inference": "把用户输入当成方向",
+  "unsupported_meaning:emotion_inference": "替用户推断出没有说出的情绪",
+  "unsupported_meaning:rhythm_continuation": "把用户输入当成要跟随的节奏或序列",
+  "unsupported_meaning:casual_input_inference": "认定用户是随手、随便输入",
+};
+
+export const isSemanticEvidenceFailureReason = (value: string): value is SemanticEvidenceFailureReason =>
+  Object.hasOwn(UNSUPPORTED_MEANING_ATTRIBUTIONS, value);
+
+export const unsupportedMeaningRegenerationInstruction = (reason: SemanticEvidenceFailureReason) =>
+  `上一稿${UNSUPPORTED_MEANING_ATTRIBUTIONS[reason]}，这是从消息形式或重复推断出的意图，超出当前 ResponsePlan 的语义证据边界。删除对用户为什么发这条消息、想做什么或这条消息代表什么的任何判断、猜测或提问；加上“可能、也许、好像、看起来、是不是”等弱化词仍是同一种意图归因，不能代替删除。也不要提出配合这种被假定的意图或输入方式。`;
+
 export const shouldApplySemanticEvidenceReplyContract = ({
   clinicalPlan,
 }: {

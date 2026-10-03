@@ -344,9 +344,37 @@ lifecycle record.
   proposition exists in that exact committed Assistant event. The current User
   question can remain the obligation's `question`, but can never be substituted
   for its target proposition. Missing or mismatched claim bindings fail closed.
+- Claimless-target repair (clarified 2026-09-28): the exact-binding rule applies
+  when the target Assistant event has committed claims. When a
+  `repairs_previous_move` candidate targets the latest adjacent committed
+  Assistant event, meets the existing 0.93 repair threshold, uses
+  `targetOperation=repair_or_withdraw`, and that event explicitly records an
+  empty claim list (a valid committed move or valid move envelope with
+  `claims: []`), the unverifiable `targetProposition`/`targetOperation` are
+  discarded and the repair stays bound to that Assistant event as a whole. No
+  claim binding is created or inferred. The exception never applies when the
+  target is missing, unknown, a User event, or not the latest Assistant event, or
+  when committed-move data is absent or invalid: unavailable claims are not
+  absent claims. Other relations and operations keep exact binding.
 - `challenges_move_fit` covers rejection of an interaction move as unnecessary,
   repetitive, pressuring or mismatched. It does not require rejection of a
   concrete factual proposition.
+- Ordinary move-fit repair (clarified 2026-09-28): with an active handoff target,
+  `challenges_move_fit` keeps the §7.2 `withdraw_or_repair_targeted_move` path
+  unchanged. Without one, an accepted `challenges_move_fit` candidate enters the
+  existing ordinary repair path as `interaction_move_withdrawal` only when it
+  meets the 0.93 repair threshold, carries no `targetProposition`, targets the
+  latest adjacent committed Assistant event, and that event explicitly records
+  `claims: []` under the same rule as claimless-target repair. The candidate keeps
+  its original relation; the adoption is recorded as
+  `repairProposal.sourceRelation = "challenges_move_fit"` plus adoption evidence,
+  never as a `repairs_previous_move` candidate. The Planner then selects the
+  existing interaction-move subtype from adjacent evidence; when none applies,
+  preflight fails closed with `missing_interaction_move_subtype_in_contract`. The
+  path never applies to a missing, unknown, User or stale target, to unavailable
+  or non-empty claims, below threshold, or when the current User turn gives a
+  concrete replacement fact; factual and claim corrections keep their
+  `repairs_previous_move` binding rules.
 - The relation is determined contextually. Text form, message length, punctuation
   and phrase membership cannot independently establish it.
 
@@ -764,6 +792,18 @@ open door does not realize this positive function. PHM-B freezes this semantic
 postcondition but leaves its Surface realization and same-plan positive
 validation to separately authorized slices; it freezes no sample wording,
 keyword list or case rule.
+
+Semantic validation carries this postcondition verbatim in meaning (2026-09-30,
+user-approved contract-consistency repair): the planned-function semantic judge
+is told that the User's reciprocal greeting is already sufficient mutual contact,
+that the Assistant need not greet again and should release the ritual through an
+appropriate reply, and that a missing second greeting is never a reason to mark
+the target or relation unaddressed. The opposite boundary is kept: the User's
+reciprocation does not mean the candidate realized the function, and a receipt,
+presence or availability statement, generic open door, echo or another greeting
+cannot substitute for it or serve as its evidence. The handoff and positive
+branches are judged independently and combined by AND. No phrase list, sample
+wording or case rule was added.
 
 ### 14.6 PHM-B implementation acceptance
 

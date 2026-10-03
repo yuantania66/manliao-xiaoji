@@ -50,6 +50,16 @@ export const isNoTopicMessage = (value: string) =>
 
 const EXPLICIT_REOPEN_PATTERN = /你来问吧|你问吧|随便聊点什么都行|随便聊什么都行|你带个头|你先说/;
 
+const SHARING_INVITATION_DECLINE_PATTERN =
+  /(?:不要|别|不想|不用)(?:再)?(?:被)?(?:问|提问|追问)|(?:不要|别)(?:再)?问我|不(?:太)?想(?:说|聊|讲|谈|提)/u;
+
+export const declinesSharingInvitation = (text: string) => {
+  const normalized = normalize(text);
+  return CLOSING_PATTERN.test(normalized) || SHARING_INVITATION_DECLINE_PATTERN.test(normalized);
+};
+
+export const reopensInteraction = (text: string) => EXPLICIT_REOPEN_PATTERN.test(normalize(text));
+
 type AffectEvidenceRule = {
   pattern: RegExp;
   category: AffectEvidenceCategory;

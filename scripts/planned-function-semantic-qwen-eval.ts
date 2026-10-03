@@ -1,12 +1,30 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
+import { performance } from "node:perf_hooks";
 
-import type { PositiveFunctionContract, ResponsePlan } from "../conversation-os/control";
+import {
+  assembleConversationControlContext,
+  buildDialogueState,
+  createResponsePlan,
+  interpretTurnDeterministically,
+  type PositiveFunctionContract,
+  type ResponsePlan,
+} from "../conversation-os/control";
+import { determineConversationState } from "../conversation-os/state";
 import {
   defaultPlannedFunctionSemanticProvider,
   validatePlannedFunctionSemanticOutput,
   type PlannedFunctionSemanticProviderInput,
+  type PlannedFunctionSemanticValidationResult,
 } from "../services/ai/plannedFunctionSemanticValidator";
-import { validateLateContradiction } from "./late-contradiction-authority";
+import {
+  classifyProviderFailureCategory,
+  type ProviderFailureCategory,
+} from "../services/ai/providerFailureCategory";
+import { validateLateContradiction, type LateContradictionProvider } from "./late-contradiction-authority";
+import { ruleIdsInReason, semanticVerdictAuditFor } from "./semantic-verdict-audit";
 
 type EvalCase = {
   id: string;
@@ -97,6 +115,48 @@ const withEmotional = (
     intensityCeiling: "current_user_expression",
     evidence: ["turn-local exact affect evidence"],
   };
+  return plan;
+};
+
+const plannerEmotionalContractFor = (sourceText: string) => {
+  const conversationState = determineConversationState({ currentUserMessage: sourceText, recentMessages: [] });
+  const context = assembleConversationControlContext({
+    conversationId: "qwen-eval",
+    currentTurnId: turnId,
+    userMessage: sourceText,
+    recentMessages: [],
+    conversationState,
+  });
+  const interpretation = interpretTurnDeterministically(context);
+  const contract = createResponsePlan({
+    context,
+    interpretation,
+    dialogueState: buildDialogueState(context, interpretation),
+    ordinaryHandoffBoundary: null,
+    clinicalAdviceProvider: ({ need }) => ({
+      strategy: "qwen-eval-fixture",
+      intent: need,
+      questionFunction: "none",
+      toneConstraints: [],
+      interventionBoundaries: [],
+      evidence: ["qwen-eval-fixture"],
+    }),
+  }).positiveFunctionContract;
+  assert(contract?.action === "offer_emotional_support", `${sourceText}: Planner did not select emotional support.`);
+  return contract;
+};
+
+const withPlannerEmotional = (id: string, sourceText: string) => {
+  const contract = plannerEmotionalContractFor(sourceText);
+  if (contract.supportFunction === "return_focus_control") {
+    assert(
+      new Set(contract.affectEvidenceSpans.map((span) => `${span.category}:${span.object}`)).size >= 2,
+      `${id}: return_focus_control requires at least two distinct affect targets.`
+    );
+  }
+  const plan = basePlan(id);
+  plan.responseActions = ["offer_emotional_support"];
+  plan.positiveFunctionContract = contract;
   return plan;
 };
 
@@ -201,7 +261,6 @@ const cases: EvalCase[] = [
   })),
   ...([
     ["reduce_expression_burden", "我很难受", "这份难受不需要先解释出原因。"],
-    ["return_focus_control", "我很难受", "这份难受里，表达重点不必跟着我的关注点走，放在哪一部分由你掌握。"],
     ["return_amount_control", "我很难受", "这份难受说多说少都由你来定。"],
     ["acknowledge_current_relational_impact", "你根本没懂我", "刚才我的回应确实没接住你，我不能把它说成已经理解。"],
   ] as const).map(([supportFunction, sourceText, candidateReply]) => ({
@@ -213,6 +272,49 @@ const cases: EvalCase[] = [
     candidateReply,
     expectedPassed: true,
   })),
+  ...([
+    ["invite_optional_sharing-positive", "我很难受", "听起来你现在挺难受的。愿意的话，可以跟我说说怎么了。", true],
+    ["invite_optional_sharing-why", "我很难受", "听起来你现在挺难受的。是因为什么呢？", false],
+    ["invite_optional_sharing-two-questions", "我很难受", "你现在挺难受的。发生什么了？跟谁有关吗？", false],
+  ] as const).map(([id, sourceText, candidateReply, expectedPassed]) => {
+    const plan = withEmotional(`emotional-${id}`, "invite_optional_sharing", sourceText);
+    plan.questionPolicy = { mode: "optional_after_answer", reason: "invite_optional_sharing allows one declinable invitation" };
+    return {
+      id: `emotional-${id}`,
+      category: "emotional_support" as const,
+      plan,
+      currentUserText: sourceText,
+      handoffTargetAssistantText: null,
+      candidateReply,
+      expectedPassed,
+    };
+  }),
+  ...([
+    ["respect_declined_sharing-positive", "我很难受，但不想说", "嗯，知道你现在很难受。不想说就先不说。", true],
+    ["respect_declined_sharing-amount-permission", "我很难受，但不想说", "难受的时候，想说多少都随你，不用非得讲完整。", false],
+    ["respect_declined_sharing-boundary-only-positive", "我很难受，但不想说", "好，那就先不说，不用勉强自己。", true],
+    ["respect_declined_sharing-listening-positive", "我很难受，不想被问", "好，我不问，你想说的时候我听着。", true],
+    ["respect_declined_sharing-feeling-as-reason", "我很难受，但不想说", "难受就不说，没关系的。", false],
+    ["respect_declined_sharing-prior-pause-feeling-positive", "我今天有点不太高兴", "今天有点不好受啊，陪你安静一会儿。", true],
+    ["respect_declined_sharing-prior-pause-receipt-companionship", "我今天有点不太高兴", "嗯，听到了。我就在这儿陪你待会儿。", false],
+  ] as const).map(([id, sourceText, candidateReply, expectedPassed]) => ({
+    id: `emotional-${id}`,
+    category: "emotional_support" as const,
+    plan: withEmotional(`emotional-${id}`, "respect_declined_sharing", sourceText),
+    currentUserText: sourceText,
+    handoffTargetAssistantText: null,
+    candidateReply,
+    expectedPassed,
+  })),
+  {
+    id: "emotional-return_focus_control-two-targets-positive",
+    category: "emotional_support",
+    plan: withPlannerEmotional("emotional-return_focus_control-two-targets-positive", "我现在又委屈又生气"),
+    currentUserText: "我现在又委屈又生气",
+    handoffTargetAssistantText: null,
+    candidateReply: "这份委屈和生气里，表达重点不必跟着我的关注点走，放在哪一部分由你掌握。",
+    expectedPassed: true,
+  },
   ...([
     ["receipt", "reduce_expression_burden", "我听到了。"],
     ["wrong-function", "reduce_expression_burden", "这份难受先说哪一部分由你定。"],
@@ -315,6 +417,31 @@ const cases: EvalCase[] = [
   },
 ];
 
+const retiredCases = [
+  {
+    id: "emotional-return_focus_control-positive",
+    category: "emotional_support",
+    supportFunction: "return_focus_control",
+    currentUserText: "我很难受",
+    candidateReply: "这份难受里，表达重点不必跟着我的关注点走，放在哪一部分由你掌握。",
+    expectedPassed: true,
+    retiredOn: "2026-09-30",
+    reason: "Contract section 3.2 allows return_focus_control only with at least two distinct current-turn affect or relational-impact targets; this fixture binds it to one span, and the Planner selects return_amount_control for this text.",
+    history: "bf34cc6 Q 40/41: the only failure, positive_function_not_satisfied; fixture-contract conflict, actual rejection reason unknown.",
+    replacedBy: "emotional-return_focus_control-two-targets-positive",
+  },
+] as const;
+
+for (const retired of retiredCases) {
+  assert.notEqual(
+    plannerEmotionalContractFor(retired.currentUserText).supportFunction,
+    retired.supportFunction,
+    `${retired.id}: retirement premise no longer holds.`
+  );
+  assert(cases.some((item) => item.id === retired.replacedBy), `${retired.id}: replacement case missing.`);
+  assert(!cases.some((item) => item.id === retired.id), `${retired.id}: retired case must not run.`);
+}
+
 const inputFor = (testCase: EvalCase): PlannedFunctionSemanticProviderInput => ({
   planId: testCase.plan.planId,
   handoffBinding: testCase.plan.interactionMoveHandoffPlan,
@@ -337,13 +464,228 @@ const inputFor = (testCase: EvalCase): PlannedFunctionSemanticProviderInput => (
     ),
 });
 
-const callWithOneInfrastructureRetry = async (input: PlannedFunctionSemanticProviderInput) => {
-  try {
-    return await defaultPlannedFunctionSemanticProvider(input);
-  } catch {
-    return defaultPlannedFunctionSemanticProvider(input);
-  }
+const arg = (name: string) =>
+  process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3) ?? "";
+
+type EvidenceSpan = { start: number; end: number; text: string; reason: string };
+const spansOf = (evidence: EvidenceSpan[]) =>
+  evidence.map(({ start, end, text, reason }) => ({ start, end, text, reason }));
+const positionOf = ({ start, end, reason }: EvidenceSpan) => ({ start, end, ruleIds: ruleIdsInReason(reason) });
+const unparsedOutputOf = (raw: unknown) =>
+  raw === undefined ? null : typeof raw === "string" ? raw : JSON.stringify(raw);
+
+const verdictRecordFor = (result: PlannedFunctionSemanticValidationResult, raw: unknown) => {
+  const positive = result.verdict?.positiveFunction ?? null;
+  const handoff = result.verdict?.handoff ?? null;
+  const audit = semanticVerdictAuditFor(result.verdict);
+  return {
+    failureReasons: result.failureReasons,
+    providerFailure: result.providerFailure ?? null,
+    semanticQuestionCount: result.verdict?.semanticQuestionCount ?? null,
+    positiveFunction: positive && {
+      action: positive.binding.action,
+      status: positive.status,
+      realizedAction: positive.realizedAction,
+      targetAddressed: positive.targetAddressed,
+      contractRealized: positive.contractRealized,
+      containsContradictoryMove: positive.containsContradictoryMove,
+      evidence: spansOf(positive.evidence),
+    },
+    handoff: handoff && {
+      status: handoff.status,
+      realizedFunction: handoff.realizedFunction,
+      targetAddressed: handoff.targetAddressed,
+      relationAddressed: handoff.relationAddressed,
+      requiredFunctionRealized: handoff.requiredFunctionRealized,
+      containsContradictoryMove: handoff.containsContradictoryMove,
+      handoffCompletionClaimed: handoff.handoffCompletionClaimed,
+      optionalQuestionAfterRequiredFunction: handoff.optionalQuestionAfterRequiredFunction,
+      evidence: spansOf(handoff.evidence),
+    },
+    ruleIds: audit?.ruleIds ?? [],
+    outOfScopeRuleIds: audit?.outOfScopeRuleIds ?? [],
+    unparsedOutput: result.verdict ? null : unparsedOutputOf(raw),
+  };
 };
+
+const lateContradictionRecordFor = (late: Awaited<ReturnType<typeof validateLateContradiction>>) => ({
+  passed: late.passed,
+  reason: late.reason,
+  status: late.verdict?.status ?? null,
+  completedRitual: late.verdict?.completedRitual ?? null,
+  reopenedRitual: late.verdict?.reopenedRitual ?? null,
+  completionEvidence: late.verdict ? spansOf([late.verdict.completionEvidence])[0] : null,
+  contradictionEvidence: late.verdict?.contradictionEvidence ? spansOf([late.verdict.contradictionEvidence])[0] : null,
+  unparsedOutput: "raw" in late ? unparsedOutputOf(late.raw) : null,
+});
+
+type JudgeProvider = typeof defaultPlannedFunctionSemanticProvider;
+
+const callJudgeWithOneInfrastructureRetry = async (
+  input: PlannedFunctionSemanticProviderInput,
+  provider: JudgeProvider
+) => {
+  const attempts: Array<{ modelCalls: number; latencyMs: number; errorCategory: ProviderFailureCategory | null }> = [];
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    let modelCalls = 0;
+    const startedAt = performance.now();
+    try {
+      const raw = await provider(input, () => {
+        modelCalls += 1;
+      });
+      attempts.push({ modelCalls, latencyMs: Math.round(performance.now() - startedAt), errorCategory: null });
+      return { ok: true as const, raw, attempts };
+    } catch (error) {
+      attempts.push({
+        modelCalls,
+        latencyMs: Math.round(performance.now() - startedAt),
+        errorCategory: classifyProviderFailureCategory(error),
+      });
+    }
+  }
+  return { ok: false as const, attempts };
+};
+
+type CaseFailure = {
+  id: string;
+  category: EvalCase["category"];
+  failureCategory: "provider_failure" | "expectation_mismatch" | "branch_mismatch";
+  expectedPassed: boolean;
+  actualPassed?: boolean | null;
+  reasons?: string[];
+};
+
+export const evaluateCase = async (
+  testCase: EvalCase,
+  {
+    judgeProvider = defaultPlannedFunctionSemanticProvider,
+    lateContradictionProvider,
+  }: {
+    judgeProvider?: JudgeProvider;
+    lateContradictionProvider?: LateContradictionProvider;
+  } = {}
+) => {
+  const call = await callJudgeWithOneInfrastructureRetry(inputFor(testCase), judgeProvider);
+  const rowBase = {
+    id: testCase.id,
+    category: testCase.category,
+    expectedPassed: testCase.expectedPassed,
+    judgeAttempts: call.attempts,
+  };
+  if (!call.ok) {
+    return {
+      row: { ...rowBase, actualPassed: null, verdict: null, lateContradiction: null },
+      failure: testCase.expectedPassed
+        ? {
+            id: testCase.id,
+            category: testCase.category,
+            failureCategory: "provider_failure",
+            expectedPassed: testCase.expectedPassed,
+          } satisfies CaseFailure
+        : null,
+    };
+  }
+  const result = await validatePlannedFunctionSemanticOutput({
+    plan: testCase.plan,
+    reply: testCase.candidateReply,
+    semanticContext: {
+      currentUserText: testCase.currentUserText,
+      handoffTargetAssistantText: testCase.handoffTargetAssistantText,
+    },
+    provider: async () => call.raw,
+  });
+  let actualPassed = result.passed;
+  let lateContradiction: (ReturnType<typeof lateContradictionRecordFor> & { latencyMs: number }) | null = null;
+  if (
+    actualPassed &&
+    testCase.plan.interactionMoveHandoffPlan?.requiredFunction === "complete_reciprocal_contact" &&
+    testCase.plan.positiveFunctionContract?.action === "establish_assistant_identity" &&
+    testCase.plan.positiveFunctionContract.mode === "first_contact"
+  ) {
+    const startedAt = performance.now();
+    const late = await validateLateContradiction({
+      input: {
+        caseId: testCase.id,
+        planId: testCase.plan.planId,
+        candidateReply: testCase.candidateReply,
+      },
+      ...(lateContradictionProvider ? { provider: lateContradictionProvider } : {}),
+    });
+    lateContradiction = { ...lateContradictionRecordFor(late), latencyMs: Math.round(performance.now() - startedAt) };
+    actualPassed = late.passed;
+  }
+  return {
+    row: { ...rowBase, actualPassed, verdict: verdictRecordFor(result, call.raw), lateContradiction },
+    failure: actualPassed === testCase.expectedPassed
+      ? null
+      : {
+          id: testCase.id,
+          category: testCase.category,
+          failureCategory: "expectation_mismatch",
+          expectedPassed: testCase.expectedPassed,
+          actualPassed,
+          reasons: [...result.failureReasons, ...(lateContradiction?.reason ? [lateContradiction.reason] : [])],
+        } satisfies CaseFailure,
+  };
+};
+
+type CaseRow = Awaited<ReturnType<typeof evaluateCase>>["row"];
+
+const dualBranchExpectations: Record<string, { handoff: boolean; positiveFunction: boolean }> = {
+  "dual-both-satisfied": { handoff: true, positiveFunction: true },
+  "dual-handoff-only": { handoff: true, positiveFunction: false },
+  "dual-positive-only": { handoff: false, positiveFunction: true },
+};
+
+const UNJUDGED_BRANCH_REASON =
+  /:(?:malformed_verdict|binding_mismatch|evidence_mismatch|provider_failure|missing_context|handoff_missing_context)$/u;
+
+export const dualBranchCheckFor = (row: CaseRow) => {
+  const expected = dualBranchExpectations[row.id];
+  if (!expected) return null;
+  const reasons = row.verdict?.failureReasons;
+  const actual = row.verdict && reasons && !reasons.some((reason) => UNJUDGED_BRANCH_REASON.test(reason))
+    ? {
+        handoff: row.verdict.handoff ? !reasons.some((reason) => reason.includes(":handoff_")) : null,
+        positiveFunction: row.verdict.positiveFunction
+          ? !reasons.some((reason) => reason.includes(":positive_function_"))
+          : null,
+      }
+    : null;
+  return {
+    id: row.id,
+    expected,
+    actual,
+    matches: actual?.handoff === expected.handoff && actual.positiveFunction === expected.positiveFunction,
+  };
+};
+
+export const structuralRowFor = (row: CaseRow) => ({
+  ...row,
+  verdict: row.verdict && {
+    ...row.verdict,
+    positiveFunction: row.verdict.positiveFunction && {
+      ...row.verdict.positiveFunction,
+      evidence: row.verdict.positiveFunction.evidence.map(positionOf),
+    },
+    handoff: row.verdict.handoff && {
+      ...row.verdict.handoff,
+      evidence: row.verdict.handoff.evidence.map(positionOf),
+    },
+    unparsedOutput: row.verdict.unparsedOutput === null ? null : "kept_locally",
+  },
+  lateContradiction: row.lateContradiction && {
+    ...row.lateContradiction,
+    completionEvidence: row.lateContradiction.completionEvidence && positionOf(row.lateContradiction.completionEvidence),
+    contradictionEvidence: row.lateContradiction.contradictionEvidence &&
+      positionOf(row.lateContradiction.contradictionEvidence),
+    unparsedOutput: row.lateContradiction.unparsedOutput === null ? null : "kept_locally",
+  },
+});
+
+export const casesSha256 = createHash("sha256").update(JSON.stringify(cases)).digest("hex");
+
+export { cases };
 
 const main = async () => {
   assert.equal(process.env.AI_PROVIDER, "qwen", "This gate must run against the real Qwen provider.");
@@ -352,69 +694,28 @@ const main = async () => {
     ? cases.filter((item) => item.id === requestedCaseId)
     : cases;
   assert(selectedCases.length > 0, "Requested Qwen eval case does not exist.");
-  const failures: Array<{
-    id: string;
-    category: EvalCase["category"];
-    failureCategory: "provider_failure" | "expectation_mismatch";
-    expectedPassed: boolean;
-    actualPassed?: boolean;
-    reasons?: string[];
-  }> = [];
+  const outputPath = arg("output");
+  const structuralPath = arg("structural-output");
+  const failures: CaseFailure[] = [];
+  const rows: CaseRow[] = [];
 
   for (const testCase of selectedCases) {
-    let raw: unknown;
-    try {
-      raw = await callWithOneInfrastructureRetry(inputFor(testCase));
-    } catch {
-      if (testCase.expectedPassed) {
-        failures.push({
-          id: testCase.id,
-          category: testCase.category,
-          failureCategory: "provider_failure",
-          expectedPassed: testCase.expectedPassed,
-        });
-      }
-      continue;
-    }
-    if (requestedCaseId) console.log(JSON.stringify({ id: testCase.id, raw }, null, 2));
-    const result = await validatePlannedFunctionSemanticOutput({
-      plan: testCase.plan,
-      reply: testCase.candidateReply,
-      semanticContext: {
-        currentUserText: testCase.currentUserText,
-        handoffTargetAssistantText: testCase.handoffTargetAssistantText,
-      },
-      provider: async () => raw,
-    });
-    let actualPassed = result.passed;
-    let lateContradictionReason: string | null = null;
-    if (
-      actualPassed &&
-      testCase.plan.interactionMoveHandoffPlan?.requiredFunction === "complete_reciprocal_contact" &&
-      testCase.plan.positiveFunctionContract?.action === "establish_assistant_identity" &&
-      testCase.plan.positiveFunctionContract.mode === "first_contact"
-    ) {
-      const lateContradiction = await validateLateContradiction({
-        input: {
-          caseId: testCase.id,
-          planId: testCase.plan.planId,
-          candidateReply: testCase.candidateReply,
-        },
-      });
-      if (requestedCaseId) {
-        console.log(JSON.stringify({ id: testCase.id, lateContradiction }, null, 2));
-      }
-      actualPassed = lateContradiction.passed;
-      lateContradictionReason = lateContradiction.reason;
-    }
-    if (actualPassed !== testCase.expectedPassed) {
+    const { row, failure } = await evaluateCase(testCase);
+    if (requestedCaseId) console.log(JSON.stringify(row, null, 2));
+    rows.push(row);
+    if (failure) failures.push(failure);
+    const branchCheck = dualBranchCheckFor(row);
+    if (branchCheck && !branchCheck.matches) {
       failures.push({
-        id: testCase.id,
-        category: testCase.category,
-        failureCategory: "expectation_mismatch",
-        expectedPassed: testCase.expectedPassed,
-        actualPassed,
-        reasons: [...result.failureReasons, ...(lateContradictionReason ? [lateContradictionReason] : [])],
+        id: row.id,
+        category: row.category,
+        failureCategory: "branch_mismatch",
+        expectedPassed: row.expectedPassed,
+        actualPassed: row.actualPassed,
+        reasons: [
+          `expected handoff=${branchCheck.expected.handoff} positiveFunction=${branchCheck.expected.positiveFunction}`,
+          `actual handoff=${branchCheck.actual?.handoff ?? "unjudged"} positiveFunction=${branchCheck.actual?.positiveFunction ?? "unjudged"}`,
+        ],
       });
     }
   }
@@ -423,13 +724,53 @@ const main = async () => {
     ["first_contact", "identity_continuation", "emotional_support", "repair", "dual_and", "adversarial"]
       .map((category) => [category, selectedCases.filter((item) => item.category === category).length])
   );
-  console.log(JSON.stringify({
+  const attempts = rows.flatMap((row) => row.judgeAttempts);
+  const summary = {
+    round: arg("round") || null,
     model: process.env.AI_MAIN_MODEL || "provider-default",
+    judgeModel: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() || process.env.AI_MAIN_MODEL || "provider-default",
+    casesSha256,
     cases: selectedCases.length,
     categoryTotals,
+    retiredCases: retiredCases.map(({ id, replacedBy }) => ({ id, replacedBy })),
+    dualBranches: rows.flatMap((row) => {
+      const branchCheck = dualBranchCheckFor(row);
+      return branchCheck ? [branchCheck] : [];
+    }),
+    judgeCalls: {
+      attempts: attempts.length,
+      modelCalls: attempts.reduce((sum, attempt) => sum + attempt.modelCalls, 0),
+      schemaRepairAttempts: attempts.filter((attempt) => attempt.modelCalls > 1).length,
+      infrastructureRetryCases: rows.filter((row) => row.judgeAttempts.length > 1).length,
+      unjudgedCases: rows.filter((row) => row.actualPassed === null).length,
+      errorCategories: attempts.flatMap((attempt) => attempt.errorCategory ? [attempt.errorCategory] : []),
+    },
     failures,
-  }, null, 2));
+  };
+  if (outputPath) {
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, `${JSON.stringify({
+      summary,
+      cases: selectedCases.map(({ id, category, currentUserText, candidateReply, expectedPassed }) => ({
+        id, category, currentUserText, candidateReply, expectedPassed,
+      })),
+      retiredCases,
+      rows,
+    }, null, 2)}\n`);
+  }
+  if (structuralPath) {
+    mkdirSync(dirname(structuralPath), { recursive: true });
+    writeFileSync(structuralPath, `${JSON.stringify({
+      note: "Structural copy; synthetic fixture text, replies, evidence text, reasons and unparsed outputs kept locally.",
+      summary,
+      retiredCases: retiredCases.map(({ id, supportFunction, expectedPassed, retiredOn, reason, history, replacedBy }) => ({
+        id, supportFunction, expectedPassed, retiredOn, reason, history, replacedBy,
+      })),
+      rows: rows.map(structuralRowFor),
+    }, null, 2)}\n`);
+  }
+  console.log(JSON.stringify(summary, null, 2));
   assert.deepEqual(failures, [], "Frozen Qwen planned-function semantic gate failed.");
 };
 
-void main();
+if (process.argv[1]?.endsWith("planned-function-semantic-qwen-eval.ts")) void main();

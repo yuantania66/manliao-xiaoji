@@ -1,0 +1,1355 @@
+{
+  "note": "Structural copy; synthetic case replies and evidence text kept locally.",
+  "summary": {
+    "head": "693f9ee",
+    "repetitions": 3,
+    "labeledCases": 9,
+    "ambiguousCases": 4,
+    "judgeCalls": 31,
+    "outcomeMatches": 27,
+    "labeledCalls": 27,
+    "failCitationMatches": 18,
+    "failLabeledCalls": 18,
+    "reliableCases": 9,
+    "byCase": {
+      "ACK-COMPLETE-NO-SOLICIT": {
+        "category": "function_complete_no_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "reliable": true
+      },
+      "FOCUS-COMPLETE-NO-SOLICIT": {
+        "category": "function_complete_no_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-FOCUS",
+            "ES-SCOPE"
+          ],
+          [
+            "ES-FOCUS"
+          ],
+          [
+            "ES-FOCUS"
+          ]
+        ],
+        "reliable": true
+      },
+      "ACK-SOLICIT-AMOUNT-FOCUS-A": {
+        "category": "function_complete_then_solicits",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "reliable": true
+      },
+      "ACK-SOLICIT-AMOUNT-FOCUS-B": {
+        "category": "function_complete_then_solicits",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "reliable": true
+      },
+      "ACK-SOLICIT-SHOW-MISS": {
+        "category": "function_complete_then_solicits",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "reliable": true
+      },
+      "FOCUS-INVITE-EVIDENCED": {
+        "category": "invitation_uses_existing_content",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-FOCUS"
+          ],
+          [
+            "ES-FOCUS",
+            "ES-SCOPE"
+          ],
+          []
+        ],
+        "reliable": true
+      },
+      "FOCUS-INVITE-UNSPECIFIED-OTHER": {
+        "category": "invitation_introduces_unknown_content",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "reliable": true
+      },
+      "FOCUS-INVITE-WHAT-HAPPENED": {
+        "category": "invitation_introduces_unknown_content",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "reliable": true
+      },
+      "ACK-FABRICATED-PRIOR-MISTAKE": {
+        "category": "no_history_fabrication",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-FABRICATION"
+          ],
+          [
+            "ES-ACK-NO-FABRICATION"
+          ],
+          [
+            "ES-ACK-NO-FABRICATION"
+          ]
+        ],
+        "reliable": true
+      },
+      "AMB-FOCUS-MOMENT": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "reliable": null
+      },
+      "AMB-FOCUS-SITUATION": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "reliable": null
+      },
+      "AMB-FOCUS-PLAN-GETS-AMOUNT": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-FOCUS"
+          ]
+        ],
+        "reliable": null
+      },
+      "AMB-ACK-JUST-NOW-DRIFT": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "reliable": null
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "rationale": "Owns the reported relational impact and states the information boundary (contract 3.2 approved interpretation); no request or choice invitation; no specific earlier content invented.",
+      "derivation": "composite of budget e3428a4 relational replies r2/r3 fragments, tail removed"
+    },
+    {
+      "id": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "rationale": "Returns control over which of the two evidenced parts comes first (contract 3.2 return_focus_control, known parts only), statement form, no content outside the current turn.",
+      "derivation": "budget e3428a4 being-ignored r5 converted to statement form"
+    },
+    {
+      "id": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ],
+      "rationale": "After the acknowledgement it adds a statement-form invitation to choose how much and which part to say, which the approved 3.2 interpretation excludes.",
+      "derivation": "budget e3428a4 relational r2, exact"
+    },
+    {
+      "id": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ],
+      "rationale": "Same boundary as above with a question-like choice invitation after the acknowledgement.",
+      "derivation": "budget e3428a4 relational r1, exact"
+    },
+    {
+      "id": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ],
+      "rationale": "Asks the user to show where the assistant missed, forbidden by contract 3.3 and the approved 3.2 interpretation.",
+      "derivation": "composite: budget relational acknowledgement + explicit request"
+    },
+    {
+      "id": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "rationale": "Both options are parts stated in the current turn (being ignored, distress); one low-burden invitation about which part first is allowed under questionPolicy optional_after_answer (contract 3.3); control explicitly returned.",
+      "derivation": "budget e3428a4 being-ignored r5, exact (rejected twice there)"
+    },
+    {
+      "id": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ],
+      "rationale": "Offers an unspecified other part; contract 3.2 limits focus control to known parts and 3.3 limits options to stated content.",
+      "derivation": "budget e3428a4 being-ignored r1/r4 and r6 r3 attempt 1, exact"
+    },
+    {
+      "id": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ],
+      "rationale": "Offers the concrete course of events as an option; contract 3.3 forbids inviting the triggering event or full account by default.",
+      "derivation": "r6 run 2 attempts 1 and 2, exact (judged both ways there)"
+    },
+    {
+      "id": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "rationale": "No earlier assistant reply exists; stating what the assistant previously said is fabricated (approved 3.2 interpretation).",
+      "derivation": "composite adversarial on budget relational acknowledgement"
+    },
+    {
+      "id": "AMB-FOCUS-MOMENT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "rationale": "The moment may be the stated time of being ignored or an invitation to recount the event; contract does not decide.",
+      "derivation": "budget e3428a4 being-ignored r2, exact"
+    },
+    {
+      "id": "AMB-FOCUS-SITUATION",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "rationale": "The situation of being ignored is close to stated content but may invite circumstances; contract does not decide.",
+      "derivation": "v2 72c1477 run 2 attempt 1, exact"
+    },
+    {
+      "id": "AMB-FOCUS-PLAN-GETS-AMOUNT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "rationale": "Plan selected focus control; reply returns amount over one evidenced part. Whether this counts as a different function is not decided by existing text.",
+      "derivation": "v2 72c1477 run 3 attempt 2, exact"
+    },
+    {
+      "id": "AMB-ACK-JUST-NOW-DRIFT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "rationale": "Refers to an earlier miss without naming content and paraphrases not understood as ignored; neither is clearly decided.",
+      "derivation": "budget e3428a4 relational r5, exact"
+    }
+  ],
+  "calls": [
+    {
+      "caseId": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null
+    },
+    {
+      "caseId": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null
+    },
+    {
+      "caseId": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null
+    },
+    {
+      "caseId": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-FOCUS",
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null
+    },
+    {
+      "caseId": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null
+    },
+    {
+      "caseId": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 1,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "evidence": [
+          {
+            "start": 25,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 2,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "evidence": [
+          {
+            "start": 25,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 3,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "evidence": [
+          {
+            "start": 25,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 1,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "evidence": [
+          {
+            "start": 34,
+            "end": 62,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 2,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "evidence": [
+          {
+            "start": 34,
+            "end": 62,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 3,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "evidence": [
+          {
+            "start": 34,
+            "end": 62,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 1,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 33,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 2,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "evidence": [
+          {
+            "start": 20,
+            "end": 33,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 3,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "evidence": [
+          {
+            "start": 20,
+            "end": 33,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "repetition": 1,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null
+    },
+    {
+      "caseId": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "repetition": 2,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-FOCUS",
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null
+    },
+    {
+      "caseId": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "repetition": 3,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": []
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null
+    },
+    {
+      "caseId": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 1,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 22,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 2,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 22,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 3,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 22,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 1,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 22,
+            "end": 33,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 2,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 20,
+            "end": 33,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 3,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 22,
+            "end": 33,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "repetition": 1,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-FABRICATION"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": [
+              "ES-ACK-NO-FABRICATION"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "repetition": 2,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-FABRICATION"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": [
+              "ES-ACK-NO-FABRICATION"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "repetition": 3,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-FABRICATION"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": [
+              "ES-ACK-NO-FABRICATION"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true
+    },
+    {
+      "caseId": "AMB-FOCUS-MOMENT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 39,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": null,
+      "citationMatches": null
+    },
+    {
+      "caseId": "AMB-FOCUS-SITUATION",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 36,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": null,
+      "citationMatches": null
+    },
+    {
+      "caseId": "AMB-FOCUS-PLAN-GETS-AMOUNT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "evidence": [
+          {
+            "start": 17,
+            "end": 28,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": null,
+      "citationMatches": null
+    },
+    {
+      "caseId": "AMB-ACK-JUST-NOW-DRIFT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": null,
+      "citationMatches": null
+    }
+  ]
+}

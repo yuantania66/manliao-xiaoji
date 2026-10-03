@@ -1,0 +1,2299 @@
+{
+  "diagnosticVersion": "repair-recognition-diagnostic-v1",
+  "side": "candidate-fix",
+  "mode": "real",
+  "historyShape": "committed_claimless",
+  "productHead": "8afb9f3e78f802ec5d74ea5694b18a08923322b6",
+  "productDirty": "",
+  "diagnosticLibSha": "sha256:250502bc15ac1377eb026d5017c7e3012dfa5e07fa56e24e577ddd597e504a2b",
+  "diagnosticRunnerSha": "sha256:2ec7c94c0d6338e5e2f7d517e87c7688ccc24a5e5cffd04ede2909b655dd217f",
+  "datasetSha": "sha256:12bd41f3c6c4370ddc3593cf997203037bc321a3b40d890ce196e9f6bcd6f243",
+  "nodeVersion": "v22.23.3",
+  "scenarioInputs": [
+    {
+      "id": "repair-intensity-exaggeration",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:5319d17fa1a324e8"
+    },
+    {
+      "id": "repair-wrong-person",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:97b4bfb061ef90ca"
+    },
+    {
+      "id": "repair-repeated-claim",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:86a44e953187df69"
+    },
+    {
+      "id": "repair-direct-relationship-challenge",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:8801dce6268462e6"
+    },
+    {
+      "id": "repair-moralizing",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:62a53d325bd495d7"
+    },
+    {
+      "id": "repair-unsupported-fear",
+      "group": "passing_repair_control",
+      "inputFingerprint": "sha256:71aac096fe34d6d9"
+    },
+    {
+      "id": "repair-topic-switch",
+      "group": "passing_repair_control",
+      "inputFingerprint": "sha256:e259b063a6a1df63"
+    }
+  ],
+  "model": "qwen3.7-max",
+  "provider": "qwen",
+  "aiTimeoutMs": "45000",
+  "interpreterModelEnabled": "unset",
+  "helpingOrdinaryHandoff": "forced_true_like_preservation_runner",
+  "runsPerScenario": 3,
+  "startedAt": "2026-09-28T13:36:59.231Z",
+  "completedAt": "2026-09-28T13:43:20.007Z",
+  "summary": {
+    "cells": 21,
+    "stages": {
+      "repair_planned": 21
+    },
+    "byScenario": {
+      "repair-intensity-exaggeration": {
+        "repair_planned": 3
+      },
+      "repair-wrong-person": {
+        "repair_planned": 3
+      },
+      "repair-repeated-claim": {
+        "repair_planned": 3
+      },
+      "repair-direct-relationship-challenge": {
+        "repair_planned": 3
+      },
+      "repair-moralizing": {
+        "repair_planned": 3
+      },
+      "repair-unsupported-fear": {
+        "repair_planned": 3
+      },
+      "repair-topic-switch": {
+        "repair_planned": 3
+      }
+    },
+    "rawRelations": {
+      "repairs_previous_move": 18,
+      "continues_active_thread": 7,
+      "challenges_move_fit": 7
+    },
+    "rejectionReasons": {},
+    "claimDroppedAsUnverifiable": 14
+  },
+  "cells": [
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "group": "affected_repair",
+      "runIndex": 1,
+      "inputFingerprint": "sha256:5319d17fa1a324e8",
+      "currentTurnId": "repair-diag-candidate-fix-repair-intensity-exaggeration-r1",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "shares_distress",
+            "confidence": 0.86,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "group": "affected_repair",
+      "runIndex": 2,
+      "inputFingerprint": "sha256:5319d17fa1a324e8",
+      "currentTurnId": "repair-diag-candidate-fix-repair-intensity-exaggeration-r2",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "shares_distress",
+            "confidence": 0.86,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "group": "affected_repair",
+      "runIndex": 3,
+      "inputFingerprint": "sha256:5319d17fa1a324e8",
+      "currentTurnId": "repair-diag-candidate-fix-repair-intensity-exaggeration-r3",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "shares_distress",
+            "confidence": 0.86,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "group": "affected_repair",
+      "runIndex": 1,
+      "inputFingerprint": "sha256:97b4bfb061ef90ca",
+      "currentTurnId": "repair-diag-candidate-fix-repair-wrong-person-r1",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "group": "affected_repair",
+      "runIndex": 2,
+      "inputFingerprint": "sha256:97b4bfb061ef90ca",
+      "currentTurnId": "repair-diag-candidate-fix-repair-wrong-person-r2",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "group": "affected_repair",
+      "runIndex": 3,
+      "inputFingerprint": "sha256:97b4bfb061ef90ca",
+      "currentTurnId": "repair-diag-candidate-fix-repair-wrong-person-r3",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "group": "affected_repair",
+      "runIndex": 1,
+      "inputFingerprint": "sha256:86a44e953187df69",
+      "currentTurnId": "repair-diag-candidate-fix-repair-repeated-claim-r1",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "group": "affected_repair",
+      "runIndex": 2,
+      "inputFingerprint": "sha256:86a44e953187df69",
+      "currentTurnId": "repair-diag-candidate-fix-repair-repeated-claim-r2",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "group": "affected_repair",
+      "runIndex": 3,
+      "inputFingerprint": "sha256:86a44e953187df69",
+      "currentTurnId": "repair-diag-candidate-fix-repair-repeated-claim-r3",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "group": "affected_repair",
+      "runIndex": 1,
+      "inputFingerprint": "sha256:8801dce6268462e6",
+      "currentTurnId": "repair-diag-candidate-fix-repair-direct-relationship-challenge-r1",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "shares_distress",
+            "confidence": 0.86,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "group": "affected_repair",
+      "runIndex": 2,
+      "inputFingerprint": "sha256:8801dce6268462e6",
+      "currentTurnId": "repair-diag-candidate-fix-repair-direct-relationship-challenge-r2",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "shares_distress",
+            "confidence": 0.86,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "group": "affected_repair",
+      "runIndex": 3,
+      "inputFingerprint": "sha256:8801dce6268462e6",
+      "currentTurnId": "repair-diag-candidate-fix-repair-direct-relationship-challenge-r3",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "shares_distress",
+            "confidence": 0.86,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "group": "affected_repair",
+      "runIndex": 1,
+      "inputFingerprint": "sha256:62a53d325bd495d7",
+      "currentTurnId": "repair-diag-candidate-fix-repair-moralizing-r1",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "group": "affected_repair",
+      "runIndex": 2,
+      "inputFingerprint": "sha256:62a53d325bd495d7",
+      "currentTurnId": "repair-diag-candidate-fix-repair-moralizing-r2",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "group": "affected_repair",
+      "runIndex": 3,
+      "inputFingerprint": "sha256:62a53d325bd495d7",
+      "currentTurnId": "repair-diag-candidate-fix-repair-moralizing-r3",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "repair_or_withdraw",
+            "targetPropositionSupplied": true,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": true,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": true,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "challenges_move_fit",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "group": "passing_repair_control",
+      "runIndex": 1,
+      "inputFingerprint": "sha256:71aac096fe34d6d9",
+      "currentTurnId": "repair-diag-candidate-fix-repair-unsupported-fear-r1",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": false,
+        "used": false,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": true,
+        "repairProposal": true
+      },
+      "rawModel": {
+        "parsed": false,
+        "primaryDialogueAct": "absent",
+        "candidates": []
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.99,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "group": "passing_repair_control",
+      "runIndex": 2,
+      "inputFingerprint": "sha256:71aac096fe34d6d9",
+      "currentTurnId": "repair-diag-candidate-fix-repair-unsupported-fear-r2",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": false,
+        "used": false,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": true,
+        "repairProposal": true
+      },
+      "rawModel": {
+        "parsed": false,
+        "primaryDialogueAct": "absent",
+        "candidates": []
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.99,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "group": "passing_repair_control",
+      "runIndex": 3,
+      "inputFingerprint": "sha256:71aac096fe34d6d9",
+      "currentTurnId": "repair-diag-candidate-fix-repair-unsupported-fear-r3",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": false,
+        "used": false,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": true,
+        "repairProposal": true
+      },
+      "rawModel": {
+        "parsed": false,
+        "primaryDialogueAct": "absent",
+        "candidates": []
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.99,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.68,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "group": "passing_repair_control",
+      "runIndex": 1,
+      "inputFingerprint": "sha256:e259b063a6a1df63",
+      "currentTurnId": "repair-diag-candidate-fix-repair-topic-switch-r1",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.9,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.9,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "group": "passing_repair_control",
+      "runIndex": 2,
+      "inputFingerprint": "sha256:e259b063a6a1df63",
+      "currentTurnId": "repair-diag-candidate-fix-repair-topic-switch-r2",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.9,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.9,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "group": "passing_repair_control",
+      "runIndex": 3,
+      "inputFingerprint": "sha256:e259b063a6a1df63",
+      "currentTurnId": "repair-diag-candidate-fix-repair-topic-switch-r3",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "interpretationModel": {
+        "attempted": true,
+        "used": true,
+        "errored": false
+      },
+      "deterministic": {
+        "repairSignal": false,
+        "repairProposal": false
+      },
+      "rawModel": {
+        "parsed": true,
+        "primaryDialogueAct": "absent",
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "meetsRepairThreshold": true,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "meetsRepairThreshold": false,
+            "target": "legal_assistant_turn",
+            "targetTurnId": "a1",
+            "targetOperation": "absent",
+            "targetPropositionSupplied": false,
+            "targetPropositionMatchesCommittedClaim": false,
+            "targetPropositionEqualsTargetTurnText": false,
+            "acceptedBySideMerge": true,
+            "claimDroppedAsUnverifiable": false,
+            "rejectionReason": "none"
+          }
+        ]
+      },
+      "finalInterpretation": {
+        "candidates": [
+          {
+            "relation": "repairs_previous_move",
+            "confidence": 0.95,
+            "target": "legal_assistant_turn"
+          },
+          {
+            "relation": "continues_active_thread",
+            "confidence": 0.85,
+            "target": "legal_assistant_turn"
+          }
+        ],
+        "repairProposal": true,
+        "repairTarget": "legal_assistant_turn"
+      },
+      "dialogueState": {
+        "primaryActivity": "repairing_common_ground",
+        "repairingCommonGround": true
+      },
+      "plan": {
+        "present": true,
+        "responseActions": [
+          "repair_previous_wording"
+        ],
+        "questionPolicy": "none",
+        "interactionMoveHandoff": false,
+        "positiveFunction": "repair_previous_wording"
+      },
+      "execution": {
+        "phase": "VALIDATED",
+        "finalSource": "llm",
+        "failureCode": "none",
+        "failureReasonTokens": [],
+        "preflightFailures": [],
+        "validationFailures": []
+      },
+      "stage": "repair_planned",
+      "probes": null
+    }
+  ]
+}
