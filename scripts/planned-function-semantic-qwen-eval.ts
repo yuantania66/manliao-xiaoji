@@ -295,6 +295,8 @@ const cases: EvalCase[] = [
     ["respect_declined_sharing-boundary-only-positive", "我很难受，但不想说", "好，那就先不说，不用勉强自己。", true],
     ["respect_declined_sharing-listening-positive", "我很难受，不想被问", "好，我不问，你想说的时候我听着。", true],
     ["respect_declined_sharing-feeling-as-reason", "我很难受，但不想说", "难受就不说，没关系的。", false],
+    ["respect_declined_sharing-prior-pause-feeling-positive", "我今天有点不太高兴", "今天有点不好受啊，陪你安静一会儿。", true],
+    ["respect_declined_sharing-prior-pause-receipt-companionship", "我今天有点不太高兴", "嗯，听到了。我就在这儿陪你待会儿。", false],
   ] as const).map(([id, sourceText, candidateReply, expectedPassed]) => ({
     id: `emotional-${id}`,
     category: "emotional_support" as const,

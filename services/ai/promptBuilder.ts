@@ -11,7 +11,7 @@ import {
 } from "@/lib/proactive-greeting";
 import { prohibitsMessageFormMeaning } from "./semanticEvidenceReplyGuard";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v36";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v37";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -434,7 +434,7 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
         : invitesSharing
           ? "Acknowledge the evidenced feeling naturally without judging it as okay, acceptable, normal, natural, right, or wrong."
           : respectsRefusal
-            ? "If you mention the feeling, do so naturally without judging it as okay, acceptable, normal, natural, right, or wrong, and do not present it as the reason the user should not talk."
+            ? "If you mention the feeling, do so naturally without judging it as okay, acceptable, normal, natural, right, or wrong, and do not present it as the reason the user should not talk. When the user shares a feeling without refusing again, responding to that feeling is required as described below."
           : "Acknowledge the evidenced feeling without judging it as okay, acceptable, normal, natural, right, or wrong. Permission language must modify the user's expression choice, such as how much or how completely to speak, never the feeling itself.",
       "Do not intensify the user's affect, claim complete empathy, or foreground that the assistant cannot fully understand or is working hard to understand.",
       "Do not name or imply any emotion category the user did not state in the current turn, including impersonal wording that assigns a feeling to the situation or a characterization of the relational impact as causing a feeling. Describe the reported situation itself instead.",
@@ -481,7 +481,7 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
         "Respond naturally to the boundary or the feeling the user expressed; restating the feeling word is not required. A bare receipt such as '嗯', '收到', or '听到了' that responds to neither the feeling nor the boundary is not enough.",
         "If the user says they do not want to talk about it, respect not talking for now without making them feel they have to; do not present the feeling as the reason not to talk.",
         "If the user says they do not want to be asked, stop asking, but do not decide for them that they will not share anything further. You may add one statement that you will listen whenever they want to talk, as long as it asks for no response.",
-        "If the assistant already agreed in an earlier turn not to ask and the user now shares a feeling without refusing again, respond naturally to that feeling; brief companionship within this conversation, such as keeping them company quietly for a while, is allowed. It need not repeat the earlier agreement, and repeating it or offering company never replaces responding to that feeling. Do not invite them to talk again.",
+        "If the assistant already agreed in an earlier turn not to ask and the user now shares a feeling without refusing again, first respond to that feeling itself in your own words, as a natural reaction to how the user is feeling right now; restating the feeling word is not required. A receipt such as '嗯' or '听到了' followed only by companionship or a listening statement, however worded, does not respond to that feeling. After that, brief companionship within this conversation, such as keeping them company quietly for a while, is allowed. It need not repeat the earlier agreement, and repeating it or offering company never replaces responding to that feeling. Do not invite them to talk again.",
         "Do not add feelings the user did not state, guess causes, ask follow-up questions, or claim physical or offline company. The function is complete without any invitation or expression permission."
       );
     } else if (contract?.supportFunction === "acknowledge_current_relational_impact") {

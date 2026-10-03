@@ -732,7 +732,10 @@ const run = async () => {
     ],
     responsePlan: pausedThenLow,
   }).messages.map((message) => message.content).join("\n");
-  assert(pausedThenLowPrompt.includes("the user now shares a feeling without refusing again, respond naturally to that feeling"));
+  assert(pausedThenLowPrompt.includes("the user now shares a feeling without refusing again, first respond to that feeling itself in your own words"));
+  assert(pausedThenLowPrompt.includes("followed only by companionship or a listening statement, however worded, does not respond to that feeling"));
+  assert(pausedThenLowPrompt.includes("When the user shares a feeling without refusing again, responding to that feeling is required"));
+  assert.equal(pausedThenLowPrompt.includes("without refusing again, respond naturally to that feeling;"), false);
   assert(pausedThenLowPrompt.includes("brief companionship within this conversation"));
   assert(pausedThenLowPrompt.includes("It need not repeat the earlier agreement, and repeating it or offering company never replaces responding to that feeling"));
   assert(pausedThenLowPrompt.includes("Do not invite them to talk again"));
@@ -740,7 +743,10 @@ const run = async () => {
     "planned_function_semantic:positive_function_not_satisfied",
   ]);
   assert(pausedThenLowRegeneration.includes(`planId=${pausedThenLow.planId}`));
-  assert(pausedThenLowRegeneration.includes("自然回应这份感受，可以简短陪伴，不必再答应一次，也不要重新邀请"));
+  assert(pausedThenLowRegeneration.includes("先用自己的话回应这份感受本身"));
+  assert(pausedThenLowRegeneration.includes("只说“嗯、听到了”再接陪伴或倾听，不管怎么措辞，都不算回应这份感受"));
+  assert(pausedThenLowRegeneration.includes("之后可以简短陪伴，不必再答应一次，也不要重新邀请"));
+  assert.equal(pausedThenLowRegeneration.includes("自然回应这份感受，可以简短陪伴"), false);
   assert(pausedThenLowRegeneration.includes("倾听或陪伴表态不能代替回应"));
   assert(pausedThenLowRegeneration.includes("本计划禁止提问"));
   const pausedReference = validateResponsePlanOutput({ plan: pausedThenLow, reply: "今天有点不好受啊，陪你安静一会儿。" });
@@ -798,6 +804,8 @@ const run = async () => {
   assert(validatorSource.includes("restating the feeling word is not required"));
   assert(validatorSource.includes("is this function itself, not a pause or closure that undoes support"));
   assert(validatorSource.includes("When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling"));
+  assert(validatorSource.includes("a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded"));
+  assert(validatorSource.includes("including a receipt followed only by companionship or listening"));
   assert(validatorSource.includes("One statement of listening or brief in-conversation companionship that requires no response"));
   assert(validatorSource.includes("a bare receipt that responds to neither the stated feeling nor the stated boundary"));
   assert(validatorSource.includes("including asking the User to tell the Assistant later"));
