@@ -1,0 +1,411 @@
+{
+  "note": "Structural copy; user messages, reply texts and evidence text kept locally.",
+  "summary": {
+    "head": "c255ffa",
+    "model": "qwen3.7-max",
+    "judgeModel": "qwen3.8-max-0902",
+    "runsPerScenario": 3,
+    "scenarios": [
+      "declines-talking",
+      "declines-questions",
+      "prior-pause"
+    ],
+    "plannedTotal": 9,
+    "skippedTurns": 0,
+    "completed": 9,
+    "stoppedOn": null,
+    "planMismatches": 0,
+    "committed": 9,
+    "constraintFailures": 0,
+    "regenerations": 1
+  },
+  "rows": [
+    {
+      "scenarioId": "declines-talking",
+      "runIndex": 1,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "respect_declined_sharing",
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "expectedQuestionPolicy": "none",
+      "finalSource": "llm",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v35",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 13,
+                "ruleIds": []
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ]
+    },
+    {
+      "scenarioId": "declines-talking",
+      "runIndex": 2,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "respect_declined_sharing",
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "expectedQuestionPolicy": "none",
+      "finalSource": "llm",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v35",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 13,
+                "ruleIds": []
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ]
+    },
+    {
+      "scenarioId": "declines-talking",
+      "runIndex": 3,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "respect_declined_sharing",
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "expectedQuestionPolicy": "none",
+      "finalSource": "llm",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v35",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 13,
+                "ruleIds": []
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ]
+    },
+    {
+      "scenarioId": "declines-questions",
+      "runIndex": 1,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "respect_declined_sharing",
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "expectedQuestionPolicy": "none",
+      "finalSource": "llm",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v35",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 14,
+                "ruleIds": [
+                  "ES-AFFECT-EVIDENCE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ]
+    },
+    {
+      "scenarioId": "declines-questions",
+      "runIndex": 2,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "respect_declined_sharing",
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "expectedQuestionPolicy": "none",
+      "finalSource": "llm",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v35",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 14,
+                "ruleIds": [
+                  "ES-AFFECT-EVIDENCE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ]
+    },
+    {
+      "scenarioId": "declines-questions",
+      "runIndex": 3,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "respect_declined_sharing",
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "expectedQuestionPolicy": "none",
+      "finalSource": "llm",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v35",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 7,
+                "ruleIds": []
+              },
+              {
+                "start": 8,
+                "end": 11,
+                "ruleIds": []
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ]
+    },
+    {
+      "scenarioId": "prior-pause",
+      "runIndex": 1,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "respect_declined_sharing",
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "expectedQuestionPolicy": "none",
+      "finalSource": "llm",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v35",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 17,
+                "ruleIds": [
+                  "ES-AFFECT-EVIDENCE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ]
+    },
+    {
+      "scenarioId": "prior-pause",
+      "runIndex": 2,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "respect_declined_sharing",
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "expectedQuestionPolicy": "none",
+      "finalSource": "llm_regenerate",
+      "executionFailure": null,
+      "regenerateAttempted": true,
+      "promptVersion": "chat-response-plan-v35",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "semanticAudit": {
+            "status": "not_satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25,
+                "ruleIds": [
+                  "ES-ACK-NO-SOLICIT"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        },
+        {
+          "attempt": 2,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 21,
+                "ruleIds": [
+                  "ES-AFFECT-EVIDENCE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ]
+    },
+    {
+      "scenarioId": "prior-pause",
+      "runIndex": 3,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "respect_declined_sharing",
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "expectedQuestionPolicy": "none",
+      "finalSource": "llm",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v35",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 9,
+                "ruleIds": [
+                  "ES-AFFECT-EVIDENCE"
+                ]
+              },
+              {
+                "start": 9,
+                "end": 12,
+                "ruleIds": [
+                  "ES-ACK-NO-SOLICIT"
+                ]
+              },
+              {
+                "start": 13,
+                "end": 20,
+                "ruleIds": []
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ]
+    }
+  ]
+}
