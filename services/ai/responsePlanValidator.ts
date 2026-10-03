@@ -974,7 +974,7 @@ const EMOTIONAL_SUPPORT_FUNCTION_REGENERATION: Record<
   invite_optional_sharing: () =>
     "先自然地接住用户说出的感受，再给至多一句容易拒绝的温和邀请，让用户愿意的话再多说一些；用户没说发生了什么时可以邀请说说发生了什么，已经说了事件时就围绕那件事，不要当作不知道再问，也不要问细节。不需要谈控制权、说多少或先说哪部分。",
   respect_declined_sharing: () =>
-    "自然地接住用户说出的感受，并直接尊重用户不想说或不想被问的意愿，比如答应不问；说完即完成。",
+    "明确说出用户本轮的感受本身（可以用同等或更轻的说法），只说“嗯、听到了、知道了”不算接住；再尊重用户不想说或不想被问的意愿。之前已经答应过不问的，不必重复答应，接住感受、不提问即可；说完即完成。",
 };
 
 const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, failure: string) => {

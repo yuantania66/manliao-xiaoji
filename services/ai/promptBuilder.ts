@@ -11,7 +11,7 @@ import {
 } from "@/lib/proactive-greeting";
 import { prohibitsMessageFormMeaning } from "./semanticEvidenceReplyGuard";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v34";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v35";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -474,7 +474,8 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
       );
     } else if (respectsRefusal) {
       constraints.push(
-        "Naturally acknowledge the feeling the user stated, then plainly respect their wish not to talk about it or not to be asked, for example by agreeing not to ask. The function is complete without any invitation or expression permission."
+        "Naturally acknowledge the feeling the user stated by naming that feeling itself, in the same or milder words; a bare '嗯', '听到了', or '知道了' is a receipt, not an acknowledgement. Then plainly respect their wish not to talk about it or not to be asked.",
+        "If the assistant already agreed in an earlier turn not to ask, it need not repeat that agreement, and repeating it never replaces acknowledging the feeling the user is sharing now; acknowledging that feeling without asking anything is enough. The function is complete without any invitation or expression permission."
       );
     } else if (contract?.supportFunction === "acknowledge_current_relational_impact") {
       constraints.push(

@@ -632,6 +632,7 @@ const run = async () => {
     const invitePrompt = formatResponsePlanForPrompt(invitePlan);
     assert(invitePrompt.includes("if the user already stated the event, refer to that event"));
     assert(invitePrompt.includes("Do not ask why, for the cause, for specific details"));
+    assert.equal(invitePrompt.includes("need not repeat that agreement"), false, `${userMessage} keeps the invitation constraints only.`);
     const inviteRegeneration = formatResponsePlanRegenerateConstraint(invitePlan, [
       "planned_function_semantic:positive_function_not_satisfied",
       "planned_function_semantic:question_count_quality",
@@ -671,6 +672,8 @@ const run = async () => {
     assert.equal(declinedPrompt.includes("Give the user control over how much to express"), false);
     assert.equal(declinedPrompt.includes("grants that control"), false);
     assert(declinedPrompt.includes("plainly respect their wish not to talk about it or not to be asked"));
+    assert(declinedPrompt.includes("a bare '嗯', '听到了', or '知道了' is a receipt, not an acknowledgement"));
+    assert(declinedPrompt.includes("repeating it never replaces acknowledging the feeling"));
     assert(declinedPrompt.includes("do not give permission about how much, which part, or when to say anything"));
     const declinedRegeneration = formatResponsePlanRegenerateConstraint(declinedPlan, [
       "planned_function_semantic:positive_function_not_satisfied",
@@ -678,6 +681,7 @@ const run = async () => {
     ]);
     assert(declinedRegeneration.includes("本计划禁止提问"));
     assert(declinedRegeneration.includes("尊重用户不想说或不想被问的意愿"));
+    assert(declinedRegeneration.includes("只说“嗯、听到了、知道了”不算接住"));
     assert(declinedRegeneration.includes("不要给“想说多少、说哪部分、以后再说”这类表达许可"));
   }
   for (const [userMessage, expected] of [
@@ -699,6 +703,24 @@ const run = async () => {
   }).responsePlan;
   assert.equal(supportFunctionOf(pausedThenLow), "respect_declined_sharing", "A prior pause boundary removes the invitation.");
   assert.equal(pausedThenLow.questionPolicy.mode, "none");
+  const pausedThenLowPrompt = buildChatPrompt({
+    userMessage: "我今天有点不太高兴",
+    recentMessages: [
+      { id: "pause-user", role: "user", content: "先别问了" },
+      { id: "pause-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+    responsePlan: pausedThenLow,
+  }).messages.map((message) => message.content).join("\n");
+  assert(pausedThenLowPrompt.includes("by naming that feeling itself, in the same or milder words"));
+  assert(pausedThenLowPrompt.includes("it need not repeat that agreement"));
+  assert(pausedThenLowPrompt.includes("repeating it never replaces acknowledging the feeling the user is sharing now"));
+  const pausedThenLowRegeneration = formatResponsePlanRegenerateConstraint(pausedThenLow, [
+    "planned_function_semantic:positive_function_not_satisfied",
+  ]);
+  assert(pausedThenLowRegeneration.includes(`planId=${pausedThenLow.planId}`));
+  assert(pausedThenLowRegeneration.includes("只说“嗯、听到了、知道了”不算接住"));
+  assert(pausedThenLowRegeneration.includes("不必重复答应"));
+  assert(pausedThenLowRegeneration.includes("本计划禁止提问"));
   const reopenedAfterPause = build({
     userMessage: "你问吧，我今天有点不太高兴",
     recentMessages: [
