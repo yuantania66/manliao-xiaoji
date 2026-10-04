@@ -450,6 +450,8 @@ export type EmotionalSupportFunction =
   | "invite_optional_sharing"
   | "respect_declined_sharing";
 
+export type DeclinedSharingSource = "current_turn" | "previous_user_turn";
+
 export type RepairCompletionMode =
   | "factual_replacement"
   | "proposition_withdrawal"
@@ -484,6 +486,8 @@ export type PositiveFunctionContract =
       /** Compatibility projection derived from affectEvidenceSpans. */
       explicitAffectOrImpactTerms: string[];
       intensityCeiling: "current_user_expression";
+      /** Where the Planner found the refusal; present only when it replaced the function with respect_declined_sharing. */
+      declinedSharingSource?: DeclinedSharingSource;
       evidence: string[];
     }
   | {

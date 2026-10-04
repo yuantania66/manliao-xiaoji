@@ -1,6 +1,7 @@
 import type {
   ClinicalStrategyAdvice,
   ConversationControlContext,
+  DeclinedSharingSource,
   DialogueState,
   EmotionalSupportFunction,
   InteractionMoveSubtype,
@@ -221,14 +222,14 @@ const emotionalSupportFunctionFor = ({
   return "invite_optional_sharing";
 };
 
-const sharingInvitationDeclined = (context: ConversationControlContext) => {
-  if (declinesSharingInvitation(context.currentUserMessage)) return true;
+const sharingInvitationDeclinedSource = (context: ConversationControlContext): DeclinedSharingSource | null => {
+  if (declinesSharingInvitation(context.currentUserMessage)) return "current_turn";
   const previousUserTurn = [...context.adjacentTurns].reverse().find((turn) => turn.role === "user");
-  return Boolean(
-    previousUserTurn &&
+  return previousUserTurn &&
     declinesSharingInvitation(previousUserTurn.content) &&
     !reopensInteraction(context.currentUserMessage)
-  );
+    ? "previous_user_turn"
+    : null;
 };
 
 const withoutSharingInvitation = (
@@ -237,7 +238,13 @@ const withoutSharingInvitation = (
     replaces,
     replacement,
     reason,
-  }: { replaces: EmotionalSupportFunction[]; replacement: EmotionalSupportFunction; reason: string }
+    declinedSharingSource,
+  }: {
+    replaces: EmotionalSupportFunction[];
+    replacement: EmotionalSupportFunction;
+    reason: string;
+    declinedSharingSource?: DeclinedSharingSource | null;
+  }
 ): PositiveFunctionContract | null => {
   if (contract?.action !== "offer_emotional_support" || !replaces.includes(contract.supportFunction)) {
     return contract;
@@ -246,6 +253,7 @@ const withoutSharingInvitation = (
   return {
     ...contract,
     supportFunction: replacement,
+    ...(declinedSharingSource ? { declinedSharingSource } : {}),
     evidence: [
       ...contract.evidence.map((item) =>
         item === `supportFunction=${replaced}` ? `supportFunction=${replacement}` : item
@@ -701,8 +709,10 @@ export const createResponsePlan = ({
   const acknowledgesRelationalImpact =
     selectedPositiveFunctionContract?.action === "offer_emotional_support" &&
     selectedPositiveFunctionContract.supportFunction === "acknowledge_current_relational_impact";
-  const emotionalSupportDeclinesInvitation =
-    actions.includes("offer_emotional_support") && sharingInvitationDeclined(context);
+  const declinedSharingSource = actions.includes("offer_emotional_support")
+    ? sharingInvitationDeclinedSource(context)
+    : null;
+  const emotionalSupportDeclinesInvitation = declinedSharingSource !== null;
   const handoffInvitesCalibration = actions.includes("invite_low_pressure_calibration");
   const handoffRequiresNoQuestion = actions.some((action) =>
     action === "continue_established_frame" ||
@@ -736,6 +746,7 @@ export const createResponsePlan = ({
         replaces: ["invite_optional_sharing", "return_amount_control", "return_focus_control"],
         replacement: "respect_declined_sharing",
         reason: "user_declined_questions_or_talking",
+        declinedSharingSource,
       })
     : questionMode === "none"
       ? withoutSharingInvitation(selectedPositiveFunctionContract, {

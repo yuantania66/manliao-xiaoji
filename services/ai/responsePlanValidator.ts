@@ -1,4 +1,9 @@
-import { ASSISTANT_GROUNDING, type ResponsePlan, type ResponseValidationResult } from "@/conversation-os/control";
+import {
+  ASSISTANT_GROUNDING,
+  type DeclinedSharingSource,
+  type ResponsePlan,
+  type ResponseValidationResult,
+} from "@/conversation-os/control";
 import { extractAffectEvidence } from "@/conversation-os/state";
 import { explicitlyResumesPreGreetingHistory } from "@/lib/proactive-greeting";
 
@@ -977,6 +982,14 @@ const EMOTIONAL_SUPPORT_FUNCTION_REGENERATION: Record<
     "自然回应用户表达的边界或感受，不要求逐字复述情绪词；只说“嗯、收到、听到了”而既没回应感受也没回应边界不算完成。用户说不想说时，尊重先不说，不要把感受说成不该说的理由；用户说不想被问时，停止追问，但不要替用户决定不再表达，可以加一句不要求回应的倾听表态。之前已经答应过不问、用户本轮只是说感受时，先用自己的话回应这份感受本身，像是对用户此刻状态的自然反应；只说“嗯、听到了”再接陪伴或倾听，不管怎么措辞，都不算回应这份感受。之后可以简短陪伴，不必再答应一次，也不要重新邀请；说完即完成。",
 };
 
+// A plan without declinedSharingSource keeps the combined respect_declined_sharing instruction.
+const RESPECT_DECLINED_SHARING_REGENERATION_BY_SOURCE: Record<DeclinedSharingSource, string> = {
+  current_turn:
+    "自然回应用户表达的边界或感受，不要求逐字复述情绪词；只说“嗯、收到、听到了”而既没回应感受也没回应边界不算完成。用户说不想说时，尊重先不说，不要把感受说成不该说的理由；用户说不想被问时，停止追问，但不要替用户决定不再表达，可以加一句不要求回应的倾听表态。说完即完成。",
+  previous_user_turn:
+    "之前已经答应过不问，用户本轮只是说感受：先用自己的话回应这份感受本身，像是对用户此刻状态的自然反应，不要求逐字复述情绪词；只说“嗯、听到了”再接陪伴或倾听，不管怎么措辞，都不算回应这份感受。之后可以简短陪伴，不必再答应一次，也不要重新邀请；说完即完成。",
+};
+
 const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, failure: string) => {
   const contract = plan.positiveFunctionContract;
   if (contract?.action !== "offer_emotional_support") return null;
@@ -996,7 +1009,11 @@ const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, fai
     failure === "planned_function_semantic:positive_function_not_satisfied" ||
     failure === "planned_function_semantic:positive_function_uncertain"
   ) {
-    return `候选没有完成情绪支持功能“${contract.supportFunction}”。只使用用户本轮已表达的${terms}，保持原有情绪类别和强度。${EMOTIONAL_SUPPORT_FUNCTION_REGENERATION[contract.supportFunction](terms)}${contentBoundary}${invitationBoundary}`;
+    const functionInstruction =
+      contract.supportFunction === "respect_declined_sharing" && contract.declinedSharingSource
+        ? RESPECT_DECLINED_SHARING_REGENERATION_BY_SOURCE[contract.declinedSharingSource]
+        : EMOTIONAL_SUPPORT_FUNCTION_REGENERATION[contract.supportFunction](terms);
+    return `候选没有完成情绪支持功能“${contract.supportFunction}”。只使用用户本轮已表达的${terms}，保持原有情绪类别和强度。${functionInstruction}${contentBoundary}${invitationBoundary}`;
   }
   if (failure === "planned_function_semantic:question_count_quality") {
     return `情绪支持功能“${contract.supportFunction}”的语义请求超出计划。${invitationBoundary}${contentBoundary}`;

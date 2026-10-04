@@ -625,9 +625,14 @@ const run = async () => {
     plan.positiveFunctionContract?.action === "offer_emotional_support"
       ? plan.positiveFunctionContract.supportFunction
       : null;
+  const declinedSharingSourceOf = (plan: ResponsePlan) =>
+    plan.positiveFunctionContract?.action === "offer_emotional_support"
+      ? plan.positiveFunctionContract.declinedSharingSource
+      : undefined;
   for (const userMessage of ["我今天有点不太高兴", "心里有点堵", "今天被领导当众批评了，有点不太高兴"]) {
     const invitePlan = build({ userMessage }).responsePlan;
     assert.equal(supportFunctionOf(invitePlan), "invite_optional_sharing", userMessage);
+    assert.equal(declinedSharingSourceOf(invitePlan), undefined, `${userMessage} carries no refusal source.`);
     assert.equal(invitePlan.questionPolicy.mode, "optional_after_answer", `${userMessage} allows one optional invitation.`);
     const invitePrompt = formatResponsePlanForPrompt(invitePlan);
     assert(invitePrompt.includes("if the user already stated the event, refer to that event"));
@@ -667,7 +672,10 @@ const run = async () => {
       )
     );
     assert(declinedPlan.positiveFunctionContract?.evidence.includes("supportFunction=respect_declined_sharing"));
+    assert.equal(declinedSharingSourceOf(declinedPlan), "current_turn", `${userMessage}: the refusal source is the current turn.`);
     const declinedPrompt = formatResponsePlanForPrompt(declinedPlan);
+    assert.equal(declinedPrompt.includes("already agreed in an earlier turn"), false, "A current refusal carries no prior-pause branch.");
+    assert.equal(declinedPrompt.includes("responding to that feeling is required"), false);
     assert.equal(declinedPrompt.includes("at most one gentle invitation the user can easily decline"), false);
     assert.equal(declinedPrompt.includes("Give the user control over how much to express"), false);
     assert.equal(declinedPrompt.includes("grants that control"), false);
@@ -693,6 +701,7 @@ const run = async () => {
     assert(declinedRegeneration.includes("不要给“想说多少、说哪部分”这类表达许可"));
     assert.equal(declinedRegeneration.includes("以后再说”这类表达许可"), false);
     assert.equal(declinedRegeneration.includes("不要用“我在、陪着你”这类套话"), false);
+    assert.equal(declinedRegeneration.includes("之前已经答应过不问"), false, "A current refusal regeneration carries no prior-pause branch.");
   }
   for (const [userMessage, reply] of [
     ["我有点难受，但不想说", "好，那就先不说，不用勉强自己。"],
@@ -714,6 +723,7 @@ const run = async () => {
       expected,
       `${userMessage}: an explicitly selected burden or partial-amount function is not a refusal to talk.`
     );
+    assert.equal(declinedSharingSourceOf(build({ userMessage }).responsePlan), undefined);
   }
   const pausedThenLow = build({
     userMessage: "我今天有点不太高兴",
@@ -732,10 +742,25 @@ const run = async () => {
     ],
     responsePlan: pausedThenLow,
   }).messages.map((message) => message.content).join("\n");
-  assert(pausedThenLowPrompt.includes("the user now shares a feeling without refusing again, first respond to that feeling itself in your own words"));
+  assert.equal(declinedSharingSourceOf(pausedThenLow), "previous_user_turn");
+  assert(pausedThenLowPrompt.includes("The assistant already agreed in an earlier turn not to ask, and the user now shares a feeling without refusing again: first respond to that feeling itself in your own words"));
   assert(pausedThenLowPrompt.includes("followed only by companionship or a listening statement, however worded, does not respond to that feeling"));
-  assert(pausedThenLowPrompt.includes("When the user shares a feeling without refusing again, responding to that feeling is required"));
-  assert.equal(pausedThenLowPrompt.includes("without refusing again, respond naturally to that feeling;"), false);
+  assert(pausedThenLowPrompt.includes("The reply is complete once it responds to the feeling the user shares now"));
+  for (const currentRefusalWording of [
+    "boundary or feeling",
+    "boundary or the feeling",
+    "nor their stated boundary",
+    "If you mention the feeling",
+    "do not want to talk about it",
+    "do not want to be asked",
+    "If the assistant already agreed",
+  ]) {
+    assert.equal(
+      pausedThenLowPrompt.includes(currentRefusalWording),
+      false,
+      `A prior pause must not carry the current-refusal completion wording: ${currentRefusalWording}`
+    );
+  }
   assert(pausedThenLowPrompt.includes("brief companionship within this conversation"));
   assert(pausedThenLowPrompt.includes("It need not repeat the earlier agreement, and repeating it or offering company never replaces responding to that feeling"));
   assert(pausedThenLowPrompt.includes("Do not invite them to talk again"));
@@ -747,8 +772,55 @@ const run = async () => {
   assert(pausedThenLowRegeneration.includes("只说“嗯、听到了”再接陪伴或倾听，不管怎么措辞，都不算回应这份感受"));
   assert(pausedThenLowRegeneration.includes("之后可以简短陪伴，不必再答应一次，也不要重新邀请"));
   assert.equal(pausedThenLowRegeneration.includes("自然回应这份感受，可以简短陪伴"), false);
+  for (const currentRefusalWording of ["边界或感受", "回应边界", "用户说不想说", "用户说不想被问"]) {
+    assert.equal(
+      pausedThenLowRegeneration.includes(currentRefusalWording),
+      false,
+      `A prior-pause regeneration must not carry the current-refusal wording: ${currentRefusalWording}`
+    );
+  }
   assert(pausedThenLowRegeneration.includes("倾听或陪伴表态不能代替回应"));
   assert(pausedThenLowRegeneration.includes("本计划禁止提问"));
+  const legacyPausedPlan = structuredClone(pausedThenLow);
+  if (legacyPausedPlan.positiveFunctionContract?.action === "offer_emotional_support") {
+    delete legacyPausedPlan.positiveFunctionContract.declinedSharingSource;
+  }
+  const legacyPausedPrompt = formatResponsePlanForPrompt(legacyPausedPlan);
+  assert(legacyPausedPrompt.includes("Respond naturally to the boundary or the feeling the user expressed"), "A plan without the source keeps the combined wording.");
+  assert(legacyPausedPrompt.includes("If the user says they do not want to talk about it"));
+  assert(legacyPausedPrompt.includes("If the assistant already agreed in an earlier turn not to ask and the user now shares a feeling without refusing again, first respond"));
+  assert(legacyPausedPrompt.includes("When the user shares a feeling without refusing again, responding to that feeling is required"));
+  const legacyPausedRegeneration = formatResponsePlanRegenerateConstraint(legacyPausedPlan, [
+    "planned_function_semantic:positive_function_not_satisfied",
+  ]);
+  assert(legacyPausedRegeneration.includes("自然回应用户表达的边界或感受"));
+  assert(legacyPausedRegeneration.includes("之前已经答应过不问、用户本轮只是说感受时"));
+  const judgeBindings: unknown[] = [];
+  for (const plan of [pausedThenLow, legacyPausedPlan]) {
+    await validatePlannedFunctionSemanticOutput({
+      plan,
+      reply: "今天有点不好受啊，陪你安静一会儿。",
+      semanticContext: { currentUserText: "我今天有点不太高兴", handoffTargetAssistantText: null, priorAssistantTurnAvailable: true },
+      provider: async (input) => {
+        judgeBindings.push(input.positiveFunctionBinding);
+        throw new Error("capture judge input only");
+      },
+    });
+  }
+  assert.deepEqual(judgeBindings[0], judgeBindings[1], "The refusal source must not change the judge input.");
+  assert.equal(JSON.stringify(judgeBindings[0]).includes("declinedSharingSource"), false);
+  const refusalAfterPause = build({
+    userMessage: "我有点难受，但不想说",
+    recentMessages: [
+      { id: "pause-user", role: "user", content: "先别问了" },
+      { id: "pause-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+  }).responsePlan;
+  assert.equal(supportFunctionOf(refusalAfterPause), "respect_declined_sharing");
+  assert.equal(declinedSharingSourceOf(refusalAfterPause), "current_turn", "A current refusal takes precedence over an earlier pause.");
+  const refusalAfterPausePrompt = formatResponsePlanForPrompt(refusalAfterPause);
+  assert(refusalAfterPausePrompt.includes("If the user says they do not want to talk about it"));
+  assert.equal(refusalAfterPausePrompt.includes("already agreed in an earlier turn"), false);
   const pausedReference = validateResponsePlanOutput({ plan: pausedThenLow, reply: "今天有点不好受啊，陪你安静一会儿。" });
   assert.equal(
     pausedReference.passed,
@@ -768,6 +840,7 @@ const run = async () => {
     "An explicit reopen restores the optional invitation."
   );
   assert.equal(reopenedAfterPause.questionPolicy.mode, "optional_after_answer");
+  assert.equal(declinedSharingSourceOf(reopenedAfterPause), undefined, "An explicit reopen carries no refusal source.");
   const reopenedPrompt = formatResponsePlanForPrompt(reopenedAfterPause);
   assert(reopenedPrompt.includes("at most one gentle invitation the user can easily decline"));
   assert.equal(reopenedPrompt.includes("Do not invite them to talk again"), false, "An explicit reopen carries no refusal constraints.");
@@ -779,6 +852,7 @@ const run = async () => {
     ],
   }).responsePlan;
   assert.equal(supportFunctionOf(noTalkAfterInvite), "respect_declined_sharing", "A prior refusal to talk carries into the next turn.");
+  assert.equal(declinedSharingSourceOf(noTalkAfterInvite), "previous_user_turn");
   const answeredAssistantQuestion = build({
     userMessage: "有点不太高兴",
     recentMessages: [{

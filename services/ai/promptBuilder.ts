@@ -11,7 +11,7 @@ import {
 } from "@/lib/proactive-greeting";
 import { prohibitsMessageFormMeaning } from "./semanticEvidenceReplyGuard";
 
-export const CHAT_PROMPT_VERSION = "chat-response-plan-v37";
+export const CHAT_PROMPT_VERSION = "chat-response-plan-v38";
 export const JUDGE_PROMPT_VERSION = "judge-disabled-v1";
 export const REWRITE_PROMPT_VERSION = "rewrite-disabled-v1";
 export const FALLBACK_PROMPT_VERSION = "fallback-v1";
@@ -419,11 +419,17 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
       : null;
     const invitesSharing = contract?.supportFunction === "invite_optional_sharing";
     const respectsRefusal = contract?.supportFunction === "respect_declined_sharing";
+    // A plan without declinedSharingSource keeps the combined wording for every refusal source.
+    const declinedSharingSource = respectsRefusal ? contract?.declinedSharingSource : undefined;
+    const refusedEarlier = declinedSharingSource === "previous_user_turn";
+    const refusedNow = declinedSharingSource === "current_turn";
     constraints.push(
       `Use only the turn-local affect or relational-impact spans in positiveFunctionContract; preserve each span's category, intensity, and object without strengthening it. Evidence spans: ${JSON.stringify(contract?.affectEvidenceSpans ?? [])}.`,
       `Complete exactly the selected ordinary support function: ${contract?.supportFunction ?? "missing_contract"}. This is a required conversational function, not a suggested phrase.`,
       invitesSharing
         ? "A receipt or paraphrase alone, a generic presence claim, or a statement about the assistant trying to understand is not sufficient support."
+        : refusedEarlier
+          ? "A receipt, a companionship or listening statement alone, or a statement about the assistant trying to understand is not sufficient support."
         : respectsRefusal
           ? "A bare receipt that responds to neither the user's feeling nor their stated boundary, a presence claim alone, or a statement about the assistant trying to understand is not sufficient support."
           : "A receipt, paraphrase, generic invitation, generic presence claim, or statement about the assistant trying to understand is not sufficient support.",
@@ -433,6 +439,10 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
         ? "Acknowledge the evidenced relational impact without judging it as okay, acceptable, normal, natural, right, or wrong."
         : invitesSharing
           ? "Acknowledge the evidenced feeling naturally without judging it as okay, acceptable, normal, natural, right, or wrong."
+          : refusedEarlier
+            ? "Respond to the feeling the user shares now without judging it as okay, acceptable, normal, natural, right, or wrong."
+          : refusedNow
+            ? "If you mention the feeling, do so naturally without judging it as okay, acceptable, normal, natural, right, or wrong, and do not present it as the reason the user should not talk."
           : respectsRefusal
             ? "If you mention the feeling, do so naturally without judging it as okay, acceptable, normal, natural, right, or wrong, and do not present it as the reason the user should not talk. When the user shares a feeling without refusing again, responding to that feeling is required as described below."
           : "Acknowledge the evidenced feeling without judging it as okay, acceptable, normal, natural, right, or wrong. Permission language must modify the user's expression choice, such as how much or how completely to speak, never the feeling itself.",
@@ -442,6 +452,8 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
         ? "Do not turn the acknowledgement into a requirement to continue; no follow-up question is required."
         : invitesSharing
           ? "The invitation must stay easy to decline; do not make continuing feel required."
+          : refusedEarlier
+            ? "The reply is complete once it responds to the feeling the user shares now as described below; no follow-up is needed."
           : respectsRefusal
             ? "The reply is complete once it naturally responds to the user's boundary or feeling as described below; no follow-up is needed."
             : "Realize the selected support function as permission and user control, not as a requirement to continue. The reply is complete once it acknowledges the evidenced feeling and grants that control; no follow-up question is required.",
@@ -477,11 +489,22 @@ const surfaceConstraintsFor = (responsePlan: ResponsePlan) => {
         "You may add that there is no hurry. The function does not require talking about control, how much to say, or which part to choose."
       );
     } else if (respectsRefusal) {
-      constraints.push(
+      const currentRefusalBranches = [
         "Respond naturally to the boundary or the feeling the user expressed; restating the feeling word is not required. A bare receipt such as '嗯', '收到', or '听到了' that responds to neither the feeling nor the boundary is not enough.",
         "If the user says they do not want to talk about it, respect not talking for now without making them feel they have to; do not present the feeling as the reason not to talk.",
         "If the user says they do not want to be asked, stop asking, but do not decide for them that they will not share anything further. You may add one statement that you will listen whenever they want to talk, as long as it asks for no response.",
-        "If the assistant already agreed in an earlier turn not to ask and the user now shares a feeling without refusing again, first respond to that feeling itself in your own words, as a natural reaction to how the user is feeling right now; restating the feeling word is not required. A receipt such as '嗯' or '听到了' followed only by companionship or a listening statement, however worded, does not respond to that feeling. After that, brief companionship within this conversation, such as keeping them company quietly for a while, is allowed. It need not repeat the earlier agreement, and repeating it or offering company never replaces responding to that feeling. Do not invite them to talk again.",
+      ];
+      const pauseDetail =
+        "first respond to that feeling itself in your own words, as a natural reaction to how the user is feeling right now; restating the feeling word is not required. A receipt such as '嗯' or '听到了' followed only by companionship or a listening statement, however worded, does not respond to that feeling. After that, brief companionship within this conversation, such as keeping them company quietly for a while, is allowed. It need not repeat the earlier agreement, and repeating it or offering company never replaces responding to that feeling. Do not invite them to talk again.";
+      constraints.push(
+        ...(refusedEarlier
+          ? [`The assistant already agreed in an earlier turn not to ask, and the user now shares a feeling without refusing again: ${pauseDetail}`]
+          : refusedNow
+            ? currentRefusalBranches
+            : [
+                ...currentRefusalBranches,
+                `If the assistant already agreed in an earlier turn not to ask and the user now shares a feeling without refusing again, ${pauseDetail}`,
+              ]),
         "Do not add feelings the user did not state, guess causes, ask follow-up questions, or claim physical or offline company. The function is complete without any invitation or expression permission."
       );
     } else if (contract?.supportFunction === "acknowledge_current_relational_impact") {

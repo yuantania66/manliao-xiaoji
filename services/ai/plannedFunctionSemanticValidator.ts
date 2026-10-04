@@ -516,6 +516,14 @@ const ordinaryQuestionSupportedByPlan = (plan: ResponsePlan) =>
     )
   );
 
+// declinedSharingSource only selects generation branches; the judge input stays as approved.
+const judgeBindingFor = (contract: ResponsePlan["positiveFunctionContract"]): ResponsePlan["positiveFunctionContract"] => {
+  if (contract?.action !== "offer_emotional_support" || contract.declinedSharingSource === undefined) return contract;
+  const judgeContract = { ...contract };
+  delete judgeContract.declinedSharingSource;
+  return judgeContract;
+};
+
 export const validatePlannedFunctionSemanticOutput = async ({
   plan,
   reply,
@@ -572,7 +580,7 @@ export const validatePlannedFunctionSemanticOutput = async ({
     const providerInput: PlannedFunctionSemanticProviderInput = {
       planId: plan.planId,
       handoffBinding: handoff,
-      positiveFunctionBinding: positiveFunction,
+      positiveFunctionBinding: judgeBindingFor(positiveFunction),
       currentUserText: semanticContext.currentUserText,
       handoffTargetAssistantText: semanticContext.handoffTargetAssistantText,
       candidateReply: reply,
