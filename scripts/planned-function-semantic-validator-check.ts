@@ -705,7 +705,7 @@ for (const ruleId of ["ES-AFFECT-EVIDENCE", "ES-SCOPE", "ES-FOCUS", "ES-ACK-BOUN
 assert(
   judgeRubric.includes("phrased impersonally as a quality of the situation") &&
     judgeRubric.includes("presented as the Assistant's characterization of the relational impact") &&
-    judgeRubric.includes("Decide by whether an unevidenced emotion category is added, not by word lists."),
+    judgeRubric.includes("Decide by whether an unevidenced emotion category or a stronger intensity is added, not by word lists."),
   "ES-AFFECT-EVIDENCE must cover impersonal and relational-impact emotion labels without word lists"
 );
 assert(
@@ -980,11 +980,11 @@ const noFunction = await validatePlannedFunctionSemanticOutput({
 assert.equal(noFunction.passed, true);
 assert.equal(noFunctionCalls, 0);
 
-// Q judges real refusal-source branches with the same prompt as production; source-less fixtures keep v38.
-const V38_JUDGE_DEVELOPER_SHA256 = "ed581c46bb6e6ef403b93014b169ad4889938a48f8cc7e325888c0627661a123";
+// Q judges real refusal-source branches with the same prompt as production; source-less fixtures keep both branches.
+const SOURCELESS_JUDGE_DEVELOPER_SHA256 = "7a8dbaa07cf7d25c371751aab1907728b49a5d6a4c1efe1ec653ca366c1c6915";
 const BRANCH_DEVELOPER_SHA256 = {
-  current_turn: "9ec838c034e30e452c3ae3353ddb2ea4bda5fe1dc523deed6b5f69a89ce6769e",
-  previous_user_turn: "f4c3bb132e0b154765ff8bd7e69c2b0f07b79f3f23fb34c4bc40ad4aa62252a1",
+  current_turn: "42483a8ef1c70c04a438a2cac2b3fa8dc315711000e6ea644fecee2f3e329e17",
+  previous_user_turn: "902c41dd0df3a404d7c2acf98b0f4c1872ee878ff3629b4b762d35f921c831f0",
 } as const;
 const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
 const capturedMessages = async (call: (inspect: (input: { messages: Array<{ content: string }> }) => void) => Promise<unknown>) => {
@@ -1011,7 +1011,7 @@ for (const item of respectQwenCases) {
   assert.equal(qwenMessages[1].includes("declinedSharingSource"), false, `${item.id}: the source is not judge data.`);
   if (source === undefined) {
     assert(!item.id.endsWith("-planner-source"));
-    assert.equal(sha256Of(qwenMessages[0]), V38_JUDGE_DEVELOPER_SHA256, `${item.id}: source-less fixtures keep the v38 judge prompt.`);
+    assert.equal(sha256Of(qwenMessages[0]), SOURCELESS_JUDGE_DEVELOPER_SHA256, `${item.id}: source-less fixtures keep the combined judge prompt.`);
     continue;
   }
   assert(item.id.endsWith("-planner-source"));

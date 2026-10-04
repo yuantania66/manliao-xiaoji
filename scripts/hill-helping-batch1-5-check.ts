@@ -825,24 +825,39 @@ const run = async () => {
     return captured[0];
   };
   const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
-  // Recorded developer-message sha256 of the v38 judge in the 53458ce and 7cf4535 demo runs.
+  // Developer-message sha256 before this slice: v38 (recorded in the 53458ce and 7cf4535 demo runs) and the
+  // 3135181 source branches. Reverting exactly the declared segments must reproduce them.
   const V38_JUDGE_DEVELOPER_SHA256 = "ed581c46bb6e6ef403b93014b169ad4889938a48f8cc7e325888c0627661a123";
+  const SOURCE_BRANCH_DEVELOPER_SHA256 = {
+    current_turn: "9ec838c034e30e452c3ae3353ddb2ea4bda5fe1dc523deed6b5f69a89ce6769e",
+    previous_user_turn: "f4c3bb132e0b154765ff8bd7e69c2b0f07b79f3f23fb34c4bc40ad4aa62252a1",
+  } as const;
+  const OLD_PAUSE_RESPONSE = " Responding to that feeling means the reply itself takes in, in its own words, how the User is feeling now (a same-valence paraphrase or a natural reaction to the User's current state counts); a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded.";
+  const NEW_PAUSE_RESPONSE = " Restating or paraphrasing the feeling the User stated, at the same or lower intensity, or reacting naturally to the User's current state, responds to it; no different wording or added explanation is required, and repeating the User's own feeling words is restating, not a receipt. A leading 嗯 or a following companionship statement does not cancel a response the reply makes. Describing the Assistant's own feeling in place of the User's state does not respond to it. A receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement, with no response to the current feeling, does not respond to it, however the companionship is worded.";
+  const OLD_AFFECT_TAIL = " A general same-valence paraphrase of the stated feeling at the same or lower intensity that names no more specific emotion (for example, rendering not happy as not feeling good) is restating, not adding a category. Decide by whether an unevidenced emotion category is added, not by word lists.";
+  const NEW_AFFECT_TAIL = " A stated negative feeling does not support any stronger negative description: describing the feeling or the User's situation as heavier, more painful, or harder to bear than the User stated (for example, rendering a little tired as exhausted, or a bit upset as unbearable) is intensity drift and not satisfied, even when the valence matches. Judge the intensity or burden the reply actually adds, not only whether its valence agrees. A natural paraphrase of the stated feeling at the same or lower intensity that names no more specific emotion (for example, rendering not happy as not feeling good) is restating, not drift. Decide by whether an unevidenced emotion category or a stronger intensity is added, not by word lists.";
+  const PAUSE_RULE_IDS_LINE = "\nPrior-pause rule ids, for respect_declined_sharing when currentUserText states a feeling without a refusal: start the reason with ES-PAUSE-RECEIPT when a receipt is followed only by companionship or listening with no response to the current feeling; ES-PAUSE-SUBSTITUTE when the Assistant's own feeling is described in place of responding to the User's state; ES-PAUSE-ACTION when the reply suggests or tells the User to do something, which is advice and already insufficient. These ids only name a failure the rules above already establish and never make a reply fail by themselves. The Assistant's own statement of keeping the User company is not ES-PAUSE-ACTION; a stronger feeling is ES-AFFECT-EVIDENCE.";
+  const revertDeclaredSegments = (developer: string) =>
+    developer.replace(NEW_PAUSE_RESPONSE, OLD_PAUSE_RESPONSE).replace(NEW_AFFECT_TAIL, OLD_AFFECT_TAIL).replace(PAUSE_RULE_IDS_LINE, "");
   const JUDGE_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, naturally respecting that boundary (for example agreeing not to ask, or accepting not talking for now) completes the function; agreeing not to ask or not to talk about it, as the User requested, is this function itself, not a pause or closure that undoes support.";
-  const JUDGE_PRIOR_PAUSE_RULE = " When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement. Responding to that feeling means the reply itself takes in, in its own words, how the User is feeling now (a same-valence paraphrase or a natural reaction to the User's current state counts); a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded.";
+  const JUDGE_PRIOR_PAUSE_RULE = ` When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement.${NEW_PAUSE_RESPONSE}`;
   const JUDGE_PRIOR_PAUSE_NOT_SATISFIED = "a repeated agreement or a companionship statement used in place of responding to a feeling stated without a refusal, including a receipt followed only by companionship or listening; ";
   const legacyJudge = await judgeMessagesFor(legacyPausedPlan, "我今天有点不太高兴");
-  assert.equal(sha256Of(legacyJudge.developer), V38_JUDGE_DEVELOPER_SHA256, "Without a source the judge prompt stays byte-identical to v38.");
-  for (const segment of [JUDGE_CURRENT_REFUSAL_RULE, JUDGE_PRIOR_PAUSE_RULE, JUDGE_PRIOR_PAUSE_NOT_SATISFIED]) {
-    assert.equal(legacyJudge.developer.split(segment).length, 2, "Each source-specific segment appears once in the v38 judge prompt.");
+  assert.equal(sha256Of(revertDeclaredSegments(legacyJudge.developer)), V38_JUDGE_DEVELOPER_SHA256, "Without a source only the declared segments differ from v38.");
+  for (const segment of [JUDGE_CURRENT_REFUSAL_RULE, JUDGE_PRIOR_PAUSE_RULE, JUDGE_PRIOR_PAUSE_NOT_SATISFIED, PAUSE_RULE_IDS_LINE, NEW_AFFECT_TAIL]) {
+    assert.equal(legacyJudge.developer.split(segment).length, 2, "Each declared segment appears once in the source-less judge prompt.");
   }
+  assert.equal(legacyJudge.developer.includes("in its own words"), false, "The ambiguous own-words requirement is replaced, not supplemented.");
   const pausedJudge = await judgeMessagesFor(pausedThenLow, "我今天有点不太高兴");
   assert.equal(
     pausedJudge.developer,
     legacyJudge.developer.replace(JUDGE_CURRENT_REFUSAL_RULE, ""),
     "A prior pause drops only the current-refusal completion rule."
   );
+  assert.equal(sha256Of(revertDeclaredSegments(pausedJudge.developer)), SOURCE_BRANCH_DEVELOPER_SHA256.previous_user_turn);
   assert(pausedJudge.developer.includes(JUDGE_PRIOR_PAUSE_RULE), "A prior pause still requires responding to the current feeling.");
   assert(pausedJudge.developer.includes(JUDGE_PRIOR_PAUSE_NOT_SATISFIED));
+  assert(pausedJudge.developer.includes(PAUSE_RULE_IDS_LINE));
   assert.equal(pausedJudge.user, legacyJudge.user, "The source selects rules in code and is not sent as judge data.");
   const currentRefusalPlans: Array<[ResponsePlan, string]> = [
     [build({ userMessage: "我有点难受，但不想说" }).responsePlan, "我有点难受，但不想说"],
@@ -863,13 +878,21 @@ const run = async () => {
     const currentJudge = await judgeMessagesFor(plan, currentUserText);
     assert.equal(
       currentJudge.developer,
-      legacyJudge.developer.replace(JUDGE_PRIOR_PAUSE_RULE, "").replace(JUDGE_PRIOR_PAUSE_NOT_SATISFIED, ""),
-      "A current refusal drops only the prior-pause rule and its not-satisfied item."
+      legacyJudge.developer.replace(JUDGE_PRIOR_PAUSE_RULE, "").replace(JUDGE_PRIOR_PAUSE_NOT_SATISFIED, "").replace(PAUSE_RULE_IDS_LINE, ""),
+      "A current refusal drops only the prior-pause rule, its not-satisfied item, and the prior-pause rule ids."
     );
+    assert.equal(
+      sha256Of(currentJudge.developer.replace(NEW_AFFECT_TAIL, OLD_AFFECT_TAIL)),
+      SOURCE_BRANCH_DEVELOPER_SHA256.current_turn,
+      "For a current refusal, the shared ES-AFFECT-EVIDENCE tail is the only change in this slice."
+    );
+    assert(currentJudge.developer.includes(NEW_AFFECT_TAIL), "The shared intensity rule also governs current refusals.");
     for (const priorPauseWording of [
       "states a feeling but no refusal",
       "used in place of responding to a feeling stated without a refusal",
       "followed only by a companionship or listening statement",
+      "ES-PAUSE-",
+      "repeating the User's own feeling words",
     ]) {
       assert.equal(currentJudge.developer.includes(priorPauseWording), false, `A current refusal judge prompt carries no prior-pause requirement: ${priorPauseWording}`);
     }
@@ -893,11 +916,13 @@ const run = async () => {
   }
   const inviteNoHistory = build({ userMessage: "我今天有点不太高兴" }).responsePlan;
   assert.notEqual(supportFunctionOf(inviteNoHistory), "respect_declined_sharing");
+  const inviteJudge = await judgeMessagesFor(inviteNoHistory, "我今天有点不太高兴");
   assert.equal(
-    sha256Of((await judgeMessagesFor(inviteNoHistory, "我今天有点不太高兴")).developer),
+    sha256Of(revertDeclaredSegments(inviteJudge.developer)),
     V38_JUDGE_DEVELOPER_SHA256,
-    "Other support functions keep the v38 judge prompt."
+    "Other support functions see only the declared changes, including the shared intensity rule."
   );
+  assert(inviteJudge.developer.includes(NEW_AFFECT_TAIL));
   const refusalAfterPause = build({
     userMessage: "我有点难受，但不想说",
     recentMessages: [
@@ -962,12 +987,14 @@ const run = async () => {
   const validatorSource = readFileSync("services/ai/plannedFunctionSemanticValidator.ts", "utf8");
   assert(validatorSource.includes("ES-SCOPE exception for invite_optional_sharing only"));
   assert(validatorSource.includes("asking what happened as though it were unknown"));
-  assert(validatorSource.includes("is restating, not adding a category"));
+  assert(validatorSource.includes("is restating, not drift"));
+  assert(validatorSource.includes("A stated negative feeling does not support any stronger negative description"));
+  assert(validatorSource.includes("Judge the intensity or burden the reply actually adds, not only whether its valence agrees"));
   assert(validatorSource.includes("respect_declined_sharing applies when the User declined to talk or to be asked, in currentUserText or in an earlier turn"));
   assert(validatorSource.includes("restating the feeling word is not required"));
   assert(validatorSource.includes("is this function itself, not a pause or closure that undoes support"));
   assert(validatorSource.includes("When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling"));
-  assert(validatorSource.includes("a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded"));
+  assert(validatorSource.includes("A receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement, with no response to the current feeling, does not respond to it, however the companionship is worded"));
   assert(validatorSource.includes("including a receipt followed only by companionship or listening"));
   assert(validatorSource.includes("One statement of listening or brief in-conversation companionship that requires no response"));
   assert(validatorSource.includes("a bare receipt that responds to neither the stated feeling nor the stated boundary"));

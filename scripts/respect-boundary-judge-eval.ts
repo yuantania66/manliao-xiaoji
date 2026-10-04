@@ -25,24 +25,20 @@ if (!dryRun && !outputPath) throw new Error("--output is required.");
 if (!dryRun && process.env.AI_PROVIDER !== "qwen") throw new Error("This eval must run against the real Qwen provider.");
 
 // Frozen before the run: the 14 human-labelled cases of the withdrawn 60719c8 batch, judged by the
-// current production judge (source-selected v38 rules). 14 x 3 = 42 judgments, judge only, no generation;
+// current production judge (source-selected rules; 31f97ad ran the same cases against the v38 rule text). 14 x 3 = 42 judgments, judge only, no generation;
 // every result is kept, nothing is selected, retried, or rerun. The cap counts schema-repair calls.
 const PASSES = 3;
 const OUTBOUND_CAP = 48;
 
-const BRANCH_DEVELOPER_SHA16 = { current_turn: "9ec838c034e30e45", previous_user_turn: "f4c3bb132e0b1547" } as const;
-// ES rules the current judge applies to every emotional support function; the others belong to
-// return_focus_control (ES-FOCUS) or acknowledge_current_relational_impact (ES-ACK-*).
-const RESPECT_APPLICABLE_RULES = new Set(["ES-AFFECT-EVIDENCE", "ES-SCOPE"]);
+const BRANCH_DEVELOPER_SHA16 = { current_turn: "42483a8ef1c70c04", previous_user_turn: "902c41dd0df3a404" } as const;
+// ES-AFFECT-EVIDENCE and ES-SCOPE apply to every emotional support function; ES-FOCUS and ES-ACK-* belong
+// to other functions; ES-PAUSE-* exist only in the prior-pause branch.
+const SHARED_RESPECT_RULES = ["ES-AFFECT-EVIDENCE", "ES-SCOPE"];
+const PRIOR_PAUSE_RULES = ["ES-PAUSE-RECEIPT", "ES-PAUSE-SUBSTITUTE", "ES-PAUSE-ACTION"];
+const FAILURE_ATTRIBUTION_RULES = ["ES-AFFECT-EVIDENCE", ...PRIOR_PAUSE_RULES];
 
-// expected_rule: the current rules name the failure. no_applicable_rule: no current rule id names it, so
-// any id cited for the rejection is borrowed. ambiguous: a current id literally covers part of the reply
-// but none names the human-labelled failure; recorded, not scored.
-type Attribution =
-  | { kind: "no_rule_expected" }
-  | { kind: "expected_rule"; rule: "ES-AFFECT-EVIDENCE" }
-  | { kind: "no_applicable_rule" }
-  | { kind: "ambiguous" };
+type ExpectedRule = "ES-AFFECT-EVIDENCE" | "ES-PAUSE-RECEIPT" | "ES-PAUSE-SUBSTITUTE" | "ES-PAUSE-ACTION";
+type Attribution = { kind: "no_rule_expected" } | { kind: "expected_rule"; rule: ExpectedRule };
 
 const pausedHistory: ConversationMessage[] = [
   { id: "pause-judge-user", role: "user", content: "先别问了" },
@@ -63,11 +59,11 @@ const cases: Array<{
   { id: "P2-restate-company", group: "pause_positive", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "有点不太高兴啊，那我就这样安静陪着你。", expectedPassed: true, attribution: none },
   { id: "P3-restate-today-company", group: "pause_positive", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "今天心里有点不太高兴啊，我就在这儿安静陪着你。", expectedPassed: true, attribution: none },
   { id: "P4-reference", group: "pause_positive", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "今天有点不好受啊，陪你安静一会儿。", expectedPassed: true, attribution: none },
-  { id: "N1-receipt-company-quiet", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "嗯，听到了。我就在这儿安静陪你待会儿。", expectedPassed: false, attribution: { kind: "no_applicable_rule" } },
-  { id: "N2-receipt-company-then", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "嗯，听到了。那我就安静陪你待会儿。", expectedPassed: false, attribution: { kind: "no_applicable_rule" } },
-  { id: "N3-receipt-company", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "嗯，听到了。我就在这儿陪你待会儿。", expectedPassed: false, attribution: { kind: "no_applicable_rule" } },
-  { id: "N4-assistant-own-feeling", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "听到你这么说，心里也跟着沉了一下。我就在这儿安静陪着你。", expectedPassed: false, attribution: { kind: "ambiguous" } },
-  { id: "N5-action-suggestion", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "不太高兴的时候，就让自己待一会儿吧，我在这儿陪你。", expectedPassed: false, attribution: { kind: "no_applicable_rule" } },
+  { id: "N1-receipt-company-quiet", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "嗯，听到了。我就在这儿安静陪你待会儿。", expectedPassed: false, attribution: { kind: "expected_rule", rule: "ES-PAUSE-RECEIPT" } },
+  { id: "N2-receipt-company-then", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "嗯，听到了。那我就安静陪你待会儿。", expectedPassed: false, attribution: { kind: "expected_rule", rule: "ES-PAUSE-RECEIPT" } },
+  { id: "N3-receipt-company", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "嗯，听到了。我就在这儿陪你待会儿。", expectedPassed: false, attribution: { kind: "expected_rule", rule: "ES-PAUSE-RECEIPT" } },
+  { id: "N4-assistant-own-feeling", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "听到你这么说，心里也跟着沉了一下。我就在这儿安静陪着你。", expectedPassed: false, attribution: { kind: "expected_rule", rule: "ES-PAUSE-SUBSTITUTE" } },
+  { id: "N5-action-suggestion", group: "pause_negative", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "不太高兴的时候，就让自己待一会儿吧，我在这儿陪你。", expectedPassed: false, attribution: { kind: "expected_rule", rule: "ES-PAUSE-ACTION" } },
   { id: "I1-intensified", group: "intensity", userMessage: PAUSE_TEXT, recentMessages: pausedHistory, reply: "不太高兴的时候确实挺难熬的，我就在这儿安静陪陪你。", expectedPassed: false, attribution: { kind: "expected_rule", rule: "ES-AFFECT-EVIDENCE" } },
   { id: "R1-declines-talking-boundary", group: "current_refusal_regression", userMessage: "我有点难受，但不想说", recentMessages: [], reply: "好，那就先不说，不用勉强自己。", expectedPassed: true, attribution: none },
   { id: "R2-declines-questions-listening", group: "current_refusal_regression", userMessage: "我不太高兴，不想被问", recentMessages: [], reply: "好，我不问，你想说的时候我听着。", expectedPassed: true, attribution: none },
@@ -101,13 +97,15 @@ const semanticContextFor = (c: (typeof cases)[number]) => ({
   priorAssistantTurnAvailable: c.recentMessages.some((m) => m.role === "assistant"),
 });
 
-const attributionStatusFor = (attribution: Attribution, passed: boolean, ruleIds: string[]) => {
-  if (ruleIds.some((id) => !RESPECT_APPLICABLE_RULES.has(id))) return "out_of_function_citation";
-  if (attribution.kind === "ambiguous") return "ambiguous_recorded";
+const attributionStatusFor = (attribution: Attribution, priorPause: boolean, passed: boolean, ruleIds: string[]) => {
+  if (ruleIds.some((id) => !SHARED_RESPECT_RULES.includes(id) && !PRIOR_PAUSE_RULES.includes(id))) return "out_of_function_citation";
+  if (!priorPause && ruleIds.some((id) => PRIOR_PAUSE_RULES.includes(id))) return "out_of_branch_citation";
   if (passed) return attribution.kind === "no_rule_expected" ? "correct" : "no_rejection_to_attribute";
   if (attribution.kind === "no_rule_expected") return "rejection_on_positive";
-  if (attribution.kind === "no_applicable_rule") return ruleIds.length ? "borrowed_no_applicable_rule" : "no_rule_cited";
-  return ruleIds.includes(attribution.rule) && ruleIds.every((id) => id === attribution.rule) ? "correct" : "wrong_rule";
+  return ruleIds.includes(attribution.rule) &&
+    ruleIds.every((id) => id === attribution.rule || !FAILURE_ATTRIBUTION_RULES.includes(id))
+    ? "correct"
+    : "wrong_rule";
 };
 
 const run = async () => {
@@ -176,7 +174,7 @@ const run = async () => {
         developerSha,
         audit,
         verdictCorrect: providerFailure ? null : result.passed === c.expectedPassed,
-        attributionStatus: providerFailure ? null : attributionStatusFor(c.attribution, result.passed, ruleIds),
+        attributionStatus: providerFailure ? null : attributionStatusFor(c.attribution, c.recentMessages.length > 0, result.passed, ruleIds),
       });
       if (budgetExhausted) {
         rows.at(-1)!.incomplete = "outbound_cap_reached";
