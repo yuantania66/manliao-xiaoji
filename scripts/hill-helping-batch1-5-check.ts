@@ -848,17 +848,43 @@ const run = async () => {
     assert.equal(legacyJudge.developer.split(segment).length, 2, "Each declared segment appears once in the source-less judge prompt.");
   }
   assert.equal(legacyJudge.developer.includes("in its own words"), false, "The ambiguous own-words requirement is replaced, not supplemented.");
+  // 6b57b08 prior-pause prompt (developer sha256 902c41dd…) = the source-less prompt minus the current-refusal rule.
+  const UNIFIED_FIX_PRIOR_PAUSE_DEVELOPER_SHA256 = "902c41dd0df3a404d7c2acf98b0f4c1872ee878ff3629b4b762d35f921c831f0";
+  assert.equal(sha256Of(legacyJudge.developer.replace(JUDGE_CURRENT_REFUSAL_RULE, "")), UNIFIED_FIX_PRIOR_PAUSE_DEVELOPER_SHA256);
+  const JUDGE_PRIOR_PAUSE_OBSERVED_RULE = " When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement; how the reply does so is reported in priorPauseObservation, defined below.";
   const pausedJudge = await judgeMessagesFor(pausedThenLow, "我今天有点不太高兴");
+  const observationLine = pausedJudge.developer.split("\n").find((line) => line.startsWith("priorPauseObservation, for respect_declined_sharing"));
+  assert(observationLine, "A prior pause asks for the observation fields.");
   assert.equal(
     pausedJudge.developer,
-    legacyJudge.developer.replace(JUDGE_CURRENT_REFUSAL_RULE, ""),
-    "A prior pause drops only the current-refusal completion rule."
+    legacyJudge.developer
+      .replace(JUDGE_CURRENT_REFUSAL_RULE, "")
+      .replace(JUDGE_PRIOR_PAUSE_RULE, JUDGE_PRIOR_PAUSE_OBSERVED_RULE)
+      .replace(JUDGE_PRIOR_PAUSE_NOT_SATISFIED, "")
+      .replace(PAUSE_RULE_IDS_LINE, `\n${observationLine}`),
+    "A prior pause replaces only the declared prior-pause segments with the observation definitions."
   );
-  assert.equal(sha256Of(revertDeclaredSegments(pausedJudge.developer)), SOURCE_BRANCH_DEVELOPER_SHA256.previous_user_turn);
-  assert(pausedJudge.developer.includes(JUDGE_PRIOR_PAUSE_RULE), "A prior pause still requires responding to the current feeling.");
-  assert(pausedJudge.developer.includes(JUDGE_PRIOR_PAUSE_NOT_SATISFIED));
-  assert(pausedJudge.developer.includes(PAUSE_RULE_IDS_LINE));
-  assert.equal(pausedJudge.user, legacyJudge.user, "The source selects rules in code and is not sent as judge data.");
+  for (const removed of [JUDGE_PRIOR_PAUSE_RULE, JUDGE_PRIOR_PAUSE_NOT_SATISFIED, PAUSE_RULE_IDS_LINE, JUDGE_CURRENT_REFUSAL_RULE]) {
+    assert.equal(pausedJudge.developer.includes(removed), false, "The prior-pause verdict text is not also left for the overall status.");
+  }
+  for (const observed of [
+    "restates_or_paraphrases when the reply restates or paraphrases the feeling the User stated",
+    "observe candidateReply as a whole and report each field independently; a part that responds well never excuses another part",
+    "affectDrift applies ES-AFFECT-EVIDENCE to the whole reply",
+    "never use a missing feeling response, a receipt, the Assistant's own feeling, affect drift, advice, or an invitation, question, or request to set positiveFunction.status",
+    "report all four even when status already fails",
+  ]) {
+    assert(observationLine.includes(observed), `Observation definition: ${observed}`);
+  }
+  assert(pausedJudge.developer.includes(NEW_AFFECT_TAIL), "ES-AFFECT-EVIDENCE itself is unchanged for the observation to apply.");
+  const pausedUser = JSON.parse(pausedJudge.user);
+  const legacyUser = JSON.parse(legacyJudge.user);
+  assert.deepEqual(Object.keys(pausedUser.outputSchema.positiveFunction.priorPauseObservation), [
+    "feelingResponse", "affectDrift", "suggestsUserAction", "invitesOrAsks",
+  ]);
+  delete pausedUser.outputSchema.positiveFunction.priorPauseObservation;
+  assert.deepEqual(pausedUser, legacyUser, "Only the observation schema is added to the judge data; the source is not sent.");
+  assert.equal(pausedJudge.user.includes("declinedSharingSource"), false);
   const currentRefusalPlans: Array<[ResponsePlan, string]> = [
     [build({ userMessage: "我有点难受，但不想说" }).responsePlan, "我有点难受，但不想说"],
     [build({ userMessage: "我不太高兴，不想被问" }).responsePlan, "我不太高兴，不想被问"],
@@ -893,11 +919,13 @@ const run = async () => {
       "followed only by a companionship or listening statement",
       "ES-PAUSE-",
       "repeating the User's own feeling words",
+      "priorPauseObservation",
     ]) {
       assert.equal(currentJudge.developer.includes(priorPauseWording), false, `A current refusal judge prompt carries no prior-pause requirement: ${priorPauseWording}`);
     }
     assert(currentJudge.developer.includes(JUDGE_CURRENT_REFUSAL_RULE));
     assert.equal(currentJudge.user.includes("declinedSharingSource"), false);
+    assert.equal(currentJudge.user.includes("priorPauseObservation"), false, "A current refusal is still judged by the overall verdict alone.");
     for (const judge of [currentJudge, pausedJudge]) {
       for (const shared of [
         "affect category/intensity/object drift",

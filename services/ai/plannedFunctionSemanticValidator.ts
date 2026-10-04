@@ -87,6 +87,30 @@ export type HandoffSemanticVerdict = {
   evidence: SemanticEvidenceSpan[];
 };
 
+const PRIOR_PAUSE_OBSERVATION_VALUES = {
+  feelingResponse: [
+    "restates_or_paraphrases", "reacts_to_state", "assistant_feeling_instead", "receipt_only", "none", "uncertain",
+  ],
+  affectDrift: ["none", "stronger_intensity", "added_category", "uncertain"],
+  suggestsUserAction: ["yes", "no", "uncertain"],
+  invitesOrAsks: ["yes", "no", "uncertain"],
+} as const;
+
+type PriorPauseObservationField = keyof typeof PRIOR_PAUSE_OBSERVATION_VALUES;
+
+/** Model-reported observations for the prior-pause branch; the verdict and rule ids are derived in code. */
+export type PriorPauseObservation = {
+  [Field in PriorPauseObservationField]: (typeof PRIOR_PAUSE_OBSERVATION_VALUES)[Field][number];
+};
+
+export type PriorPauseAssessment = {
+  ruleIds: string[];
+  failedFields: PriorPauseObservationField[];
+  uncertainFields: PriorPauseObservationField[];
+  /** The model's remaining-requirements verdict also failed (or failed alone, with no observation failure). */
+  overallRejected: boolean;
+};
+
 export type PositiveFunctionSemanticVerdict = {
   binding: PositiveFunctionVerdictBinding;
   status: "satisfied" | "not_satisfied" | "uncertain";
@@ -95,6 +119,7 @@ export type PositiveFunctionSemanticVerdict = {
   contractRealized: boolean;
   containsContradictoryMove: boolean;
   evidence: SemanticEvidenceSpan[];
+  priorPauseObservation?: PriorPauseObservation;
 };
 
 export type PlannedFunctionSemanticVerdict = {
@@ -112,6 +137,7 @@ export type PlannedFunctionSemanticValidationResult = {
   advisoryFailureReasons: string[];
   verdict: PlannedFunctionSemanticVerdict | null;
   providerFailure?: PlannedFunctionSemanticProviderFailure | null;
+  priorPauseAssessment?: PriorPauseAssessment;
 };
 
 export type PlannedFunctionSemanticProviderFailure = {
@@ -267,11 +293,20 @@ const parsePositiveBinding = (value: unknown): PositiveFunctionVerdictBinding | 
   return value as PositiveFunctionVerdictBinding;
 };
 
+const isPriorPauseObservation = (value: unknown): value is PriorPauseObservation =>
+  isRecord(value) &&
+  hasExactKeys(value, Object.keys(PRIOR_PAUSE_OBSERVATION_VALUES)) &&
+  (Object.keys(PRIOR_PAUSE_OBSERVATION_VALUES) as PriorPauseObservationField[]).every((field) =>
+    (PRIOR_PAUSE_OBSERVATION_VALUES[field] as readonly unknown[]).includes(value[field])
+  );
+
 const parsePositiveFunction = (
-  value: unknown
+  value: unknown,
+  priorPauseObserved: boolean
 ): PositiveFunctionSemanticVerdict | null | undefined => {
   if (value === null) return null;
-  if (!isRecord(value) || !hasExactKeys(value, POSITIVE_KEYS)) return undefined;
+  const keys = priorPauseObserved ? [...POSITIVE_KEYS, "priorPauseObservation"] : POSITIVE_KEYS;
+  if (!isRecord(value) || !hasExactKeys(value, keys)) return undefined;
   if (
     !parsePositiveBinding(value.binding) ||
     !STATUSES.has(value.status) ||
@@ -279,15 +314,16 @@ const parsePositiveFunction = (
     typeof value.targetAddressed !== "boolean" ||
     typeof value.contractRealized !== "boolean" ||
     typeof value.containsContradictoryMove !== "boolean" ||
-    parseEvidence(value.evidence) === null
+    parseEvidence(value.evidence) === null ||
+    (priorPauseObserved && !isPriorPauseObservation(value.priorPauseObservation))
   ) return undefined;
   return value as PositiveFunctionSemanticVerdict;
 };
 
-const parseVerdict = (value: unknown): PlannedFunctionSemanticVerdict | null => {
+const parseVerdict = (value: unknown, priorPauseObserved = false): PlannedFunctionSemanticVerdict | null => {
   if (!isRecord(value) || !hasExactKeys(value, ROOT_KEYS)) return null;
   const handoff = parseHandoff(value.handoff);
-  const positiveFunction = parsePositiveFunction(value.positiveFunction);
+  const positiveFunction = parsePositiveFunction(value.positiveFunction, priorPauseObserved);
   if (
     value.schemaVersion !== 1 ||
     typeof value.planId !== "string" ||
@@ -382,14 +418,59 @@ const RESPECT_PRIOR_PAUSE_RULE = " When currentUserText states a feeling but no 
 const RESPECT_PRIOR_PAUSE_NOT_SATISFIED = "a repeated agreement or a companionship statement used in place of responding to a feeling stated without a refusal, including a receipt followed only by companionship or listening; ";
 const RESPECT_PRIOR_PAUSE_RULE_IDS = "Prior-pause rule ids, for respect_declined_sharing when currentUserText states a feeling without a refusal: start the reason with ES-PAUSE-RECEIPT when a receipt is followed only by companionship or listening with no response to the current feeling; ES-PAUSE-SUBSTITUTE when the Assistant's own feeling is described in place of responding to the User's state; ES-PAUSE-ACTION when the reply suggests or tells the User to do something, which is advice and already insufficient. These ids only name a failure the rules above already establish and never make a reply fail by themselves. The Assistant's own statement of keeping the User company is not ES-PAUSE-ACTION; a stronger feeling is ES-AFFECT-EVIDENCE.";
 
+const RESPECT_PRIOR_PAUSE_OBSERVED_RULE = " When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement; how the reply does so is reported in priorPauseObservation, defined below.";
+const PRIOR_PAUSE_OBSERVATION_RULE = "priorPauseObservation, for respect_declined_sharing when currentUserText states a feeling without a refusal: observe candidateReply as a whole and report each field independently; a part that responds well never excuses another part that drifts, advises, or invites. feelingResponse: restates_or_paraphrases when the reply restates or paraphrases the feeling the User stated (repeating the User's own feeling words counts; no different wording or added explanation is required); reacts_to_state when it reacts naturally to the User's current state without restating it; assistant_feeling_instead when it describes the Assistant's own feeling in place of responding to the User's state; receipt_only when it gives only a receipt (for example 嗯 or 听到了), alone or followed only by companionship or listening, however worded; none when it responds to the feeling in no other way; uncertain when you cannot decide. A leading 嗯, a receipt phrase, or a following companionship statement does not lower the value that a restatement or reaction elsewhere in the reply earns. affectDrift applies ES-AFFECT-EVIDENCE to the whole reply: stronger_intensity when any part describes the feeling or the User's situation as heavier, more painful, or harder to bear than stated; otherwise added_category when any part names or implies an emotion category not evidenced in currentUserText; none when neither; uncertain when you cannot decide. suggestsUserAction: yes when any part suggests or tells the User to do something (advice, rest, an activity, or managing the feeling); the Assistant's own statement of keeping the User company is not this; otherwise no, or uncertain when you cannot decide. invitesOrAsks: yes when any part invites, asks, or requests anything of the User, including asking the User to tell the Assistant later; one statement of listening or companionship that requires no response is not this; otherwise no, or uncertain when you cannot decide. These four observations are decided only here, including the bare-receipt and the invitation, question, or request items in the respect_declined_sharing list above: never use a missing feeling response, a receipt, the Assistant's own feeling, affect drift, advice, or an invitation, question, or request to set positiveFunction.status, contractRealized, or containsContradictoryMove, and report all four even when status already fails. positiveFunction.status, contractRealized, containsContradictoryMove, and evidence judge only the remaining requirements of this function and of the emotional-support rules.";
+
 // The Planner already decided the refusal source; the judge only sees the rules for that source.
-// Without a source, both branches are kept.
-const respectDeclinedSharingRulesFor = (source: DeclinedSharingSource | undefined) => ({
-  currentRefusal: source === "previous_user_turn" ? "" : RESPECT_CURRENT_REFUSAL_RULE,
-  priorPause: source === "current_turn" ? "" : RESPECT_PRIOR_PAUSE_RULE,
-  priorPauseNotSatisfied: source === "current_turn" ? "" : RESPECT_PRIOR_PAUSE_NOT_SATISFIED,
-  priorPauseRuleIds: source === "current_turn" ? [] : [RESPECT_PRIOR_PAUSE_RULE_IDS],
-});
+// Without a source, both branches are kept. For a prior pause the model reports observations and
+// the verdict for them is combined in code (see assessPriorPauseObservation).
+const respectDeclinedSharingRulesFor = (source: DeclinedSharingSource | undefined) =>
+  source === "previous_user_turn"
+    ? {
+      currentRefusal: "",
+      priorPause: RESPECT_PRIOR_PAUSE_OBSERVED_RULE,
+      priorPauseNotSatisfied: "",
+      priorPauseLines: [PRIOR_PAUSE_OBSERVATION_RULE],
+    }
+    : {
+      currentRefusal: RESPECT_CURRENT_REFUSAL_RULE,
+      priorPause: source === "current_turn" ? "" : RESPECT_PRIOR_PAUSE_RULE,
+      priorPauseNotSatisfied: source === "current_turn" ? "" : RESPECT_PRIOR_PAUSE_NOT_SATISFIED,
+      priorPauseLines: source === "current_turn" ? [] : [RESPECT_PRIOR_PAUSE_RULE_IDS],
+    };
+
+const priorPauseObservedFor = (source: DeclinedSharingSource | undefined) => source === "previous_user_turn";
+
+const PRIOR_PAUSE_FAILURE_RULE_IDS: {
+  [Field in PriorPauseObservationField]: Partial<Record<PriorPauseObservation[Field], string>>;
+} = {
+  feelingResponse: {
+    assistant_feeling_instead: "ES-PAUSE-SUBSTITUTE",
+    receipt_only: "ES-PAUSE-RECEIPT",
+    none: "ES-PAUSE-RECEIPT",
+  },
+  affectDrift: { stronger_intensity: "ES-AFFECT-EVIDENCE", added_category: "ES-AFFECT-EVIDENCE" },
+  suggestsUserAction: { yes: "ES-PAUSE-ACTION" },
+  invitesOrAsks: { yes: "ES-SCOPE" },
+};
+
+export const assessPriorPauseObservation = (
+  observation: PriorPauseObservation,
+  overallRejected: boolean
+): PriorPauseAssessment => {
+  const fields = Object.keys(PRIOR_PAUSE_OBSERVATION_VALUES) as PriorPauseObservationField[];
+  const failed = fields.filter((field) =>
+    (PRIOR_PAUSE_FAILURE_RULE_IDS[field] as Record<string, string | undefined>)[observation[field]] !== undefined
+  );
+  return {
+    ruleIds: Array.from(new Set(failed.map((field) =>
+      (PRIOR_PAUSE_FAILURE_RULE_IDS[field] as Record<string, string>)[observation[field]]
+    ))),
+    failedFields: failed,
+    uncertainFields: fields.filter((field) => observation[field] === "uncertain"),
+    overallRejected,
+  };
+};
 
 const buildSemanticValidationMessages = (
   input: PlannedFunctionSemanticProviderInput
@@ -416,7 +497,7 @@ const buildSemanticValidationMessages = (
       `The six emotional support functions are exclusive for this verdict: reduce_expression_burden releases the need to explain causes, analyze, organize, or give a complete account; merely choosing the focus or amount is a different function. return_focus_control returns which already-evidenced part receives attention and, when question policy is none, must be realized as permission/control rather than a semantic request. return_amount_control returns how much to express; merely pausing, deferring, or closing does not return amount control. acknowledge_current_relational_impact owns the current Assistant relationship impact while preserving the information boundary. invite_optional_sharing naturally acknowledges the feeling the User stated and offers at most one gentle invitation, easy to decline, for the User to share more if they want; it does not need to mention control, how much to say, or which part to choose. For invite_optional_sharing, a bare receipt or paraphrase with no invitation, an invitation with no acknowledgement of the stated feeling, or an invitation that makes continuing feel required is not satisfied. respect_declined_sharing applies when the User declined to talk or to be asked, in currentUserText or in an earlier turn: it naturally responds to the boundary or the feeling the User expressed, judged in context; restating the feeling word is not required.${respect.currentRefusal}${respect.priorPause} One statement of listening or brief in-conversation companionship that requires no response (for example that the Assistant will listen whenever the User wants to talk, or keeping the User company quietly for a while) is allowed and is not an invitation, a permission about when to speak, a receipt, or a closure. For respect_declined_sharing, the following are not satisfied: a bare receipt that responds to neither the stated feeling nor the stated boundary; ${respect.priorPauseNotSatisfied}any invitation, question, or request, including asking the User to tell the Assistant later; any permission about how much or which part to say; presenting the feeling as the reason the User should not talk; deciding for the User that they will not share anything further (accepting not talking for now, as the User asked, is not this); claiming physical or offline company; or ending the conversation. If the candidate mainly realizes another function, mark not_satisfied.`,
       "A later clause that recommends a preferred focus, requests causes/details, pressures continuation, pauses/closes the exchange, or otherwise takes back the promised control functionally undoes emotional support. Mark containsContradictoryMove=true and do not mark the positive contract satisfied.",
       "Emotional-support rules. The ES-* rules apply only when positiveFunctionBinding.action is offer_emotional_support. Never apply or cite an ES-* rule in the handoff branch or for repair_previous_wording, establish_assistant_identity, or an absent positiveFunctionBinding; judge those only by their own rules. For every offer_emotional_support verdict that is not satisfied, is uncertain, or has containsContradictoryMove=true, include at least one evidence item quoting the exact deciding span and start its reason with the rule id (ES-AFFECT-EVIDENCE, ES-SCOPE, ES-FOCUS, ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, or ES-ACK-NO-FABRICATION).",
-      ...respect.priorPauseRuleIds,
+      ...respect.priorPauseLines,
       "ES-AFFECT-EVIDENCE: every emotion category the candidate names or implies must be evidenced in currentUserText. Adding an emotion category the User did not state is affect drift and not satisfied, whether it is attributed to the User, phrased impersonally as a quality of the situation (this is X, that makes one feel X, anyone would feel X), or presented as the Assistant's characterization of the relational impact. Restating the User's evidenced affect, or describing the reported relational situation without adding an emotion (for example, that the User feels not understood), is allowed. A stated negative feeling does not support any stronger negative description: describing the feeling or the User's situation as heavier, more painful, or harder to bear than the User stated (for example, rendering a little tired as exhausted, or a bit upset as unbearable) is intensity drift and not satisfied, even when the valence matches. Judge the intensity or burden the reply actually adds, not only whether its valence agrees. A natural paraphrase of the stated feeling at the same or lower intensity that names no more specific emotion (for example, rendering not happy as not feeling good) is restating, not drift. Decide by whether an unevidenced emotion category or a stronger intensity is added, not by word lists.",
       "ES-SCOPE: every option, invitation, or permission may refer only to affect, relational impact, or parts already stated in currentUserText. Offering an unspecified alternative (such as something else or other parts), or introducing a cause, triggering event, what happened, the scene or circumstances, details, or a full account that the User did not state, is a contradictory move even when it appears inside an offered choice. Judge reference by the full currentUserText, not by the word used: a phrase that points back to a moment or situation the User already stated (such as that moment, when the User said it happened just now) refers to stated content, while the same phrase introduces a scene when the User stated no such moment or situation, and inviting its sequence or details still introduces what happened. Naming such content only to release the User from providing it (for example, saying the User need not explain why, make the whole matter clear, or give a complete account) solicits nothing and does not violate ES-SCOPE; a release that also asks for, invites, or offers such content as an option still violates it. Whether a release realizes the planned supportFunction is decided by the function-exclusivity rule above, not by ES-SCOPE.",
       "ES-SCOPE exception for invite_optional_sharing only: one gentle, declinable, open invitation to share what happened or to say more is allowed and is not soliciting a cause or account. Still contradictory under ES-SCOPE for this function: more than one invitation or question; asking why or for the cause; asking for specific details, the sequence of events, who, when, or where, or a full account; guessing or suggesting a cause or event; offering an unspecified alternative or another topic; and, when currentUserText already states the event, asking what happened as though it were unknown or asking for its details. Inviting the User to say more about an event already stated, if they want, is allowed.",
@@ -470,6 +551,13 @@ const buildSemanticValidationMessages = (
           contractRealized: "boolean",
           containsContradictoryMove: "boolean",
           evidence: [{ start: "integer", end: "integer", text: "exact slice", reason: "semantic reason" }],
+          ...(priorPauseObservedFor(input.declinedSharingSource)
+            ? {
+              priorPauseObservation: Object.fromEntries(
+                Object.entries(PRIOR_PAUSE_OBSERVATION_VALUES).map(([field, values]) => [field, values.join(" | ")])
+              ),
+            }
+            : {}),
         },
         semanticQuestionCount: "non-negative integer",
       },
@@ -497,9 +585,10 @@ export const defaultPlannedFunctionSemanticProvider = async (
       responseFormat: "json_object",
     });
   };
+  const priorPauseObserved = priorPauseObservedFor(input.declinedSharingSource);
   const first = await callOnce(messages);
   const firstParsed = parsePlannedFunctionSemanticProviderOutput(first.text);
-  const firstVerdict = parseVerdict(firstParsed);
+  const firstVerdict = parseVerdict(firstParsed, priorPauseObserved);
   const normalizedFirst = firstVerdict
     ? normalizePlannedFunctionSemanticEvidence(firstVerdict, input.candidateReply)
     : null;
@@ -516,7 +605,7 @@ export const defaultPlannedFunctionSemanticProvider = async (
   ];
   const repaired = await callOnce(repairMessages);
   const repairedParsed = parsePlannedFunctionSemanticProviderOutput(repaired.text);
-  const repairedVerdict = parseVerdict(repairedParsed);
+  const repairedVerdict = parseVerdict(repairedParsed, priorPauseObserved);
   return repairedVerdict
     ? normalizePlannedFunctionSemanticEvidence(repairedVerdict, input.candidateReply)
     : repairedParsed;
@@ -589,6 +678,11 @@ export const validatePlannedFunctionSemanticOutput = async ({
   }
 
   const ordinaryQuestionIndependentlySupported = ordinaryQuestionSupportedByPlan(plan);
+  const declinedSharingSource = positiveFunction?.action === "offer_emotional_support" &&
+    positiveFunction.supportFunction === "respect_declined_sharing"
+    ? positiveFunction.declinedSharingSource
+    : undefined;
+  const priorPauseObserved = priorPauseObservedFor(declinedSharingSource);
   let rawVerdict: unknown;
   // The default provider inspects every outbound call first, so the count names the failing call
   // without changing the error it throws.
@@ -609,11 +703,7 @@ export const validatePlannedFunctionSemanticOutput = async ({
       ...(semanticContext.priorAssistantTurnAvailable === undefined
         ? {}
         : { priorAssistantTurnAvailable: semanticContext.priorAssistantTurnAvailable }),
-      ...(positiveFunction?.action === "offer_emotional_support" &&
-        positiveFunction.supportFunction === "respect_declined_sharing" &&
-        positiveFunction.declinedSharingSource !== undefined
-        ? { declinedSharingSource: positiveFunction.declinedSharingSource }
-        : {}),
+      ...(declinedSharingSource !== undefined ? { declinedSharingSource } : {}),
     };
     rawVerdict = provider
       ? await provider(providerInput)
@@ -634,7 +724,7 @@ export const validatePlannedFunctionSemanticOutput = async ({
     };
   }
 
-  const verdict = parseVerdict(rawVerdict);
+  const verdict = parseVerdict(rawVerdict, priorPauseObserved);
   if (!verdict) {
     return {
       passed: false,
@@ -732,6 +822,7 @@ export const validatePlannedFunctionSemanticOutput = async ({
     }
   }
 
+  let priorPauseAssessment: PriorPauseAssessment | undefined;
   if (positiveFunction && verdict.positiveFunction) {
     const branch = verdict.positiveFunction;
     const positiveSatisfied = branch.status === "satisfied" &&
@@ -742,6 +833,16 @@ export const validatePlannedFunctionSemanticOutput = async ({
       branch.evidence.length > 0;
     if (!positiveSatisfied) {
       hardFailureReasons.push("planned_function_semantic:positive_function_not_satisfied");
+    }
+    // The model's verdict covers only the requirements the observations do not; both must pass.
+    if (priorPauseObserved && branch.priorPauseObservation) {
+      priorPauseAssessment = assessPriorPauseObservation(branch.priorPauseObservation, !positiveSatisfied);
+      if (priorPauseAssessment.failedFields.length > 0) {
+        hardFailureReasons.push("planned_function_semantic:positive_function_not_satisfied");
+      }
+      if (priorPauseAssessment.uncertainFields.length > 0) {
+        hardFailureReasons.push("planned_function_semantic:positive_function_uncertain");
+      }
     }
   }
 
@@ -775,5 +876,6 @@ export const validatePlannedFunctionSemanticOutput = async ({
     hardFailureReasons: uniqueHardFailures,
     advisoryFailureReasons: uniqueAdvisories,
     verdict,
+    ...(priorPauseAssessment ? { priorPauseAssessment } : {}),
   };
 };

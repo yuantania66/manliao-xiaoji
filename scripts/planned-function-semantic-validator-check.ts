@@ -984,7 +984,8 @@ assert.equal(noFunctionCalls, 0);
 const SOURCELESS_JUDGE_DEVELOPER_SHA256 = "7a8dbaa07cf7d25c371751aab1907728b49a5d6a4c1efe1ec653ca366c1c6915";
 const BRANCH_DEVELOPER_SHA256 = {
   current_turn: "42483a8ef1c70c04a438a2cac2b3fa8dc315711000e6ea644fecee2f3e329e17",
-  previous_user_turn: "902c41dd0df3a404d7c2acf98b0f4c1872ee878ff3629b4b762d35f921c831f0",
+  // Prior-pause observation branch; the 6b57b08 text (902c41dd…) is pinned in hill-helping-batch1-5-check.
+  previous_user_turn: "12fe0e109d4f9550123391a914847b6ef1129c9cb1d80372050fc18f196e098e",
 } as const;
 const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
 const capturedMessages = async (call: (inspect: (input: { messages: Array<{ content: string }> }) => void) => Promise<unknown>) => {
@@ -1027,6 +1028,120 @@ for (const item of respectQwenCases) {
     inspectExternalPrompt: inspect,
   }));
   assert.deepEqual(qwenMessages, productionMessages, `${item.id}: Q and production send the same judge messages.`);
+}
+
+// Prior pause: the model reports observations; the verdict and rule ids are combined in code.
+const OBSERVATION_VALUES = {
+  feelingResponse: ["restates_or_paraphrases", "reacts_to_state", "assistant_feeling_instead", "receipt_only", "none", "uncertain"],
+  affectDrift: ["none", "stronger_intensity", "added_category", "uncertain"],
+  suggestsUserAction: ["yes", "no", "uncertain"],
+  invitesOrAsks: ["yes", "no", "uncertain"],
+} as const;
+type Observation = { [Field in keyof typeof OBSERVATION_VALUES]: (typeof OBSERVATION_VALUES)[Field][number] };
+const expectedRuleIdsFor = (o: Observation) => [
+  ...(o.feelingResponse === "assistant_feeling_instead" ? ["ES-PAUSE-SUBSTITUTE"] : []),
+  ...(o.feelingResponse === "receipt_only" || o.feelingResponse === "none" ? ["ES-PAUSE-RECEIPT"] : []),
+  ...(o.affectDrift === "stronger_intensity" || o.affectDrift === "added_category" ? ["ES-AFFECT-EVIDENCE"] : []),
+  ...(o.suggestsUserAction === "yes" ? ["ES-PAUSE-ACTION"] : []),
+  ...(o.invitesOrAsks === "yes" ? ["ES-SCOPE"] : []),
+];
+const pausedQwenCase = plannerSourceQwenCases.find((item) =>
+  item.plan.positiveFunctionContract?.action === "offer_emotional_support" &&
+  item.plan.positiveFunctionContract.declinedSharingSource === "previous_user_turn"
+)!;
+const currentRefusalQwenCase = plannerSourceQwenCases.find((item) =>
+  item.plan.positiveFunctionContract?.action === "offer_emotional_support" &&
+  item.plan.positiveFunctionContract.declinedSharingSource === "current_turn"
+)!;
+const sourcelessRespectQwenCase = respectQwenCases.find((item) => !item.id.endsWith("-planner-source"))!;
+const respectVerdictFor = (
+  item: (typeof qwenEvalCases)[number],
+  { status = "satisfied", priorPauseObservation }: { status?: "satisfied" | "not_satisfied" | "uncertain"; priorPauseObservation?: unknown }
+) => {
+  const contract = item.plan.positiveFunctionContract;
+  assert(contract?.action === "offer_emotional_support");
+  const satisfied = status === "satisfied";
+  return {
+    schemaVersion: 1,
+    planId: item.plan.planId,
+    handoff: null,
+    positiveFunction: {
+      binding: { action: contract.action, supportFunction: contract.supportFunction, sourceTurnId: contract.sourceTurnId },
+      status,
+      realizedAction: satisfied ? contract.action : null,
+      targetAddressed: true,
+      contractRealized: satisfied,
+      containsContradictoryMove: false,
+      evidence: [{ start: 0, end: item.candidateReply.length, text: item.candidateReply, reason: "fixture" }],
+      ...(priorPauseObservation === undefined ? {} : { priorPauseObservation }),
+    },
+    semanticQuestionCount: 0,
+  };
+};
+const judgeWith = (item: (typeof qwenEvalCases)[number], verdict: unknown) => validatePlannedFunctionSemanticOutput({
+  plan: item.plan,
+  reply: item.candidateReply,
+  semanticContext: {
+    currentUserText: item.currentUserText,
+    handoffTargetAssistantText: item.handoffTargetAssistantText,
+    priorAssistantTurnAvailable: item.priorAssistantTurnAvailable,
+  },
+  provider: async () => verdict,
+});
+const allObservations: Observation[] = [];
+for (const feelingResponse of OBSERVATION_VALUES.feelingResponse) {
+  for (const affectDrift of OBSERVATION_VALUES.affectDrift) {
+    for (const suggestsUserAction of OBSERVATION_VALUES.suggestsUserAction) {
+      for (const invitesOrAsks of OBSERVATION_VALUES.invitesOrAsks) {
+        allObservations.push({ feelingResponse, affectDrift, suggestsUserAction, invitesOrAsks });
+      }
+    }
+  }
+}
+assert.equal(allObservations.length, 216);
+for (const observation of allObservations) {
+  const uncertain = Object.values(observation).includes("uncertain");
+  const ruleIds = expectedRuleIdsFor(observation);
+  for (const status of ["satisfied", "not_satisfied"] as const) {
+    const result = await judgeWith(pausedQwenCase, respectVerdictFor(pausedQwenCase, { status, priorPauseObservation: observation }));
+    const label = `${status} ${JSON.stringify(observation)}`;
+    assert.equal(result.passed, status === "satisfied" && ruleIds.length === 0 && !uncertain, `Combined verdict: ${label}`);
+    assert.deepEqual(result.priorPauseAssessment?.ruleIds, ruleIds, `Code-derived rule ids: ${label}`);
+    assert.equal(result.priorPauseAssessment?.overallRejected, status !== "satisfied", label);
+    assert.equal(
+      result.hardFailureReasons.includes("planned_function_semantic:positive_function_not_satisfied"),
+      status !== "satisfied" || ruleIds.length > 0,
+      `An observation failure or an overall rejection fails with the existing code: ${label}`
+    );
+    assert.equal(result.hardFailureReasons.includes("planned_function_semantic:positive_function_uncertain"), uncertain, `Uncertain never passes: ${label}`);
+    assert(result.hardFailureReasons.every((reason) =>
+      reason === "planned_function_semantic:positive_function_not_satisfied" ||
+      reason === "planned_function_semantic:positive_function_uncertain"
+    ), "No new failure code reaches regeneration feedback.");
+  }
+}
+const cleanObservation: Observation = { feelingResponse: "restates_or_paraphrases", affectDrift: "none", suggestsUserAction: "no", invitesOrAsks: "no" };
+const unattributed = await judgeWith(pausedQwenCase, respectVerdictFor(pausedQwenCase, { status: "not_satisfied", priorPauseObservation: cleanObservation }));
+assert.equal(unattributed.passed, false, "An overall rejection with clean observations fails closed.");
+assert.deepEqual(unattributed.priorPauseAssessment, { ruleIds: [], failedFields: [], uncertainFields: [], overallRejected: true });
+for (const [label, observation] of [
+  ["missing observation", undefined],
+  ["missing field", { feelingResponse: "restates_or_paraphrases", affectDrift: "none", suggestsUserAction: "no" }],
+  ["extra field", { ...cleanObservation, verdict: "pass" }],
+  ["illegal value", { ...cleanObservation, feelingResponse: "partly" }],
+  ["boolean instead of enum", { ...cleanObservation, suggestsUserAction: false }],
+  ["null observation", null],
+] as const) {
+  const result = await judgeWith(pausedQwenCase, respectVerdictFor(pausedQwenCase, { priorPauseObservation: observation }));
+  assert.equal(result.passed, false, `Format problem never passes: ${label}`);
+  assert.deepEqual(result.hardFailureReasons, ["planned_function_semantic:malformed_verdict"], `Format problem is recorded as a format failure: ${label}`);
+}
+for (const item of [currentRefusalQwenCase, sourcelessRespectQwenCase]) {
+  const unchanged = await judgeWith(item, respectVerdictFor(item, {}));
+  assert.equal(unchanged.passed, true, `${item.id}: the overall verdict alone still decides.`);
+  assert.equal(unchanged.priorPauseAssessment, undefined);
+  const withObservation = await judgeWith(item, respectVerdictFor(item, { priorPauseObservation: cleanObservation }));
+  assert.deepEqual(withObservation.hardFailureReasons, ["planned_function_semantic:malformed_verdict"], `${item.id}: the observation key exists only for a prior pause.`);
 }
 
 console.log("planned function semantic Validator checks passed");

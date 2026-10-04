@@ -189,7 +189,7 @@ const run = async () => {
         result.hardFailureReasons.some((reason) =>
           reason === "planned_function_semantic:malformed_verdict" ||
           reason === "planned_function_semantic:evidence_mismatch");
-      const audit = semanticVerdictAuditFor(result.verdict);
+      const audit = semanticVerdictAuditFor(result.verdict, result.priorPauseAssessment?.ruleIds);
       const outcome = result.passed ? "pass" : "fail";
       const outcomeMatches = testCase.expected === "ambiguous" ? null : outcome === testCase.expected;
       const citationMatches = testCase.expected !== "fail" || !testCase.acceptedRuleIds?.length
