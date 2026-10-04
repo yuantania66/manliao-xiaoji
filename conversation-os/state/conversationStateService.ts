@@ -58,7 +58,30 @@ export const declinesSharingInvitation = (text: string) => {
   return CLOSING_PATTERN.test(normalized) || SHARING_INVITATION_DECLINE_PATTERN.test(normalized);
 };
 
-export const reopensInteraction = (text: string) => EXPLICIT_REOPEN_PATTERN.test(normalize(text));
+// A whole clause must be the user's own current statement: an optional first-person subject and
+// present-time adverbs, then willingness to talk or permission to be asked, with nothing else.
+// Third persons, quotes, conditions, future times, negation, and questions therefore do not match.
+const CURRENT_WILLINGNESS_TO_TALK_CLAUSE =
+  /^(?:嗯|好吧|好|那){0,2}(?:其实|现在)?我?(?:其实|现在|还是|倒是|也|又|真的)?(?:想|愿意)(?:跟你|和你)?再?(说|聊|讲|谈)(?:\1|一下|一会儿)?(?:了|吧|啦)?$/u;
+const CURRENT_PERMISSION_TO_ASK_CLAUSE =
+  /^(?:嗯|好吧|好|那){0,2}(?:现在)?你?(?:现在)?(?:可以|随便|尽管)再?问我?(?:了|吧|啦)?$/u;
+const CLAUSE_PATTERN = /([^，,。.！!？?；;\s]+)([，,。.！!？?；;\s]*)/gu;
+const REPORTED_SPEECH_LEAD_PATTERN = /(?:说|讲|道|写|问)(?:过|着)?$/u;
+
+const statesCurrentWillingnessOrPermission = (text: string) => {
+  let previousBody = "";
+  for (const [, body, terminator] of text.matchAll(CLAUSE_PATTERN)) {
+    const reportedSpeech = REPORTED_SPEECH_LEAD_PATTERN.test(previousBody);
+    previousBody = body;
+    if (reportedSpeech || /[？?]/u.test(terminator)) continue;
+    if (CURRENT_WILLINGNESS_TO_TALK_CLAUSE.test(body) || CURRENT_PERMISSION_TO_ASK_CLAUSE.test(body)) return true;
+  }
+  return false;
+};
+
+export const reopensInteraction = (text: string) =>
+  EXPLICIT_REOPEN_PATTERN.test(normalize(text)) ||
+  (!declinesSharingInvitation(text) && statesCurrentWillingnessOrPermission(text));
 
 type AffectEvidenceRule = {
   pattern: RegExp;

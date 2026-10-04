@@ -986,6 +986,42 @@ const run = async () => {
   const reopenedPrompt = formatResponsePlanForPrompt(reopenedAfterPause);
   assert(reopenedPrompt.includes("at most one gentle invitation the user can easily decline"));
   assert.equal(reopenedPrompt.includes("Do not invite them to talk again"), false, "An explicit reopen carries no refusal constraints.");
+  const afterPause = (userMessage: string) => build({
+    userMessage,
+    recentMessages: [
+      { id: "reopen-user", role: "user", content: "先别问了" },
+      { id: "reopen-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+  }).responsePlan;
+  for (const userMessage of [
+    "其实我想说说，今天有点不太高兴",
+    "现在可以问了，我今天有点不太高兴",
+    "我想聊聊了，心里有点堵",
+    "我愿意讲讲。心里有点堵",
+  ]) {
+    const plan = afterPause(userMessage);
+    assert.equal(supportFunctionOf(plan), "invite_optional_sharing", `A current, explicit willingness or permission reopens: ${userMessage}`);
+    assert.equal(plan.questionPolicy.mode, "optional_after_answer", userMessage);
+    assert.equal(declinedSharingSourceOf(plan), undefined, userMessage);
+  }
+  for (const userMessage of [
+    "他想说说，我有点烦",
+    "她跟我说“我想聊聊了”，我有点烦",
+    "他说，我想聊聊了，我有点烦",
+    "等我想说了再告诉你，现在有点难受",
+    "明天再聊吧，有点累",
+    "现在可以问吗？我有点难受",
+    "想说又说不出来，心里有点堵",
+  ]) {
+    const plan = afterPause(userMessage);
+    assert.equal(supportFunctionOf(plan), "respect_declined_sharing", `Third person, quotes, conditions, future, questions, and negation keep the pause: ${userMessage}`);
+    assert.equal(plan.questionPolicy.mode, "none", userMessage);
+    assert.equal(declinedSharingSourceOf(plan), "previous_user_turn", userMessage);
+  }
+  const willingButDeclinesQuestions = afterPause("我想说说，但别问我，有点难受");
+  assert.equal(supportFunctionOf(willingButDeclinesQuestions), "respect_declined_sharing");
+  assert.equal(declinedSharingSourceOf(willingButDeclinesQuestions), "current_turn", "A refusal in the same turn outranks a stated willingness.");
+  assert.equal(willingButDeclinesQuestions.questionPolicy.mode, "none");
   const noTalkAfterInvite = build({
     userMessage: "我还是有点不太高兴",
     recentMessages: [
