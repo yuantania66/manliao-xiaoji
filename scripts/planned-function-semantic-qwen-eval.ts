@@ -9,10 +9,12 @@ import {
   buildDialogueState,
   createResponsePlan,
   interpretTurnDeterministically,
+  type DeclinedSharingSource,
   type PositiveFunctionContract,
   type ResponsePlan,
 } from "../conversation-os/control";
 import { determineConversationState } from "../conversation-os/state";
+import type { ConversationMessage } from "../conversation-os/types";
 import {
   defaultPlannedFunctionSemanticProvider,
   validatePlannedFunctionSemanticOutput,
@@ -34,6 +36,7 @@ type EvalCase = {
   handoffTargetAssistantText: string | null;
   candidateReply: string;
   expectedPassed: boolean;
+  priorAssistantTurnAvailable?: boolean;
 };
 
 const turnId = "qwen-user-turn";
@@ -118,17 +121,17 @@ const withEmotional = (
   return plan;
 };
 
-const plannerEmotionalContractFor = (sourceText: string) => {
-  const conversationState = determineConversationState({ currentUserMessage: sourceText, recentMessages: [] });
+const plannerPlanFor = (sourceText: string, recentMessages: ConversationMessage[] = []) => {
+  const conversationState = determineConversationState({ currentUserMessage: sourceText, recentMessages });
   const context = assembleConversationControlContext({
     conversationId: "qwen-eval",
     currentTurnId: turnId,
     userMessage: sourceText,
-    recentMessages: [],
+    recentMessages,
     conversationState,
   });
   const interpretation = interpretTurnDeterministically(context);
-  const contract = createResponsePlan({
+  return createResponsePlan({
     context,
     interpretation,
     dialogueState: buildDialogueState(context, interpretation),
@@ -141,9 +144,35 @@ const plannerEmotionalContractFor = (sourceText: string) => {
       interventionBoundaries: [],
       evidence: ["qwen-eval-fixture"],
     }),
-  }).positiveFunctionContract;
+  });
+};
+
+const plannerEmotionalContractFor = (sourceText: string) => {
+  const contract = plannerPlanFor(sourceText).positiveFunctionContract;
   assert(contract?.action === "offer_emotional_support", `${sourceText}: Planner did not select emotional support.`);
   return contract;
+};
+
+const qwenPausedHistory: ConversationMessage[] = [
+  { id: "qwen-pause-user", role: "user", content: "先别问了" },
+  { id: "qwen-pause-assistant", role: "assistant", content: "好，不问了。" },
+];
+
+// Real Planner plan, so the judge sees the production branch for the Planner's refusal source.
+const withPlannerDeclinedSharing = (
+  id: string,
+  sourceText: string,
+  expectedSource: DeclinedSharingSource
+) => {
+  const plan = plannerPlanFor(sourceText, expectedSource === "previous_user_turn" ? qwenPausedHistory : []);
+  const contract = plan.positiveFunctionContract;
+  assert(
+    contract?.action === "offer_emotional_support" &&
+      contract.supportFunction === "respect_declined_sharing" &&
+      contract.declinedSharingSource === expectedSource,
+    `${id}: Planner did not select respect_declined_sharing from ${expectedSource}.`
+  );
+  return { ...plan, planId: `qwen-${id}` };
 };
 
 const withPlannerEmotional = (id: string, sourceText: string) => {
@@ -306,6 +335,26 @@ const cases: EvalCase[] = [
     candidateReply,
     expectedPassed,
   })),
+  // Versioned twins of the fixtures above with real Planner plans; the fixtures above stay as the
+  // missing-source compatibility cases with their original labels.
+  ...([
+    ["respect_declined_sharing-positive-planner-source", "我很难受，但不想说", "嗯，知道你现在很难受。不想说就先不说。", true, "current_turn"],
+    ["respect_declined_sharing-amount-permission-planner-source", "我很难受，但不想说", "难受的时候，想说多少都随你，不用非得讲完整。", false, "current_turn"],
+    ["respect_declined_sharing-boundary-only-positive-planner-source", "我很难受，但不想说", "好，那就先不说，不用勉强自己。", true, "current_turn"],
+    ["respect_declined_sharing-listening-positive-planner-source", "我很难受，不想被问", "好，我不问，你想说的时候我听着。", true, "current_turn"],
+    ["respect_declined_sharing-feeling-as-reason-planner-source", "我很难受，但不想说", "难受就不说，没关系的。", false, "current_turn"],
+    ["respect_declined_sharing-prior-pause-feeling-positive-planner-source", "我今天有点不太高兴", "今天有点不好受啊，陪你安静一会儿。", true, "previous_user_turn"],
+    ["respect_declined_sharing-prior-pause-receipt-companionship-planner-source", "我今天有点不太高兴", "嗯，听到了。我就在这儿陪你待会儿。", false, "previous_user_turn"],
+  ] as const).map(([id, sourceText, candidateReply, expectedPassed, source]) => ({
+    id: `emotional-${id}`,
+    category: "emotional_support" as const,
+    plan: withPlannerDeclinedSharing(`emotional-${id}`, sourceText, source),
+    currentUserText: sourceText,
+    handoffTargetAssistantText: null,
+    candidateReply,
+    expectedPassed,
+    priorAssistantTurnAvailable: source === "previous_user_turn",
+  })),
   {
     id: "emotional-return_focus_control-two-targets-positive",
     category: "emotional_support",
@@ -459,10 +508,27 @@ for (const retired of retiredCases) {
   assert(!cases.some((item) => item.id === retired.id), `${retired.id}: retired case must not run.`);
 }
 
-const inputFor = (testCase: EvalCase): PlannedFunctionSemanticProviderInput => ({
+// Mirrors validatePlannedFunctionSemanticOutput: the Planner's refusal source selects judge rules and is
+// not sent as binding data. Fixtures without a source keep their original input.
+const declinedSharingSourceOf = (plan: ResponsePlan) => {
+  const contract = plan.positiveFunctionContract;
+  return contract?.action === "offer_emotional_support" && contract.supportFunction === "respect_declined_sharing"
+    ? contract.declinedSharingSource
+    : undefined;
+};
+
+const judgeBindingOf = (plan: ResponsePlan): ResponsePlan["positiveFunctionContract"] => {
+  const contract = plan.positiveFunctionContract;
+  if (contract?.action !== "offer_emotional_support" || contract.declinedSharingSource === undefined) return contract;
+  const binding = { ...contract };
+  delete binding.declinedSharingSource;
+  return binding;
+};
+
+export const inputFor = (testCase: EvalCase): PlannedFunctionSemanticProviderInput => ({
   planId: testCase.plan.planId,
   handoffBinding: testCase.plan.interactionMoveHandoffPlan,
-  positiveFunctionBinding: testCase.plan.positiveFunctionContract,
+  positiveFunctionBinding: judgeBindingOf(testCase.plan),
   currentUserText: testCase.currentUserText,
   handoffTargetAssistantText: testCase.handoffTargetAssistantText,
   candidateReply: testCase.candidateReply,
@@ -479,6 +545,12 @@ const inputFor = (testCase: EvalCase): PlannedFunctionSemanticProviderInput => (
         action === "establish_assistant_identity"
       )
     ),
+  ...(testCase.priorAssistantTurnAvailable === undefined
+    ? {}
+    : { priorAssistantTurnAvailable: testCase.priorAssistantTurnAvailable }),
+  ...(declinedSharingSourceOf(testCase.plan) === undefined
+    ? {}
+    : { declinedSharingSource: declinedSharingSourceOf(testCase.plan) }),
 });
 
 const arg = (name: string) =>

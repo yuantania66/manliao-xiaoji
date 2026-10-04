@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -24,7 +25,7 @@ import {
   formatResponsePlanRegenerateConstraint,
 } from "../services/ai/responsePlanValidator";
 import type { AiGenerationResult } from "../services/ai/types";
-import { cases as qwenEvalCases } from "./planned-function-semantic-qwen-eval";
+import { cases as qwenEvalCases, inputFor as qwenInputFor } from "./planned-function-semantic-qwen-eval";
 
 const turnId = "user-turn-current";
 const handoffTargetId = "assistant-move-target";
@@ -978,6 +979,55 @@ const noFunction = await validatePlannedFunctionSemanticOutput({
 });
 assert.equal(noFunction.passed, true);
 assert.equal(noFunctionCalls, 0);
+
+// Q judges real refusal-source branches with the same prompt as production; source-less fixtures keep v38.
+const V38_JUDGE_DEVELOPER_SHA256 = "ed581c46bb6e6ef403b93014b169ad4889938a48f8cc7e325888c0627661a123";
+const BRANCH_DEVELOPER_SHA256 = {
+  current_turn: "9ec838c034e30e452c3ae3353ddb2ea4bda5fe1dc523deed6b5f69a89ce6769e",
+  previous_user_turn: "f4c3bb132e0b154765ff8bd7e69c2b0f07b79f3f23fb34c4bc40ad4aa62252a1",
+} as const;
+const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
+const capturedMessages = async (call: (inspect: (input: { messages: Array<{ content: string }> }) => void) => Promise<unknown>) => {
+  const captured: string[][] = [];
+  await call(({ messages }) => {
+    captured.push(messages.map((message) => message.content));
+    throw new Error("capture judge prompt only");
+  }).catch(() => undefined);
+  assert.equal(captured.length, 1);
+  return captured[0];
+};
+const respectQwenCases = qwenEvalCases.filter((item) =>
+  item.plan.positiveFunctionContract?.action === "offer_emotional_support" &&
+  item.plan.positiveFunctionContract.supportFunction === "respect_declined_sharing"
+);
+const plannerSourceQwenCases = respectQwenCases.filter((item) => item.id.endsWith("-planner-source"));
+assert.equal(plannerSourceQwenCases.length, 7, "Every respect fixture has a real-Planner twin.");
+assert.equal(respectQwenCases.length - plannerSourceQwenCases.length, 7, "The source-less respect fixtures stay.");
+for (const item of respectQwenCases) {
+  const contract = item.plan.positiveFunctionContract;
+  assert(contract?.action === "offer_emotional_support");
+  const source = contract.declinedSharingSource;
+  const qwenMessages = await capturedMessages((inspect) => defaultPlannedFunctionSemanticProvider(qwenInputFor(item), inspect));
+  assert.equal(qwenMessages[1].includes("declinedSharingSource"), false, `${item.id}: the source is not judge data.`);
+  if (source === undefined) {
+    assert(!item.id.endsWith("-planner-source"));
+    assert.equal(sha256Of(qwenMessages[0]), V38_JUDGE_DEVELOPER_SHA256, `${item.id}: source-less fixtures keep the v38 judge prompt.`);
+    continue;
+  }
+  assert(item.id.endsWith("-planner-source"));
+  assert.equal(sha256Of(qwenMessages[0]), BRANCH_DEVELOPER_SHA256[source], `${item.id}: Q uses the ${source} branch.`);
+  const productionMessages = await capturedMessages((inspect) => validatePlannedFunctionSemanticOutput({
+    plan: item.plan,
+    reply: item.candidateReply,
+    semanticContext: {
+      currentUserText: item.currentUserText,
+      handoffTargetAssistantText: item.handoffTargetAssistantText,
+      priorAssistantTurnAvailable: item.priorAssistantTurnAvailable,
+    },
+    inspectExternalPrompt: inspect,
+  }));
+  assert.deepEqual(qwenMessages, productionMessages, `${item.id}: Q and production send the same judge messages.`);
+}
 
 console.log("planned function semantic Validator checks passed");
 };
