@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import {
@@ -809,6 +810,94 @@ const run = async () => {
   }
   assert.deepEqual(judgeBindings[0], judgeBindings[1], "The refusal source must not change the judge input.");
   assert.equal(JSON.stringify(judgeBindings[0]).includes("declinedSharingSource"), false);
+  const judgeMessagesFor = async (plan: ResponsePlan, currentUserText: string) => {
+    const captured: Array<{ developer: string; user: string }> = [];
+    await validatePlannedFunctionSemanticOutput({
+      plan,
+      reply: "今天有点不好受啊，陪你安静一会儿。",
+      semanticContext: { currentUserText, handoffTargetAssistantText: null, priorAssistantTurnAvailable: true },
+      inspectExternalPrompt: ({ messages }) => {
+        captured.push({ developer: messages[0].content, user: messages[1].content });
+        throw new Error("capture judge prompt only");
+      },
+    });
+    assert.equal(captured.length, 1, "The judge prompt is captured before any external call.");
+    return captured[0];
+  };
+  const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
+  // Recorded developer-message sha256 of the v38 judge in the 53458ce and 7cf4535 demo runs.
+  const V38_JUDGE_DEVELOPER_SHA256 = "ed581c46bb6e6ef403b93014b169ad4889938a48f8cc7e325888c0627661a123";
+  const JUDGE_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, naturally respecting that boundary (for example agreeing not to ask, or accepting not talking for now) completes the function; agreeing not to ask or not to talk about it, as the User requested, is this function itself, not a pause or closure that undoes support.";
+  const JUDGE_PRIOR_PAUSE_RULE = " When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement. Responding to that feeling means the reply itself takes in, in its own words, how the User is feeling now (a same-valence paraphrase or a natural reaction to the User's current state counts); a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded.";
+  const JUDGE_PRIOR_PAUSE_NOT_SATISFIED = "a repeated agreement or a companionship statement used in place of responding to a feeling stated without a refusal, including a receipt followed only by companionship or listening; ";
+  const legacyJudge = await judgeMessagesFor(legacyPausedPlan, "我今天有点不太高兴");
+  assert.equal(sha256Of(legacyJudge.developer), V38_JUDGE_DEVELOPER_SHA256, "Without a source the judge prompt stays byte-identical to v38.");
+  for (const segment of [JUDGE_CURRENT_REFUSAL_RULE, JUDGE_PRIOR_PAUSE_RULE, JUDGE_PRIOR_PAUSE_NOT_SATISFIED]) {
+    assert.equal(legacyJudge.developer.split(segment).length, 2, "Each source-specific segment appears once in the v38 judge prompt.");
+  }
+  const pausedJudge = await judgeMessagesFor(pausedThenLow, "我今天有点不太高兴");
+  assert.equal(
+    pausedJudge.developer,
+    legacyJudge.developer.replace(JUDGE_CURRENT_REFUSAL_RULE, ""),
+    "A prior pause drops only the current-refusal completion rule."
+  );
+  assert(pausedJudge.developer.includes(JUDGE_PRIOR_PAUSE_RULE), "A prior pause still requires responding to the current feeling.");
+  assert(pausedJudge.developer.includes(JUDGE_PRIOR_PAUSE_NOT_SATISFIED));
+  assert.equal(pausedJudge.user, legacyJudge.user, "The source selects rules in code and is not sent as judge data.");
+  const currentRefusalPlans: Array<[ResponsePlan, string]> = [
+    [build({ userMessage: "我有点难受，但不想说" }).responsePlan, "我有点难受，但不想说"],
+    [build({ userMessage: "我不太高兴，不想被问" }).responsePlan, "我不太高兴，不想被问"],
+    [
+      build({
+        userMessage: "我有点难受，但不想说",
+        recentMessages: [
+          { id: "pause-user", role: "user", content: "先别问了" },
+          { id: "pause-assistant", role: "assistant", content: "好，不问了。" },
+        ],
+      }).responsePlan,
+      "我有点难受，但不想说",
+    ],
+  ];
+  for (const [plan, currentUserText] of currentRefusalPlans) {
+    assert.equal(declinedSharingSourceOf(plan), "current_turn");
+    const currentJudge = await judgeMessagesFor(plan, currentUserText);
+    assert.equal(
+      currentJudge.developer,
+      legacyJudge.developer.replace(JUDGE_PRIOR_PAUSE_RULE, "").replace(JUDGE_PRIOR_PAUSE_NOT_SATISFIED, ""),
+      "A current refusal drops only the prior-pause rule and its not-satisfied item."
+    );
+    for (const priorPauseWording of [
+      "states a feeling but no refusal",
+      "used in place of responding to a feeling stated without a refusal",
+      "followed only by a companionship or listening statement",
+    ]) {
+      assert.equal(currentJudge.developer.includes(priorPauseWording), false, `A current refusal judge prompt carries no prior-pause requirement: ${priorPauseWording}`);
+    }
+    assert(currentJudge.developer.includes(JUDGE_CURRENT_REFUSAL_RULE));
+    assert.equal(currentJudge.user.includes("declinedSharingSource"), false);
+    for (const judge of [currentJudge, pausedJudge]) {
+      for (const shared of [
+        "affect category/intensity/object drift",
+        "ES-AFFECT-EVIDENCE: every emotion category the candidate names or implies must be evidenced in currentUserText.",
+        "at the same or lower intensity",
+        "respect_declined_sharing applies when the User declined to talk or to be asked",
+        "One statement of listening or brief in-conversation companionship that requires no response",
+        "any invitation, question, or request, including asking the User to tell the Assistant later",
+        "claiming physical or offline company; or ending the conversation.",
+        "ES-SCOPE:",
+        "A later clause that recommends a preferred focus",
+      ]) {
+        assert(judge.developer.includes(shared), `Branch selection keeps shared judge rule: ${shared}`);
+      }
+    }
+  }
+  const inviteNoHistory = build({ userMessage: "我今天有点不太高兴" }).responsePlan;
+  assert.notEqual(supportFunctionOf(inviteNoHistory), "respect_declined_sharing");
+  assert.equal(
+    sha256Of((await judgeMessagesFor(inviteNoHistory, "我今天有点不太高兴")).developer),
+    V38_JUDGE_DEVELOPER_SHA256,
+    "Other support functions keep the v38 judge prompt."
+  );
   const refusalAfterPause = build({
     userMessage: "我有点难受，但不想说",
     recentMessages: [

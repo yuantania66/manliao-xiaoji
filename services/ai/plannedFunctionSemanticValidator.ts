@@ -1,4 +1,5 @@
 import type {
+  DeclinedSharingSource,
   EmotionalSupportFunction,
   InteractionMoveHandoffPlan,
   PositiveFunctionContract,
@@ -27,6 +28,8 @@ export type PlannedFunctionSemanticProviderInput = {
   candidateReply: string;
   ordinaryQuestionIndependentlySupported: boolean;
   priorAssistantTurnAvailable?: boolean;
+  /** Planner-decided refusal source; selects respect_declined_sharing rules and is not sent as data. */
+  declinedSharingSource?: DeclinedSharingSource;
 };
 
 export type PlannedFunctionSemanticProvider = (
@@ -374,9 +377,23 @@ const handoffVerdictBindingFor = (handoff: InteractionMoveHandoffPlan) => ({
   questionPolicy: handoff.questionPolicy,
 });
 
+const RESPECT_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, naturally respecting that boundary (for example agreeing not to ask, or accepting not talking for now) completes the function; agreeing not to ask or not to talk about it, as the User requested, is this function itself, not a pause or closure that undoes support.";
+const RESPECT_PRIOR_PAUSE_RULE = " When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement. Responding to that feeling means the reply itself takes in, in its own words, how the User is feeling now (a same-valence paraphrase or a natural reaction to the User's current state counts); a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded.";
+const RESPECT_PRIOR_PAUSE_NOT_SATISFIED = "a repeated agreement or a companionship statement used in place of responding to a feeling stated without a refusal, including a receipt followed only by companionship or listening; ";
+
+// The Planner already decided the refusal source; the judge only sees the existing rules for that source.
+// Without a source, both are kept so the prompt stays byte-identical to the v38 judge.
+const respectDeclinedSharingRulesFor = (source: DeclinedSharingSource | undefined) => ({
+  currentRefusal: source === "previous_user_turn" ? "" : RESPECT_CURRENT_REFUSAL_RULE,
+  priorPause: source === "current_turn" ? "" : RESPECT_PRIOR_PAUSE_RULE,
+  priorPauseNotSatisfied: source === "current_turn" ? "" : RESPECT_PRIOR_PAUSE_NOT_SATISFIED,
+});
+
 const buildSemanticValidationMessages = (
   input: PlannedFunctionSemanticProviderInput
-): AiModelMessage[] => [
+): AiModelMessage[] => {
+  const respect = respectDeclinedSharingRulesFor(input.declinedSharingSource);
+  return [
   {
     role: "developer",
     content: [
@@ -394,7 +411,7 @@ const buildSemanticValidationMessages = (
       "For establish_assistant_identity/identity_continuation, satisfied requires naturally continuing the exact targetProposition. Merely repeating 小慢, saying 嗯/听到了, generic confirmation, changing to a random/product name, or changing topic is insufficient.",
       "For establish_assistant_identity/identity_repair, satisfied requires distinguishing product name from Assistant name and giving canonical displayName 小慢; claiming to have no name is insufficient.",
       "For offer_emotional_support, bind to the current-turn sourceText and affectEvidenceSpans and realize exactly supportFunction. A receipt, pure question, a different support function, affect category/intensity/object drift, reassurance, advice, pause, topic switch, or a later move that undoes the selected function is insufficient.",
-      "The six emotional support functions are exclusive for this verdict: reduce_expression_burden releases the need to explain causes, analyze, organize, or give a complete account; merely choosing the focus or amount is a different function. return_focus_control returns which already-evidenced part receives attention and, when question policy is none, must be realized as permission/control rather than a semantic request. return_amount_control returns how much to express; merely pausing, deferring, or closing does not return amount control. acknowledge_current_relational_impact owns the current Assistant relationship impact while preserving the information boundary. invite_optional_sharing naturally acknowledges the feeling the User stated and offers at most one gentle invitation, easy to decline, for the User to share more if they want; it does not need to mention control, how much to say, or which part to choose. For invite_optional_sharing, a bare receipt or paraphrase with no invitation, an invitation with no acknowledgement of the stated feeling, or an invitation that makes continuing feel required is not satisfied. respect_declined_sharing applies when the User declined to talk or to be asked, in currentUserText or in an earlier turn: it naturally responds to the boundary or the feeling the User expressed, judged in context; restating the feeling word is not required. When currentUserText itself states the refusal, naturally respecting that boundary (for example agreeing not to ask, or accepting not talking for now) completes the function; agreeing not to ask or not to talk about it, as the User requested, is this function itself, not a pause or closure that undoes support. When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement. Responding to that feeling means the reply itself takes in, in its own words, how the User is feeling now (a same-valence paraphrase or a natural reaction to the User's current state counts); a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded. One statement of listening or brief in-conversation companionship that requires no response (for example that the Assistant will listen whenever the User wants to talk, or keeping the User company quietly for a while) is allowed and is not an invitation, a permission about when to speak, a receipt, or a closure. For respect_declined_sharing, the following are not satisfied: a bare receipt that responds to neither the stated feeling nor the stated boundary; a repeated agreement or a companionship statement used in place of responding to a feeling stated without a refusal, including a receipt followed only by companionship or listening; any invitation, question, or request, including asking the User to tell the Assistant later; any permission about how much or which part to say; presenting the feeling as the reason the User should not talk; deciding for the User that they will not share anything further (accepting not talking for now, as the User asked, is not this); claiming physical or offline company; or ending the conversation. If the candidate mainly realizes another function, mark not_satisfied.",
+      `The six emotional support functions are exclusive for this verdict: reduce_expression_burden releases the need to explain causes, analyze, organize, or give a complete account; merely choosing the focus or amount is a different function. return_focus_control returns which already-evidenced part receives attention and, when question policy is none, must be realized as permission/control rather than a semantic request. return_amount_control returns how much to express; merely pausing, deferring, or closing does not return amount control. acknowledge_current_relational_impact owns the current Assistant relationship impact while preserving the information boundary. invite_optional_sharing naturally acknowledges the feeling the User stated and offers at most one gentle invitation, easy to decline, for the User to share more if they want; it does not need to mention control, how much to say, or which part to choose. For invite_optional_sharing, a bare receipt or paraphrase with no invitation, an invitation with no acknowledgement of the stated feeling, or an invitation that makes continuing feel required is not satisfied. respect_declined_sharing applies when the User declined to talk or to be asked, in currentUserText or in an earlier turn: it naturally responds to the boundary or the feeling the User expressed, judged in context; restating the feeling word is not required.${respect.currentRefusal}${respect.priorPause} One statement of listening or brief in-conversation companionship that requires no response (for example that the Assistant will listen whenever the User wants to talk, or keeping the User company quietly for a while) is allowed and is not an invitation, a permission about when to speak, a receipt, or a closure. For respect_declined_sharing, the following are not satisfied: a bare receipt that responds to neither the stated feeling nor the stated boundary; ${respect.priorPauseNotSatisfied}any invitation, question, or request, including asking the User to tell the Assistant later; any permission about how much or which part to say; presenting the feeling as the reason the User should not talk; deciding for the User that they will not share anything further (accepting not talking for now, as the User asked, is not this); claiming physical or offline company; or ending the conversation. If the candidate mainly realizes another function, mark not_satisfied.`,
       "A later clause that recommends a preferred focus, requests causes/details, pressures continuation, pauses/closes the exchange, or otherwise takes back the promised control functionally undoes emotional support. Mark containsContradictoryMove=true and do not mark the positive contract satisfied.",
       "Emotional-support rules. The ES-* rules apply only when positiveFunctionBinding.action is offer_emotional_support. Never apply or cite an ES-* rule in the handoff branch or for repair_previous_wording, establish_assistant_identity, or an absent positiveFunctionBinding; judge those only by their own rules. For every offer_emotional_support verdict that is not satisfied, is uncertain, or has containsContradictoryMove=true, include at least one evidence item quoting the exact deciding span and start its reason with the rule id (ES-AFFECT-EVIDENCE, ES-SCOPE, ES-FOCUS, ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, or ES-ACK-NO-FABRICATION).",
       "ES-AFFECT-EVIDENCE: every emotion category the candidate names or implies must be evidenced in currentUserText. Adding an emotion category the User did not state is affect drift and not satisfied, whether it is attributed to the User, phrased impersonally as a quality of the situation (this is X, that makes one feel X, anyone would feel X), or presented as the Assistant's characterization of the relational impact. Restating the User's evidenced affect, or describing the reported relational situation without adding an emotion (for example, that the User feels not understood), is allowed. A general same-valence paraphrase of the stated feeling at the same or lower intensity that names no more specific emotion (for example, rendering not happy as not feeling good) is restating, not adding a category. Decide by whether an unevidenced emotion category is added, not by word lists.",
@@ -455,7 +472,8 @@ const buildSemanticValidationMessages = (
       },
     }),
   },
-];
+  ];
+};
 
 export const defaultPlannedFunctionSemanticProvider = async (
   input: PlannedFunctionSemanticProviderInput,
@@ -516,7 +534,7 @@ const ordinaryQuestionSupportedByPlan = (plan: ResponsePlan) =>
     )
   );
 
-// declinedSharingSource only selects generation branches; the judge input stays as approved.
+// declinedSharingSource is passed separately to select judge rules; the binding sent as data stays as approved.
 const judgeBindingFor = (contract: ResponsePlan["positiveFunctionContract"]): ResponsePlan["positiveFunctionContract"] => {
   if (contract?.action !== "offer_emotional_support" || contract.declinedSharingSource === undefined) return contract;
   const judgeContract = { ...contract };
@@ -588,6 +606,11 @@ export const validatePlannedFunctionSemanticOutput = async ({
       ...(semanticContext.priorAssistantTurnAvailable === undefined
         ? {}
         : { priorAssistantTurnAvailable: semanticContext.priorAssistantTurnAvailable }),
+      ...(positiveFunction?.action === "offer_emotional_support" &&
+        positiveFunction.supportFunction === "respect_declined_sharing" &&
+        positiveFunction.declinedSharingSource !== undefined
+        ? { declinedSharingSource: positiveFunction.declinedSharingSource }
+        : {}),
     };
     rawVerdict = provider
       ? await provider(providerInput)
