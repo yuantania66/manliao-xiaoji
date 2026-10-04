@@ -936,6 +936,33 @@ C3 取证（只用代码与既有日志；未采样，未修改 Safety；不把�
       - 一致性：4 句 3 次结论不一致（暂停正例 2 句、本轮拒绝 2 句，见上），其余 10 句一致。
       - 观察项：参考正例第 3 次的合格理由里提到 `ES-PAUSE-NO-ACTION`（说明未违反），不算失败引用。
     - 结论：本次判定修正未通过冻结门槛，而且引入了本轮拒绝回归的退化，不能合入候选使用。按批准不自动修复、不重跑。首稿遗漏（生成侧）仍单独保留。
+  - **判定说明实验撤回（2026-10-04 14:54 用户批准）**：
+    - 方式：新提交，不 reset。`plannedFunctionSemanticValidator.ts` 与 `hill-helping-batch1-5-check.ts` 恢复为 `0ab670c` 的内容（与 `0ab670c` 无差异）。`7cf4535`（v38 实现）到 `0ab670c` 之间 `services/`、`conversation-os/`、`lib/`、`app/` 没有差异，所以判定提示词、输入构造（含 `judgeBindingFor` 移除来源字段）、解析和控制流与 v38 一致。v38 的 `declinedSharingSource`、生成分支选择、再生成反馈都没有动。
+    - 合同 §3.2 删掉 v39 判定说明段，改为一句撤回记录；人工结论保留，仍是标准。
+    - 失败实验的材料保留，但**不计入任何已通过证据**：`scripts/prior-pause-judge-eval.ts`（文件头写明属于已撤回的实验）、上面的 42 次结果和否决记录、结构副本 `pause-judge-60719c8-structural.json`。Q 里 4 条 `-v39` 用例移到单独导出的 `priorPauseV39ExperimentCases`，不在 Q 门的 `cases` 里。Q 恢复为 51 例，`casesSha256` 前缀 `39b8f36e0352edc3`，与 `0ab670c` 相同。
+    - 确定性验证（未调用真实模型，运行时清除了模型密钥）：`tsc`、改动文件 `eslint`（只有既有的 `emotional-opening-tone-demo.ts` 警告）、28 项检查全部退出码 0。
+  - **判定输入修正方案（只是方案，未实施；不新增判定规则文字）**：
+    - 1）判定器实际收到的规划字段（`buildSemanticValidationMessages`）：
+      - 开发者消息是固定文本。42 次调用的 sha 只有一个，说明不随计划变化。`respect_declined_sharing` 的定义同时写了“本轮拒绝”和“上一轮拒绝、本轮只说感受”两种情况，由判定模型自己根据 `currentUserText` 判断属于哪一种。
+      - 用户消息 JSON 包含：`planId`、`handoffBinding`、`positiveFunctionBinding`、`currentUserText`、`handoffTargetAssistantText`、`candidateReply`（另附长度和整句证据片段）、`ordinaryQuestionIndependentlySupported`、`priorAssistantTurnAvailable`、`outputSchema`。没有对话历史。
+      - 情绪支持时 `positiveFunctionBinding` 有这些字段：`action`、`supportFunction`、`sourceTurnId`、`sourceText`、`affectEvidenceSpans`、`explicitAffectOrImpactTerms`、`intensityCeiling`、`evidence`。其中 `evidence` 的 `sharingInvitationUnavailable=user_declined_questions_or_talking` 对两种来源完全相同，所以判定器拿不到来源信息。
+      - 来源在 `plannedFunctionSemanticValidator.ts` 的 `judgeBindingFor` 中移除，在 `validatePlannedFunctionSemanticOutput` 构造 `providerInput` 时调用。核对判定结果绑定的 `positiveVerdictBindingFor` 只比较 `action`、`supportFunction`、`sourceTurnId`，不受影响。
+      - 生产中 `respect_declined_sharing` 只有一个来源：`responsePlanner.ts` 的 `withoutSharingInvitation` 替换。那里一定会写入来源（`current_turn` 或 `previous_user_turn`；两者都有时取 `current_turn`）。
+    - 2）方案：
+      - 不再在 `judgeBindingFor` 里丢弃来源，而是把它交给组装判定提示词的代码（`buildSemanticValidationMessages`）。
+      - 由代码按来源选择 v38 已有的句子：`current_turn` 只保留“本轮自己说了拒绝，尊重边界即完成”那一句；`previous_user_turn` 只保留“本轮说感受、没有拒绝，须回应感受”那一句，以及不合格清单里只适用于它的那一项（“用再次答应或陪伴代替回应无拒绝时说出的感受，包括回执后只接陪伴或倾听”）。共用部分保持不变。
+      - 不新写规则文字，不加规则编号，不让判定模型重新识别来源，不另造拒绝判断，不传完整历史。用户消息 JSON 也可以不加这个字段，模型看到的只是已经选好的规则。
+      - 代价：开发者消息从一种变为三种（两个来源加旧写法）。
+    - 3）兼容与保证：
+      - 字段缺失（旧合同、旧记录、Q 里手工构造、不带来源的计划）时，开发者消息与现在逐字节相同，用 sha 断言。其他支持功能和其他动作不受影响。
+      - 保证本轮拒绝不再套用暂停规则：用确定性断言检查组装出的消息。`current_turn` 的消息里不能出现暂停那一句和暂停专用的不合格项；`previous_user_turn` 的消息里不能出现“本轮自己说了拒绝”那一句。沿用 v38 检查里截获判定输入的办法，不调用模型。
+      - 局限：来源跟随 Planner 的判断，判断错了判定也会跟着错。例如尚未处理的“重新愿意谈”说法缺口，会把这类句子交给暂停规则判定。
+    - 4）能处理和不能处理的问题（不承诺补字段就能解决全部失败）：
+      - 能处理“规则适用范围”：本轮拒绝的判定提示词里不再出现暂停规则，模型就无法把它套用到本轮拒绝上。42 次实验中本轮拒绝的 3 句被引暂停规则，属于这一类。但那次用的是已撤回的 v39 文字，不能据此推算 v38 加这个方案后的结果。效果需要另外批准一次有上限的判定评测来测量。
+      - 不能处理“自然复述误拒”：v38 的演示首稿和 42 次实验中，暂停正例都是在适用的暂停分支里被拒，判定模型把“复述感受＋陪伴”看成“回执＋陪伴”。按来源选规则不改变这一句的文字。
+      - 不能处理“情绪增强误放”：`ES-AFFECT-EVIDENCE` 是共用规则，与来源无关。v37 演示中“挺难熬”被放过（`53458ce` 到 `7cf4535` 判定文字没有变化），42 次实验也是 3/3 放过。
+      - 也不能处理：行动建议误放（v38 的暂停定义里没有单列行动建议）、错误规则引用（v38 没有对应暂停失败的编号；本方案按要求不再追加）、生成首稿遗漏（生成侧问题）。
+    - 整体仍为 NO-GO；不合并、不部署、不提审。
   - **下一步顺序**：用户确认 v38 暂停场景演示后，再在最终候选上安排受影响的门（J r6、Q 51 例、E、F、轨迹、交接表层、C9）和新版盲评包。确认前不重跑昂贵验收。旧的 12 组简评保持原样，不补分、不解盲、不算正式验收。
 
 - 工程验收（更新于候选 `433cc26` 自动门与 C9 后，2026-09-30 21:10 UTC+8）：**NO-GO 不变**。本轮所有需要重跑的自动门都通过，C9 完成，盲评包已生成；C3 评审、C10 人工盲评、C11 评估、C14 真机与部署准备仍未完成，不因本轮通过而豁免。

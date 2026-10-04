@@ -20,7 +20,6 @@ import {
 } from "../services/ai/plannedFunctionSemanticValidator";
 import { buildChatPrompt, formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
 import { formatResponsePlanRegenerateConstraint, validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
-import { ruleIdsInReason } from "./semantic-verdict-audit";
 
 const uncertainBoundary = (
   userBoundaries: OrdinaryHandoffBoundary["userBoundaries"] = []
@@ -878,22 +877,9 @@ const run = async () => {
   assert(validatorSource.includes("respect_declined_sharing applies when the User declined to talk or to be asked, in currentUserText or in an earlier turn"));
   assert(validatorSource.includes("restating the feeling word is not required"));
   assert(validatorSource.includes("is this function itself, not a pause or closure that undoes support"));
-  assert(validatorSource.includes("When currentUserText states a feeling but no refusal (the refusal came from an earlier turn and was not reopened; this is the prior-pause case), the reply must naturally respond to that feeling and need not repeat an earlier agreement; judge the whole reply"));
-  assert(validatorSource.includes("A receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded"));
+  assert(validatorSource.includes("When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling"));
+  assert(validatorSource.includes("a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded"));
   assert(validatorSource.includes("including a receipt followed only by companionship or listening"));
-  assert(validatorSource.includes("a leading receipt such as 嗯 does not cancel a response that follows it"));
-  assert(validatorSource.includes("describing the Assistant's own feeling in place of the User's state substitutes for the response rather than providing it"));
-  assert(validatorSource.includes("Responding to the feeling does not excuse a later suggestion that the User do something, or a strengthened feeling"));
-  assert(validatorSource.includes("in the prior-pause case, suggesting or telling the User to do something"));
-  assert(validatorSource.includes("ES-ACK-NO-FABRICATION, ES-PAUSE-FEELING, or ES-PAUSE-NO-ACTION)"));
-  assert(validatorSource.includes("ES-PAUSE-FEELING and ES-PAUSE-NO-ACTION apply only to the prior-pause case of respect_declined_sharing"));
-  assert(validatorSource.includes("Never cite them for any other support function, for an ordinary emotional expression, or when currentUserText states a refusal"));
-  assert(validatorSource.includes("ES-PAUSE-FEELING: in the prior-pause case, the reply does not respond to the stated feeling"));
-  assert(validatorSource.includes("ES-PAUSE-NO-ACTION: in the prior-pause case, the reply suggests or tells the User to do something"));
-  assert(validatorSource.includes("A strengthened feeling is ES-AFFECT-EVIDENCE, not this rule"));
-  assert.equal(validatorSource.includes("takes in, in its own words, how the User is feeling now"), false, "Own-words wording must not exclude restating the feeling.");
-  assert.deepEqual(ruleIdsInReason("ES-PAUSE-NO-ACTION: suggests an action"), ["ES-PAUSE-NO-ACTION"]);
-  assert.deepEqual(ruleIdsInReason("ES-PAUSE-FEELING: receipt then company"), ["ES-PAUSE-FEELING"]);
   assert(validatorSource.includes("One statement of listening or brief in-conversation companionship that requires no response"));
   assert(validatorSource.includes("a bare receipt that responds to neither the stated feeling nor the stated boundary"));
   assert(validatorSource.includes("including asking the User to tell the Assistant later"));

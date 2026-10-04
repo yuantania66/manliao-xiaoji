@@ -23,6 +23,8 @@ const dryRun = process.argv.includes("--dry-run");
 if (!dryRun && !outputPath) throw new Error("--output is required.");
 if (!dryRun && process.env.AI_PROVIDER !== "qwen") throw new Error("This eval must run against the real Qwen provider.");
 
+// Failed v39 judge experiment: written for the 9c99bf7 judge text, which was withdrawn. Its 42 results
+// (60719c8) are a rejection record and must not count as passing evidence for any judge version.
 // Frozen before the run: 14 cases x 3 passes, judge only, no generation. Every result is kept; nothing
 // is selected, retried, or rerun. The outbound cap counts initial and schema-repair judge calls.
 const PASSES = 3;

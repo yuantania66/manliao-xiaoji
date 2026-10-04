@@ -297,10 +297,6 @@ const cases: EvalCase[] = [
     ["respect_declined_sharing-feeling-as-reason", "我很难受，但不想说", "难受就不说，没关系的。", false],
     ["respect_declined_sharing-prior-pause-feeling-positive", "我今天有点不太高兴", "今天有点不好受啊，陪你安静一会儿。", true],
     ["respect_declined_sharing-prior-pause-receipt-companionship", "我今天有点不太高兴", "嗯，听到了。我就在这儿陪你待会儿。", false],
-    ["respect_declined_sharing-prior-pause-leading-receipt-restate-v39", "我今天有点不太高兴", "嗯，今天不太高兴啊。我就在这儿安静陪你待会儿。", true],
-    ["respect_declined_sharing-prior-pause-own-feeling-v39", "我今天有点不太高兴", "听到你这么说，心里也跟着沉了一下。我就在这儿安静陪着你。", false],
-    ["respect_declined_sharing-prior-pause-action-suggestion-v39", "我今天有点不太高兴", "不太高兴的时候，就让自己待一会儿吧，我在这儿陪你。", false],
-    ["respect_declined_sharing-prior-pause-intensified-v39", "我今天有点不太高兴", "不太高兴的时候确实挺难熬的，我就在这儿安静陪陪你。", false],
   ] as const).map(([id, sourceText, candidateReply, expectedPassed]) => ({
     id: `emotional-${id}`,
     category: "emotional_support" as const,
@@ -420,6 +416,23 @@ const cases: EvalCase[] = [
     expectedPassed: false,
   },
 ];
+
+// Failed v39 judge experiment (9c99bf7, withdrawn): labels follow the 2026-10-04 human conclusions.
+// Kept outside `cases` so the Q gate and casesSha256 stay as before; never count it as passing evidence.
+export const priorPauseV39ExperimentCases: EvalCase[] = ([
+  ["respect_declined_sharing-prior-pause-leading-receipt-restate-v39", "我今天有点不太高兴", "嗯，今天不太高兴啊。我就在这儿安静陪你待会儿。", true],
+  ["respect_declined_sharing-prior-pause-own-feeling-v39", "我今天有点不太高兴", "听到你这么说，心里也跟着沉了一下。我就在这儿安静陪着你。", false],
+  ["respect_declined_sharing-prior-pause-action-suggestion-v39", "我今天有点不太高兴", "不太高兴的时候，就让自己待一会儿吧，我在这儿陪你。", false],
+  ["respect_declined_sharing-prior-pause-intensified-v39", "我今天有点不太高兴", "不太高兴的时候确实挺难熬的，我就在这儿安静陪陪你。", false],
+] as const).map(([id, sourceText, candidateReply, expectedPassed]) => ({
+  id: `emotional-${id}`,
+  category: "emotional_support" as const,
+  plan: withEmotional(`emotional-${id}`, "respect_declined_sharing", sourceText),
+  currentUserText: sourceText,
+  handoffTargetAssistantText: null,
+  candidateReply,
+  expectedPassed,
+}));
 
 const retiredCases = [
   {
