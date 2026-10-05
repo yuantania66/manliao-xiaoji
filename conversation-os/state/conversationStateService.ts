@@ -67,19 +67,53 @@ const isInsideQuote = (before: string) =>
   (before.match(/「/gu)?.length ?? 0) > (before.match(/」/gu)?.length ?? 0) ||
   (before.match(/"/gu)?.length ?? 0) % 2 === 1;
 
-const isUsersOwnRefusalAt = (text: string, index: number) => {
+// Noun subjects are recognized by grammatical form, not by a list of nouns. After discourse leads,
+// trailing adverbials, and a reporting verb are removed, the subject slot names someone else only when
+// it is a possessed noun phrase (我朋友, 我的同事, 她男朋友), or a bare noun phrase that is the experiencer
+// of a passive refusal (同事不想被问). An empty slot, a first-person tail, a predicate (affect evidence or
+// an aspect/degree marker), or a topic (这件事, 工作的事) keeps the refusal the user's own. A bare noun
+// without a passive stays the user's own because it may be a fronted topic (工作不想聊).
+const SUBJECT_SLOT_DISCOURSE_LEAD = /^(?:嗯|那|但是?|可是|不过|就是|而且|反正|所以|其实)+/u;
+const SUBJECT_SLOT_TRAILING_WORD =
+  /(?:真的|实在|确实|其实|就是|还是|根本|压根|完全|一点也|一点都|什么也|什么都|啥也|啥都|暂时|暂且|目前|现在|此刻|今天|今晚|晚上|早上|这会儿?|这两天|这几天|最近|已经|一直|可能|好像|大概|估计|应该|有点|有些|也|都|还|就|才|偏|又|再|先|却|倒|并|真|是|(?:说|讲|道|写|问)(?:过|着|了)?)$/u;
+const SUBJECT_SLOT_FIRST_PERSON_TAIL = /(?:我|我们|咱们|咱|自己)$/u;
+const SUBJECT_SLOT_PREDICATE_MARKER = /了|着|很|挺|特别|非常|没|不/u;
+const SUBJECT_SLOT_TOPIC_MARKER = /(?:的|这|那|件|种|些|个)事|事情|事儿|的话|关于|对于|至于|(?:这|那)(?:个|些)$/u;
+const SUBJECT_SLOT_POSSESSOR = /^(?:我们|你们|他们|她们|我|你|他|她)的?(?=.)/u;
+
+const subjectSlotOf = (lead: string) => {
+  let slot = lead.replace(SUBJECT_SLOT_DISCOURSE_LEAD, "");
+  for (let next = slot.replace(SUBJECT_SLOT_TRAILING_WORD, ""); next !== slot; next = slot.replace(SUBJECT_SLOT_TRAILING_WORD, "")) {
+    slot = next;
+  }
+  return slot;
+};
+
+const subjectSlotNamesSomeoneElse = (lead: string, passive: boolean) => {
+  const slot = subjectSlotOf(lead);
+  if (!slot || SUBJECT_SLOT_FIRST_PERSON_TAIL.test(slot)) return false;
+  if (SUBJECT_SLOT_PREDICATE_MARKER.test(slot) || SUBJECT_SLOT_TOPIC_MARKER.test(slot) || extractAffectEvidence(slot).length > 0) {
+    return false;
+  }
+  return SUBJECT_SLOT_POSSESSOR.test(slot) || passive;
+};
+
+const isUsersOwnRefusalAt = (text: string, index: number, matched: string) => {
   const before = text.slice(0, index);
   if (NEGATED_REFUSAL_LEAD_PATTERN.test(before) || isInsideQuote(before)) return false;
   const clauses = before.split(REFUSAL_CLAUSE_BOUNDARY);
   const lead = clauses.at(-1) ?? "";
   if (THIRD_PERSON_SUBJECT_LEAD.test(lead) || HYPOTHETICAL_LEAD.test(lead)) return false;
+  if (subjectSlotNamesSomeoneElse(lead, matched.includes("被"))) return false;
   const previousClause = clauses.slice(0, -1).filter(Boolean).at(-1) ?? "";
-  return !(lead === "" && THIRD_PERSON_REPORTING_CLAUSE.test(previousClause));
+  if (lead !== "") return true;
+  if (THIRD_PERSON_REPORTING_CLAUSE.test(previousClause)) return false;
+  return !(REPORTED_SPEECH_LEAD_PATTERN.test(previousClause) && subjectSlotNamesSomeoneElse(previousClause, false));
 };
 
 const hasOwnRefusalMatch = (pattern: RegExp, text: string) => {
   for (const match of text.matchAll(new RegExp(pattern.source, `${pattern.flags}g`))) {
-    if (isUsersOwnRefusalAt(text, match.index)) return true;
+    if (isUsersOwnRefusalAt(text, match.index, match[0])) return true;
   }
   return false;
 };

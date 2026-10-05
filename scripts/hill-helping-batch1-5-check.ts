@@ -1091,6 +1091,27 @@ const run = async () => {
     assert.equal(supportFunctionOf(build({ userMessage }).responsePlan), "invite_optional_sharing", `Someone else's refusal is not the user's: ${userMessage}`);
   }
   assert.notEqual(build({ userMessage: "他说他不想说" }).responsePlan.questionPolicy.mode, "none", "A reported refusal does not remove questions.");
+  // Noun subjects are classified by form (possessed noun phrase, or a bare noun before a passive refusal),
+  // so the cases below use nouns that appear nowhere in the classifier.
+  const stateOf = (userMessage: string) => determineConversationState({ currentUserMessage: userMessage, recentMessages: [] });
+  for (const userMessage of [
+    "我朋友不想说", "我妈不想聊这个", "同事不想被问", "我朋友不聊了", "我的室友不想说", "她表哥不想聊",
+    "那个邻居不想被问", "我搭档今天也不想说", "我师兄说，不想说了", "我老板别问了",
+  ]) {
+    const plan = build({ userMessage }).responsePlan;
+    assert.notEqual(plan.questionPolicy.mode, "none", `A noun-subject refusal is not the user's: ${userMessage}`);
+    assert.equal(stateOf(userMessage).interaction?.stopIntent, false, `A noun-subject closing is not the user's stop: ${userMessage}`);
+  }
+  assert.equal(supportFunctionOf(build({ userMessage: "我朋友不想说，我有点难过" }).responsePlan), "invite_optional_sharing");
+  for (const userMessage of [
+    "我真不想说", "我啥也不想说", "我心情不好不想说", "有点烦不想说", "累了不想聊", "这件事不想说", "工作的事我不想聊",
+    "我朋友的事不想说", "工作不想聊", "老实说，不想说", "我说，不想说了", "你别问了",
+  ]) {
+    assert.equal(build({ userMessage }).responsePlan.questionPolicy.mode, "none", `The user's own refusal still removes questions: ${userMessage}`);
+  }
+  for (const userMessage of ["我们不聊了", "你别问了", "我说，不想说了"]) {
+    assert.equal(stateOf(userMessage).interaction?.stopIntent, true, `The user's own closing still stops: ${userMessage}`);
+  }
   assert(!build({ userMessage: "如果我不想说，你会生气吗？" }).responsePlan.questionPolicy.reason.includes("declined"), "A hypothetical refusal is not a refusal.");
   const neutralAfterPause = afterPause("今天吃了火锅");
   assert.equal(neutralAfterPause.questionPolicy.mode, "none", "An earlier refusal still holds for a following turn without emotional evidence.");
