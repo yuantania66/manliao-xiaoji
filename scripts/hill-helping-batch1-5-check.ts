@@ -810,6 +810,16 @@ const run = async () => {
   }
   assert.deepEqual(judgeBindings[0], judgeBindings[1], "The refusal source must not change the judge input.");
   assert.equal(JSON.stringify(judgeBindings[0]).includes("declinedSharingSource"), false);
+  // Judge refusal-scope slice after fd4f5ec (contract §3.2 refusal rows and §3.4; ES-ACK-* scope per §3.3):
+  // the current-refusal rule follows the boundary the User stated and yields to the not-satisfied list, the
+  // decide-for-the-User note is limited to a declined talk, and ES-ACK-* is scoped to its own function.
+  // judgeMessagesFor returns the prompt with exactly these segments reverted, so every pinned comparison below
+  // still proves that nothing else changed; `raw` is the prompt actually sent.
+  const OLD_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, naturally respecting that boundary (for example agreeing not to ask, or accepting not talking for now) completes the function; agreeing not to ask or not to talk about it, as the User requested, is this function itself, not a pause or closure that undoes support.";
+  const NEW_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, naturally respecting the boundary the User actually stated completes the function unless an item in the not-satisfied list below applies: when the User declines to talk, accepting not talking for now; when the User declines to be asked, agreeing not to ask, which does not mean the User will not talk or share. Agreeing not to ask, or accepting not talking when the User declined to talk, is this function itself, not a pause or closure that undoes support.";
+  const OLD_DECIDES_NOTE = "(accepting not talking for now, as the User asked, is not this)";
+  const NEW_DECIDES_NOTE = "(accepting not talking for now, when the User declined to talk, is not this)";
+  const ACK_SCOPE_SENTENCE = " ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, and ES-ACK-NO-FABRICATION apply only when supportFunction is acknowledge_current_relational_impact; never apply or cite them for another supportFunction.";
   const judgeMessagesFor = async (plan: ResponsePlan, currentUserText: string) => {
     const captured: Array<{ developer: string; user: string }> = [];
     await validatePlannedFunctionSemanticOutput({
@@ -822,7 +832,17 @@ const run = async () => {
       },
     });
     assert.equal(captured.length, 1, "The judge prompt is captured before any external call.");
-    return captured[0];
+    const raw = captured[0].developer;
+    assert.equal(raw.split(ACK_SCOPE_SENTENCE).length, 2, "Every judge variant scopes ES-ACK-* once.");
+    assert.equal(raw.split(NEW_DECIDES_NOTE).length, 2, "Every judge variant limits the decide-for-the-User note to a declined talk.");
+    assert(raw.indexOf(ACK_SCOPE_SENTENCE) < raw.indexOf("\nES-ACK-BOUNDARY:"), "The ES-ACK-* scope precedes the ES-ACK-* rules.");
+    for (const old of [OLD_CURRENT_REFUSAL_RULE, OLD_DECIDES_NOTE, "as the User requested", "as the User asked"]) {
+      assert.equal(raw.includes(old), false, `No variant keeps the unscoped refusal wording: ${old}`);
+    }
+    assert(raw.split(NEW_CURRENT_REFUSAL_RULE).length <= 2);
+    const developer = raw.replace(NEW_CURRENT_REFUSAL_RULE, OLD_CURRENT_REFUSAL_RULE).replace(NEW_DECIDES_NOTE, OLD_DECIDES_NOTE).replace(ACK_SCOPE_SENTENCE, "");
+    assert.notEqual(developer, raw);
+    return { developer, user: captured[0].user, raw };
   };
   const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
   // Developer-message sha256 before this slice: v38 (recorded in the 53458ce and 7cf4535 demo runs) and the
@@ -839,7 +859,7 @@ const run = async () => {
   const PAUSE_RULE_IDS_LINE = "\nPrior-pause rule ids, for respect_declined_sharing when currentUserText states a feeling without a refusal: start the reason with ES-PAUSE-RECEIPT when a receipt is followed only by companionship or listening with no response to the current feeling; ES-PAUSE-SUBSTITUTE when the Assistant's own feeling is described in place of responding to the User's state; ES-PAUSE-ACTION when the reply suggests or tells the User to do something, which is advice and already insufficient. These ids only name a failure the rules above already establish and never make a reply fail by themselves. The Assistant's own statement of keeping the User company is not ES-PAUSE-ACTION; a stronger feeling is ES-AFFECT-EVIDENCE.";
   const revertDeclaredSegments = (developer: string) =>
     developer.replace(NEW_PAUSE_RESPONSE, OLD_PAUSE_RESPONSE).replace(NEW_AFFECT_TAIL, OLD_AFFECT_TAIL).replace(PAUSE_RULE_IDS_LINE, "");
-  const JUDGE_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, naturally respecting that boundary (for example agreeing not to ask, or accepting not talking for now) completes the function; agreeing not to ask or not to talk about it, as the User requested, is this function itself, not a pause or closure that undoes support.";
+  const JUDGE_CURRENT_REFUSAL_RULE = OLD_CURRENT_REFUSAL_RULE;
   const JUDGE_PRIOR_PAUSE_RULE = ` When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement.${NEW_PAUSE_RESPONSE}`;
   const JUDGE_PRIOR_PAUSE_NOT_SATISFIED = "a repeated agreement or a companionship statement used in place of responding to a feeling stated without a refusal, including a receipt followed only by companionship or listening; ";
   const legacyJudge = await judgeMessagesFor(legacyPausedPlan, "我今天有点不太高兴");
@@ -864,6 +884,8 @@ const run = async () => {
       .replace(PAUSE_RULE_IDS_LINE, `\n${observationLine}`),
     "A prior pause replaces only the declared prior-pause segments with the observation definitions."
   );
+  assert.equal(legacyJudge.raw.split(NEW_CURRENT_REFUSAL_RULE).length, 2, "The source-less prompt carries the stated-boundary rule.");
+  assert.equal(pausedJudge.raw.includes(NEW_CURRENT_REFUSAL_RULE), false, "The prior-pause branch carries no current-refusal rule.");
   for (const removed of [JUDGE_PRIOR_PAUSE_RULE, JUDGE_PRIOR_PAUSE_NOT_SATISFIED, PAUSE_RULE_IDS_LINE, JUDGE_CURRENT_REFUSAL_RULE]) {
     assert.equal(pausedJudge.developer.includes(removed), false, "The prior-pause verdict text is not also left for the overall status.");
   }
@@ -924,6 +946,11 @@ const run = async () => {
       assert.equal(currentJudge.developer.includes(priorPauseWording), false, `A current refusal judge prompt carries no prior-pause requirement: ${priorPauseWording}`);
     }
     assert(currentJudge.developer.includes(JUDGE_CURRENT_REFUSAL_RULE));
+    assert.equal(currentJudge.raw.split(NEW_CURRENT_REFUSAL_RULE).length, 2, "A current refusal is judged by the stated-boundary rule.");
+    assert(
+      currentJudge.raw.indexOf(NEW_CURRENT_REFUSAL_RULE) < currentJudge.raw.indexOf("For respect_declined_sharing, the following are not satisfied:"),
+      "The not-satisfied list the current-refusal rule defers to follows it."
+    );
     assert.equal(currentJudge.user.includes("declinedSharingSource"), false);
     assert.equal(currentJudge.user.includes("priorPauseObservation"), false, "A current refusal is still judged by the overall verdict alone.");
     for (const judge of [currentJudge, pausedJudge]) {

@@ -981,11 +981,13 @@ assert.equal(noFunction.passed, true);
 assert.equal(noFunctionCalls, 0);
 
 // Q judges real refusal-source branches with the same prompt as production; source-less fixtures keep both branches.
-const SOURCELESS_JUDGE_DEVELOPER_SHA256 = "7a8dbaa07cf7d25c371751aab1907728b49a5d6a4c1efe1ec653ca366c1c6915";
+// Judge refusal-scope slice after fd4f5ec (was 7a8dbaa0…, current_turn 42483a8e…, previous_user_turn 12fe0e10…);
+// hill-helping-batch1-5-check proves that reverting its declared segments restores the earlier texts.
+const SOURCELESS_JUDGE_DEVELOPER_SHA256 = "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4";
 const BRANCH_DEVELOPER_SHA256 = {
-  current_turn: "42483a8ef1c70c04a438a2cac2b3fa8dc315711000e6ea644fecee2f3e329e17",
+  current_turn: "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
   // Prior-pause observation branch; the 6b57b08 text (902c41dd…) is pinned in hill-helping-batch1-5-check.
-  previous_user_turn: "12fe0e109d4f9550123391a914847b6ef1129c9cb1d80372050fc18f196e098e",
+  previous_user_turn: "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
 } as const;
 const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
 const capturedMessages = async (call: (inspect: (input: { messages: Array<{ content: string }> }) => void) => Promise<unknown>) => {
