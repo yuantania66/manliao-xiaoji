@@ -222,6 +222,11 @@ const emotionalSupportFunctionFor = ({
   return "invite_optional_sharing";
 };
 
+const EMOTIONAL_SUPPORT_DECLINED_REASON =
+  "The user declined questions or talking in this turn, or in the previous turn without reopening; acknowledge without inviting, asking, or requesting more.";
+const QUESTIONS_DECLINED_REASON =
+  "The user declined questions or talking in this turn, or in the previous turn without reopening; do not ask, invite, or request more, but still answer what the user asks.";
+
 const sharingInvitationDeclinedSource = (context: ConversationControlContext): DeclinedSharingSource | null => {
   if (declinesSharingInvitation(context.currentUserMessage)) return "current_turn";
   const previousUserTurn = [...context.adjacentTurns].reverse().find((turn) => turn.role === "user");
@@ -548,10 +553,12 @@ export const createResponsePlan = ({
         .slice(-4)
         .map((turn) => turn.content)
     : [];
+  const questionsDeclinedSource = sharingInvitationDeclinedSource(context);
   const ordinaryHandoffAction = selectOrdinaryHandoffAction({
     context,
     state: dialogueState,
     boundary: ordinaryHandoffBoundary,
+    questionsDeclined: !context.safety.triggered && questionsDeclinedSource !== null,
   });
   let actions = actionsForState({
     state: dialogueState,
@@ -709,23 +716,28 @@ export const createResponsePlan = ({
   const acknowledgesRelationalImpact =
     selectedPositiveFunctionContract?.action === "offer_emotional_support" &&
     selectedPositiveFunctionContract.supportFunction === "acknowledge_current_relational_impact";
-  const declinedSharingSource = actions.includes("offer_emotional_support")
-    ? sharingInvitationDeclinedSource(context)
-    : null;
+  const declinedSharingSource = actions.includes("offer_emotional_support") ? questionsDeclinedSource : null;
   const emotionalSupportDeclinesInvitation = declinedSharingSource !== null;
+  // A refusal holds without emotional evidence too; it removes follow-up questions, not answers.
+  const otherTurnDeclinesQuestions =
+    !emotionalSupportDeclinesInvitation && !context.safety.triggered && questionsDeclinedSource !== null;
   const handoffInvitesCalibration = actions.includes("invite_low_pressure_calibration");
   const handoffRequiresNoQuestion = actions.some((action) =>
     action === "continue_established_frame" ||
     action === "continue_established_thread" ||
     action === "offer_neutral_conversation_entry"
   );
+  const handoffQuestionsDeclined = Boolean(
+    interactionMoveHandoffPlan && (emotionalSupportDeclinesInvitation || otherTurnDeclinesQuestions)
+  );
   const questionMode = interactionMoveHandoffPlan
-    ? interactionMoveHandoffPlan.questionPolicy === "none"
+    ? interactionMoveHandoffPlan.questionPolicy === "none" || handoffQuestionsDeclined
       ? "none"
       : "optional_after_answer"
     : hasActivity(dialogueState, "pausing") ||
     acknowledgesRelationalImpact ||
     emotionalSupportDeclinesInvitation ||
+    otherTurnDeclinesQuestions ||
     allowIdle ||
     simpleDirectAnswer ||
     (repairsAssistant && !takesTopicInitiative) ||
@@ -850,6 +862,10 @@ export const createResponsePlan = ({
       mode: questionMode,
       reason: interactionMoveHandoffPlan?.questionPolicy === "none"
         ? "The active interaction-move handoff requires no follow-up question."
+        : handoffQuestionsDeclined
+          ? emotionalSupportDeclinesInvitation
+            ? EMOTIONAL_SUPPORT_DECLINED_REASON
+            : QUESTIONS_DECLINED_REASON
         : interactionMoveHandoffPlan?.questionPolicy === "optional_after_completion"
           ? interactionMoveHandoffPlan.requiredFunction === "complete_reciprocal_contact"
             ? "After reciprocal contact is completed, one low-pressure invitation may let the user choose what to discuss."
@@ -859,7 +875,9 @@ export const createResponsePlan = ({
         : acknowledgesRelationalImpact
           ? "Relational-impact acknowledgement is complete once the impact and information boundary are stated; do not ask or invite the user to explain, choose, or show what the assistant missed. Current-turn answer obligations still apply."
         : emotionalSupportDeclinesInvitation
-          ? "The user declined questions or talking in this turn, or in the previous turn without reopening; acknowledge without inviting, asking, or requesting more."
+          ? EMOTIONAL_SUPPORT_DECLINED_REASON
+        : otherTurnDeclinesQuestions
+          ? QUESTIONS_DECLINED_REASON
         : handoffInvitesCalibration
           ? "Helping applicability is uncertain; ask one low-pressure calibration question without assigning meaning."
         : handoffRequiresNoQuestion

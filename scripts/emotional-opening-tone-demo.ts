@@ -30,7 +30,7 @@ const scenarios: Array<{
   id: string;
   userMessage: string;
   recentMessages: ConversationMessage[];
-  expectedSupportFunction: string;
+  expectedSupportFunction: string | null;
   expectedQuestionPolicy: string;
 }> = [
   { id: "ordinary-low", userMessage: "我今天有点不太高兴", recentMessages: [], expectedSupportFunction: "invite_optional_sharing", expectedQuestionPolicy: "optional_after_answer" },
@@ -40,6 +40,10 @@ const scenarios: Array<{
   { id: "declines-questions", userMessage: "我不太高兴，不想被问", recentMessages: [], expectedSupportFunction: "respect_declined_sharing", expectedQuestionPolicy: "none" },
   { id: "prior-pause", userMessage: "我今天有点不太高兴", recentMessages: pausedHistory, expectedSupportFunction: "respect_declined_sharing", expectedQuestionPolicy: "none" },
   { id: "reopened-after-pause", userMessage: "你问吧，我今天有点不太高兴", recentMessages: pausedHistory, expectedSupportFunction: "invite_optional_sharing", expectedQuestionPolicy: "optional_after_answer" },
+  { id: "willing-after-pause", userMessage: "其实我想说说，我今天有点不太高兴", recentMessages: pausedHistory, expectedSupportFunction: "invite_optional_sharing", expectedQuestionPolicy: "optional_after_answer" },
+  { id: "willing-no-topic-after-pause", userMessage: "我想聊聊了，但不知道说什么", recentMessages: pausedHistory, expectedSupportFunction: null, expectedQuestionPolicy: "one_low_pressure_question" },
+  { id: "willing-no-questions-after-pause", userMessage: "我想说说，但别问我，有点难受", recentMessages: pausedHistory, expectedSupportFunction: "respect_declined_sharing", expectedQuestionPolicy: "none" },
+  { id: "declines-without-affect", userMessage: "我不想说", recentMessages: [], expectedSupportFunction: null, expectedQuestionPolicy: "none" },
 ];
 const scenarioFilter = process.argv.find((a) => a.startsWith("--scenarios="))?.slice(12).split(",").filter(Boolean) ?? [];
 for (const id of scenarioFilter) {

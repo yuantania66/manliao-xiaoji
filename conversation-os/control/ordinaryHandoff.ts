@@ -37,10 +37,12 @@ export const selectOrdinaryHandoffAction = ({
   context,
   state,
   boundary,
+  questionsDeclined = false,
 }: {
   context: ConversationControlContext;
   state: DialogueState;
   boundary: OrdinaryHandoffBoundary | null;
+  questionsDeclined?: boolean;
 }): ResponseAction | null => {
   if (!boundary || boundary.applicability !== "uncertain" || hasHigherPriorityOwner(state)) return null;
 
@@ -51,7 +53,7 @@ export const selectOrdinaryHandoffAction = ({
 
   if (hasEstablishedThreadEvidence(context)) return "continue_established_thread";
 
-  const questionsForbidden = boundary.userBoundaries.some((item) =>
+  const questionsForbidden = questionsDeclined || boundary.userBoundaries.some((item) =>
     item === "no_questions" || item === "pause" || item === "stop"
   );
 

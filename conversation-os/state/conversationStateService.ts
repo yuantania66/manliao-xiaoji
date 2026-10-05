@@ -53,9 +53,42 @@ const EXPLICIT_REOPEN_PATTERN = /你来问吧|你问吧|随便聊点什么都行
 const SHARING_INVITATION_DECLINE_PATTERN =
   /(?:不要|别|不想|不用)(?:再)?(?:被)?(?:问|提问|追问)|(?:不要|别)(?:再)?问我|不(?:太)?想(?:说|聊|讲|谈|提)/u;
 
+// A refusal phrase counts only as the user's own refusal. It does not count when directly negated
+// (也不是不想说), quoted, hypothetical, or said by a third person in its clause or a reporting clause.
+// Anything else still counts, so lexical misses lean toward asking less.
+const NEGATED_REFUSAL_LEAD_PATTERN = /(?:不是|并非)$/u;
+const REFUSAL_CLAUSE_BOUNDARY = /[，,。.！!？?；;：:\s]/u;
+const THIRD_PERSON_SUBJECT_LEAD = /^(?:嗯|那|但是?|可是|不过|就是|而且)?(?:他|她|它|别人|人家|有人)/u;
+const HYPOTHETICAL_LEAD = /如果|假如|假使|要是|万一|假设/u;
+const THIRD_PERSON_REPORTING_CLAUSE = /^(?:他|她|它|别人|人家|有人).*(?:说|讲|道|写|问)(?:过|着|了)?$/u;
+
+const isInsideQuote = (before: string) =>
+  (before.match(/“/gu)?.length ?? 0) > (before.match(/”/gu)?.length ?? 0) ||
+  (before.match(/「/gu)?.length ?? 0) > (before.match(/」/gu)?.length ?? 0) ||
+  (before.match(/"/gu)?.length ?? 0) % 2 === 1;
+
+const isUsersOwnRefusalAt = (text: string, index: number) => {
+  const before = text.slice(0, index);
+  if (NEGATED_REFUSAL_LEAD_PATTERN.test(before) || isInsideQuote(before)) return false;
+  const clauses = before.split(REFUSAL_CLAUSE_BOUNDARY);
+  const lead = clauses.at(-1) ?? "";
+  if (THIRD_PERSON_SUBJECT_LEAD.test(lead) || HYPOTHETICAL_LEAD.test(lead)) return false;
+  const previousClause = clauses.slice(0, -1).filter(Boolean).at(-1) ?? "";
+  return !(lead === "" && THIRD_PERSON_REPORTING_CLAUSE.test(previousClause));
+};
+
+const hasOwnRefusalMatch = (pattern: RegExp, text: string) => {
+  for (const match of text.matchAll(new RegExp(pattern.source, `${pattern.flags}g`))) {
+    if (isUsersOwnRefusalAt(text, match.index)) return true;
+  }
+  return false;
+};
+
+const closesInteraction = (text: string) => hasOwnRefusalMatch(CLOSING_PATTERN, normalize(text));
+
 export const declinesSharingInvitation = (text: string) => {
   const normalized = normalize(text);
-  return CLOSING_PATTERN.test(normalized) || SHARING_INVITATION_DECLINE_PATTERN.test(normalized);
+  return closesInteraction(normalized) || hasOwnRefusalMatch(SHARING_INVITATION_DECLINE_PATTERN, normalized);
 };
 
 // A whole clause must be the user's own current statement: an optional first-person subject and
@@ -237,10 +270,10 @@ const deriveInteractionSignals = ({
   const previousUserMessage = getLastMessage(recentMessages, "user");
   const respondedToAssistant = recentMessages.at(-1)?.role === "assistant";
   const noTopic = isNoTopicMessage(semanticText);
-  const explicitStop = CLOSING_PATTERN.test(text);
-  const explicitReopen = EXPLICIT_REOPEN_PATTERN.test(text);
+  const explicitStop = closesInteraction(text);
+  const explicitReopen = reopensInteraction(currentUserMessage);
   const priorPauseStillActive =
-    Boolean(previousUserMessage && CLOSING_PATTERN.test(previousUserMessage)) && !explicitReopen;
+    Boolean(previousUserMessage && closesInteraction(previousUserMessage)) && !explicitReopen;
   const immediateAssistantInvited = Boolean(
     previousAssistantMessage && ASSISTANT_SHARING_INVITATION_PATTERN.test(previousAssistantMessage)
   );
@@ -307,7 +340,7 @@ export const determineConversationState = ({
   const turnCount = recentMessages.length + 1;
   const previousAssistantReply = hasPreviousAssistantReply(recentMessages);
   const explicitAdviceRequest = ADVICE_REQUEST_PATTERN.test(text);
-  const explicitClosingSignal = CLOSING_PATTERN.test(text);
+  const explicitClosingSignal = closesInteraction(text);
   const sustainedUserDisclosure = hasSustainedUserDisclosure(text, recentMessages);
   const interaction = deriveInteractionSignals({ currentUserMessage, recentMessages });
   const signals = {

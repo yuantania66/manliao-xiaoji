@@ -1002,7 +1002,8 @@ const respectQwenCases = qwenEvalCases.filter((item) =>
   item.plan.positiveFunctionContract.supportFunction === "respect_declined_sharing"
 );
 const plannerSourceQwenCases = respectQwenCases.filter((item) => item.id.endsWith("-planner-source"));
-assert.equal(plannerSourceQwenCases.length, 7, "Every respect fixture has a real-Planner twin.");
+// 7 real-Planner twins plus the 6 D0 prior-pause cases.
+assert.equal(plannerSourceQwenCases.length, 13, "Every respect fixture has a real-Planner twin.");
 assert.equal(respectQwenCases.length - plannerSourceQwenCases.length, 7, "The source-less respect fixtures stay.");
 for (const item of respectQwenCases) {
   const contract = item.plan.positiveFunctionContract;

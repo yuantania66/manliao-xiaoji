@@ -1022,6 +1022,52 @@ const run = async () => {
   assert.equal(supportFunctionOf(willingButDeclinesQuestions), "respect_declined_sharing");
   assert.equal(declinedSharingSourceOf(willingButDeclinesQuestions), "current_turn", "A refusal in the same turn outranks a stated willingness.");
   assert.equal(willingButDeclinesQuestions.questionPolicy.mode, "none");
+  for (const history of [
+    [{ id: "pause-user", role: "user" as const, content: "先别问了" }, { id: "pause-assistant", role: "assistant" as const, content: "好，不问了。" }],
+    [{ id: "close-user", role: "user" as const, content: "不想说了" }, { id: "close-assistant", role: "assistant" as const, content: "好。" }],
+  ]) {
+    const willingWithoutTopic = build({ userMessage: "我想聊聊了，但不知道说什么", recentMessages: history });
+    assert.equal(willingWithoutTopic.context.interaction.stopIntent, false, "A current willingness to talk lifts the pause even without a topic.");
+    assert.equal(willingWithoutTopic.responsePlan.responseActions.includes("respect_pause"), false);
+    assert.notEqual(willingWithoutTopic.responsePlan.questionPolicy.mode, "none");
+    const noTopicOnly = build({ userMessage: "不知道说什么", recentMessages: history });
+    assert.equal(noTopicOnly.context.interaction.stopIntent, true, "Without a stated willingness, no topic keeps the earlier pause.");
+  }
+  for (const userMessage of ["我不想说", "别问我", "不想被问", "我想说说，但别问我", "不是不想说，是不想被问"]) {
+    for (const recentMessages of [[], [
+      { id: "pause-user", role: "user" as const, content: "先别问了" },
+      { id: "pause-assistant", role: "assistant" as const, content: "好，不问了。" },
+    ]]) {
+      const { context, responsePlan } = build({ userMessage, recentMessages });
+      assert.equal(context.interaction.affect === "negative", false, userMessage);
+      assert.equal(responsePlan.questionPolicy.mode, "none", `A refusal holds without emotional evidence: ${userMessage}`);
+      assert.equal(responsePlan.responseActions.includes("respect_pause"), false, userMessage);
+      assert.equal(
+        responsePlan.responseActions.includes("invite_low_pressure_calibration"),
+        false,
+        `A refusal selects no move that requires a question: ${userMessage}`
+      );
+    }
+  }
+  assert(
+    build({ userMessage: "我不想说" }).responsePlan.responseActions.includes("offer_neutral_conversation_entry"),
+    "A refusal without a no-questions boundary still uses the no-question ordinary entry."
+  );
+  const notKnowingWhatToSay = build({ userMessage: "我不知道说什么" }).responsePlan;
+  assert.notEqual(notKnowingWhatToSay.questionPolicy.mode, "none", "Not knowing what to say is not a refusal.");
+  const refusalWithQuestion = build({ userMessage: "我不想说，你是AI吗？" }).responsePlan;
+  assert(refusalWithQuestion.responseActions.includes("answer_directly"), "A refusal does not cancel the answer to the user's question.");
+  assert.equal(refusalWithQuestion.answerObligations.length, 1);
+  assert.equal(refusalWithQuestion.questionPolicy.mode, "none");
+  assert.equal(supportFunctionOf(build({ userMessage: "也不是不想说，就是心里有点堵" }).responsePlan), "invite_optional_sharing", "A negated refusal is not a refusal.");
+  for (const userMessage of ["他说他不想说，我有点难过", "朋友回我“不想说”，我有点难过"]) {
+    assert.equal(supportFunctionOf(build({ userMessage }).responsePlan), "invite_optional_sharing", `Someone else's refusal is not the user's: ${userMessage}`);
+  }
+  assert.notEqual(build({ userMessage: "他说他不想说" }).responsePlan.questionPolicy.mode, "none", "A reported refusal does not remove questions.");
+  assert(!build({ userMessage: "如果我不想说，你会生气吗？" }).responsePlan.questionPolicy.reason.includes("declined"), "A hypothetical refusal is not a refusal.");
+  const neutralAfterPause = afterPause("今天吃了火锅");
+  assert.equal(neutralAfterPause.questionPolicy.mode, "none", "An earlier refusal still holds for a following turn without emotional evidence.");
+  assert.equal(afterPause("你问吧").questionPolicy.mode, "one_low_pressure_question", "The existing reopen phrase keeps its behavior.");
   const noTalkAfterInvite = build({
     userMessage: "我还是有点不太高兴",
     recentMessages: [

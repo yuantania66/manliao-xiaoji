@@ -345,6 +345,13 @@ const cases: EvalCase[] = [
     ["respect_declined_sharing-feeling-as-reason-planner-source", "我很难受，但不想说", "难受就不说，没关系的。", false, "current_turn"],
     ["respect_declined_sharing-prior-pause-feeling-positive-planner-source", "我今天有点不太高兴", "今天有点不好受啊，陪你安静一会儿。", true, "previous_user_turn"],
     ["respect_declined_sharing-prior-pause-receipt-companionship-planner-source", "我今天有点不太高兴", "嗯，听到了。我就在这儿陪你待会儿。", false, "previous_user_turn"],
+    // D0 cases; labels confirmed by the user on 2026-10-04 18:55 before any model run.
+    ["respect_declined_sharing-prior-pause-receipt-paraphrase-planner-source", "我今天有点不太高兴", "嗯，有点不开心啊。我在这儿陪你。", true, "previous_user_turn"],
+    ["respect_declined_sharing-prior-pause-receipt-phrase-restate-planner-source", "我今天有点不太高兴", "听到你这么说，今天是有点不太高兴啊。我就在这儿陪你。", true, "previous_user_turn"],
+    ["respect_declined_sharing-prior-pause-restate-intensified-planner-source", "我今天有点不太高兴", "嗯，今天不太高兴啊，心里一定很难受吧。我陪着你。", false, "previous_user_turn"],
+    ["respect_declined_sharing-prior-pause-restate-action-planner-source", "我今天有点不太高兴", "嗯，今天不太高兴啊。早点休息吧，我陪着你。", false, "previous_user_turn"],
+    ["respect_declined_sharing-prior-pause-receipt-only-planner-source", "我今天有点不太高兴", "嗯，听到了。", false, "previous_user_turn"],
+    ["respect_declined_sharing-prior-pause-restate-invite-planner-source", "我今天有点不太高兴", "嗯，今天不太高兴啊。想说说是怎么了吗？", false, "previous_user_turn"],
   ] as const).map(([id, sourceText, candidateReply, expectedPassed, source]) => ({
     id: `emotional-${id}`,
     category: "emotional_support" as const,
