@@ -33,8 +33,8 @@ if (!dryRun && process.env.AI_PROVIDER !== "qwen") throw new Error("This eval mu
 const PASSES = 3;
 const OUTBOUND_CAP = 66;
 
-// D0 ran on 42483a8e… / 12fe0e10…; these are the judge refusal-scope slice texts after fd4f5ec.
-const BRANCH_DEVELOPER_SHA16 = { current_turn: "fa2d8402d70ebe32", previous_user_turn: "27dbaf64f655a963" } as const;
+// D0 ran on 42483a8e… / 12fe0e10…; these are the current texts (current-refusal observation after c82698f).
+const BRANCH_DEVELOPER_SHA16 = { current_turn: "9ad0869160ce091f", previous_user_turn: "27dbaf64f655a963" } as const;
 
 type Field = keyof PriorPauseObservation;
 type ExpectedObservation = { [F in Field]: Array<PriorPauseObservation[F]> };

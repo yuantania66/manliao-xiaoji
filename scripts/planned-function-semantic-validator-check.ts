@@ -26,6 +26,7 @@ import {
 } from "../services/ai/responsePlanValidator";
 import type { AiGenerationResult } from "../services/ai/types";
 import { cases as qwenEvalCases, inputFor as qwenInputFor } from "./planned-function-semantic-qwen-eval";
+import { cleanObservationFor } from "./semantic-observation-fixture";
 
 const turnId = "user-turn-current";
 const handoffTargetId = "assistant-move-target";
@@ -189,6 +190,7 @@ const verdictFor = ({
           contractRealized: positiveStatus === "satisfied",
           containsContradictoryMove: false,
           evidence,
+          ...cleanObservationFor(input),
         }
       : null,
     semanticQuestionCount,
@@ -985,7 +987,8 @@ assert.equal(noFunctionCalls, 0);
 // hill-helping-batch1-5-check proves that reverting its declared segments restores the earlier texts.
 const SOURCELESS_JUDGE_DEVELOPER_SHA256 = "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4";
 const BRANCH_DEVELOPER_SHA256 = {
-  current_turn: "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+  // Current-refusal observation branch after c82698f (V1 ran on fa2d8402…); the prior pause is unchanged.
+  current_turn: "9ad0869160ce091fc1ee97d5c2f79c10036df4cdb9ff5e0328c3647ea68f5f03",
   // Prior-pause observation branch; the 6b57b08 text (902c41dd…) is pinned in hill-helping-batch1-5-check.
   previous_user_turn: "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
 } as const;
@@ -1059,7 +1062,12 @@ const currentRefusalQwenCase = plannerSourceQwenCases.find((item) =>
 const sourcelessRespectQwenCase = respectQwenCases.find((item) => !item.id.endsWith("-planner-source"))!;
 const respectVerdictFor = (
   item: (typeof qwenEvalCases)[number],
-  { status = "satisfied", priorPauseObservation }: { status?: "satisfied" | "not_satisfied" | "uncertain"; priorPauseObservation?: unknown }
+  { status = "satisfied", priorPauseObservation, extra = {}, evidenceReason = "fixture" }: {
+    status?: "satisfied" | "not_satisfied" | "uncertain";
+    priorPauseObservation?: unknown;
+    extra?: Record<string, unknown>;
+    evidenceReason?: string;
+  }
 ) => {
   const contract = item.plan.positiveFunctionContract;
   assert(contract?.action === "offer_emotional_support");
@@ -1075,8 +1083,9 @@ const respectVerdictFor = (
       targetAddressed: true,
       contractRealized: satisfied,
       containsContradictoryMove: false,
-      evidence: [{ start: 0, end: item.candidateReply.length, text: item.candidateReply, reason: "fixture" }],
+      evidence: [{ start: 0, end: item.candidateReply.length, text: item.candidateReply, reason: evidenceReason }],
       ...(priorPauseObservation === undefined ? {} : { priorPauseObservation }),
+      ...extra,
     },
     semanticQuestionCount: 0,
   };
@@ -1139,12 +1148,133 @@ for (const [label, observation] of [
   assert.equal(result.passed, false, `Format problem never passes: ${label}`);
   assert.deepEqual(result.hardFailureReasons, ["planned_function_semantic:malformed_verdict"], `Format problem is recorded as a format failure: ${label}`);
 }
-for (const item of [currentRefusalQwenCase, sourcelessRespectQwenCase]) {
-  const unchanged = await judgeWith(item, respectVerdictFor(item, {}));
-  assert.equal(unchanged.passed, true, `${item.id}: the overall verdict alone still decides.`);
+{
+  const unchanged = await judgeWith(sourcelessRespectQwenCase, respectVerdictFor(sourcelessRespectQwenCase, {}));
+  assert.equal(unchanged.passed, true, "Source-less respect fixtures: the overall verdict alone still decides.");
   assert.equal(unchanged.priorPauseAssessment, undefined);
-  const withObservation = await judgeWith(item, respectVerdictFor(item, { priorPauseObservation: cleanObservation }));
-  assert.deepEqual(withObservation.hardFailureReasons, ["planned_function_semantic:malformed_verdict"], `${item.id}: the observation key exists only for a prior pause.`);
+  assert.equal(unchanged.observationAssessment, undefined);
+  for (const extra of [{ priorPauseObservation: cleanObservation }, cleanObservationFor({
+    positiveFunctionBinding: currentRefusalQwenCase.plan.positiveFunctionContract,
+    declinedSharingSource: "current_turn",
+  })]) {
+    const result = await judgeWith(sourcelessRespectQwenCase, respectVerdictFor(sourcelessRespectQwenCase, { extra }));
+    assert.deepEqual(result.hardFailureReasons, ["planned_function_semantic:malformed_verdict"], "Source-less respect fixtures take no observation key.");
+  }
+}
+
+// Current refusal, invite_optional_sharing, and acknowledge_current_relational_impact report observations;
+// code maps every combination to the outcome and rule ids (contract §3.2–§3.4), as for the prior pause.
+const invitationQwenCase = qwenEvalCases.find((item) => item.id === "emotional-invite_optional_sharing-positive")!;
+const relationalQwenCase = qwenEvalCases.find((item) => item.id === "emotional-acknowledge_current_relational_impact-positive")!;
+const observedCases = [
+  { kind: "currentRefusal", item: currentRefusalQwenCase, key: "currentRefusalObservation" },
+  { kind: "invitation", item: invitationQwenCase, key: "invitationObservation" },
+  { kind: "relationalImpact", item: relationalQwenCase, key: "affectObservation" },
+] as const;
+const OBSERVED_VALUES = {
+  currentRefusal: {
+    refusalResponse: ["responds_to_boundary", "responds_to_feeling", "responds_to_both", "receipt_only", "none", "uncertain"],
+    feelingAsReason: ["yes", "no", "uncertain"],
+    decidesForUser: ["yes", "no", "uncertain"],
+    affectDrift: ["none", "stronger_intensity", "added_category", "uncertain"],
+    invitesOrAsks: ["yes", "no", "uncertain"],
+  },
+  invitation: {
+    invitationCount: ["none", "one", "more_than_one", "uncertain"],
+    invitationTarget: [
+      "open_sharing", "more_about_stated_event", "stated_event_as_unknown", "cause_or_why", "details_or_account",
+      "guessed_cause_or_event", "other_topic", "not_applicable", "uncertain",
+    ],
+    affectDrift: ["none", "stronger_intensity", "added_category", "uncertain"],
+  },
+  relationalImpact: { affectDrift: ["none", "stronger_intensity", "added_category", "uncertain"] },
+} as const;
+const drifted = (o: Record<string, string>) => o.affectDrift === "stronger_intensity" || o.affectDrift === "added_category";
+const expectedObserved = {
+  currentRefusal: (o: Record<string, string>) => ({
+    failed: o.refusalResponse === "receipt_only" || o.refusalResponse === "none" || o.feelingAsReason === "yes" ||
+      o.decidesForUser === "yes" || drifted(o) || o.invitesOrAsks === "yes",
+    ruleIds: [...(drifted(o) ? ["ES-AFFECT-EVIDENCE"] : []), ...(o.invitesOrAsks === "yes" ? ["ES-SCOPE"] : [])],
+    uncertain: Object.values(o).includes("uncertain"),
+  }),
+  invitation: (o: Record<string, string>) => {
+    const targetFails = ["stated_event_as_unknown", "cause_or_why", "details_or_account", "guessed_cause_or_event", "other_topic"]
+      .includes(o.invitationTarget);
+    return {
+      failed: o.invitationCount === "none" || o.invitationCount === "more_than_one" || targetFails || drifted(o),
+      ruleIds: [
+        ...(o.invitationCount === "more_than_one" || targetFails ? ["ES-SCOPE"] : []),
+        ...(drifted(o) ? ["ES-AFFECT-EVIDENCE"] : []),
+      ],
+      uncertain: Object.values(o).includes("uncertain") ||
+        (o.invitationCount === "none") !== (o.invitationTarget === "not_applicable"),
+    };
+  },
+  relationalImpact: (o: Record<string, string>) => ({
+    failed: drifted(o),
+    ruleIds: drifted(o) ? ["ES-AFFECT-EVIDENCE"] : [],
+    uncertain: o.affectDrift === "uncertain",
+  }),
+};
+const combinations = (values: Record<string, readonly string[]>) =>
+  Object.entries(values).reduce<Array<Record<string, string>>>(
+    (rows, [field, allowed]) => rows.flatMap((row) => allowed.map((value) => ({ ...row, [field]: value }))),
+    [{}]
+  );
+for (const { kind, item, key } of observedCases) {
+  const all = combinations(OBSERVED_VALUES[kind]);
+  assert.equal(all.length, { currentRefusal: 648, invitation: 144, relationalImpact: 4 }[kind]);
+  for (const observation of all) {
+    const expected = expectedObserved[kind](observation);
+    for (const status of ["satisfied", "not_satisfied"] as const) {
+      const result = await judgeWith(item, respectVerdictFor(item, { status, extra: { [key]: observation } }));
+      const label = `${kind} ${status} ${JSON.stringify(observation)}`;
+      assert.equal(result.passed, status === "satisfied" && !expected.failed && !expected.uncertain, `Combined verdict: ${label}`);
+      assert.equal(result.observationAssessment?.kind, kind, label);
+      assert.deepEqual(result.observationAssessment?.ruleIds, expected.ruleIds, `Code-derived rule ids: ${label}`);
+      assert.equal(result.observationAssessment?.overallRejected, status !== "satisfied", label);
+      assert.equal(
+        result.hardFailureReasons.includes("planned_function_semantic:positive_function_not_satisfied"),
+        status !== "satisfied" || expected.failed,
+        `An observation failure or an overall rejection fails with the existing code: ${label}`
+      );
+      assert.equal(result.hardFailureReasons.includes("planned_function_semantic:positive_function_uncertain"), expected.uncertain, `Uncertain never passes: ${label}`);
+      assert.equal(result.priorPauseAssessment, undefined, label);
+    }
+  }
+  const clean = cleanObservationFor({
+    positiveFunctionBinding: item.plan.positiveFunctionContract,
+    declinedSharingSource: kind === "currentRefusal" ? "current_turn" : undefined,
+  })[key];
+  for (const [label, observation] of [
+    ["missing observation", undefined],
+    ["extra field", { ...clean, verdict: "pass" }],
+    ["illegal value", { ...clean, affectDrift: "slight" }],
+    ["null observation", null],
+  ] as const) {
+    const extra = observation === undefined ? {} : { [key]: observation };
+    const result = await judgeWith(item, respectVerdictFor(item, { extra }));
+    assert.deepEqual(result.hardFailureReasons, ["planned_function_semantic:malformed_verdict"], `${kind}: format problem never passes: ${label}`);
+  }
+  const wrongKey = await judgeWith(item, respectVerdictFor(item, { extra: { [key]: clean, priorPauseObservation: cleanObservation } }));
+  assert.deepEqual(wrongKey.hardFailureReasons, ["planned_function_semantic:malformed_verdict"], `${kind}: only its own observation key is accepted.`);
+}
+// The relational-impact verdict still owns the ES-ACK-* ids it cites; other ES ids come only from observations.
+{
+  const rejected = await judgeWith(relationalQwenCase, respectVerdictFor(relationalQwenCase, {
+    status: "not_satisfied",
+    extra: { affectObservation: { affectDrift: "none" } },
+    evidenceReason: "ES-ACK-NO-SOLICIT: asks the User to point out the miss; ES-SCOPE also cited",
+  }));
+  assert.equal(rejected.passed, false);
+  assert.deepEqual(rejected.observationAssessment?.ruleIds, ["ES-ACK-NO-SOLICIT"]);
+  const borrowed = await judgeWith(currentRefusalQwenCase, respectVerdictFor(currentRefusalQwenCase, {
+    status: "not_satisfied",
+    extra: cleanObservationFor({ positiveFunctionBinding: currentRefusalQwenCase.plan.positiveFunctionContract, declinedSharingSource: "current_turn" }),
+    evidenceReason: "ES-ACK-NO-SOLICIT: borrowed from another function",
+  }));
+  assert.equal(borrowed.passed, false, "An overall rejection with clean observations fails closed.");
+  assert.deepEqual(borrowed.observationAssessment?.ruleIds, [], "A current refusal never inherits an ES-ACK-* id.");
 }
 
 console.log("planned function semantic Validator checks passed");

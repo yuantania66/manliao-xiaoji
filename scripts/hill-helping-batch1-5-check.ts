@@ -21,6 +21,7 @@ import {
 } from "../services/ai/plannedFunctionSemanticValidator";
 import { buildChatPrompt, formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
 import { formatResponsePlanRegenerateConstraint, validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
+import { cleanObservationFor } from "./semantic-observation-fixture";
 
 const uncertainBoundary = (
   userBoundaries: OrdinaryHandoffBoundary["userBoundaries"] = []
@@ -99,6 +100,7 @@ const validatePositiveSemanticFixture = async ({
         evidence: shouldPass
           ? [{ start: 0, end: reply.length, text: reply, reason: "Frozen contract fixture." }]
           : [],
+        ...cleanObservationFor(input),
       },
       semanticQuestionCount: (reply.match(/[？?]/gu) ?? []).length,
     }),
@@ -820,6 +822,11 @@ const run = async () => {
   const OLD_DECIDES_NOTE = "(accepting not talking for now, as the User asked, is not this)";
   const NEW_DECIDES_NOTE = "(accepting not talking for now, when the User declined to talk, is not this)";
   const ACK_SCOPE_SENTENCE = " ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, and ES-ACK-NO-FABRICATION apply only when supportFunction is acknowledge_current_relational_impact; never apply or cite them for another supportFunction.";
+  // Observation slice after c82698f (ledger section 14 step 3): a current refusal, invite_optional_sharing, and
+  // acknowledge_current_relational_impact report observations. Stripping exactly these segments restores the
+  // prompt above, so the pinned comparisons below still prove that nothing else changed.
+  const OBSERVED_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, how the reply responds to the boundary the User actually stated is reported in currentRefusalObservation, defined below; agreeing not to ask, or accepting not talking when the User declined to talk, is this function itself, not a pause or closure that undoes support.";
+  const OBSERVATION_LINE_PREFIXES = ["currentRefusalObservation, for ", "invitationObservation, for ", "affectObservation, for "];
   const judgeMessagesFor = async (plan: ResponsePlan, currentUserText: string) => {
     const captured: Array<{ developer: string; user: string }> = [];
     await validatePlannedFunctionSemanticOutput({
@@ -832,7 +839,16 @@ const run = async () => {
       },
     });
     assert.equal(captured.length, 1, "The judge prompt is captured before any external call.");
-    const raw = captured[0].developer;
+    const sent = captured[0].developer;
+    const observationLines = sent.split("\n").filter((line) => OBSERVATION_LINE_PREFIXES.some((prefix) => line.startsWith(prefix)));
+    assert(observationLines.length <= 1, "At most one observation definition per judge prompt.");
+    assert.equal(
+      sent.includes(OBSERVED_CURRENT_REFUSAL_RULE),
+      observationLines[0]?.startsWith("currentRefusalObservation, for ") ?? false,
+      "The observed current-refusal rule comes with its observation definition."
+    );
+    const raw = sent.split("\n").filter((line) => line !== observationLines[0]).join("\n")
+      .replace(OBSERVED_CURRENT_REFUSAL_RULE, NEW_CURRENT_REFUSAL_RULE);
     assert.equal(raw.split(ACK_SCOPE_SENTENCE).length, 2, "Every judge variant scopes ES-ACK-* once.");
     assert.equal(raw.split(NEW_DECIDES_NOTE).length, 2, "Every judge variant limits the decide-for-the-User note to a declined talk.");
     assert(raw.indexOf(ACK_SCOPE_SENTENCE) < raw.indexOf("\nES-ACK-BOUNDARY:"), "The ES-ACK-* scope precedes the ES-ACK-* rules.");
@@ -842,7 +858,7 @@ const run = async () => {
     assert(raw.split(NEW_CURRENT_REFUSAL_RULE).length <= 2);
     const developer = raw.replace(NEW_CURRENT_REFUSAL_RULE, OLD_CURRENT_REFUSAL_RULE).replace(NEW_DECIDES_NOTE, OLD_DECIDES_NOTE).replace(ACK_SCOPE_SENTENCE, "");
     assert.notEqual(developer, raw);
-    return { developer, user: captured[0].user, raw };
+    return { developer, user: captured[0].user, raw, sent, observationLine: observationLines[0] ?? null };
   };
   const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
   // Developer-message sha256 before this slice: v38 (recorded in the 53458ce and 7cf4535 demo runs) and the
@@ -952,7 +968,23 @@ const run = async () => {
       "The not-satisfied list the current-refusal rule defers to follows it."
     );
     assert.equal(currentJudge.user.includes("declinedSharingSource"), false);
-    assert.equal(currentJudge.user.includes("priorPauseObservation"), false, "A current refusal is still judged by the overall verdict alone.");
+    assert.equal(currentJudge.user.includes("priorPauseObservation"), false, "A current refusal carries no prior-pause observation.");
+    assert.equal(currentJudge.sent.split(OBSERVED_CURRENT_REFUSAL_RULE).length, 2, "A current refusal reports its boundary response as observations.");
+    assert.equal(currentJudge.sent.includes(NEW_CURRENT_REFUSAL_RULE), false, "The observed rule replaces the overall-verdict completion rule.");
+    assert(currentJudge.observationLine?.startsWith("currentRefusalObservation, for respect_declined_sharing"));
+    for (const observed of [
+      "against the boundary the User actually stated (declining to talk, or declining to be asked)",
+      "Responding to the boundary alone or to the feeling alone is enough for this field",
+      "when the User declined only to be asked, saying that the User will not talk or that the matter will not be talked about is yes, while agreeing not to ask is no",
+      "when the User declined to talk, accepting not talking for now is no",
+      "whether attributed to the User, phrased impersonally as a quality of the situation",
+      "report all five even when status already fails",
+    ]) {
+      assert(currentJudge.observationLine?.includes(observed), `Current-refusal observation definition: ${observed}`);
+    }
+    assert.deepEqual(Object.keys(JSON.parse(currentJudge.user).outputSchema.positiveFunction.currentRefusalObservation), [
+      "refusalResponse", "feelingAsReason", "decidesForUser", "affectDrift", "invitesOrAsks",
+    ]);
     for (const judge of [currentJudge, pausedJudge]) {
       for (const shared of [
         "affect category/intensity/object drift",
@@ -978,6 +1010,36 @@ const run = async () => {
     "Other support functions see only the declared changes, including the shared intensity rule."
   );
   assert(inviteJudge.developer.includes(NEW_AFFECT_TAIL));
+  assert(inviteJudge.observationLine?.startsWith("invitationObservation, for invite_optional_sharing"));
+  for (const observed of [
+    "asking what happened is then allowed and is not soliciting a cause or account",
+    "stated_event_as_unknown when currentUserText already states an event",
+    "a feeling alone is not an event",
+    "report all three even when status already fails",
+  ]) {
+    assert(inviteJudge.observationLine?.includes(observed), `Invitation observation definition: ${observed}`);
+  }
+  assert.deepEqual(Object.keys(JSON.parse(inviteJudge.user).outputSchema.positiveFunction.invitationObservation), [
+    "invitationCount", "invitationTarget", "affectDrift",
+  ]);
+  const relationalPlan = build({ userMessage: "你一点都不懂我" }).responsePlan;
+  assert.equal(supportFunctionOf(relationalPlan), "acknowledge_current_relational_impact");
+  const relationalJudge = await judgeMessagesFor(relationalPlan, "你一点都不懂我");
+  assert.equal(sha256Of(revertDeclaredSegments(relationalJudge.developer)), V38_JUDGE_DEVELOPER_SHA256);
+  assert(relationalJudge.observationLine?.startsWith("affectObservation, for acknowledge_current_relational_impact"));
+  assert(relationalJudge.observationLine?.includes("including ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, and ES-ACK-NO-FABRICATION"));
+  assert.deepEqual(Object.keys(JSON.parse(relationalJudge.user).outputSchema.positiveFunction.affectObservation), ["affectDrift"]);
+  assert.equal(legacyJudge.observationLine, null, "Source-less respect fixtures keep the overall verdict alone.");
+  assert.equal(pausedJudge.observationLine, null, "The prior pause keeps its own observation, unchanged.");
+  const amountPlan = build({ userMessage: "我有点难过，但说不清" }).responsePlan;
+  const amountFunction = supportFunctionOf(amountPlan);
+  if (amountFunction && !["invite_optional_sharing", "acknowledge_current_relational_impact", "respect_declined_sharing"].includes(amountFunction)) {
+    const amountJudge = await judgeMessagesFor(amountPlan, "我有点难过，但说不清");
+    assert.equal(amountJudge.observationLine, null, `${amountFunction} keeps the overall verdict alone.`);
+    assert.equal(sha256Of(revertDeclaredSegments(amountJudge.developer)), V38_JUDGE_DEVELOPER_SHA256);
+  } else {
+    assert.fail(`Fixture must reach a support function without observations, got ${amountFunction}.`);
+  }
   const refusalAfterPause = build({
     userMessage: "我有点难受，但不想说",
     recentMessages: [

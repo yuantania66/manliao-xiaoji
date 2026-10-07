@@ -14,8 +14,10 @@ import {
 import { determineConversationState } from "../conversation-os/state";
 import type { ConversationMessage } from "../conversation-os/types";
 import {
+  OBSERVATION_KEYS,
   validatePlannedFunctionSemanticOutput,
   type PlannedFunctionSemanticProviderFailure,
+  type PlannedFunctionSemanticValidationResult,
 } from "../services/ai/plannedFunctionSemanticValidator";
 import { semanticVerdictAuditFor, withoutEvidenceText } from "./semantic-verdict-audit";
 
@@ -142,6 +144,8 @@ const run = async () => {
     hardFailureReasons: string[];
     advisoryFailureReasons: string[];
     audit: ReturnType<typeof semanticVerdictAuditFor>;
+    observation: Record<string, string> | null;
+    observationAssessment: PlannedFunctionSemanticValidationResult["observationAssessment"] | null;
     providerFailure: PlannedFunctionSemanticProviderFailure | null;
     // Every outbound judge call, including the schema-repair call; latency runs to the next call or the end.
     modelCalls: Array<{ call: "initial" | "schema_repair"; latencyMs: number }>;
@@ -189,7 +193,7 @@ const run = async () => {
         result.hardFailureReasons.some((reason) =>
           reason === "planned_function_semantic:malformed_verdict" ||
           reason === "planned_function_semantic:evidence_mismatch");
-      const audit = semanticVerdictAuditFor(result.verdict, result.priorPauseAssessment?.ruleIds);
+      const audit = semanticVerdictAuditFor(result.verdict, result.observationAssessment?.ruleIds);
       const outcome = result.passed ? "pass" : "fail";
       const outcomeMatches = testCase.expected === "ambiguous" ? null : outcome === testCase.expected;
       const citationMatches = testCase.expected !== "fail" || !testCase.acceptedRuleIds?.length
@@ -208,6 +212,12 @@ const run = async () => {
         hardFailureReasons: result.hardFailureReasons,
         advisoryFailureReasons: result.advisoryFailureReasons,
         audit,
+        observation: (() => {
+          const kind = result.observationAssessment?.kind;
+          const positive = result.verdict?.positiveFunction;
+          return kind && positive ? (positive[OBSERVATION_KEYS[kind]] as Record<string, string> | undefined) ?? null : null;
+        })(),
+        observationAssessment: result.observationAssessment ?? null,
         providerFailure: result.providerFailure ?? null,
         modelCalls,
         requests: pendingRequests.splice(0),

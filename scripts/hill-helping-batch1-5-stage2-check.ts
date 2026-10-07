@@ -22,6 +22,7 @@ import {
   loadPreservationDataset,
   type PreservationScenario,
 } from "./hill-helping-batch1-5-preservation-lib";
+import { cleanObservationFor } from "./semantic-observation-fixture";
 
 const main = async () => {
 const { dataset, sha256 } = loadPreservationDataset();
@@ -383,6 +384,7 @@ const validateExactNegativeThroughCanonicalSemanticBoundary = async (
           contractRealized: false,
           containsContradictoryMove: false,
           evidence: [],
+          ...cleanObservationFor(input),
         },
         semanticQuestionCount: 0,
       };

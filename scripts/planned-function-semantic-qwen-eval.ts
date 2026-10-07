@@ -573,11 +573,12 @@ const unparsedOutputOf = (raw: unknown) =>
 const verdictRecordFor = (result: PlannedFunctionSemanticValidationResult, raw: unknown) => {
   const positive = result.verdict?.positiveFunction ?? null;
   const handoff = result.verdict?.handoff ?? null;
-  const audit = semanticVerdictAuditFor(result.verdict, result.priorPauseAssessment?.ruleIds);
+  const audit = semanticVerdictAuditFor(result.verdict, result.observationAssessment?.ruleIds);
   return {
     failureReasons: result.failureReasons,
     providerFailure: result.providerFailure ?? null,
     priorPauseAssessment: result.priorPauseAssessment ?? null,
+    observationAssessment: result.observationAssessment ?? null,
     semanticQuestionCount: result.verdict?.semanticQuestionCount ?? null,
     positiveFunction: positive && {
       action: positive.binding.action,
