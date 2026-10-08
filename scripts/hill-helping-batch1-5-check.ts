@@ -827,7 +827,74 @@ const run = async () => {
   // prompt above, so the pinned comparisons below still prove that nothing else changed.
   const OBSERVED_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, how the reply responds to the boundary the User actually stated is reported in currentRefusalObservation, defined below; agreeing not to ask, or accepting not talking when the User declined to talk, is this function itself, not a pause or closure that undoes support.";
   const OBSERVATION_LINE_PREFIXES = ["currentRefusalObservation, for ", "invitationObservation, for ", "affectObservation, for "];
-  const judgeMessagesFor = async (plan: ResponsePlan, currentUserText: string) => {
+  // Clause relocation after 589ea09 (ledger section 14, second step-3 repair): for an observed kind the overall
+  // verdict no longer carries the clauses its observation decides. Restoring them, anchored on their neighbours,
+  // must rebuild the 589ea09 prompt exactly, so the comparisons below still prove that nothing else changed.
+  const AFFECT_RESTORE: [string, string] = ["affect object drift, reassurance", "affect category/intensity/object drift, reassurance"];
+  const RECEIPT_RESTORE: [string, string] = [
+    "supportFunction. A different support function",
+    "supportFunction. A receipt, pure question, a different support function",
+  ];
+  const CAUSE_RESTORE: [string, string] = [
+    "recommends a preferred focus, pressures continuation",
+    "recommends a preferred focus, requests causes/details, pressures continuation",
+  ];
+  const RELOCATED: Record<string, { restore: Array<[string, string]>; droppedPrefixes: string[] }> = {
+    "currentRefusalObservation, for ": {
+      restore: [
+        AFFECT_RESTORE,
+        RECEIPT_RESTORE,
+        CAUSE_RESTORE,
+        [
+          "in currentUserText or in an earlier turn. When currentUserText itself states the refusal",
+          "in currentUserText or in an earlier turn: it naturally responds to the boundary or the feeling the User expressed, judged in context; restating the feeling word is not required. When currentUserText itself states the refusal",
+        ],
+        [
+          "the following are not satisfied: any permission about how much or which part to say; claiming physical or offline company",
+          "the following are not satisfied: a bare receipt that responds to neither the stated feeling nor the stated boundary; any invitation, question, or request, including asking the User to tell the Assistant later; any permission about how much or which part to say; presenting the feeling as the reason the User should not talk; deciding for the User that they will not share anything further (accepting not talking for now, when the User declined to talk, is not this); claiming physical or offline company",
+        ],
+      ],
+      droppedPrefixes: ["ES-AFFECT-EVIDENCE: ", "ES-SCOPE: "],
+    },
+    "invitationObservation, for ": {
+      restore: [
+        AFFECT_RESTORE,
+        RECEIPT_RESTORE,
+        CAUSE_RESTORE,
+        ["offers a gentle invitation, easy to decline,", "offers at most one gentle invitation, easy to decline,"],
+        [
+          "For invite_optional_sharing, an invitation with no acknowledgement of the stated feeling, or an invitation that makes continuing feel required, is not satisfied.",
+          "For invite_optional_sharing, a bare receipt or paraphrase with no invitation, an invitation with no acknowledgement of the stated feeling, or an invitation that makes continuing feel required is not satisfied.",
+        ],
+      ],
+      droppedPrefixes: ["ES-AFFECT-EVIDENCE: ", "ES-SCOPE: ", "ES-SCOPE exception for invite_optional_sharing only: "],
+    },
+    "affectObservation, for ": { restore: [AFFECT_RESTORE], droppedPrefixes: ["ES-AFFECT-EVIDENCE: "] },
+  };
+  // The same repair restated the relocated requirements in the current-refusal observation definition and
+  // aligned feelingAsReason with contract §3.2 (a feeling made the reason or condition, including as a permission).
+  const STEP3_DEFINITION_REVERTS: Array<[string, string]> = [
+    [
+      "feelingAsReason: yes when any part makes the User's feeling itself the reason or condition for not talking or not sharing, whether as advice, a rule, or a permission (for example, saying that because or when the User feels bad they need not or should not talk), instead of leaving not talking to the User's own stated wish; acknowledging the feeling and, separately, accepting that the User does not want to talk is no;",
+      "feelingAsReason: yes when any part presents the User's feeling as the reason the User should not talk or share (for example, that because the User feels bad they should not talk);",
+    ],
+    [
+      "than stated (for example, rendering a little tired as exhausted, or a bit upset as unbearable), even when the valence matches; judge the intensity or burden the reply actually adds, not only whether its valence agrees; otherwise",
+      "than stated; otherwise",
+    ],
+    ["quality of the situation (this is X, that makes one feel X, anyone would feel X), or", "quality of the situation, or"],
+    ["names no more specific emotion (for example, rendering not happy as not feeling good), or", "names no more specific emotion, or"],
+    [" Decide by whether an unevidenced emotion category or a stronger intensity is added, not by word lists. invitesOrAsks", " invitesOrAsks"],
+    [
+      "invitesOrAsks applies ES-SCOPE to the whole reply: yes when any part invites, asks, or requests anything of the User, including asking the User to tell the Assistant later, asking about a cause, event, or topic, or offering options of what to talk about; one statement of listening or companionship that requires no response is not this, and naming content only to release the User from providing it (for example, saying the User need not explain why) is not this;",
+      "invitesOrAsks: yes when any part invites, asks, or requests anything of the User, including asking the User to tell the Assistant later or asking about a cause, event, or topic; one statement of listening or companionship that requires no response is not this;",
+    ],
+    [
+      "including what a bare receipt, the feeling presented as a reason, a decision made for the User, affect drift (ES-AFFECT-EVIDENCE), and an invitation, question, or request (ES-SCOPE) mean for this function:",
+      "including the bare-receipt, feeling-as-reason, deciding-for-the-User, and invitation, question, or request items in the respect_declined_sharing list above and ES-AFFECT-EVIDENCE:",
+    ],
+  ];
+  const captureJudge = async (plan: ResponsePlan, currentUserText: string) => {
     const captured: Array<{ developer: string; user: string }> = [];
     await validatePlannedFunctionSemanticOutput({
       plan,
@@ -839,9 +906,40 @@ const run = async () => {
       },
     });
     assert.equal(captured.length, 1, "The judge prompt is captured before any external call.");
-    const sent = captured[0].developer;
-    const observationLines = sent.split("\n").filter((line) => OBSERVATION_LINE_PREFIXES.some((prefix) => line.startsWith(prefix)));
-    assert(observationLines.length <= 1, "At most one observation definition per judge prompt.");
+    return captured[0];
+  };
+  // The source-less respect prompt has no observation and keeps every shared rule line.
+  const referenceLines = (await captureJudge(legacyPausedPlan, "我今天有点不太高兴")).developer.split("\n");
+  const relocationProofs: Array<{ prefix: string; sent: string }> = [];
+  const restoreRelocated = (sent: string, observationLine: string | undefined) => {
+    const prefix = Object.keys(RELOCATED).find((candidate) => observationLine?.startsWith(candidate));
+    if (!prefix) return sent;
+    const { restore, droppedPrefixes } = RELOCATED[prefix];
+    const lines = sent.split("\n");
+    for (const dropped of droppedPrefixes) {
+      assert.equal(lines.some((line) => line.startsWith(dropped)), false, `${prefix}: the overall verdict no longer carries ${dropped}`);
+    }
+    const reinserted = droppedPrefixes.map((dropped) => {
+      const line = referenceLines.find((candidate) => candidate.startsWith(dropped));
+      assert(line, dropped);
+      return line;
+    });
+    lines.splice(lines.indexOf(observationLine!) + 1, 0, ...reinserted);
+    let rebuilt = lines.join("\n");
+    for (const [now, before] of restore) {
+      assert.equal(sent.includes(before), false, `${prefix}: the relocated clause is gone from the sent prompt: ${before.slice(0, 60)}`);
+      assert.equal(rebuilt.split(now).length, 2, `${prefix}: relocation anchor appears once: ${now.slice(0, 60)}`);
+      rebuilt = rebuilt.replace(now, before);
+    }
+    relocationProofs.push({ prefix, sent });
+    return rebuilt;
+  };
+  const judgeMessagesFor = async (plan: ResponsePlan, currentUserText: string) => {
+    const captured = await captureJudge(plan, currentUserText);
+    const observationLinesSent = captured.developer.split("\n").filter((line) => OBSERVATION_LINE_PREFIXES.some((prefix) => line.startsWith(prefix)));
+    assert(observationLinesSent.length <= 1, "At most one observation definition per judge prompt.");
+    const sent = restoreRelocated(captured.developer, observationLinesSent[0]);
+    const observationLines = observationLinesSent;
     assert.equal(
       sent.includes(OBSERVED_CURRENT_REFUSAL_RULE),
       observationLines[0]?.startsWith("currentRefusalObservation, for ") ?? false,
@@ -858,7 +956,7 @@ const run = async () => {
     assert(raw.split(NEW_CURRENT_REFUSAL_RULE).length <= 2);
     const developer = raw.replace(NEW_CURRENT_REFUSAL_RULE, OLD_CURRENT_REFUSAL_RULE).replace(NEW_DECIDES_NOTE, OLD_DECIDES_NOTE).replace(ACK_SCOPE_SENTENCE, "");
     assert.notEqual(developer, raw);
-    return { developer, user: captured[0].user, raw, sent, observationLine: observationLines[0] ?? null };
+    return { developer, user: captured.user, raw, sent, actual: captured.developer, observationLine: observationLines[0] ?? null };
   };
   const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
   // Developer-message sha256 before this slice: v38 (recorded in the 53458ce and 7cf4535 demo runs) and the
@@ -970,6 +1068,17 @@ const run = async () => {
     assert.equal(currentJudge.user.includes("declinedSharingSource"), false);
     assert.equal(currentJudge.user.includes("priorPauseObservation"), false, "A current refusal carries no prior-pause observation.");
     assert.equal(currentJudge.sent.split(OBSERVED_CURRENT_REFUSAL_RULE).length, 2, "A current refusal reports its boundary response as observations.");
+    assert.equal(
+      sha256Of(currentJudge.sent.replace(
+        currentJudge.observationLine!,
+        STEP3_DEFINITION_REVERTS.reduce((line, [now, before]) => {
+          assert.equal(line.split(now).length, 2, `Definition edit appears once: ${now.slice(0, 60)}`);
+          return line.replace(now, before);
+        }, currentJudge.observationLine!)
+      )),
+      "9ad0869160ce091fc1ee97d5c2f79c10036df4cdb9ff5e0328c3647ea68f5f03",
+      "Restoring the relocated clauses and the step-3 observation definition rebuilds the prompt V1 ran on at 589ea09."
+    );
     assert.equal(currentJudge.sent.includes(NEW_CURRENT_REFUSAL_RULE), false, "The observed rule replaces the overall-verdict completion rule.");
     assert(currentJudge.observationLine?.startsWith("currentRefusalObservation, for respect_declined_sharing"));
     for (const observed of [
@@ -1039,6 +1148,56 @@ const run = async () => {
     assert.equal(sha256Of(revertDeclaredSegments(amountJudge.developer)), V38_JUDGE_DEVELOPER_SHA256);
   } else {
     assert.fail(`Fixture must reach a support function without observations, got ${amountFunction}.`);
+  }
+  // Every relocated requirement is restated where its observation decides it, so nothing is dropped.
+  assert.deepEqual(new Set(relocationProofs.map((proof) => proof.prefix)), new Set(Object.keys(RELOCATED)), "Each observed kind was proven.");
+  const AFFECT_COVERAGE = [
+    "stronger_intensity when any part describes the feeling or the User's situation as heavier, more painful, or harder to bear than stated",
+    "even when the valence matches",
+    "phrased impersonally as a quality of the situation (this is X, that makes one feel X, anyone would feel X)",
+    "presented as the Assistant's characterization of the relational impact",
+    "rendering not happy as not feeling good",
+    "describing the reported relational situation without adding an emotion",
+    "not by word lists",
+  ];
+  const RELOCATION_COVERAGE: Record<string, string[]> = {
+    "currentRefusalObservation, for ": [
+      ...AFFECT_COVERAGE,
+      "receipt_only when it gives only a receipt",
+      "Responding to the boundary alone or to the feeling alone is enough for this field; restating the feeling word is not required",
+      "feelingAsReason: yes when any part makes the User's feeling itself the reason or condition for not talking or not sharing, whether as advice, a rule, or a permission",
+      "decidesForUser: yes when any part decides for the User, beyond the boundary they stated",
+      "including asking the User to tell the Assistant later, asking about a cause, event, or topic, or offering options of what to talk about",
+      "naming content only to release the User from providing it",
+    ],
+    "invitationObservation, for ": [
+      ...AFFECT_COVERAGE,
+      "none when the reply contains no invitation",
+      "more_than_one when it contains more than one invitation or question",
+      "asking what happened is then allowed",
+      "more_about_stated_event when it invites the User, if they want, to say more about an event currentUserText already states",
+      "stated_event_as_unknown when currentUserText already states an event",
+      "cause_or_why when it asks why or for the cause",
+      "details_or_account when it asks for specific details, the sequence of events, who, when, or where, or a full account",
+      "guessed_cause_or_event when it guesses or suggests a cause or event",
+      "other_topic when it offers an unspecified alternative or another topic",
+      "a phrase that points back to a moment or situation the User already stated refers to stated content",
+      "Any option or permission the reply offers about what to say counts as an invitation",
+      "naming content only to release the User from providing it",
+      "the reply naturally acknowledges the feeling the User stated, any invitation is gentle, easy to decline, and does not make continuing feel required",
+    ],
+    "affectObservation, for ": AFFECT_COVERAGE,
+  };
+  for (const { prefix, sent } of relocationProofs) {
+    const observationLine = sent.split("\n").find((line) => line.startsWith(prefix))!;
+    for (const covered of RELOCATION_COVERAGE[prefix]) {
+      assert(observationLine.includes(covered), `${prefix}: relocated requirement is restated: ${covered}`);
+    }
+  }
+  for (const unchanged of [legacyJudge, pausedJudge]) {
+    for (const dropped of ["ES-AFFECT-EVIDENCE: ", "ES-SCOPE: ", "ES-SCOPE exception for invite_optional_sharing only: "]) {
+      assert(unchanged.actual.split("\n").some((line) => line.startsWith(dropped)), `Unobserved prompts keep ${dropped}`);
+    }
   }
   const refusalAfterPause = build({
     userMessage: "我有点难受，但不想说",

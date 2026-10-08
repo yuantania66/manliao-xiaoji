@@ -34,7 +34,7 @@ const PASSES = 3;
 const OUTBOUND_CAP = 66;
 
 // D0 ran on 42483a8e… / 12fe0e10…; these are the current texts (current-refusal observation after c82698f).
-const BRANCH_DEVELOPER_SHA16 = { current_turn: "9ad0869160ce091f", previous_user_turn: "27dbaf64f655a963" } as const;
+const BRANCH_DEVELOPER_SHA16 = { current_turn: "ab3f184aba19c335", previous_user_turn: "27dbaf64f655a963" } as const;
 
 type Field = keyof PriorPauseObservation;
 type ExpectedObservation = { [F in Field]: Array<PriorPauseObservation[F]> };

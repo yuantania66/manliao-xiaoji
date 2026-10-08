@@ -700,8 +700,13 @@ const inspectedJudge = await validatePlannedFunctionSemanticOutput({
 assert.deepEqual(inspectedJudge.failureReasons, ["planned_function_semantic:provider_failure"]);
 assert.deepEqual(inspectedJudge.providerFailure, { category: "prompt_rejected", call: "initial" });
 const judgeRubric = judgeMessages.join("\n");
-for (const ruleId of ["ES-AFFECT-EVIDENCE", "ES-SCOPE", "ES-FOCUS", "ES-ACK-BOUNDARY", "ES-ACK-NO-SOLICIT", "ES-ACK-NO-FABRICATION"]) {
+// acknowledge_current_relational_impact defines ES-AFFECT-EVIDENCE inside affectObservation, which decides it.
+assert(judgeRubric.includes("affectObservation, for acknowledge_current_relational_impact: affectDrift applies ES-AFFECT-EVIDENCE to the whole reply:"));
+assert.equal(judgeRubric.includes("\nES-AFFECT-EVIDENCE: "), false, "The overall verdict does not also judge ES-AFFECT-EVIDENCE.");
+for (const ruleId of ["ES-SCOPE", "ES-FOCUS", "ES-ACK-BOUNDARY", "ES-ACK-NO-SOLICIT", "ES-ACK-NO-FABRICATION"]) {
   assert(judgeRubric.includes(`${ruleId}:`), `judge rubric must define ${ruleId}`);
+}
+for (const ruleId of ["ES-AFFECT-EVIDENCE", "ES-SCOPE", "ES-FOCUS", "ES-ACK-BOUNDARY", "ES-ACK-NO-SOLICIT", "ES-ACK-NO-FABRICATION"]) {
   assert(judgeRubric.includes(`${ruleId},`) || judgeRubric.includes(`or ${ruleId})`), `judge citation list must include ${ruleId}`);
 }
 assert(
@@ -987,8 +992,9 @@ assert.equal(noFunctionCalls, 0);
 // hill-helping-batch1-5-check proves that reverting its declared segments restores the earlier texts.
 const SOURCELESS_JUDGE_DEVELOPER_SHA256 = "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4";
 const BRANCH_DEVELOPER_SHA256 = {
-  // Current-refusal observation branch after c82698f (V1 ran on fa2d8402…); the prior pause is unchanged.
-  current_turn: "9ad0869160ce091fc1ee97d5c2f79c10036df4cdb9ff5e0328c3647ea68f5f03",
+  // Current-refusal observation branch with relocated clauses after 589ea09 (V1 ran on fa2d8402…, then 9ad08691…;
+  // hill-helping-batch1-5-check rebuilds 9ad08691… from this text). The prior pause is unchanged.
+  current_turn: "ab3f184aba19c335ceca6449b77644700dae91f75db84511216ca1a2b3905ac5",
   // Prior-pause observation branch; the 6b57b08 text (902c41dd…) is pinned in hill-helping-batch1-5-check.
   previous_user_turn: "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
 } as const;
