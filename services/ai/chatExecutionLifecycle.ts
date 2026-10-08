@@ -11,6 +11,7 @@ import {
 } from "@/conversation-os/control/responsePlanPreflightAuthority";
 import { projectAffectEvidenceTerms } from "@/conversation-os/state";
 
+import { classifyProviderFailureCategory, type ProviderFailureCategory } from "./providerFailureCategory";
 import type { AiGenerationResult } from "./types";
 
 export type ChatExecutionPhase =
@@ -29,6 +30,8 @@ export type ChatExecutionFailureCode =
   | "PROVIDER_ERROR"
   | "TIMEOUT"
   | "PERSISTENCE_ERROR";
+
+export type ChatExecutionFailureCategory = ProviderFailureCategory;
 
 export type ChatExecutionAttempt = {
   attemptId: string;
@@ -65,6 +68,7 @@ export type ChatExecutionTrace = {
     code: ChatExecutionFailureCode;
     reason: string;
     retryable: boolean;
+    category?: ChatExecutionFailureCategory;
   };
   committedMessageId?: string;
   interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1;
@@ -489,12 +493,14 @@ export const buildAttemptTransitions = ({
 export const classifyExecutionError = (error: unknown): {
   code: Extract<ChatExecutionFailureCode, "PROVIDER_ERROR" | "TIMEOUT">;
   reason: string;
+  category: ChatExecutionFailureCategory;
 } => {
   const reason = error instanceof Error ? error.message : "Unknown provider failure";
   const name = error instanceof Error ? error.name : "";
+  const category = classifyProviderFailureCategory(error);
   return /timeout|timed out|abort|超时/i.test(`${name} ${reason}`)
-    ? { code: "TIMEOUT", reason }
-    : { code: "PROVIDER_ERROR", reason };
+    ? { code: "TIMEOUT", reason, category }
+    : { code: "PROVIDER_ERROR", reason, category };
 };
 
 const USER_SAFE_FAILURE_MESSAGES: Record<ChatExecutionFailureCode, string> = {

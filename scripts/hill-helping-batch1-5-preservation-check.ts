@@ -172,7 +172,8 @@ const attribution = JSON.parse(readFileSync(
 )) as FrozenAttribution;
 const freezePreMinimalFixSurfacePlan = (plan: ResponsePlan): ResponsePlan =>
   plan.positiveFunctionContract?.action === "offer_emotional_support" &&
-  plan.positiveFunctionContract.supportFunction === "return_amount_control"
+  (plan.positiveFunctionContract.supportFunction === "return_amount_control" ||
+    plan.positiveFunctionContract.supportFunction === "invite_optional_sharing")
     ? {
         ...plan,
         positiveFunctionContract: {

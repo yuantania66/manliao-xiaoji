@@ -35,5 +35,6 @@
       <view>这不是判断，只是出现次数。</view>
       <text>本范围统计了 {{sourceCounts.notes}} 条小记和 {{sourceCounts.userMessages}} 条你发出的聊天消息。</text>
     </view>
+    <button class="secondary-button revoke-button" bindtap="revokeAuthorization">撤回观察授权</button>
   </block>
 </view>

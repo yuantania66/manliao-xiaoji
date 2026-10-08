@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import {
@@ -18,8 +19,9 @@ import {
   validatePlannedFunctionSemanticOutput,
   type PositiveFunctionVerdictBinding,
 } from "../services/ai/plannedFunctionSemanticValidator";
-import { formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
-import { validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
+import { buildChatPrompt, formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
+import { formatResponsePlanRegenerateConstraint, validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
+import { cleanObservationFor } from "./semantic-observation-fixture";
 
 const uncertainBoundary = (
   userBoundaries: OrdinaryHandoffBoundary["userBoundaries"] = []
@@ -98,6 +100,7 @@ const validatePositiveSemanticFixture = async ({
         evidence: shouldPass
           ? [{ start: 0, end: reply.length, text: reply, reason: "Frozen contract fixture." }]
           : [],
+        ...cleanObservationFor(input),
       },
       semanticQuestionCount: (reply.match(/[？?]/gu) ?? []).length,
     }),
@@ -227,8 +230,8 @@ const run = async () => {
     emotion.positiveFunctionContract?.action === "offer_emotional_support"
       ? emotion.positiveFunctionContract.supportFunction
       : null,
-    "return_amount_control",
-    "A single affect span must not default to focus control."
+    "invite_optional_sharing",
+    "A single affect span defaults to an optional sharing invitation, not focus control."
   );
 
   const multiFocusEmotion = build({ userMessage: "我现在又委屈又生气" }).responsePlan;
@@ -255,7 +258,7 @@ const run = async () => {
     repeatedSameAffect.positiveFunctionContract?.action === "offer_emotional_support"
       ? repeatedSameAffect.positiveFunctionContract.supportFunction
       : null,
-    "return_amount_control",
+    "invite_optional_sharing",
     "Repeated evidence for one affect target must not manufacture multiple focuses."
   );
   const multiAffectNoAnalysis = build({
@@ -318,13 +321,130 @@ const run = async () => {
       }),
     });
   }
+  // Product decision 2026-09-28: one low-pressure calibration per continuous low-information
+  // stretch, then light entries; replaces the earlier invite/entry/invite alternation.
   assert.deepEqual(multiTurnActions, [
     "invite_low_pressure_calibration",
     "offer_neutral_conversation_entry",
-    "invite_low_pressure_calibration",
+    "offer_neutral_conversation_entry",
   ]);
-  assert.notEqual(multiTurnActions[0], multiTurnActions[1]);
-  assert.notEqual(multiTurnActions[1], multiTurnActions[2]);
+  const secondEntry = build({ userMessage: "3", recentMessages: multiTurnHistory.slice(0, 4) }).responsePlan;
+  assert.equal(secondEntry.questionPolicy.mode, "none");
+  assert.equal(
+    validateResponsePlanOutput({ plan: secondEntry, reply: "收到。" }).passed,
+    false,
+    "Entries after calibration must not collapse into bare receipts."
+  );
+
+  const neutralEntryAttributionConstraint =
+    "The entry is the assistant's own offer, not an explanation of the user's message.";
+  const promptTextFor = (userMessage: string, recentMessages: ConversationMessage[], responsePlan: ResponsePlan) =>
+    buildChatPrompt({ userMessage, recentMessages, responsePlan }).messages.map((message) => message.content).join("\n");
+  assert(promptTextFor("3", multiTurnHistory.slice(0, 4), secondEntry).includes(neutralEntryAttributionConstraint));
+  for (const reply of [
+    "你应该是在测试消息，我这边都收到了。",
+    "你可能在测试我能不能收到。",
+    "好像你在测试系统，我可以陪你接着发。",
+  ]) {
+    const validation = validateResponsePlanOutput({ plan: secondEntry, reply });
+    assert.equal(validation.passed, false, reply);
+    assert(validation.failureReasons.includes("unsupported_meaning:testing_or_probing"), reply);
+    const constraint = formatResponsePlanRegenerateConstraint(secondEntry, validation.failureReasons);
+    assert(constraint.includes(`planId=${secondEntry.planId}`), reply);
+    assert(constraint.includes("认定用户在测试、试探或检查助手/系统的反应"), reply);
+    assert(constraint.includes("弱化词仍是同一种意图归因"), reply);
+    assert(constraint.includes("不是对用户输入的解释或评论"), reply);
+    assert(constraint.includes("本计划禁止提问"), reply);
+    assert(!constraint.includes("修复校验项 unsupported_meaning"), reply);
+  }
+  assert.equal(
+    validateResponsePlanOutput({ plan: secondEntry, reply: "我先起个头：今天最普通的一小段，也可以从那里说。" }).passed,
+    true
+  );
+  assert(!promptTextFor("1", [], build({ userMessage: "1" }).responsePlan).includes(neutralEntryAttributionConstraint));
+
+  const scaleAnswer = build({
+    userMessage: "6",
+    recentMessages: [{
+      id: "scale-assistant",
+      role: "assistant",
+      content: "如果 0 到 10 分，你会打几分？",
+      committedAssistantMove: committedMove({ purpose: ["take_light_topic_initiative"], question: true, sourceTurnId: "scale-assistant" }),
+    }],
+  }).responsePlan;
+  const explicitTest = build({ userMessage: "我在测试消息能不能发出去" }).responsePlan;
+  for (const [plan, reply] of [
+    [answerFrame, "好，那就先想下一步。"],
+    [scaleAnswer, "6分，比中间高一点。"],
+    [explicitTest, "你在测试消息发送，这条能正常显示。"],
+  ] as const) {
+    assert(!plan.prohibitedClaims.some((claim) => claim.includes("message form or repetition")), reply);
+    assert(!promptTextFor("", [], plan).includes(neutralEntryAttributionConstraint), reply);
+    assert(
+      !validateResponsePlanOutput({ plan, reply }).failureReasons.some((reason) => reason.startsWith("unsupported_meaning:")),
+      reply
+    );
+  }
+  assert.equal(handoffAction(scaleAnswer), "continue_established_frame");
+  assert.equal(validateResponsePlanOutput({ plan: scaleAnswer, reply: "6分，比中间高一点。" }).passed, true);
+
+  const uncommittedCalibration = build({
+    userMessage: "2",
+    recentMessages: [{ id: "failed-user-1", role: "user", content: "1" }],
+  }).responsePlan;
+  assert.equal(
+    handoffAction(uncommittedCalibration),
+    "invite_low_pressure_calibration",
+    "A calibration that was never committed must not count as already asked."
+  );
+
+  const topicSwitch = build({
+    userMessage: "3",
+    recentMessages: [
+      ...multiTurnHistory.slice(0, 4),
+      { id: "switch-user", role: "user", content: "其实我今天一直在想要不要换工作。" },
+      {
+        id: "switch-assistant",
+        role: "assistant",
+        content: "换工作这件事在你心里转了一整天。",
+        committedAssistantMove: committedMove({ purpose: ["acknowledge_without_psychologizing"], sourceTurnId: "switch-assistant" }),
+      },
+    ],
+  }).responsePlan;
+  assert.equal(handoffAction(topicSwitch), "continue_established_thread");
+  assert.equal(topicSwitch.questionPolicy.mode, "none");
+
+  const staleCalibrationHistory: ConversationMessage[] = [
+    { id: "stale-user-1", role: "user", content: "1" },
+    {
+      id: "stale-assistant-1",
+      role: "assistant",
+      content: "我还不确定该怎么接；你希望我先等你继续，还是给一个轻一点的开头？",
+      committedAssistantMove: committedMove({ purpose: ["invite_low_pressure_calibration"], question: true, sourceTurnId: "stale-assistant-1" }),
+    },
+    ...[2, 3, 4].flatMap((index) => [
+      { id: `stale-user-${index}`, role: "user" as const, content: String(index) },
+      {
+        id: `stale-assistant-${index}`,
+        role: "assistant" as const,
+        content: "我先起个头：今天最普通的一小段，也可以从那里说。",
+        committedAssistantMove: committedMove({ purpose: ["offer_neutral_conversation_entry"], sourceTurnId: `stale-assistant-${index}` }),
+      },
+    ]),
+  ];
+  assert.equal(
+    handoffAction(build({ userMessage: "5", recentMessages: staleCalibrationHistory }).responsePlan),
+    "invite_low_pressure_calibration",
+    "The one-calibration limit applies to the current low-information window, not the whole session."
+  );
+
+  const refusedAfterCalibration = build({
+    userMessage: "2",
+    recentMessages: multiTurnHistory.slice(0, 2),
+    boundary: uncertainBoundary(["no_questions"]),
+  }).responsePlan;
+  assert.equal(handoffAction(refusedAfterCalibration), "offer_neutral_conversation_entry");
+  assert.equal(refusedAfterCalibration.questionPolicy.mode, "none");
 
   const invitePlan = build({ userMessage: "1" }).responsePlan;
   assert.equal(validateResponsePlanOutput({ plan: invitePlan, reply: "收到。" }).passed, false);
@@ -500,10 +620,768 @@ const run = async () => {
       singleAffectPlan.positiveFunctionContract?.action === "offer_emotional_support"
         ? singleAffectPlan.positiveFunctionContract.supportFunction
         : null,
-      "return_amount_control",
+      "invite_optional_sharing",
       `${userMessage} must not manufacture a focus-selection task.`
     );
   }
+  const supportFunctionOf = (plan: ResponsePlan) =>
+    plan.positiveFunctionContract?.action === "offer_emotional_support"
+      ? plan.positiveFunctionContract.supportFunction
+      : null;
+  const declinedSharingSourceOf = (plan: ResponsePlan) =>
+    plan.positiveFunctionContract?.action === "offer_emotional_support"
+      ? plan.positiveFunctionContract.declinedSharingSource
+      : undefined;
+  for (const userMessage of ["我今天有点不太高兴", "心里有点堵", "今天被领导当众批评了，有点不太高兴"]) {
+    const invitePlan = build({ userMessage }).responsePlan;
+    assert.equal(supportFunctionOf(invitePlan), "invite_optional_sharing", userMessage);
+    assert.equal(declinedSharingSourceOf(invitePlan), undefined, `${userMessage} carries no refusal source.`);
+    assert.equal(invitePlan.questionPolicy.mode, "optional_after_answer", `${userMessage} allows one optional invitation.`);
+    const invitePrompt = formatResponsePlanForPrompt(invitePlan);
+    assert(invitePrompt.includes("if the user already stated the event, refer to that event"));
+    assert(invitePrompt.includes("Do not ask why, for the cause, for specific details"));
+    assert.equal(invitePrompt.includes("need not repeat that agreement"), false, `${userMessage} keeps the invitation constraints only.`);
+    const inviteRegeneration = formatResponsePlanRegenerateConstraint(invitePlan, [
+      "planned_function_semantic:positive_function_not_satisfied",
+      "planned_function_semantic:question_count_quality",
+    ]);
+    assert(inviteRegeneration.includes("至多一句容易拒绝的温和邀请"));
+    assert(inviteRegeneration.includes("整条回复至多一个邀请或问题"));
+    assert(inviteRegeneration.includes("不要问为什么或原因"));
+    assert.equal(inviteRegeneration.includes("本计划禁止提问"), false);
+  }
+  const referenceInviteReply = "听起来，你今天有些不好受。如果你愿意，可以和我说说发生了什么。不用着急，慢慢说就好。";
+  const ordinaryLowPlan = build({ userMessage: "我今天有点不太高兴" }).responsePlan;
+  const referenceDeterministic = validateResponsePlanOutput({ plan: ordinaryLowPlan, reply: referenceInviteReply });
+  assert.equal(
+    referenceDeterministic.passed,
+    true,
+    `The approved reference tone must not be blocked by deterministic validation: ${referenceDeterministic.failureReasons.join(",")}`
+  );
+  for (const [userMessage, reason] of [
+    ["我有点难受，但不想说", "explicit unwillingness to talk"],
+    ["我不太高兴，不想被问", "declines being asked"],
+    ["心里有点堵，别再问我了", "declines further questions"],
+    ["我今天什么也不想说，有点难过", "declines talking where amount control was selected"],
+    ["我现在又委屈又生气，但不想被问", "declines questions where focus control was selected"],
+  ] as const) {
+    const declinedPlan = build({ userMessage }).responsePlan;
+    assert(declinedPlan.responseActions.includes("offer_emotional_support"), `${userMessage} remains emotional support`);
+    assert.equal(supportFunctionOf(declinedPlan), "respect_declined_sharing", `${userMessage}: ${reason} removes the invitation.`);
+    assert.equal(declinedPlan.questionPolicy.mode, "none", `${userMessage}: ${reason} forbids questions.`);
+    assert(
+      declinedPlan.positiveFunctionContract?.evidence.includes(
+        "sharingInvitationUnavailable=user_declined_questions_or_talking"
+      )
+    );
+    assert(declinedPlan.positiveFunctionContract?.evidence.includes("supportFunction=respect_declined_sharing"));
+    assert.equal(declinedSharingSourceOf(declinedPlan), "current_turn", `${userMessage}: the refusal source is the current turn.`);
+    const declinedPrompt = formatResponsePlanForPrompt(declinedPlan);
+    assert.equal(declinedPrompt.includes("already agreed in an earlier turn"), false, "A current refusal carries no prior-pause branch.");
+    assert.equal(declinedPrompt.includes("responding to that feeling is required"), false);
+    assert.equal(declinedPrompt.includes("at most one gentle invitation the user can easily decline"), false);
+    assert.equal(declinedPrompt.includes("Give the user control over how much to express"), false);
+    assert.equal(declinedPrompt.includes("grants that control"), false);
+    assert(declinedPrompt.includes("restating the feeling word is not required"));
+    assert(declinedPrompt.includes("responds to neither the feeling nor the boundary is not enough"));
+    assert(declinedPrompt.includes("respect not talking for now"));
+    assert(declinedPrompt.includes("do not decide for them that they will not share anything further"));
+    assert(declinedPrompt.includes("one statement that you will listen whenever they want to talk, as long as it asks for no response"));
+    assert(declinedPrompt.includes("including asking the user to tell you later, and do not give permission about how much or which part to say"));
+    assert(declinedPrompt.includes("claim physical or offline company"));
+    assert.equal(declinedPrompt.includes("by naming that feeling itself"), false, "Restating the feeling word is no longer required.");
+    assert.equal(declinedPrompt.includes("including saying it later"), false, "A no-response listening statement is no longer forbidden.");
+    const declinedRegeneration = formatResponsePlanRegenerateConstraint(declinedPlan, [
+      "planned_function_semantic:positive_function_not_satisfied",
+      "planned_function_semantic:question_count_quality",
+    ]);
+    assert(declinedRegeneration.includes("本计划禁止提问"));
+    assert(declinedRegeneration.includes("不要求逐字复述情绪词"));
+    assert(declinedRegeneration.includes("既没回应感受也没回应边界不算完成"));
+    assert(declinedRegeneration.includes("不要把感受说成不该说的理由"));
+    assert(declinedRegeneration.includes("不要替用户决定不再表达，可以加一句不要求回应的倾听表态"));
+    assert(declinedRegeneration.includes("包括让用户以后再告诉你"));
+    assert(declinedRegeneration.includes("不要给“想说多少、说哪部分”这类表达许可"));
+    assert.equal(declinedRegeneration.includes("以后再说”这类表达许可"), false);
+    assert.equal(declinedRegeneration.includes("不要用“我在、陪着你”这类套话"), false);
+    assert.equal(declinedRegeneration.includes("之前已经答应过不问"), false, "A current refusal regeneration carries no prior-pause branch.");
+  }
+  for (const [userMessage, reply] of [
+    ["我有点难受，但不想说", "好，那就先不说，不用勉强自己。"],
+    ["我不太高兴，不想被问", "好，我不问，你想说的时候我听着。"],
+  ] as const) {
+    const referenceDeclined = validateResponsePlanOutput({ plan: build({ userMessage }).responsePlan, reply });
+    assert.equal(
+      referenceDeclined.passed,
+      true,
+      `The approved refusal tone must not be blocked by deterministic validation: ${referenceDeclined.failureReasons.join(",")}`
+    );
+  }
+  for (const [userMessage, expected] of [
+    ["我心里有点难受，但不想讲原因", "reduce_expression_burden"],
+    ["我有点难受，不想多说", "return_amount_control"],
+  ] as const) {
+    assert.equal(
+      supportFunctionOf(build({ userMessage }).responsePlan),
+      expected,
+      `${userMessage}: an explicitly selected burden or partial-amount function is not a refusal to talk.`
+    );
+    assert.equal(declinedSharingSourceOf(build({ userMessage }).responsePlan), undefined);
+  }
+  const pausedThenLow = build({
+    userMessage: "我今天有点不太高兴",
+    recentMessages: [
+      { id: "pause-user", role: "user", content: "先别问了" },
+      { id: "pause-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+  }).responsePlan;
+  assert.equal(supportFunctionOf(pausedThenLow), "respect_declined_sharing", "A prior pause boundary removes the invitation.");
+  assert.equal(pausedThenLow.questionPolicy.mode, "none");
+  const pausedThenLowPrompt = buildChatPrompt({
+    userMessage: "我今天有点不太高兴",
+    recentMessages: [
+      { id: "pause-user", role: "user", content: "先别问了" },
+      { id: "pause-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+    responsePlan: pausedThenLow,
+  }).messages.map((message) => message.content).join("\n");
+  assert.equal(declinedSharingSourceOf(pausedThenLow), "previous_user_turn");
+  assert(pausedThenLowPrompt.includes("The assistant already agreed in an earlier turn not to ask, and the user now shares a feeling without refusing again: first respond to that feeling itself in your own words"));
+  assert(pausedThenLowPrompt.includes("followed only by companionship or a listening statement, however worded, does not respond to that feeling"));
+  assert(pausedThenLowPrompt.includes("The reply is complete once it responds to the feeling the user shares now"));
+  for (const currentRefusalWording of [
+    "boundary or feeling",
+    "boundary or the feeling",
+    "nor their stated boundary",
+    "If you mention the feeling",
+    "do not want to talk about it",
+    "do not want to be asked",
+    "If the assistant already agreed",
+  ]) {
+    assert.equal(
+      pausedThenLowPrompt.includes(currentRefusalWording),
+      false,
+      `A prior pause must not carry the current-refusal completion wording: ${currentRefusalWording}`
+    );
+  }
+  assert(pausedThenLowPrompt.includes("brief companionship within this conversation"));
+  assert(pausedThenLowPrompt.includes("It need not repeat the earlier agreement, and repeating it or offering company never replaces responding to that feeling"));
+  assert(pausedThenLowPrompt.includes("Do not invite them to talk again"));
+  const pausedThenLowRegeneration = formatResponsePlanRegenerateConstraint(pausedThenLow, [
+    "planned_function_semantic:positive_function_not_satisfied",
+  ]);
+  assert(pausedThenLowRegeneration.includes(`planId=${pausedThenLow.planId}`));
+  assert(pausedThenLowRegeneration.includes("先用自己的话回应这份感受本身"));
+  assert(pausedThenLowRegeneration.includes("只说“嗯、听到了”再接陪伴或倾听，不管怎么措辞，都不算回应这份感受"));
+  assert(pausedThenLowRegeneration.includes("之后可以简短陪伴，不必再答应一次，也不要重新邀请"));
+  assert.equal(pausedThenLowRegeneration.includes("自然回应这份感受，可以简短陪伴"), false);
+  for (const currentRefusalWording of ["边界或感受", "回应边界", "用户说不想说", "用户说不想被问"]) {
+    assert.equal(
+      pausedThenLowRegeneration.includes(currentRefusalWording),
+      false,
+      `A prior-pause regeneration must not carry the current-refusal wording: ${currentRefusalWording}`
+    );
+  }
+  assert(pausedThenLowRegeneration.includes("倾听或陪伴表态不能代替回应"));
+  assert(pausedThenLowRegeneration.includes("本计划禁止提问"));
+  const legacyPausedPlan = structuredClone(pausedThenLow);
+  if (legacyPausedPlan.positiveFunctionContract?.action === "offer_emotional_support") {
+    delete legacyPausedPlan.positiveFunctionContract.declinedSharingSource;
+  }
+  const legacyPausedPrompt = formatResponsePlanForPrompt(legacyPausedPlan);
+  assert(legacyPausedPrompt.includes("Respond naturally to the boundary or the feeling the user expressed"), "A plan without the source keeps the combined wording.");
+  assert(legacyPausedPrompt.includes("If the user says they do not want to talk about it"));
+  assert(legacyPausedPrompt.includes("If the assistant already agreed in an earlier turn not to ask and the user now shares a feeling without refusing again, first respond"));
+  assert(legacyPausedPrompt.includes("When the user shares a feeling without refusing again, responding to that feeling is required"));
+  const legacyPausedRegeneration = formatResponsePlanRegenerateConstraint(legacyPausedPlan, [
+    "planned_function_semantic:positive_function_not_satisfied",
+  ]);
+  assert(legacyPausedRegeneration.includes("自然回应用户表达的边界或感受"));
+  assert(legacyPausedRegeneration.includes("之前已经答应过不问、用户本轮只是说感受时"));
+  const judgeBindings: unknown[] = [];
+  for (const plan of [pausedThenLow, legacyPausedPlan]) {
+    await validatePlannedFunctionSemanticOutput({
+      plan,
+      reply: "今天有点不好受啊，陪你安静一会儿。",
+      semanticContext: { currentUserText: "我今天有点不太高兴", handoffTargetAssistantText: null, priorAssistantTurnAvailable: true },
+      provider: async (input) => {
+        judgeBindings.push(input.positiveFunctionBinding);
+        throw new Error("capture judge input only");
+      },
+    });
+  }
+  assert.deepEqual(judgeBindings[0], judgeBindings[1], "The refusal source must not change the judge input.");
+  assert.equal(JSON.stringify(judgeBindings[0]).includes("declinedSharingSource"), false);
+  // Judge refusal-scope slice after fd4f5ec (contract §3.2 refusal rows and §3.4; ES-ACK-* scope per §3.3):
+  // the current-refusal rule follows the boundary the User stated and yields to the not-satisfied list, the
+  // decide-for-the-User note is limited to a declined talk, and ES-ACK-* is scoped to its own function.
+  // judgeMessagesFor returns the prompt with exactly these segments reverted, so every pinned comparison below
+  // still proves that nothing else changed; `raw` is the prompt actually sent.
+  const OLD_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, naturally respecting that boundary (for example agreeing not to ask, or accepting not talking for now) completes the function; agreeing not to ask or not to talk about it, as the User requested, is this function itself, not a pause or closure that undoes support.";
+  const NEW_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, naturally respecting the boundary the User actually stated completes the function unless an item in the not-satisfied list below applies: when the User declines to talk, accepting not talking for now; when the User declines to be asked, agreeing not to ask, which does not mean the User will not talk or share. Agreeing not to ask, or accepting not talking when the User declined to talk, is this function itself, not a pause or closure that undoes support.";
+  const OLD_DECIDES_NOTE = "(accepting not talking for now, as the User asked, is not this)";
+  const NEW_DECIDES_NOTE = "(accepting not talking for now, when the User declined to talk, is not this)";
+  const ACK_SCOPE_SENTENCE = " ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, and ES-ACK-NO-FABRICATION apply only when supportFunction is acknowledge_current_relational_impact; never apply or cite them for another supportFunction.";
+  // Observation slice after c82698f (ledger section 14 step 3): a current refusal, invite_optional_sharing, and
+  // acknowledge_current_relational_impact report observations. Stripping exactly these segments restores the
+  // prompt above, so the pinned comparisons below still prove that nothing else changed.
+  const OBSERVED_CURRENT_REFUSAL_RULE = " When currentUserText itself states the refusal, how the reply responds to the boundary the User actually stated is reported in currentRefusalObservation, defined below; agreeing not to ask, or accepting not talking when the User declined to talk, is this function itself, not a pause or closure that undoes support.";
+  const OBSERVATION_LINE_PREFIXES = ["currentRefusalObservation, for ", "invitationObservation, for ", "affectObservation, for "];
+  // Clause relocation after 589ea09 (ledger section 14, second step-3 repair): for an observed kind the overall
+  // verdict no longer carries the clauses its observation decides. Restoring them, anchored on their neighbours,
+  // must rebuild the 589ea09 prompt exactly, so the comparisons below still prove that nothing else changed.
+  const AFFECT_RESTORE: [string, string] = ["affect object drift, reassurance", "affect category/intensity/object drift, reassurance"];
+  const RECEIPT_RESTORE: [string, string] = [
+    "supportFunction. A different support function",
+    "supportFunction. A receipt, pure question, a different support function",
+  ];
+  const CAUSE_RESTORE: [string, string] = [
+    "recommends a preferred focus, pressures continuation",
+    "recommends a preferred focus, requests causes/details, pressures continuation",
+  ];
+  const RELOCATED: Record<string, { restore: Array<[string, string]>; droppedPrefixes: string[] }> = {
+    "currentRefusalObservation, for ": {
+      restore: [
+        AFFECT_RESTORE,
+        RECEIPT_RESTORE,
+        CAUSE_RESTORE,
+        [
+          "in currentUserText or in an earlier turn. When currentUserText itself states the refusal",
+          "in currentUserText or in an earlier turn: it naturally responds to the boundary or the feeling the User expressed, judged in context; restating the feeling word is not required. When currentUserText itself states the refusal",
+        ],
+        [
+          "the following are not satisfied: any permission about how much or which part to say; claiming physical or offline company",
+          "the following are not satisfied: a bare receipt that responds to neither the stated feeling nor the stated boundary; any invitation, question, or request, including asking the User to tell the Assistant later; any permission about how much or which part to say; presenting the feeling as the reason the User should not talk; deciding for the User that they will not share anything further (accepting not talking for now, when the User declined to talk, is not this); claiming physical or offline company",
+        ],
+      ],
+      droppedPrefixes: ["ES-AFFECT-EVIDENCE: ", "ES-SCOPE: "],
+    },
+    "invitationObservation, for ": {
+      restore: [
+        AFFECT_RESTORE,
+        RECEIPT_RESTORE,
+        CAUSE_RESTORE,
+        ["offers a gentle invitation, easy to decline,", "offers at most one gentle invitation, easy to decline,"],
+        [
+          "For invite_optional_sharing, an invitation with no acknowledgement of the stated feeling, or an invitation that makes continuing feel required, is not satisfied.",
+          "For invite_optional_sharing, a bare receipt or paraphrase with no invitation, an invitation with no acknowledgement of the stated feeling, or an invitation that makes continuing feel required is not satisfied.",
+        ],
+      ],
+      droppedPrefixes: ["ES-AFFECT-EVIDENCE: ", "ES-SCOPE: ", "ES-SCOPE exception for invite_optional_sharing only: "],
+    },
+    "affectObservation, for ": { restore: [AFFECT_RESTORE], droppedPrefixes: ["ES-AFFECT-EVIDENCE: "] },
+  };
+  // The same repair restated the relocated requirements in the current-refusal observation definition and
+  // aligned feelingAsReason with contract §3.2 (a feeling made the reason or condition, including as a permission).
+  const STEP3_DEFINITION_REVERTS: Array<[string, string]> = [
+    [
+      "feelingAsReason: yes when any part makes the User's feeling itself the reason or condition for not talking or not sharing, whether as advice, a rule, or a permission (for example, saying that because or when the User feels bad they need not or should not talk), instead of leaving not talking to the User's own stated wish; acknowledging the feeling and, separately, accepting that the User does not want to talk is no;",
+      "feelingAsReason: yes when any part presents the User's feeling as the reason the User should not talk or share (for example, that because the User feels bad they should not talk);",
+    ],
+    [
+      "than stated (for example, rendering a little tired as exhausted, or a bit upset as unbearable), even when the valence matches; judge the intensity or burden the reply actually adds, not only whether its valence agrees; otherwise",
+      "than stated; otherwise",
+    ],
+    ["quality of the situation (this is X, that makes one feel X, anyone would feel X), or", "quality of the situation, or"],
+    ["names no more specific emotion (for example, rendering not happy as not feeling good), or", "names no more specific emotion, or"],
+    [" Decide by whether an unevidenced emotion category or a stronger intensity is added, not by word lists. invitesOrAsks", " invitesOrAsks"],
+    [
+      "invitesOrAsks applies ES-SCOPE to the whole reply: yes when any part invites, asks, or requests anything of the User, including asking the User to tell the Assistant later, asking about a cause, event, or topic, or offering options of what to talk about; one statement of listening or companionship that requires no response is not this, and naming content only to release the User from providing it (for example, saying the User need not explain why) is not this;",
+      "invitesOrAsks: yes when any part invites, asks, or requests anything of the User, including asking the User to tell the Assistant later or asking about a cause, event, or topic; one statement of listening or companionship that requires no response is not this;",
+    ],
+    [
+      "including what a bare receipt, the feeling presented as a reason, a decision made for the User, affect drift (ES-AFFECT-EVIDENCE), and an invitation, question, or request (ES-SCOPE) mean for this function:",
+      "including the bare-receipt, feeling-as-reason, deciding-for-the-User, and invitation, question, or request items in the respect_declined_sharing list above and ES-AFFECT-EVIDENCE:",
+    ],
+  ];
+  const captureJudge = async (plan: ResponsePlan, currentUserText: string) => {
+    const captured: Array<{ developer: string; user: string }> = [];
+    await validatePlannedFunctionSemanticOutput({
+      plan,
+      reply: "今天有点不好受啊，陪你安静一会儿。",
+      semanticContext: { currentUserText, handoffTargetAssistantText: null, priorAssistantTurnAvailable: true },
+      inspectExternalPrompt: ({ messages }) => {
+        captured.push({ developer: messages[0].content, user: messages[1].content });
+        throw new Error("capture judge prompt only");
+      },
+    });
+    assert.equal(captured.length, 1, "The judge prompt is captured before any external call.");
+    return captured[0];
+  };
+  // The source-less respect prompt has no observation and keeps every shared rule line.
+  const referenceLines = (await captureJudge(legacyPausedPlan, "我今天有点不太高兴")).developer.split("\n");
+  const relocationProofs: Array<{ prefix: string; sent: string }> = [];
+  const restoreRelocated = (sent: string, observationLine: string | undefined) => {
+    const prefix = Object.keys(RELOCATED).find((candidate) => observationLine?.startsWith(candidate));
+    if (!prefix) return sent;
+    const { restore, droppedPrefixes } = RELOCATED[prefix];
+    const lines = sent.split("\n");
+    for (const dropped of droppedPrefixes) {
+      assert.equal(lines.some((line) => line.startsWith(dropped)), false, `${prefix}: the overall verdict no longer carries ${dropped}`);
+    }
+    const reinserted = droppedPrefixes.map((dropped) => {
+      const line = referenceLines.find((candidate) => candidate.startsWith(dropped));
+      assert(line, dropped);
+      return line;
+    });
+    lines.splice(lines.indexOf(observationLine!) + 1, 0, ...reinserted);
+    let rebuilt = lines.join("\n");
+    for (const [now, before] of restore) {
+      assert.equal(sent.includes(before), false, `${prefix}: the relocated clause is gone from the sent prompt: ${before.slice(0, 60)}`);
+      assert.equal(rebuilt.split(now).length, 2, `${prefix}: relocation anchor appears once: ${now.slice(0, 60)}`);
+      rebuilt = rebuilt.replace(now, before);
+    }
+    relocationProofs.push({ prefix, sent });
+    return rebuilt;
+  };
+  const judgeMessagesFor = async (plan: ResponsePlan, currentUserText: string) => {
+    const captured = await captureJudge(plan, currentUserText);
+    const observationLinesSent = captured.developer.split("\n").filter((line) => OBSERVATION_LINE_PREFIXES.some((prefix) => line.startsWith(prefix)));
+    assert(observationLinesSent.length <= 1, "At most one observation definition per judge prompt.");
+    const sent = restoreRelocated(captured.developer, observationLinesSent[0]);
+    const observationLines = observationLinesSent;
+    assert.equal(
+      sent.includes(OBSERVED_CURRENT_REFUSAL_RULE),
+      observationLines[0]?.startsWith("currentRefusalObservation, for ") ?? false,
+      "The observed current-refusal rule comes with its observation definition."
+    );
+    const raw = sent.split("\n").filter((line) => line !== observationLines[0]).join("\n")
+      .replace(OBSERVED_CURRENT_REFUSAL_RULE, NEW_CURRENT_REFUSAL_RULE);
+    assert.equal(raw.split(ACK_SCOPE_SENTENCE).length, 2, "Every judge variant scopes ES-ACK-* once.");
+    assert.equal(raw.split(NEW_DECIDES_NOTE).length, 2, "Every judge variant limits the decide-for-the-User note to a declined talk.");
+    assert(raw.indexOf(ACK_SCOPE_SENTENCE) < raw.indexOf("\nES-ACK-BOUNDARY:"), "The ES-ACK-* scope precedes the ES-ACK-* rules.");
+    for (const old of [OLD_CURRENT_REFUSAL_RULE, OLD_DECIDES_NOTE, "as the User requested", "as the User asked"]) {
+      assert.equal(raw.includes(old), false, `No variant keeps the unscoped refusal wording: ${old}`);
+    }
+    assert(raw.split(NEW_CURRENT_REFUSAL_RULE).length <= 2);
+    const developer = raw.replace(NEW_CURRENT_REFUSAL_RULE, OLD_CURRENT_REFUSAL_RULE).replace(NEW_DECIDES_NOTE, OLD_DECIDES_NOTE).replace(ACK_SCOPE_SENTENCE, "");
+    assert.notEqual(developer, raw);
+    return { developer, user: captured.user, raw, sent, actual: captured.developer, observationLine: observationLines[0] ?? null };
+  };
+  const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
+  // Developer-message sha256 before this slice: v38 (recorded in the 53458ce and 7cf4535 demo runs) and the
+  // 3135181 source branches. Reverting exactly the declared segments must reproduce them.
+  const V38_JUDGE_DEVELOPER_SHA256 = "ed581c46bb6e6ef403b93014b169ad4889938a48f8cc7e325888c0627661a123";
+  const SOURCE_BRANCH_DEVELOPER_SHA256 = {
+    current_turn: "9ec838c034e30e452c3ae3353ddb2ea4bda5fe1dc523deed6b5f69a89ce6769e",
+    previous_user_turn: "f4c3bb132e0b154765ff8bd7e69c2b0f07b79f3f23fb34c4bc40ad4aa62252a1",
+  } as const;
+  const OLD_PAUSE_RESPONSE = " Responding to that feeling means the reply itself takes in, in its own words, how the User is feeling now (a same-valence paraphrase or a natural reaction to the User's current state counts); a receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement does not respond to the feeling, however the companionship is worded.";
+  const NEW_PAUSE_RESPONSE = " Restating or paraphrasing the feeling the User stated, at the same or lower intensity, or reacting naturally to the User's current state, responds to it; no different wording or added explanation is required, and repeating the User's own feeling words is restating, not a receipt. A leading 嗯 or a following companionship statement does not cancel a response the reply makes. Describing the Assistant's own feeling in place of the User's state does not respond to it. A receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement, with no response to the current feeling, does not respond to it, however the companionship is worded.";
+  const OLD_AFFECT_TAIL = " A general same-valence paraphrase of the stated feeling at the same or lower intensity that names no more specific emotion (for example, rendering not happy as not feeling good) is restating, not adding a category. Decide by whether an unevidenced emotion category is added, not by word lists.";
+  const NEW_AFFECT_TAIL = " A stated negative feeling does not support any stronger negative description: describing the feeling or the User's situation as heavier, more painful, or harder to bear than the User stated (for example, rendering a little tired as exhausted, or a bit upset as unbearable) is intensity drift and not satisfied, even when the valence matches. Judge the intensity or burden the reply actually adds, not only whether its valence agrees. A natural paraphrase of the stated feeling at the same or lower intensity that names no more specific emotion (for example, rendering not happy as not feeling good) is restating, not drift. Decide by whether an unevidenced emotion category or a stronger intensity is added, not by word lists.";
+  const PAUSE_RULE_IDS_LINE = "\nPrior-pause rule ids, for respect_declined_sharing when currentUserText states a feeling without a refusal: start the reason with ES-PAUSE-RECEIPT when a receipt is followed only by companionship or listening with no response to the current feeling; ES-PAUSE-SUBSTITUTE when the Assistant's own feeling is described in place of responding to the User's state; ES-PAUSE-ACTION when the reply suggests or tells the User to do something, which is advice and already insufficient. These ids only name a failure the rules above already establish and never make a reply fail by themselves. The Assistant's own statement of keeping the User company is not ES-PAUSE-ACTION; a stronger feeling is ES-AFFECT-EVIDENCE.";
+  const revertDeclaredSegments = (developer: string) =>
+    developer.replace(NEW_PAUSE_RESPONSE, OLD_PAUSE_RESPONSE).replace(NEW_AFFECT_TAIL, OLD_AFFECT_TAIL).replace(PAUSE_RULE_IDS_LINE, "");
+  const JUDGE_CURRENT_REFUSAL_RULE = OLD_CURRENT_REFUSAL_RULE;
+  const JUDGE_PRIOR_PAUSE_RULE = ` When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement.${NEW_PAUSE_RESPONSE}`;
+  const JUDGE_PRIOR_PAUSE_NOT_SATISFIED = "a repeated agreement or a companionship statement used in place of responding to a feeling stated without a refusal, including a receipt followed only by companionship or listening; ";
+  const legacyJudge = await judgeMessagesFor(legacyPausedPlan, "我今天有点不太高兴");
+  assert.equal(sha256Of(revertDeclaredSegments(legacyJudge.developer)), V38_JUDGE_DEVELOPER_SHA256, "Without a source only the declared segments differ from v38.");
+  for (const segment of [JUDGE_CURRENT_REFUSAL_RULE, JUDGE_PRIOR_PAUSE_RULE, JUDGE_PRIOR_PAUSE_NOT_SATISFIED, PAUSE_RULE_IDS_LINE, NEW_AFFECT_TAIL]) {
+    assert.equal(legacyJudge.developer.split(segment).length, 2, "Each declared segment appears once in the source-less judge prompt.");
+  }
+  assert.equal(legacyJudge.developer.includes("in its own words"), false, "The ambiguous own-words requirement is replaced, not supplemented.");
+  // 6b57b08 prior-pause prompt (developer sha256 902c41dd…) = the source-less prompt minus the current-refusal rule.
+  const UNIFIED_FIX_PRIOR_PAUSE_DEVELOPER_SHA256 = "902c41dd0df3a404d7c2acf98b0f4c1872ee878ff3629b4b762d35f921c831f0";
+  assert.equal(sha256Of(legacyJudge.developer.replace(JUDGE_CURRENT_REFUSAL_RULE, "")), UNIFIED_FIX_PRIOR_PAUSE_DEVELOPER_SHA256);
+  const JUDGE_PRIOR_PAUSE_OBSERVED_RULE = " When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling and need not repeat an earlier agreement; how the reply does so is reported in priorPauseObservation, defined below.";
+  const pausedJudge = await judgeMessagesFor(pausedThenLow, "我今天有点不太高兴");
+  const observationLine = pausedJudge.developer.split("\n").find((line) => line.startsWith("priorPauseObservation, for respect_declined_sharing"));
+  assert(observationLine, "A prior pause asks for the observation fields.");
+  assert.equal(
+    pausedJudge.developer,
+    legacyJudge.developer
+      .replace(JUDGE_CURRENT_REFUSAL_RULE, "")
+      .replace(JUDGE_PRIOR_PAUSE_RULE, JUDGE_PRIOR_PAUSE_OBSERVED_RULE)
+      .replace(JUDGE_PRIOR_PAUSE_NOT_SATISFIED, "")
+      .replace(PAUSE_RULE_IDS_LINE, `\n${observationLine}`),
+    "A prior pause replaces only the declared prior-pause segments with the observation definitions."
+  );
+  assert.equal(legacyJudge.raw.split(NEW_CURRENT_REFUSAL_RULE).length, 2, "The source-less prompt carries the stated-boundary rule.");
+  assert.equal(pausedJudge.raw.includes(NEW_CURRENT_REFUSAL_RULE), false, "The prior-pause branch carries no current-refusal rule.");
+  for (const removed of [JUDGE_PRIOR_PAUSE_RULE, JUDGE_PRIOR_PAUSE_NOT_SATISFIED, PAUSE_RULE_IDS_LINE, JUDGE_CURRENT_REFUSAL_RULE]) {
+    assert.equal(pausedJudge.developer.includes(removed), false, "The prior-pause verdict text is not also left for the overall status.");
+  }
+  for (const observed of [
+    "restates_or_paraphrases when the reply restates or paraphrases the feeling the User stated",
+    "observe candidateReply as a whole and report each field independently; a part that responds well never excuses another part",
+    "affectDrift applies ES-AFFECT-EVIDENCE to the whole reply",
+    "never use a missing feeling response, a receipt, the Assistant's own feeling, affect drift, advice, or an invitation, question, or request to set positiveFunction.status",
+    "report all four even when status already fails",
+  ]) {
+    assert(observationLine.includes(observed), `Observation definition: ${observed}`);
+  }
+  assert(pausedJudge.developer.includes(NEW_AFFECT_TAIL), "ES-AFFECT-EVIDENCE itself is unchanged for the observation to apply.");
+  const pausedUser = JSON.parse(pausedJudge.user);
+  const legacyUser = JSON.parse(legacyJudge.user);
+  assert.deepEqual(Object.keys(pausedUser.outputSchema.positiveFunction.priorPauseObservation), [
+    "feelingResponse", "affectDrift", "suggestsUserAction", "invitesOrAsks",
+  ]);
+  delete pausedUser.outputSchema.positiveFunction.priorPauseObservation;
+  assert.deepEqual(pausedUser, legacyUser, "Only the observation schema is added to the judge data; the source is not sent.");
+  assert.equal(pausedJudge.user.includes("declinedSharingSource"), false);
+  const currentRefusalPlans: Array<[ResponsePlan, string]> = [
+    [build({ userMessage: "我有点难受，但不想说" }).responsePlan, "我有点难受，但不想说"],
+    [build({ userMessage: "我不太高兴，不想被问" }).responsePlan, "我不太高兴，不想被问"],
+    [
+      build({
+        userMessage: "我有点难受，但不想说",
+        recentMessages: [
+          { id: "pause-user", role: "user", content: "先别问了" },
+          { id: "pause-assistant", role: "assistant", content: "好，不问了。" },
+        ],
+      }).responsePlan,
+      "我有点难受，但不想说",
+    ],
+  ];
+  for (const [plan, currentUserText] of currentRefusalPlans) {
+    assert.equal(declinedSharingSourceOf(plan), "current_turn");
+    const currentJudge = await judgeMessagesFor(plan, currentUserText);
+    assert.equal(
+      currentJudge.developer,
+      legacyJudge.developer.replace(JUDGE_PRIOR_PAUSE_RULE, "").replace(JUDGE_PRIOR_PAUSE_NOT_SATISFIED, "").replace(PAUSE_RULE_IDS_LINE, ""),
+      "A current refusal drops only the prior-pause rule, its not-satisfied item, and the prior-pause rule ids."
+    );
+    assert.equal(
+      sha256Of(currentJudge.developer.replace(NEW_AFFECT_TAIL, OLD_AFFECT_TAIL)),
+      SOURCE_BRANCH_DEVELOPER_SHA256.current_turn,
+      "For a current refusal, the shared ES-AFFECT-EVIDENCE tail is the only change in this slice."
+    );
+    assert(currentJudge.developer.includes(NEW_AFFECT_TAIL), "The shared intensity rule also governs current refusals.");
+    for (const priorPauseWording of [
+      "states a feeling but no refusal",
+      "used in place of responding to a feeling stated without a refusal",
+      "followed only by a companionship or listening statement",
+      "ES-PAUSE-",
+      "repeating the User's own feeling words",
+      "priorPauseObservation",
+    ]) {
+      assert.equal(currentJudge.developer.includes(priorPauseWording), false, `A current refusal judge prompt carries no prior-pause requirement: ${priorPauseWording}`);
+    }
+    assert(currentJudge.developer.includes(JUDGE_CURRENT_REFUSAL_RULE));
+    assert.equal(currentJudge.raw.split(NEW_CURRENT_REFUSAL_RULE).length, 2, "A current refusal is judged by the stated-boundary rule.");
+    assert(
+      currentJudge.raw.indexOf(NEW_CURRENT_REFUSAL_RULE) < currentJudge.raw.indexOf("For respect_declined_sharing, the following are not satisfied:"),
+      "The not-satisfied list the current-refusal rule defers to follows it."
+    );
+    assert.equal(currentJudge.user.includes("declinedSharingSource"), false);
+    assert.equal(currentJudge.user.includes("priorPauseObservation"), false, "A current refusal carries no prior-pause observation.");
+    assert.equal(currentJudge.sent.split(OBSERVED_CURRENT_REFUSAL_RULE).length, 2, "A current refusal reports its boundary response as observations.");
+    assert.equal(
+      sha256Of(currentJudge.sent.replace(
+        currentJudge.observationLine!,
+        STEP3_DEFINITION_REVERTS.reduce((line, [now, before]) => {
+          assert.equal(line.split(now).length, 2, `Definition edit appears once: ${now.slice(0, 60)}`);
+          return line.replace(now, before);
+        }, currentJudge.observationLine!)
+      )),
+      "9ad0869160ce091fc1ee97d5c2f79c10036df4cdb9ff5e0328c3647ea68f5f03",
+      "Restoring the relocated clauses and the step-3 observation definition rebuilds the prompt V1 ran on at 589ea09."
+    );
+    assert.equal(currentJudge.sent.includes(NEW_CURRENT_REFUSAL_RULE), false, "The observed rule replaces the overall-verdict completion rule.");
+    assert(currentJudge.observationLine?.startsWith("currentRefusalObservation, for respect_declined_sharing"));
+    for (const observed of [
+      "against the boundary the User actually stated (declining to talk, or declining to be asked)",
+      "Responding to the boundary alone or to the feeling alone is enough for this field",
+      "when the User declined only to be asked, saying that the User will not talk or that the matter will not be talked about is yes, while agreeing not to ask is no",
+      "when the User declined to talk, accepting not talking for now is no",
+      "whether attributed to the User, phrased impersonally as a quality of the situation",
+      "report all five even when status already fails",
+    ]) {
+      assert(currentJudge.observationLine?.includes(observed), `Current-refusal observation definition: ${observed}`);
+    }
+    assert.deepEqual(Object.keys(JSON.parse(currentJudge.user).outputSchema.positiveFunction.currentRefusalObservation), [
+      "refusalResponse", "feelingAsReason", "decidesForUser", "affectDrift", "invitesOrAsks",
+    ]);
+    for (const judge of [currentJudge, pausedJudge]) {
+      for (const shared of [
+        "affect category/intensity/object drift",
+        "ES-AFFECT-EVIDENCE: every emotion category the candidate names or implies must be evidenced in currentUserText.",
+        "at the same or lower intensity",
+        "respect_declined_sharing applies when the User declined to talk or to be asked",
+        "One statement of listening or brief in-conversation companionship that requires no response",
+        "any invitation, question, or request, including asking the User to tell the Assistant later",
+        "claiming physical or offline company; or ending the conversation.",
+        "ES-SCOPE:",
+        "A later clause that recommends a preferred focus",
+      ]) {
+        assert(judge.developer.includes(shared), `Branch selection keeps shared judge rule: ${shared}`);
+      }
+    }
+  }
+  const inviteNoHistory = build({ userMessage: "我今天有点不太高兴" }).responsePlan;
+  assert.notEqual(supportFunctionOf(inviteNoHistory), "respect_declined_sharing");
+  const inviteJudge = await judgeMessagesFor(inviteNoHistory, "我今天有点不太高兴");
+  assert.equal(
+    sha256Of(revertDeclaredSegments(inviteJudge.developer)),
+    V38_JUDGE_DEVELOPER_SHA256,
+    "Other support functions see only the declared changes, including the shared intensity rule."
+  );
+  assert(inviteJudge.developer.includes(NEW_AFFECT_TAIL));
+  assert(inviteJudge.observationLine?.startsWith("invitationObservation, for invite_optional_sharing"));
+  for (const observed of [
+    "asking what happened is then allowed and is not soliciting a cause or account",
+    "stated_event_as_unknown when currentUserText already states an event",
+    "a feeling alone is not an event",
+    "report all three even when status already fails",
+  ]) {
+    assert(inviteJudge.observationLine?.includes(observed), `Invitation observation definition: ${observed}`);
+  }
+  assert.deepEqual(Object.keys(JSON.parse(inviteJudge.user).outputSchema.positiveFunction.invitationObservation), [
+    "invitationCount", "invitationTarget", "affectDrift",
+  ]);
+  const relationalPlan = build({ userMessage: "你一点都不懂我" }).responsePlan;
+  assert.equal(supportFunctionOf(relationalPlan), "acknowledge_current_relational_impact");
+  const relationalJudge = await judgeMessagesFor(relationalPlan, "你一点都不懂我");
+  assert.equal(sha256Of(revertDeclaredSegments(relationalJudge.developer)), V38_JUDGE_DEVELOPER_SHA256);
+  assert(relationalJudge.observationLine?.startsWith("affectObservation, for acknowledge_current_relational_impact"));
+  assert(relationalJudge.observationLine?.includes("including ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, and ES-ACK-NO-FABRICATION"));
+  assert.deepEqual(Object.keys(JSON.parse(relationalJudge.user).outputSchema.positiveFunction.affectObservation), ["affectDrift"]);
+  assert.equal(legacyJudge.observationLine, null, "Source-less respect fixtures keep the overall verdict alone.");
+  assert.equal(pausedJudge.observationLine, null, "The prior pause keeps its own observation, unchanged.");
+  const amountPlan = build({ userMessage: "我有点难过，但说不清" }).responsePlan;
+  const amountFunction = supportFunctionOf(amountPlan);
+  if (amountFunction && !["invite_optional_sharing", "acknowledge_current_relational_impact", "respect_declined_sharing"].includes(amountFunction)) {
+    const amountJudge = await judgeMessagesFor(amountPlan, "我有点难过，但说不清");
+    assert.equal(amountJudge.observationLine, null, `${amountFunction} keeps the overall verdict alone.`);
+    assert.equal(sha256Of(revertDeclaredSegments(amountJudge.developer)), V38_JUDGE_DEVELOPER_SHA256);
+  } else {
+    assert.fail(`Fixture must reach a support function without observations, got ${amountFunction}.`);
+  }
+  // Every relocated requirement is restated where its observation decides it, so nothing is dropped.
+  assert.deepEqual(new Set(relocationProofs.map((proof) => proof.prefix)), new Set(Object.keys(RELOCATED)), "Each observed kind was proven.");
+  const AFFECT_COVERAGE = [
+    "stronger_intensity when any part describes the feeling or the User's situation as heavier, more painful, or harder to bear than stated",
+    "even when the valence matches",
+    "phrased impersonally as a quality of the situation (this is X, that makes one feel X, anyone would feel X)",
+    "presented as the Assistant's characterization of the relational impact",
+    "rendering not happy as not feeling good",
+    "describing the reported relational situation without adding an emotion",
+    "not by word lists",
+  ];
+  const RELOCATION_COVERAGE: Record<string, string[]> = {
+    "currentRefusalObservation, for ": [
+      ...AFFECT_COVERAGE,
+      "receipt_only when it gives only a receipt",
+      "Responding to the boundary alone or to the feeling alone is enough for this field; restating the feeling word is not required",
+      "feelingAsReason: yes when any part makes the User's feeling itself the reason or condition for not talking or not sharing, whether as advice, a rule, or a permission",
+      "decidesForUser: yes when any part decides for the User, beyond the boundary they stated",
+      "including asking the User to tell the Assistant later, asking about a cause, event, or topic, or offering options of what to talk about",
+      "naming content only to release the User from providing it",
+    ],
+    "invitationObservation, for ": [
+      ...AFFECT_COVERAGE,
+      "none when the reply contains no invitation",
+      "more_than_one when it contains more than one invitation or question",
+      "asking what happened is then allowed",
+      "more_about_stated_event when it invites the User, if they want, to say more about an event currentUserText already states",
+      "stated_event_as_unknown when currentUserText already states an event",
+      "cause_or_why when it asks why or for the cause",
+      "details_or_account when it asks for specific details, the sequence of events, who, when, or where, or a full account",
+      "guessed_cause_or_event when it guesses or suggests a cause or event",
+      "other_topic when it offers an unspecified alternative or another topic",
+      "a phrase that points back to a moment or situation the User already stated refers to stated content",
+      "Any option or permission the reply offers about what to say counts as an invitation",
+      "naming content only to release the User from providing it",
+      "the reply naturally acknowledges the feeling the User stated, any invitation is gentle, easy to decline, and does not make continuing feel required",
+    ],
+    "affectObservation, for ": AFFECT_COVERAGE,
+  };
+  for (const { prefix, sent } of relocationProofs) {
+    const observationLine = sent.split("\n").find((line) => line.startsWith(prefix))!;
+    for (const covered of RELOCATION_COVERAGE[prefix]) {
+      assert(observationLine.includes(covered), `${prefix}: relocated requirement is restated: ${covered}`);
+    }
+  }
+  for (const unchanged of [legacyJudge, pausedJudge]) {
+    for (const dropped of ["ES-AFFECT-EVIDENCE: ", "ES-SCOPE: ", "ES-SCOPE exception for invite_optional_sharing only: "]) {
+      assert(unchanged.actual.split("\n").some((line) => line.startsWith(dropped)), `Unobserved prompts keep ${dropped}`);
+    }
+  }
+  const refusalAfterPause = build({
+    userMessage: "我有点难受，但不想说",
+    recentMessages: [
+      { id: "pause-user", role: "user", content: "先别问了" },
+      { id: "pause-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+  }).responsePlan;
+  assert.equal(supportFunctionOf(refusalAfterPause), "respect_declined_sharing");
+  assert.equal(declinedSharingSourceOf(refusalAfterPause), "current_turn", "A current refusal takes precedence over an earlier pause.");
+  const refusalAfterPausePrompt = formatResponsePlanForPrompt(refusalAfterPause);
+  assert(refusalAfterPausePrompt.includes("If the user says they do not want to talk about it"));
+  assert.equal(refusalAfterPausePrompt.includes("already agreed in an earlier turn"), false);
+  const pausedReference = validateResponsePlanOutput({ plan: pausedThenLow, reply: "今天有点不好受啊，陪你安静一会儿。" });
+  assert.equal(
+    pausedReference.passed,
+    true,
+    `The approved prior-pause tone must not be blocked by deterministic validation: ${pausedReference.failureReasons.join(",")}`
+  );
+  const reopenedAfterPause = build({
+    userMessage: "你问吧，我今天有点不太高兴",
+    recentMessages: [
+      { id: "reopen-user", role: "user", content: "先别问了" },
+      { id: "reopen-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+  }).responsePlan;
+  assert.equal(
+    supportFunctionOf(reopenedAfterPause),
+    "invite_optional_sharing",
+    "An explicit reopen restores the optional invitation."
+  );
+  assert.equal(reopenedAfterPause.questionPolicy.mode, "optional_after_answer");
+  assert.equal(declinedSharingSourceOf(reopenedAfterPause), undefined, "An explicit reopen carries no refusal source.");
+  const reopenedPrompt = formatResponsePlanForPrompt(reopenedAfterPause);
+  assert(reopenedPrompt.includes("at most one gentle invitation the user can easily decline"));
+  assert.equal(reopenedPrompt.includes("Do not invite them to talk again"), false, "An explicit reopen carries no refusal constraints.");
+  const afterPause = (userMessage: string) => build({
+    userMessage,
+    recentMessages: [
+      { id: "reopen-user", role: "user", content: "先别问了" },
+      { id: "reopen-assistant", role: "assistant", content: "好，不问了。" },
+    ],
+  }).responsePlan;
+  for (const userMessage of [
+    "其实我想说说，今天有点不太高兴",
+    "现在可以问了，我今天有点不太高兴",
+    "我想聊聊了，心里有点堵",
+    "我愿意讲讲。心里有点堵",
+  ]) {
+    const plan = afterPause(userMessage);
+    assert.equal(supportFunctionOf(plan), "invite_optional_sharing", `A current, explicit willingness or permission reopens: ${userMessage}`);
+    assert.equal(plan.questionPolicy.mode, "optional_after_answer", userMessage);
+    assert.equal(declinedSharingSourceOf(plan), undefined, userMessage);
+  }
+  for (const userMessage of [
+    "他想说说，我有点烦",
+    "她跟我说“我想聊聊了”，我有点烦",
+    "他说，我想聊聊了，我有点烦",
+    "等我想说了再告诉你，现在有点难受",
+    "明天再聊吧，有点累",
+    "现在可以问吗？我有点难受",
+    "想说又说不出来，心里有点堵",
+  ]) {
+    const plan = afterPause(userMessage);
+    assert.equal(supportFunctionOf(plan), "respect_declined_sharing", `Third person, quotes, conditions, future, questions, and negation keep the pause: ${userMessage}`);
+    assert.equal(plan.questionPolicy.mode, "none", userMessage);
+    assert.equal(declinedSharingSourceOf(plan), "previous_user_turn", userMessage);
+  }
+  const willingButDeclinesQuestions = afterPause("我想说说，但别问我，有点难受");
+  assert.equal(supportFunctionOf(willingButDeclinesQuestions), "respect_declined_sharing");
+  assert.equal(declinedSharingSourceOf(willingButDeclinesQuestions), "current_turn", "A refusal in the same turn outranks a stated willingness.");
+  assert.equal(willingButDeclinesQuestions.questionPolicy.mode, "none");
+  for (const history of [
+    [{ id: "pause-user", role: "user" as const, content: "先别问了" }, { id: "pause-assistant", role: "assistant" as const, content: "好，不问了。" }],
+    [{ id: "close-user", role: "user" as const, content: "不想说了" }, { id: "close-assistant", role: "assistant" as const, content: "好。" }],
+  ]) {
+    const willingWithoutTopic = build({ userMessage: "我想聊聊了，但不知道说什么", recentMessages: history });
+    assert.equal(willingWithoutTopic.context.interaction.stopIntent, false, "A current willingness to talk lifts the pause even without a topic.");
+    assert.equal(willingWithoutTopic.responsePlan.responseActions.includes("respect_pause"), false);
+    assert.notEqual(willingWithoutTopic.responsePlan.questionPolicy.mode, "none");
+    const noTopicOnly = build({ userMessage: "不知道说什么", recentMessages: history });
+    assert.equal(noTopicOnly.context.interaction.stopIntent, true, "Without a stated willingness, no topic keeps the earlier pause.");
+  }
+  for (const userMessage of ["我不想说", "别问我", "不想被问", "我想说说，但别问我", "不是不想说，是不想被问"]) {
+    for (const recentMessages of [[], [
+      { id: "pause-user", role: "user" as const, content: "先别问了" },
+      { id: "pause-assistant", role: "assistant" as const, content: "好，不问了。" },
+    ]]) {
+      const { context, responsePlan } = build({ userMessage, recentMessages });
+      assert.equal(context.interaction.affect === "negative", false, userMessage);
+      assert.equal(responsePlan.questionPolicy.mode, "none", `A refusal holds without emotional evidence: ${userMessage}`);
+      assert.equal(responsePlan.responseActions.includes("respect_pause"), false, userMessage);
+      assert.equal(
+        responsePlan.responseActions.includes("invite_low_pressure_calibration"),
+        false,
+        `A refusal selects no move that requires a question: ${userMessage}`
+      );
+    }
+  }
+  assert(
+    build({ userMessage: "我不想说" }).responsePlan.responseActions.includes("offer_neutral_conversation_entry"),
+    "A refusal without a no-questions boundary still uses the no-question ordinary entry."
+  );
+  const notKnowingWhatToSay = build({ userMessage: "我不知道说什么" }).responsePlan;
+  assert.notEqual(notKnowingWhatToSay.questionPolicy.mode, "none", "Not knowing what to say is not a refusal.");
+  const refusalWithQuestion = build({ userMessage: "我不想说，你是AI吗？" }).responsePlan;
+  assert(refusalWithQuestion.responseActions.includes("answer_directly"), "A refusal does not cancel the answer to the user's question.");
+  assert.equal(refusalWithQuestion.answerObligations.length, 1);
+  assert.equal(refusalWithQuestion.questionPolicy.mode, "none");
+  assert.equal(supportFunctionOf(build({ userMessage: "也不是不想说，就是心里有点堵" }).responsePlan), "invite_optional_sharing", "A negated refusal is not a refusal.");
+  for (const userMessage of ["他说他不想说，我有点难过", "朋友回我“不想说”，我有点难过"]) {
+    assert.equal(supportFunctionOf(build({ userMessage }).responsePlan), "invite_optional_sharing", `Someone else's refusal is not the user's: ${userMessage}`);
+  }
+  assert.notEqual(build({ userMessage: "他说他不想说" }).responsePlan.questionPolicy.mode, "none", "A reported refusal does not remove questions.");
+  // Noun subjects are classified by form (possessed noun phrase, or a bare noun before a passive refusal),
+  // so the cases below use nouns that appear nowhere in the classifier.
+  const stateOf = (userMessage: string) => determineConversationState({ currentUserMessage: userMessage, recentMessages: [] });
+  for (const userMessage of [
+    "我朋友不想说", "我妈不想聊这个", "同事不想被问", "我朋友不聊了", "我的室友不想说", "她表哥不想聊",
+    "那个邻居不想被问", "我搭档今天也不想说", "我师兄说，不想说了", "我老板别问了",
+  ]) {
+    const plan = build({ userMessage }).responsePlan;
+    assert.notEqual(plan.questionPolicy.mode, "none", `A noun-subject refusal is not the user's: ${userMessage}`);
+    assert.equal(stateOf(userMessage).interaction?.stopIntent, false, `A noun-subject closing is not the user's stop: ${userMessage}`);
+  }
+  assert.equal(supportFunctionOf(build({ userMessage: "我朋友不想说，我有点难过" }).responsePlan), "invite_optional_sharing");
+  for (const userMessage of [
+    "我真不想说", "我啥也不想说", "我心情不好不想说", "有点烦不想说", "累了不想聊", "这件事不想说", "工作的事我不想聊",
+    "我朋友的事不想说", "工作不想聊", "老实说，不想说", "我说，不想说了", "你别问了",
+  ]) {
+    assert.equal(build({ userMessage }).responsePlan.questionPolicy.mode, "none", `The user's own refusal still removes questions: ${userMessage}`);
+  }
+  for (const userMessage of ["我们不聊了", "你别问了", "我说，不想说了"]) {
+    assert.equal(stateOf(userMessage).interaction?.stopIntent, true, `The user's own closing still stops: ${userMessage}`);
+  }
+  assert(!build({ userMessage: "如果我不想说，你会生气吗？" }).responsePlan.questionPolicy.reason.includes("declined"), "A hypothetical refusal is not a refusal.");
+  const neutralAfterPause = afterPause("今天吃了火锅");
+  assert.equal(neutralAfterPause.questionPolicy.mode, "none", "An earlier refusal still holds for a following turn without emotional evidence.");
+  assert.equal(afterPause("你问吧").questionPolicy.mode, "one_low_pressure_question", "The existing reopen phrase keeps its behavior.");
+  const noTalkAfterInvite = build({
+    userMessage: "我还是有点不太高兴",
+    recentMessages: [
+      { id: "earlier-user", role: "user", content: "我不想聊这个" },
+      { id: "earlier-assistant", role: "assistant", content: "好的。" },
+    ],
+  }).responsePlan;
+  assert.equal(supportFunctionOf(noTalkAfterInvite), "respect_declined_sharing", "A prior refusal to talk carries into the next turn.");
+  assert.equal(declinedSharingSourceOf(noTalkAfterInvite), "previous_user_turn");
+  const answeredAssistantQuestion = build({
+    userMessage: "有点不太高兴",
+    recentMessages: [{
+      id: "answer-target",
+      role: "assistant",
+      content: "你今天过得怎么样？",
+      committedAssistantMove: committedMove({ purpose: ["take_light_topic_initiative"], question: true, sourceTurnId: "answer-target" }),
+    }],
+  }).responsePlan;
+  if (answeredAssistantQuestion.questionPolicy.mode === "none") {
+    assert.equal(
+      supportFunctionOf(answeredAssistantQuestion),
+      "return_amount_control",
+      "A plan whose question policy is none must not carry an invitation function."
+    );
+    assert(answeredAssistantQuestion.positiveFunctionContract?.evidence.includes("sharingInvitationUnavailable=question_policy_none"));
+  }
+  const validatorSource = readFileSync("services/ai/plannedFunctionSemanticValidator.ts", "utf8");
+  assert(validatorSource.includes("ES-SCOPE exception for invite_optional_sharing only"));
+  assert(validatorSource.includes("asking what happened as though it were unknown"));
+  assert(validatorSource.includes("is restating, not drift"));
+  assert(validatorSource.includes("A stated negative feeling does not support any stronger negative description"));
+  assert(validatorSource.includes("Judge the intensity or burden the reply actually adds, not only whether its valence agrees"));
+  assert(validatorSource.includes("respect_declined_sharing applies when the User declined to talk or to be asked, in currentUserText or in an earlier turn"));
+  assert(validatorSource.includes("restating the feeling word is not required"));
+  assert(validatorSource.includes("is this function itself, not a pause or closure that undoes support"));
+  assert(validatorSource.includes("When currentUserText states a feeling but no refusal (the refusal came from an earlier turn), the reply must naturally respond to that feeling"));
+  assert(validatorSource.includes("A receipt (for example 嗯 or 听到了) followed only by a companionship or listening statement, with no response to the current feeling, does not respond to it, however the companionship is worded"));
+  assert(validatorSource.includes("including a receipt followed only by companionship or listening"));
+  assert(validatorSource.includes("One statement of listening or brief in-conversation companionship that requires no response"));
+  assert(validatorSource.includes("a bare receipt that responds to neither the stated feeling nor the stated boundary"));
+  assert(validatorSource.includes("including asking the User to tell the Assistant later"));
+  assert(validatorSource.includes("presenting the feeling as the reason the User should not talk"));
+  assert(validatorSource.includes("deciding for the User that they will not share anything further"));
+  assert(validatorSource.includes("claiming physical or offline company"));
+  assert.equal(validatorSource.includes("when to say something (including saying it later)"), false);
   const candidate6FailureReplays = [
     {
       userMessage: "我今天有点不太高兴",
@@ -674,12 +1552,69 @@ const run = async () => {
   const emotionSurfacePrompt = formatResponsePlanForPrompt(emotion);
   const multiFocusSurfacePrompt = formatResponsePlanForPrompt(multiFocusEmotion);
   const repairSurfacePrompt = formatResponsePlanForPrompt(repair);
+  const amountSurfacePrompt = formatResponsePlanForPrompt(amountControlEmotion);
   assert(emotionSurfacePrompt.includes("Complete exactly the selected ordinary support function"));
-  assert(emotionSurfacePrompt.includes("return_amount_control"));
-  assert(emotionSurfacePrompt.includes("do not turn it into a question"));
+  assert(emotionSurfacePrompt.includes("invite_optional_sharing"));
+  assert(emotionSurfacePrompt.includes("at most one gentle invitation the user can easily decline"));
+  assert(emotionSurfacePrompt.includes("Do not ask why, for the cause, for specific details, for the sequence of events"));
+  assert(emotionSurfacePrompt.includes("does not require talking about control, how much to say, or which part"));
+  assert.equal(emotionSurfacePrompt.includes("grants that control"), false);
+  assert.equal(emotionSurfacePrompt.includes("do not turn it into a question"), false);
+  assert(amountSurfacePrompt.includes("return_amount_control"));
+  assert(amountSurfacePrompt.includes("do not turn it into a question"));
+  assert(amountSurfacePrompt.includes("grants that control"));
+  assert.equal(amountSurfacePrompt.includes("at most one gentle invitation the user can easily decline"), false);
+  for (const prompt of [emotionSurfacePrompt, amountSurfacePrompt, multiFocusSurfacePrompt]) {
+    assert(prompt.includes("Speak in plain, warm everyday Chinese"));
+  }
   assert(multiFocusSurfacePrompt.includes("return_focus_control"));
   assert(multiFocusSurfacePrompt.includes("without requiring the user to choose or answer"));
   assert(emotionSurfacePrompt.includes("making the user diagnose the assistant's mistake"));
+  assert(emotionSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"));
+  assert.equal(
+    repairSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"),
+    false,
+    "The emotion-label constraint is scoped to emotional-support plans."
+  );
+  const noHistoryRelationalImpact = build({ userMessage: "你一点都不懂我" }).responsePlan;
+  assert.equal(
+    noHistoryRelationalImpact.positiveFunctionContract?.action === "offer_emotional_support"
+      ? noHistoryRelationalImpact.positiveFunctionContract.supportFunction
+      : null,
+    "acknowledge_current_relational_impact"
+  );
+  for (const relationalPlan of [relationalImpactEmotion, noHistoryRelationalImpact]) {
+    const relationalSurfacePrompt = formatResponsePlanForPrompt(relationalPlan);
+    assert(relationalSurfacePrompt.includes("acknowledge_current_relational_impact"));
+    assert.equal(
+      relationalSurfacePrompt.includes("grants that control"),
+      false,
+      "Relational-impact acknowledgement must not be told that granting expression control completes it."
+    );
+    assert(relationalSurfacePrompt.includes("state the information boundary"));
+    assert(
+      relationalSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"),
+      "Relational-impact acknowledgement must not add an unevidenced emotion label."
+    );
+    assert(relationalSurfacePrompt.includes("not focus or amount control"));
+    assert.equal(relationalPlan.questionPolicy.mode, "none", "relational-impact acknowledgement adds no invitation");
+    assert(relationalSurfacePrompt.includes("Do not add any request, whether phrased as a question or a statement"));
+    assert(relationalSurfacePrompt.includes("With no earlier assistant reply, do not invent"));
+    assert.equal(relationalSurfacePrompt.includes("such as how much or how completely to speak"), false);
+  }
+  assert.equal(multiFocusEmotion.questionPolicy.mode, "optional_after_answer");
+  assert.equal(emotion.questionPolicy.mode, "optional_after_answer");
+  const relationalImpactWithQuestion = build({ userMessage: "你一点都不懂我，你到底想说什么？" }).responsePlan;
+  assert.equal(
+    relationalImpactWithQuestion.positiveFunctionContract?.action === "offer_emotional_support"
+      ? relationalImpactWithQuestion.positiveFunctionContract.supportFunction
+      : null,
+    "acknowledge_current_relational_impact"
+  );
+  assert.equal(relationalImpactWithQuestion.questionPolicy.mode, "none");
+  assert(relationalImpactWithQuestion.responseActions.includes("answer_directly"));
+  assert.equal(relationalImpactWithQuestion.answerObligations.length, 1, "question policy none must not drop the current-turn answer obligation");
+  assert(formatResponsePlanForPrompt(relationalImpactWithQuestion).includes("answerObligations: [{"));
   assert(repairSurfacePrompt.includes("Complete the selected repair mode"));
   assert(repairSurfacePrompt.includes("proposition_withdrawal"));
   assert(repairSurfacePrompt.includes("Do not claim the relationship is repaired"));

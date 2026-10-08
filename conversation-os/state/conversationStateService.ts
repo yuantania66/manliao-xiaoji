@@ -50,6 +50,106 @@ export const isNoTopicMessage = (value: string) =>
 
 const EXPLICIT_REOPEN_PATTERN = /你来问吧|你问吧|随便聊点什么都行|随便聊什么都行|你带个头|你先说/;
 
+const SHARING_INVITATION_DECLINE_PATTERN =
+  /(?:不要|别|不想|不用)(?:再)?(?:被)?(?:问|提问|追问)|(?:不要|别)(?:再)?问我|不(?:太)?想(?:说|聊|讲|谈|提)/u;
+
+// A refusal phrase counts only as the user's own refusal. It does not count when directly negated
+// (也不是不想说), quoted, hypothetical, or said by a third person in its clause or a reporting clause.
+// Anything else still counts, so lexical misses lean toward asking less.
+const NEGATED_REFUSAL_LEAD_PATTERN = /(?:不是|并非)$/u;
+const REFUSAL_CLAUSE_BOUNDARY = /[，,。.！!？?；;：:\s]/u;
+const THIRD_PERSON_SUBJECT_LEAD = /^(?:嗯|那|但是?|可是|不过|就是|而且)?(?:他|她|它|别人|人家|有人)/u;
+const HYPOTHETICAL_LEAD = /如果|假如|假使|要是|万一|假设/u;
+const THIRD_PERSON_REPORTING_CLAUSE = /^(?:他|她|它|别人|人家|有人).*(?:说|讲|道|写|问)(?:过|着|了)?$/u;
+
+const isInsideQuote = (before: string) =>
+  (before.match(/“/gu)?.length ?? 0) > (before.match(/”/gu)?.length ?? 0) ||
+  (before.match(/「/gu)?.length ?? 0) > (before.match(/」/gu)?.length ?? 0) ||
+  (before.match(/"/gu)?.length ?? 0) % 2 === 1;
+
+// Noun subjects are recognized by grammatical form, not by a list of nouns. After discourse leads,
+// trailing adverbials, and a reporting verb are removed, the subject slot names someone else only when
+// it is a possessed noun phrase (我朋友, 我的同事, 她男朋友), or a bare noun phrase that is the experiencer
+// of a passive refusal (同事不想被问). An empty slot, a first-person tail, a predicate (affect evidence or
+// an aspect/degree marker), or a topic (这件事, 工作的事) keeps the refusal the user's own. A bare noun
+// without a passive stays the user's own because it may be a fronted topic (工作不想聊).
+const SUBJECT_SLOT_DISCOURSE_LEAD = /^(?:嗯|那|但是?|可是|不过|就是|而且|反正|所以|其实)+/u;
+const SUBJECT_SLOT_TRAILING_WORD =
+  /(?:真的|实在|确实|其实|就是|还是|根本|压根|完全|一点也|一点都|什么也|什么都|啥也|啥都|暂时|暂且|目前|现在|此刻|今天|今晚|晚上|早上|这会儿?|这两天|这几天|最近|已经|一直|可能|好像|大概|估计|应该|有点|有些|也|都|还|就|才|偏|又|再|先|却|倒|并|真|是|(?:说|讲|道|写|问)(?:过|着|了)?)$/u;
+const SUBJECT_SLOT_FIRST_PERSON_TAIL = /(?:我|我们|咱们|咱|自己)$/u;
+const SUBJECT_SLOT_PREDICATE_MARKER = /了|着|很|挺|特别|非常|没|不/u;
+const SUBJECT_SLOT_TOPIC_MARKER = /(?:的|这|那|件|种|些|个)事|事情|事儿|的话|关于|对于|至于|(?:这|那)(?:个|些)$/u;
+const SUBJECT_SLOT_POSSESSOR = /^(?:我们|你们|他们|她们|我|你|他|她)的?(?=.)/u;
+
+const subjectSlotOf = (lead: string) => {
+  let slot = lead.replace(SUBJECT_SLOT_DISCOURSE_LEAD, "");
+  for (let next = slot.replace(SUBJECT_SLOT_TRAILING_WORD, ""); next !== slot; next = slot.replace(SUBJECT_SLOT_TRAILING_WORD, "")) {
+    slot = next;
+  }
+  return slot;
+};
+
+const subjectSlotNamesSomeoneElse = (lead: string, passive: boolean) => {
+  const slot = subjectSlotOf(lead);
+  if (!slot || SUBJECT_SLOT_FIRST_PERSON_TAIL.test(slot)) return false;
+  if (SUBJECT_SLOT_PREDICATE_MARKER.test(slot) || SUBJECT_SLOT_TOPIC_MARKER.test(slot) || extractAffectEvidence(slot).length > 0) {
+    return false;
+  }
+  return SUBJECT_SLOT_POSSESSOR.test(slot) || passive;
+};
+
+const isUsersOwnRefusalAt = (text: string, index: number, matched: string) => {
+  const before = text.slice(0, index);
+  if (NEGATED_REFUSAL_LEAD_PATTERN.test(before) || isInsideQuote(before)) return false;
+  const clauses = before.split(REFUSAL_CLAUSE_BOUNDARY);
+  const lead = clauses.at(-1) ?? "";
+  if (THIRD_PERSON_SUBJECT_LEAD.test(lead) || HYPOTHETICAL_LEAD.test(lead)) return false;
+  if (subjectSlotNamesSomeoneElse(lead, matched.includes("被"))) return false;
+  const previousClause = clauses.slice(0, -1).filter(Boolean).at(-1) ?? "";
+  if (lead !== "") return true;
+  if (THIRD_PERSON_REPORTING_CLAUSE.test(previousClause)) return false;
+  return !(REPORTED_SPEECH_LEAD_PATTERN.test(previousClause) && subjectSlotNamesSomeoneElse(previousClause, false));
+};
+
+const hasOwnRefusalMatch = (pattern: RegExp, text: string) => {
+  for (const match of text.matchAll(new RegExp(pattern.source, `${pattern.flags}g`))) {
+    if (isUsersOwnRefusalAt(text, match.index, match[0])) return true;
+  }
+  return false;
+};
+
+const closesInteraction = (text: string) => hasOwnRefusalMatch(CLOSING_PATTERN, normalize(text));
+
+export const declinesSharingInvitation = (text: string) => {
+  const normalized = normalize(text);
+  return closesInteraction(normalized) || hasOwnRefusalMatch(SHARING_INVITATION_DECLINE_PATTERN, normalized);
+};
+
+// A whole clause must be the user's own current statement: an optional first-person subject and
+// present-time adverbs, then willingness to talk or permission to be asked, with nothing else.
+// Third persons, quotes, conditions, future times, negation, and questions therefore do not match.
+const CURRENT_WILLINGNESS_TO_TALK_CLAUSE =
+  /^(?:嗯|好吧|好|那){0,2}(?:其实|现在)?我?(?:其实|现在|还是|倒是|也|又|真的)?(?:想|愿意)(?:跟你|和你)?再?(说|聊|讲|谈)(?:\1|一下|一会儿)?(?:了|吧|啦)?$/u;
+const CURRENT_PERMISSION_TO_ASK_CLAUSE =
+  /^(?:嗯|好吧|好|那){0,2}(?:现在)?你?(?:现在)?(?:可以|随便|尽管)再?问我?(?:了|吧|啦)?$/u;
+const CLAUSE_PATTERN = /([^，,。.！!？?；;\s]+)([，,。.！!？?；;\s]*)/gu;
+const REPORTED_SPEECH_LEAD_PATTERN = /(?:说|讲|道|写|问)(?:过|着)?$/u;
+
+const statesCurrentWillingnessOrPermission = (text: string) => {
+  let previousBody = "";
+  for (const [, body, terminator] of text.matchAll(CLAUSE_PATTERN)) {
+    const reportedSpeech = REPORTED_SPEECH_LEAD_PATTERN.test(previousBody);
+    previousBody = body;
+    if (reportedSpeech || /[？?]/u.test(terminator)) continue;
+    if (CURRENT_WILLINGNESS_TO_TALK_CLAUSE.test(body) || CURRENT_PERMISSION_TO_ASK_CLAUSE.test(body)) return true;
+  }
+  return false;
+};
+
+export const reopensInteraction = (text: string) =>
+  EXPLICIT_REOPEN_PATTERN.test(normalize(text)) ||
+  (!declinesSharingInvitation(text) && statesCurrentWillingnessOrPermission(text));
+
 type AffectEvidenceRule = {
   pattern: RegExp;
   category: AffectEvidenceCategory;
@@ -204,10 +304,10 @@ const deriveInteractionSignals = ({
   const previousUserMessage = getLastMessage(recentMessages, "user");
   const respondedToAssistant = recentMessages.at(-1)?.role === "assistant";
   const noTopic = isNoTopicMessage(semanticText);
-  const explicitStop = CLOSING_PATTERN.test(text);
-  const explicitReopen = EXPLICIT_REOPEN_PATTERN.test(text);
+  const explicitStop = closesInteraction(text);
+  const explicitReopen = reopensInteraction(currentUserMessage);
   const priorPauseStillActive =
-    Boolean(previousUserMessage && CLOSING_PATTERN.test(previousUserMessage)) && !explicitReopen;
+    Boolean(previousUserMessage && closesInteraction(previousUserMessage)) && !explicitReopen;
   const immediateAssistantInvited = Boolean(
     previousAssistantMessage && ASSISTANT_SHARING_INVITATION_PATTERN.test(previousAssistantMessage)
   );
@@ -274,7 +374,7 @@ export const determineConversationState = ({
   const turnCount = recentMessages.length + 1;
   const previousAssistantReply = hasPreviousAssistantReply(recentMessages);
   const explicitAdviceRequest = ADVICE_REQUEST_PATTERN.test(text);
-  const explicitClosingSignal = CLOSING_PATTERN.test(text);
+  const explicitClosingSignal = closesInteraction(text);
   const sustainedUserDisclosure = hasSustainedUserDisclosure(text, recentMessages);
   const interaction = deriveInteractionSignals({ currentUserMessage, recentMessages });
   const signals = {

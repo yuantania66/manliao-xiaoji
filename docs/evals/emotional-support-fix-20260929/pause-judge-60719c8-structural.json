@@ -1,0 +1,1604 @@
+{
+  "note": "Structural copy; replies and evidence text kept locally.",
+  "summary": {
+    "head": "60719c8",
+    "judgeModel": "qwen3.8-max-0902",
+    "cases": 14,
+    "passes": 3,
+    "plannedJudgments": 42,
+    "completedJudgments": 42,
+    "outboundCalls": 42,
+    "outboundCap": 48,
+    "budgetExhausted": false,
+    "stoppedOn": null,
+    "gate": {
+      "complete": true,
+      "positivesAllPass": false,
+      "negativesAllRejectedWithCorrectRule": false,
+      "allConsistent": false,
+      "currentRefusalRegressionPass": false
+    }
+  },
+  "perCase": [
+    {
+      "caseId": "P1-leading-receipt-restate",
+      "group": "pause_positive",
+      "expectedPassed": true,
+      "expectedRule": null,
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 0,
+      "attributionCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ]
+      ]
+    },
+    {
+      "caseId": "P2-restate-company",
+      "group": "pause_positive",
+      "expectedPassed": true,
+      "expectedRule": null,
+      "judged": 3,
+      "passedCount": 1,
+      "verdictCorrect": 1,
+      "attributionCorrect": 3,
+      "consistent": false,
+      "ruleIds": [
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [],
+        [
+          "ES-PAUSE-FEELING"
+        ]
+      ]
+    },
+    {
+      "caseId": "P3-restate-today-company",
+      "group": "pause_positive",
+      "expectedPassed": true,
+      "expectedRule": null,
+      "judged": 3,
+      "passedCount": 1,
+      "verdictCorrect": 1,
+      "attributionCorrect": 3,
+      "consistent": false,
+      "ruleIds": [
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ]
+      ]
+    },
+    {
+      "caseId": "P4-reference",
+      "group": "pause_positive",
+      "expectedPassed": true,
+      "expectedRule": null,
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 3,
+      "attributionCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [],
+        [],
+        [
+          "ES-PAUSE-NO-ACTION"
+        ]
+      ]
+    },
+    {
+      "caseId": "N1-receipt-company-quiet",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "attributionCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ]
+      ]
+    },
+    {
+      "caseId": "N2-receipt-company-then",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "attributionCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ]
+      ]
+    },
+    {
+      "caseId": "N3-receipt-company",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "attributionCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ]
+      ]
+    },
+    {
+      "caseId": "N4-assistant-own-feeling",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "attributionCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ]
+      ]
+    },
+    {
+      "caseId": "N5-action-suggestion",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-NO-ACTION",
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "attributionCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-NO-ACTION"
+        ],
+        [
+          "ES-PAUSE-NO-ACTION"
+        ],
+        [
+          "ES-PAUSE-NO-ACTION"
+        ]
+      ]
+    },
+    {
+      "caseId": "I1-intensified",
+      "group": "intensity",
+      "expectedPassed": false,
+      "expectedRule": "ES-AFFECT-EVIDENCE",
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 0,
+      "attributionCorrect": 0,
+      "consistent": true,
+      "ruleIds": [
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "caseId": "R1-declines-talking-boundary",
+      "group": "current_refusal_regression",
+      "expectedPassed": true,
+      "expectedRule": null,
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 3,
+      "attributionCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "caseId": "R2-declines-questions-listening",
+      "group": "current_refusal_regression",
+      "expectedPassed": true,
+      "expectedRule": null,
+      "judged": 3,
+      "passedCount": 1,
+      "verdictCorrect": 1,
+      "attributionCorrect": 3,
+      "consistent": false,
+      "ruleIds": [
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [],
+        [
+          "ES-PAUSE-FEELING"
+        ]
+      ]
+    },
+    {
+      "caseId": "R3-declines-talking-company",
+      "group": "current_refusal_regression",
+      "expectedPassed": true,
+      "expectedRule": null,
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 0,
+      "attributionCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        [
+          "ES-PAUSE-FEELING"
+        ]
+      ]
+    },
+    {
+      "caseId": "R4-declines-questions-available",
+      "group": "current_refusal_regression",
+      "expectedPassed": true,
+      "expectedRule": null,
+      "judged": 3,
+      "passedCount": 2,
+      "verdictCorrect": 2,
+      "attributionCorrect": 3,
+      "consistent": false,
+      "ruleIds": [
+        [],
+        [
+          "ES-PAUSE-FEELING"
+        ],
+        []
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "caseId": "P1-leading-receipt-restate",
+      "group": "pause_positive",
+      "pass": 1,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P2-restate-company",
+      "group": "pause_positive",
+      "pass": 1,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P3-restate-today-company",
+      "group": "pause_positive",
+      "pass": 1,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P4-reference",
+      "group": "pause_positive",
+      "pass": 1,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": []
+          },
+          {
+            "start": 9,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N1-receipt-company-quiet",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N2-receipt-company-then",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-FEELING",
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N3-receipt-company",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N4-assistant-own-feeling",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 28,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N5-action-suggestion",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-NO-ACTION",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-NO-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-PAUSE-NO-ACTION"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "I1-intensified",
+      "group": "intensity",
+      "pass": 1,
+      "expectedPassed": false,
+      "expectedRule": "ES-AFFECT-EVIDENCE",
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": false,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R1-declines-talking-boundary",
+      "group": "current_refusal_regression",
+      "pass": 1,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 15,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R2-declines-questions-listening",
+      "group": "current_refusal_regression",
+      "pass": 1,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R3-declines-talking-company",
+      "group": "current_refusal_regression",
+      "pass": 1,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R4-declines-questions-available",
+      "group": "current_refusal_regression",
+      "pass": 1,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": []
+          },
+          {
+            "start": 7,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P1-leading-receipt-restate",
+      "group": "pause_positive",
+      "pass": 2,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P2-restate-company",
+      "group": "pause_positive",
+      "pass": 2,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": []
+          },
+          {
+            "start": 8,
+            "end": 18,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P3-restate-today-company",
+      "group": "pause_positive",
+      "pass": 2,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P4-reference",
+      "group": "pause_positive",
+      "pass": 2,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 9,
+            "ruleIds": []
+          },
+          {
+            "start": 9,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N1-receipt-company-quiet",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N2-receipt-company-then",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N3-receipt-company",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N4-assistant-own-feeling",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 28,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N5-action-suggestion",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-NO-ACTION",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-NO-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-PAUSE-NO-ACTION"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "I1-intensified",
+      "group": "intensity",
+      "pass": 2,
+      "expectedPassed": false,
+      "expectedRule": "ES-AFFECT-EVIDENCE",
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": false,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R1-declines-talking-boundary",
+      "group": "current_refusal_regression",
+      "pass": 2,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 15,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R2-declines-questions-listening",
+      "group": "current_refusal_regression",
+      "pass": 2,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R3-declines-talking-company",
+      "group": "current_refusal_regression",
+      "pass": 2,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R4-declines-questions-available",
+      "group": "current_refusal_regression",
+      "pass": 2,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P1-leading-receipt-restate",
+      "group": "pause_positive",
+      "pass": 3,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P2-restate-company",
+      "group": "pause_positive",
+      "pass": 3,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P3-restate-today-company",
+      "group": "pause_positive",
+      "pass": 3,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P4-reference",
+      "group": "pause_positive",
+      "pass": 3,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-NO-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": []
+          },
+          {
+            "start": 9,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-NO-ACTION"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N1-receipt-company-quiet",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N2-receipt-company-then",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N3-receipt-company",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N4-assistant-own-feeling",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-FEELING",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 28,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N5-action-suggestion",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "expectedRule": "ES-PAUSE-NO-ACTION",
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-NO-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-PAUSE-NO-ACTION"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "I1-intensified",
+      "group": "intensity",
+      "pass": 3,
+      "expectedPassed": false,
+      "expectedRule": "ES-AFFECT-EVIDENCE",
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": false,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R1-declines-talking-boundary",
+      "group": "current_refusal_regression",
+      "pass": 3,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 15,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R2-declines-questions-listening",
+      "group": "current_refusal_regression",
+      "pass": 3,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R3-declines-talking-company",
+      "group": "current_refusal_regression",
+      "pass": 3,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "verdictCorrect": false,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-FEELING"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-FEELING"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R4-declines-questions-available",
+      "group": "current_refusal_regression",
+      "pass": 3,
+      "expectedPassed": true,
+      "expectedRule": null,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "verdictCorrect": true,
+      "attributionCorrect": true,
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,3230 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "v2-43043b9-rerun",
+  "datasetPath": "clinical-evals/hill-helping-batch1-5-preservation-v2-committed-history.json",
+  "datasetVersion": "hill-helping-batch1-5-preservation-v2-committed-history-2026-09-28",
+  "datasetSha256": "e03a6c365c1fe16ea2279e7b9d084b881352c95eefe83975c17fdb2f305ccf59",
+  "provider": "qwen",
+  "model": "qwen3.7-max",
+  "judgeModel": "qwen3.8-max-0902",
+  "startedAt": "2026-09-30T10:51:52.215Z",
+  "completedAt": "2026-09-30T11:07:06.237Z",
+  "gate": {
+    "runsPerScenario": 3,
+    "scenarioCount": 20,
+    "requiredValidatedRate": 1,
+    "requiredExpectedActionRate": 1,
+    "maximumConstraintFailures": 0,
+    "maximumHelpingProviderCalls": 0,
+    "maximumRegenerationRate": 0.2
+  },
+  "summary": {
+    "total": 60,
+    "validated": 60,
+    "validatedRate": 1,
+    "preflightPassed": 60,
+    "preflightPassedRate": 1,
+    "expectedAction": 60,
+    "expectedActionRate": 1,
+    "constraintFailures": 0,
+    "helpingProviderCalls": 0,
+    "regenerations": 4,
+    "regenerationRate": 0.06666666666666667,
+    "repairAdoptionBySource": {
+      "none:none": 30,
+      "deterministic_correction:proposition_withdrawal": 3,
+      "model_repair:interaction_move_withdrawal": 9,
+      "model_repair:proposition_withdrawal": 9,
+      "model_repair:factual_replacement": 3,
+      "model_move_fit:interaction_move_withdrawal": 6
+    },
+    "executionFailuresByKey": {},
+    "infrastructureRerunEligibleRows": 0,
+    "semanticOutOfScopeRuleCitations": 1
+  },
+  "checks": {
+    "completeRunCount": true,
+    "preflightPassed": true,
+    "validatedRate": true,
+    "expectedActionRate": true,
+    "constraintFailures": true,
+    "helpingProviderCalls": true,
+    "regenerationRate": true
+  },
+  "passed": true,
+  "rows": [
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13831
+    },
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 31
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13332
+    },
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14059
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 20
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 12868
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 27
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13396
+    },
+    {
+      "scenarioId": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 20
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13798
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 27
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13096
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE",
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 26
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13632
+    },
+    {
+      "scenarioId": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 27
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13407
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 26
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15373
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 24
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14387
+    },
+    {
+      "scenarioId": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 22
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14373
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 29
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15150
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 23,
+                "reason": "The candidate validates the evidenced low-intensity worry without adding unevidenced affect, and explicitly returns amount control by stating the user can say as much or as little as they want and does not need to give a full account, matching return_amount_control exactly."
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14126
+    },
+    {
+      "scenarioId": "emotion-future-worry",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13607
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": false,
+          "validationFailures": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "semanticAudit": {
+            "status": "not_satisfied",
+            "containsContradictoryMove": true,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 10,
+                "end": 38
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        },
+        {
+          "attempt": 2,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 39
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 21672
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": false,
+          "validationFailures": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "semanticAudit": {
+            "status": "not_satisfied",
+            "containsContradictoryMove": true,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 10,
+                "end": 42
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        },
+        {
+          "attempt": 2,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 34
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 24718
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 40
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15251
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 30,
+                "reason": "Restates evidenced embarrassment without adding unevidenced affect categories, and explicitly returns amount control by inviting the user to share as much or as little as they wish and releasing them from giving a full account."
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15841
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 29
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15046
+    },
+    {
+      "scenarioId": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 27,
+                "reason": "Restates the evidenced embarrassment without adding unevidenced affect, and explicitly returns amount control by telling the User they may say as much or as little as they wish and need not give a full account."
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15250
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 27
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13668
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 30
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14869
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 27
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14442
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE",
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 26
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14053
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13636
+    },
+    {
+      "scenarioId": "emotion-irritated",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14492
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 1,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15097
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 2,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 20
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 17285
+    },
+    {
+      "scenarioId": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "runIndex": 3,
+      "expectedAction": "offer_emotional_support",
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "behaviorSource": "legacy_compat",
+      "questionPolicy": "optional_after_answer",
+      "repairAdoption": {
+        "status": "none",
+        "adoptedRelation": null,
+        "adoptionSource": "none",
+        "repairMode": null,
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 20
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16582
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": null,
+        "adoptionSource": "deterministic_correction",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 7,
+                "reason": "Owns the Assistant's error from targetTurnId a1"
+              },
+              {
+                "start": 8,
+                "end": 21,
+                "reason": "Completes proposition_withdrawal by explicitly withdrawing the exact rejected proposition that the User was afraid of being denied"
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 6994
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": null,
+        "adoptionSource": "deterministic_correction",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 7,
+                "reason": "Owns the Assistant's error from turn a1, acknowledging the misinterpretation the User corrected"
+              },
+              {
+                "start": 8,
+                "end": 22,
+                "reason": "Completes proposition_withdrawal by explicitly retracting the exact rejected proposition that the User was afraid of being denied"
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 9128
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": null,
+        "adoptionSource": "deterministic_correction",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 7,
+                "reason": "Owns the Assistant's error from targetTurnId a1, acknowledging the misinterpretation the User corrected"
+              },
+              {
+                "start": 8,
+                "end": 21,
+                "reason": "Completes proposition_withdrawal by explicitly withdrawing the exact rejected proposition that the User was afraid of being denied"
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": false,
+      "latencyMs": 7065
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "unsolicited_advice"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 19
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16213
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "unsolicited_advice"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 19
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15590
+    },
+    {
+      "scenarioId": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "unsolicited_advice"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 19
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 17528
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": false,
+          "validationFailures": [
+            "planned_function_semantic:provider_failure"
+          ],
+          "semanticAudit": null,
+          "semanticProviderFailure": {
+            "category": "unknown",
+            "call": "initial"
+          }
+        },
+        {
+          "attempt": 2,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 7,
+                "reason": "Assistant owns the error of using overly strong wording, satisfying the requirement to own the Assistant's error"
+              },
+              {
+                "start": 8,
+                "end": 21
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 20838
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 18
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 19663
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 20
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15753
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "factual_replacement",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 5
+              },
+              {
+                "start": 6,
+                "end": 10
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 17671
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "factual_replacement",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 14
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16227
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "factual_replacement",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 8
+              },
+              {
+                "start": 9,
+                "end": 13
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14455
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "challenges_move_fit",
+        "adoptionSource": "model_move_fit",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "pressure_question"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 20
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13800
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "challenges_move_fit",
+        "adoptionSource": "model_move_fit",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "pressure_question"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 24
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14914
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "challenges_move_fit",
+        "adoptionSource": "model_move_fit",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "pressure_question"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 20
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14538
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "challenges_move_fit",
+        "adoptionSource": "model_move_fit",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "generic_listening"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 26
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15193
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "challenges_move_fit",
+        "adoptionSource": "model_move_fit",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "generic_listening"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm_regenerate",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": true,
+      "generationAttempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": false,
+          "validationFailures": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "semanticAudit": {
+            "status": "not_satisfied",
+            "containsContradictoryMove": true,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [
+              "ES-SCOPE"
+            ],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25,
+                "reason": "The candidate correctly identifies and withdraws the rejected generic-listening move from targetText, owning the error."
+              },
+              {
+                "start": 25,
+                "end": 38
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        },
+        {
+          "attempt": 2,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 21
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 22548
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "challenges_move_fit",
+        "adoptionSource": "model_move_fit",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "generic_listening"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 27
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13569
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 7,
+                "reason": "Owns the Assistant's error in repeating the guilt judgment after the User explicitly rejected it"
+              },
+              {
+                "start": 8,
+                "end": 17
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15260
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 20
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 13755
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 6
+              },
+              {
+                "start": 7,
+                "end": 13,
+                "reason": "Completes proposition_withdrawal by explicitly withdrawing the rejected proposition about guilt and committing not to repeat it"
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15096
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 26
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 20152
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 18
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 18274
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "proposition_withdrawal",
+        "interactionMoveSubtype": null
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 18
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 17640
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "moralizing"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 27,
+                "reason": "Withdraws the exact moralizing interaction move by quoting and disowning it, owns the error of getting the focus wrong matching the User's complaint, and does not repeat or continue the rejected content."
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14529
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "moralizing"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25,
+                "reason": "The candidate explicitly quotes the moralizing interaction move from target turn a1, owns the error by stating it was wrong and that the focus was misplaced, and withdraws the rejected move without repeating or continuing it, fulfilling interaction_move_withdrawal."
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14595
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "moralizing"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 23
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15963
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 1,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "topic_switch"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 15
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 15617
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 2,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "topic_switch"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 15
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 16892
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "runIndex": 3,
+      "expectedAction": "repair_previous_wording",
+      "actualActions": [
+        "repair_previous_wording"
+      ],
+      "behaviorSource": "ordinary_conversation",
+      "questionPolicy": "none",
+      "repairAdoption": {
+        "status": "active",
+        "adoptedRelation": "repairs_previous_move",
+        "adoptionSource": "model_repair",
+        "repairMode": "interaction_move_withdrawal",
+        "interactionMoveSubtype": "topic_switch"
+      },
+      "executionPhase": "VALIDATED",
+      "planPreflightPassed": true,
+      "planPreflightFailures": [],
+      "finalSource": "llm",
+      "validationPassed": true,
+      "validationFailures": [],
+      "regenerateAttempted": false,
+      "generationAttempts": 1,
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationPassed": true,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 15
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "helpingProviderAttempted": false,
+      "interpretationProviderAttempted": true,
+      "latencyMs": 14177
+    }
+  ],
+  "note": "Structural copy of the 43043b9 F rerun after account recharge; texts kept locally."
+}

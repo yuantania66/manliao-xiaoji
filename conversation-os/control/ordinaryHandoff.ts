@@ -37,10 +37,12 @@ export const selectOrdinaryHandoffAction = ({
   context,
   state,
   boundary,
+  questionsDeclined = false,
 }: {
   context: ConversationControlContext;
   state: DialogueState;
   boundary: OrdinaryHandoffBoundary | null;
+  questionsDeclined?: boolean;
 }): ResponseAction | null => {
   if (!boundary || boundary.applicability !== "uncertain" || hasHigherPriorityOwner(state)) return null;
 
@@ -51,13 +53,35 @@ export const selectOrdinaryHandoffAction = ({
 
   if (hasEstablishedThreadEvidence(context)) return "continue_established_thread";
 
-  const previousMove = state.lastCommittedAssistantMove;
-  const questionsForbidden = boundary.userBoundaries.some((item) =>
+  const questionsForbidden = questionsDeclined || boundary.userBoundaries.some((item) =>
     item === "no_questions" || item === "pause" || item === "stop"
   );
-  const previousMoveAlreadyAsked = previousMove?.questionOrRequest?.kind === "question" ||
-    previousMove?.purpose.includes("invite_low_pressure_calibration");
 
-  if (questionsForbidden || previousMoveAlreadyAsked) return "offer_neutral_conversation_entry";
+  if (questionsForbidden || lowInformationWindowAlreadyAsked(context, state)) {
+    return "offer_neutral_conversation_entry";
+  }
   return "invite_low_pressure_calibration";
+};
+
+// Reached only when no adjacent user turn carries sufficient meaning, so the adjacent window is the
+// current low-information stretch. History holds committed Assistant replies only; failed or
+// uncommitted generations never enter it and therefore never count as an asked calibration.
+const lowInformationWindowAlreadyAsked = (
+  context: ConversationControlContext,
+  state: DialogueState
+) => {
+  const previousMove = state.lastCommittedAssistantMove;
+  if (
+    previousMove?.questionOrRequest?.kind === "question" ||
+    previousMove?.purpose.includes("invite_low_pressure_calibration")
+  ) return true;
+  return context.adjacentTurns.some((turn) => {
+    if (turn.role !== "assistant" || turn.status === "blocked") return false;
+    const committed = turn.committedAssistantMove;
+    if (committed) {
+      return committed.questionOrRequest?.kind === "question" ||
+        committed.purpose.includes("invite_low_pressure_calibration");
+    }
+    return /[？?]\s*$/u.test(turn.content);
+  });
 };

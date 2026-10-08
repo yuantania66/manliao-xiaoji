@@ -1,0 +1,6281 @@
+{
+  "note": "Structural copy; synthetic case replies and evidence text kept locally.",
+  "summary": {
+    "head": "c82698f",
+    "judgeModelEnv": "qwen3.7-max",
+    "casesSha256": "684b53d43ef5d61d59bac5ed06d9164ad621d34f1aaf635d948a41aa80be3685",
+    "repetitions": 3,
+    "labeledCases": 32,
+    "ambiguousCases": 0,
+    "judgeCalls": 96,
+    "outcomeMatches": 80,
+    "labeledCalls": 96,
+    "failCitationMatches": 19,
+    "failLabeledCalls": 66,
+    "ruleScopeViolationCalls": 0,
+    "reliableCases": 24,
+    "diagnostics": {
+      "totalModelCalls": 96,
+      "schemaRepairCalls": 0,
+      "formatFailureValidations": 0,
+      "malformedOrEvidenceMismatchValidations": 0,
+      "semanticMisjudgments": 16,
+      "citationMisses": 5,
+      "providerFailures": {},
+      "validationLatencyMs": {
+        "count": 96,
+        "meanMs": 4521,
+        "p50Ms": 4474,
+        "p90Ms": 5267,
+        "maxMs": 6245
+      },
+      "modelCallLatencyMs": {
+        "count": 96,
+        "meanMs": 4521,
+        "p50Ms": 4474,
+        "p90Ms": 5267,
+        "maxMs": 6245
+      },
+      "providerRequests": 96,
+      "requestConfigs": {
+        "model=qwen3.8-max-0902;response_format=json_object;enable_thinking=false;temperature=0": 96
+      },
+      "developerMessageSha256": {
+        "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4": 30,
+        "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b": 30,
+        "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d": 36
+      },
+      "httpStatuses": {
+        "200": 96
+      },
+      "promptTokens": 340431,
+      "completionTokens": 19926,
+      "requestsWithoutUsage": 0
+    },
+    "byCase": {
+      "C2-A2-UNSTATED-DISAPPOINTMENT": {
+        "category": "c2_ruling_fail",
+        "expected": "fail",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "INV-REFERENCE": {
+        "category": "invite_optional_sharing_pass",
+        "expected": "pass",
+        "outcomes": [
+          "fail",
+          "fail",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "INV-STATED-EVENT-REASK": {
+        "category": "invite_optional_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "REF-ASKS": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "R5-PAUSE-COMPANY": {
+        "category": "respect_declined_sharing_pass",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R5-DECLINE-TALK-FEELING-AS-REASON": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "R5-DECLINE-ASK-DECIDES": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "R5-PAUSE-BARE-REPROMISE": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R5-PAUSE-REINVITE": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R6-PAUSE-RECEIPT-COMPANY-1": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R6-PAUSE-RECEIPT-COMPANY-2": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R6-PAUSE-RECEIPT-LISTEN": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R7-PAUSE-RECEIPT-PARAPHRASE": {
+        "category": "respect_declined_sharing_pass",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R7-PAUSE-RECEIPT-PHRASE-RESTATE": {
+        "category": "respect_declined_sharing_pass",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R7-PAUSE-INTENSIFIED": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R7-PAUSE-ACTION": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-PAUSE-ACTION"
+          ],
+          [
+            "ES-PAUSE-ACTION"
+          ],
+          [
+            "ES-PAUSE-ACTION"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R7-PAUSE-RECEIPT-ONLY": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ],
+          [
+            "ES-PAUSE-RECEIPT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R7-PAUSE-REINVITE": {
+        "category": "respect_declined_sharing_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-T-ACCEPT": {
+        "category": "v1_respect_declined_sharing",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-T-REASON": {
+        "category": "v1_respect_declined_sharing",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-T-LATER": {
+        "category": "v1_respect_declined_sharing",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-Q-ACCEPT": {
+        "category": "v1_respect_declined_sharing",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-Q-BARE-BOUNDARY": {
+        "category": "v1_respect_declined_sharing",
+        "expected": "pass",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "V1-Q-DECIDES": {
+        "category": "v1_respect_declined_sharing",
+        "expected": "fail",
+        "outcomes": [
+          "pass",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "V1-Q-CAUSE": {
+        "category": "v1_respect_declined_sharing",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-ACK-SOLICIT": {
+        "category": "v1_acknowledge_current_relational_impact",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-ACK-OK": {
+        "category": "v1_acknowledge_current_relational_impact",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-ACK-ADDED-AFFECT": {
+        "category": "v1_acknowledge_current_relational_impact",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-INV-OPEN": {
+        "category": "v1_invite_optional_sharing",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-INV-WHY": {
+        "category": "v1_invite_optional_sharing",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V1-INV-REASK": {
+        "category": "v1_invite_optional_sharing",
+        "expected": "fail",
+        "outcomes": [
+          "pass",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "V1-INV-MORE": {
+        "category": "v1_invite_optional_sharing",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "INV-REFERENCE",
+      "category": "invite_optional_sharing_pass",
+      "expected": "pass"
+    },
+    {
+      "id": "INV-STATED-EVENT-REASK",
+      "category": "invite_optional_sharing_fail",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "REF-ASKS",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "R5-PAUSE-COMPANY",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass"
+    },
+    {
+      "id": "R5-DECLINE-TALK-FEELING-AS-REASON",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R5-DECLINE-ASK-DECIDES",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R5-PAUSE-BARE-REPROMISE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R5-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R6-PAUSE-RECEIPT-COMPANY-1",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R6-PAUSE-RECEIPT-COMPANY-2",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R6-PAUSE-RECEIPT-LISTEN",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R7-PAUSE-RECEIPT-PARAPHRASE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass"
+    },
+    {
+      "id": "R7-PAUSE-RECEIPT-PHRASE-RESTATE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass"
+    },
+    {
+      "id": "R7-PAUSE-INTENSIFIED",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R7-PAUSE-ACTION",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R7-PAUSE-RECEIPT-ONLY",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "R7-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail"
+    },
+    {
+      "id": "V1-T-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass"
+    },
+    {
+      "id": "V1-T-REASON",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail"
+    },
+    {
+      "id": "V1-T-LATER",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail"
+    },
+    {
+      "id": "V1-Q-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass"
+    },
+    {
+      "id": "V1-Q-BARE-BOUNDARY",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass"
+    },
+    {
+      "id": "V1-Q-DECIDES",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail"
+    },
+    {
+      "id": "V1-Q-CAUSE",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "V1-ACK-SOLICIT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ]
+    },
+    {
+      "id": "V1-ACK-OK",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "pass"
+    },
+    {
+      "id": "V1-ACK-ADDED-AFFECT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "V1-INV-OPEN",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass"
+    },
+    {
+      "id": "V1-INV-WHY",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "V1-INV-REASK",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "V1-INV-MORE",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass"
+    }
+  ],
+  "calls": [
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4832
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "0587127fb22658d724c0fe5ad460c112c9a0100bc237f2447883e565cb1ac9e8",
+          "httpStatus": 200,
+          "promptTokens": 3612,
+          "completionTokens": 208
+        }
+      ],
+      "validationLatencyMs": 4835,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": false,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4439
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "0587127fb22658d724c0fe5ad460c112c9a0100bc237f2447883e565cb1ac9e8",
+          "httpStatus": 200,
+          "promptTokens": 3612,
+          "completionTokens": 217
+        }
+      ],
+      "validationLatencyMs": 4440,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": false,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5525
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "0587127fb22658d724c0fe5ad460c112c9a0100bc237f2447883e565cb1ac9e8",
+          "httpStatus": 200,
+          "promptTokens": 3612,
+          "completionTokens": 202
+        }
+      ],
+      "validationLatencyMs": 5526,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": false,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "INV-REFERENCE",
+      "category": "invite_optional_sharing_pass",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 19,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4776
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "41dec236b4a85a5ab296ce37a4e56a5cc64174a4072a2f236e3ad026f1401e8e",
+          "httpStatus": 200,
+          "promptTokens": 3593,
+          "completionTokens": 191
+        }
+      ],
+      "validationLatencyMs": 4776,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "INV-REFERENCE",
+      "category": "invite_optional_sharing_pass",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 13,
+            "end": 42,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6230
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "41dec236b4a85a5ab296ce37a4e56a5cc64174a4072a2f236e3ad026f1401e8e",
+          "httpStatus": 200,
+          "promptTokens": 3593,
+          "completionTokens": 224
+        }
+      ],
+      "validationLatencyMs": 6230,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "INV-REFERENCE",
+      "category": "invite_optional_sharing_pass",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 42,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4902
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "41dec236b4a85a5ab296ce37a4e56a5cc64174a4072a2f236e3ad026f1401e8e",
+          "httpStatus": 200,
+          "promptTokens": 3593,
+          "completionTokens": 228
+        }
+      ],
+      "validationLatencyMs": 4902,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "INV-STATED-EVENT-REASK",
+      "category": "invite_optional_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 11,
+            "end": 22,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5334
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "a60917a4a60150fb64a0f7a1d9a8b5f12c136b9f5c1d47924efec0f82a67db73",
+          "httpStatus": 200,
+          "promptTokens": 3591,
+          "completionTokens": 181
+        }
+      ],
+      "validationLatencyMs": 5334,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "INV-STATED-EVENT-REASK",
+      "category": "invite_optional_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 11,
+            "end": 22,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4076
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "a60917a4a60150fb64a0f7a1d9a8b5f12c136b9f5c1d47924efec0f82a67db73",
+          "httpStatus": 200,
+          "promptTokens": 3591,
+          "completionTokens": 186
+        }
+      ],
+      "validationLatencyMs": 4076,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "INV-STATED-EVENT-REASK",
+      "category": "invite_optional_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 11,
+            "end": 22,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4612
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "a60917a4a60150fb64a0f7a1d9a8b5f12c136b9f5c1d47924efec0f82a67db73",
+          "httpStatus": 200,
+          "promptTokens": 3591,
+          "completionTokens": 197
+        }
+      ],
+      "validationLatencyMs": 4613,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "REF-ASKS",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4241
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "1df984aba3d0417e1cdc3317d08f636e7e1524b94c2680611560e1036001b26c",
+          "httpStatus": 200,
+          "promptTokens": 3229,
+          "completionTokens": 193
+        }
+      ],
+      "validationLatencyMs": 4242,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "REF-ASKS",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 5,
+            "end": 16,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3876
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "1df984aba3d0417e1cdc3317d08f636e7e1524b94c2680611560e1036001b26c",
+          "httpStatus": 200,
+          "promptTokens": 3229,
+          "completionTokens": 194
+        }
+      ],
+      "validationLatencyMs": 3877,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": false,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "REF-ASKS",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 5,
+            "end": 16,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4072
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "1df984aba3d0417e1cdc3317d08f636e7e1524b94c2680611560e1036001b26c",
+          "httpStatus": 200,
+          "promptTokens": 3229,
+          "completionTokens": 194
+        }
+      ],
+      "validationLatencyMs": 4080,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": false,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-PAUSE-COMPANY",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4795
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "c42836de52c2b964c728f342a443dabed6c37497cc9696f6c4123e2106c2cade",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 210
+        }
+      ],
+      "validationLatencyMs": 4796,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-PAUSE-COMPANY",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4083
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "c42836de52c2b964c728f342a443dabed6c37497cc9696f6c4123e2106c2cade",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 210
+        }
+      ],
+      "validationLatencyMs": 4084,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-PAUSE-COMPANY",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5999
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "c42836de52c2b964c728f342a443dabed6c37497cc9696f6c4123e2106c2cade",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 214
+        }
+      ],
+      "validationLatencyMs": 5999,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-DECLINE-TALK-FEELING-AS-REASON",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 11,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4183
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "4d54da97cc019ad689ba29270253ed17638d920bbb9ed0e3eb457b984c3d6a2b",
+          "httpStatus": 200,
+          "promptTokens": 3220,
+          "completionTokens": 199
+        }
+      ],
+      "validationLatencyMs": 4183,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-DECLINE-TALK-FEELING-AS-REASON",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 11,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4892
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "4d54da97cc019ad689ba29270253ed17638d920bbb9ed0e3eb457b984c3d6a2b",
+          "httpStatus": 200,
+          "promptTokens": 3220,
+          "completionTokens": 220
+        }
+      ],
+      "validationLatencyMs": 4892,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-DECLINE-TALK-FEELING-AS-REASON",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 11,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5592
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "4d54da97cc019ad689ba29270253ed17638d920bbb9ed0e3eb457b984c3d6a2b",
+          "httpStatus": 200,
+          "promptTokens": 3220,
+          "completionTokens": 206
+        }
+      ],
+      "validationLatencyMs": 5592,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-DECLINE-ASK-DECIDES",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 14,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3953
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "5bdb7e80c6d8847b9baa89c8d63851f872909efd1f5232ca1527ade595943629",
+          "httpStatus": 200,
+          "promptTokens": 3225,
+          "completionTokens": 178
+        }
+      ],
+      "validationLatencyMs": 3953,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-DECLINE-ASK-DECIDES",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 14,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4568
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "5bdb7e80c6d8847b9baa89c8d63851f872909efd1f5232ca1527ade595943629",
+          "httpStatus": 200,
+          "promptTokens": 3225,
+          "completionTokens": 199
+        }
+      ],
+      "validationLatencyMs": 4568,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-DECLINE-ASK-DECIDES",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 14,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3961
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "5bdb7e80c6d8847b9baa89c8d63851f872909efd1f5232ca1527ade595943629",
+          "httpStatus": 200,
+          "promptTokens": 3225,
+          "completionTokens": 192
+        }
+      ],
+      "validationLatencyMs": 3961,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-PAUSE-BARE-REPROMISE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 10,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4818
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "b79cc7e88c4c84da902b28fffdfd45ddc0d11b8991c2515444b05394b3d09a12",
+          "httpStatus": 200,
+          "promptTokens": 3752,
+          "completionTokens": 230
+        }
+      ],
+      "validationLatencyMs": 4818,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-PAUSE-BARE-REPROMISE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 10,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4705
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "b79cc7e88c4c84da902b28fffdfd45ddc0d11b8991c2515444b05394b3d09a12",
+          "httpStatus": 200,
+          "promptTokens": 3752,
+          "completionTokens": 235
+        }
+      ],
+      "validationLatencyMs": 4706,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-PAUSE-BARE-REPROMISE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 10,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4726
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "b79cc7e88c4c84da902b28fffdfd45ddc0d11b8991c2515444b05394b3d09a12",
+          "httpStatus": 200,
+          "promptTokens": 3752,
+          "completionTokens": 240
+        }
+      ],
+      "validationLatencyMs": 4726,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 9,
+            "end": 19,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3964
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "9bc4855f981939876723b329c2f4d30adbc64a975392f7132c2fd6e4acfb9f6b",
+          "httpStatus": 200,
+          "promptTokens": 3760,
+          "completionTokens": 204
+        }
+      ],
+      "validationLatencyMs": 3965,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 9,
+            "end": 19,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4232
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "9bc4855f981939876723b329c2f4d30adbc64a975392f7132c2fd6e4acfb9f6b",
+          "httpStatus": 200,
+          "promptTokens": 3760,
+          "completionTokens": 204
+        }
+      ],
+      "validationLatencyMs": 4232,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R5-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 9,
+            "end": 19,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5138
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "9bc4855f981939876723b329c2f4d30adbc64a975392f7132c2fd6e4acfb9f6b",
+          "httpStatus": 200,
+          "promptTokens": 3760,
+          "completionTokens": 203
+        }
+      ],
+      "validationLatencyMs": 5138,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R6-PAUSE-RECEIPT-COMPANY-1",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4502
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "0b96e7788838a596c9bdc2b92df8649ddc80065202e0d953bdd0a090b3f0d43e",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 234
+        }
+      ],
+      "validationLatencyMs": 4502,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R6-PAUSE-RECEIPT-COMPANY-1",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4469
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "0b96e7788838a596c9bdc2b92df8649ddc80065202e0d953bdd0a090b3f0d43e",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 230
+        }
+      ],
+      "validationLatencyMs": 4470,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R6-PAUSE-RECEIPT-COMPANY-1",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4779
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "0b96e7788838a596c9bdc2b92df8649ddc80065202e0d953bdd0a090b3f0d43e",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 235
+        }
+      ],
+      "validationLatencyMs": 4779,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R6-PAUSE-RECEIPT-COMPANY-2",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 15,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4470
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "9c1e72ed41423bb1de1a75eb200b89adffe0ed2adce9983fbc925abe6e058e5a",
+          "httpStatus": 200,
+          "promptTokens": 3756,
+          "completionTokens": 226
+        }
+      ],
+      "validationLatencyMs": 4470,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R6-PAUSE-RECEIPT-COMPANY-2",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 15,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4474
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "9c1e72ed41423bb1de1a75eb200b89adffe0ed2adce9983fbc925abe6e058e5a",
+          "httpStatus": 200,
+          "promptTokens": 3756,
+          "completionTokens": 248
+        }
+      ],
+      "validationLatencyMs": 4474,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R6-PAUSE-RECEIPT-COMPANY-2",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 15,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4185
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "9c1e72ed41423bb1de1a75eb200b89adffe0ed2adce9983fbc925abe6e058e5a",
+          "httpStatus": 200,
+          "promptTokens": 3756,
+          "completionTokens": 212
+        }
+      ],
+      "validationLatencyMs": 4185,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R6-PAUSE-RECEIPT-LISTEN",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4469
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "75f03ee24df90a039568fb0c2f3e26837edcbdeda15bfa204ba6d880d16f707e",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 226
+        }
+      ],
+      "validationLatencyMs": 4470,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R6-PAUSE-RECEIPT-LISTEN",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4583
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "75f03ee24df90a039568fb0c2f3e26837edcbdeda15bfa204ba6d880d16f707e",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 237
+        }
+      ],
+      "validationLatencyMs": 4583,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R6-PAUSE-RECEIPT-LISTEN",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5235
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "75f03ee24df90a039568fb0c2f3e26837edcbdeda15bfa204ba6d880d16f707e",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 226
+        }
+      ],
+      "validationLatencyMs": 5235,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-RECEIPT-PARAPHRASE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4584
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "76826dfd6c021e7e58f6c98d1708fe98c9c5f7a1f6e9b9384b8b106fa1808011",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 230
+        }
+      ],
+      "validationLatencyMs": 4584,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-RECEIPT-PARAPHRASE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4503
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "76826dfd6c021e7e58f6c98d1708fe98c9c5f7a1f6e9b9384b8b106fa1808011",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 229
+        }
+      ],
+      "validationLatencyMs": 4503,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-RECEIPT-PARAPHRASE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4423
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "76826dfd6c021e7e58f6c98d1708fe98c9c5f7a1f6e9b9384b8b106fa1808011",
+          "httpStatus": 200,
+          "promptTokens": 3758,
+          "completionTokens": 215
+        }
+      ],
+      "validationLatencyMs": 4423,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-RECEIPT-PHRASE-RESTATE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 26,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4615
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "b51ea9b0fe10702c0394e9b5513b1b7f923203ff349ab83245ff6ad9194f7718",
+          "httpStatus": 200,
+          "promptTokens": 3766,
+          "completionTokens": 234
+        }
+      ],
+      "validationLatencyMs": 4615,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-RECEIPT-PHRASE-RESTATE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 26,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4566
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "b51ea9b0fe10702c0394e9b5513b1b7f923203ff349ab83245ff6ad9194f7718",
+          "httpStatus": 200,
+          "promptTokens": 3766,
+          "completionTokens": 234
+        }
+      ],
+      "validationLatencyMs": 4566,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-RECEIPT-PHRASE-RESTATE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 26,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4283
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "b51ea9b0fe10702c0394e9b5513b1b7f923203ff349ab83245ff6ad9194f7718",
+          "httpStatus": 200,
+          "promptTokens": 3766,
+          "completionTokens": 234
+        }
+      ],
+      "validationLatencyMs": 4283,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-INTENSIFIED",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 18,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3822
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "2b47bf1ebbb539ae4e64e71bc052f8bd0c473dff03c36e0d1bd8b266ae3f0f95",
+          "httpStatus": 200,
+          "promptTokens": 3772,
+          "completionTokens": 208
+        }
+      ],
+      "validationLatencyMs": 3822,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-INTENSIFIED",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 18,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4682
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "2b47bf1ebbb539ae4e64e71bc052f8bd0c473dff03c36e0d1bd8b266ae3f0f95",
+          "httpStatus": 200,
+          "promptTokens": 3772,
+          "completionTokens": 208
+        }
+      ],
+      "validationLatencyMs": 4682,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-INTENSIFIED",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 18,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3923
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "2b47bf1ebbb539ae4e64e71bc052f8bd0c473dff03c36e0d1bd8b266ae3f0f95",
+          "httpStatus": 200,
+          "promptTokens": 3772,
+          "completionTokens": 204
+        }
+      ],
+      "validationLatencyMs": 3924,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-ACTION",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 16,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3590
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "9df7b29f9ff9595cc021f756ad9dc89ff07018e0c14e738d29cfc53cee177ac8",
+          "httpStatus": 200,
+          "promptTokens": 3768,
+          "completionTokens": 188
+        }
+      ],
+      "validationLatencyMs": 3590,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-ACTION",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 16,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3662
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "9df7b29f9ff9595cc021f756ad9dc89ff07018e0c14e738d29cfc53cee177ac8",
+          "httpStatus": 200,
+          "promptTokens": 3768,
+          "completionTokens": 193
+        }
+      ],
+      "validationLatencyMs": 3662,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-ACTION",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 16,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3858
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "9df7b29f9ff9595cc021f756ad9dc89ff07018e0c14e738d29cfc53cee177ac8",
+          "httpStatus": 200,
+          "promptTokens": 3768,
+          "completionTokens": 193
+        }
+      ],
+      "validationLatencyMs": 3858,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-RECEIPT-ONLY",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 6,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3762
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "3fbb1a2cd48b6b3173fe84b5787adcff9c2d2a094a396f4b7b1bf2cfee9474bd",
+          "httpStatus": 200,
+          "promptTokens": 3744,
+          "completionTokens": 195
+        }
+      ],
+      "validationLatencyMs": 3762,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-RECEIPT-ONLY",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 6,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3787
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "3fbb1a2cd48b6b3173fe84b5787adcff9c2d2a094a396f4b7b1bf2cfee9474bd",
+          "httpStatus": 200,
+          "promptTokens": 3744,
+          "completionTokens": 202
+        }
+      ],
+      "validationLatencyMs": 3787,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-RECEIPT-ONLY",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 6,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3803
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "3fbb1a2cd48b6b3173fe84b5787adcff9c2d2a094a396f4b7b1bf2cfee9474bd",
+          "httpStatus": 200,
+          "promptTokens": 3744,
+          "completionTokens": 195
+        }
+      ],
+      "validationLatencyMs": 3803,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 19,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4306
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "07ea8e14c8508e18510479ad1089386a4fbdf8728a7b64554c55ad68f33b0a56",
+          "httpStatus": 200,
+          "promptTokens": 3762,
+          "completionTokens": 201
+        }
+      ],
+      "validationLatencyMs": 4306,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 19,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4091
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "07ea8e14c8508e18510479ad1089386a4fbdf8728a7b64554c55ad68f33b0a56",
+          "httpStatus": 200,
+          "promptTokens": 3762,
+          "completionTokens": 203
+        }
+      ],
+      "validationLatencyMs": 4091,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R7-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 19,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4329
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "27dbaf64f655a9634ea9a43f6a6918651296d072f5647983e712254955f82a1d",
+          "messagesSha256": "07ea8e14c8508e18510479ad1089386a4fbdf8728a7b64554c55ad68f33b0a56",
+          "httpStatus": 200,
+          "promptTokens": 3762,
+          "completionTokens": 205
+        }
+      ],
+      "validationLatencyMs": 4329,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-T-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": []
+          },
+          {
+            "start": 8,
+            "end": 16,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4573
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "113aae416b9bc4580f783384f2630b58687d7290eb6d07150f2ad75119f40106",
+          "httpStatus": 200,
+          "promptTokens": 3227,
+          "completionTokens": 210
+        }
+      ],
+      "validationLatencyMs": 4573,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-T-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": []
+          },
+          {
+            "start": 8,
+            "end": 16,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5604
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "113aae416b9bc4580f783384f2630b58687d7290eb6d07150f2ad75119f40106",
+          "httpStatus": 200,
+          "promptTokens": 3227,
+          "completionTokens": 210
+        }
+      ],
+      "validationLatencyMs": 5604,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-T-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": []
+          },
+          {
+            "start": 8,
+            "end": 16,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6245
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "113aae416b9bc4580f783384f2630b58687d7290eb6d07150f2ad75119f40106",
+          "httpStatus": 200,
+          "promptTokens": 3227,
+          "completionTokens": 218
+        }
+      ],
+      "validationLatencyMs": 6245,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-T-REASON",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 9,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3879
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "782123501ca43255003fdf5e21f7e5a7a25271b3ad82ee94a8ced8454b63d0db",
+          "httpStatus": 200,
+          "promptTokens": 3213,
+          "completionTokens": 175
+        }
+      ],
+      "validationLatencyMs": 3879,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-T-REASON",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 9,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4465
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "782123501ca43255003fdf5e21f7e5a7a25271b3ad82ee94a8ced8454b63d0db",
+          "httpStatus": 200,
+          "promptTokens": 3213,
+          "completionTokens": 193
+        }
+      ],
+      "validationLatencyMs": 4465,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-T-REASON",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 9,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5267
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "782123501ca43255003fdf5e21f7e5a7a25271b3ad82ee94a8ced8454b63d0db",
+          "httpStatus": 200,
+          "promptTokens": 3213,
+          "completionTokens": 182
+        }
+      ],
+      "validationLatencyMs": 5267,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-T-LATER",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 6,
+            "end": 16,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4811
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "0c0402fdada9307ad34448dd7fdbc31d24fb82902184fcbf189bfb94c53c6865",
+          "httpStatus": 200,
+          "promptTokens": 3227,
+          "completionTokens": 213
+        }
+      ],
+      "validationLatencyMs": 4811,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-T-LATER",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 6,
+            "end": 16,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4190
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "0c0402fdada9307ad34448dd7fdbc31d24fb82902184fcbf189bfb94c53c6865",
+          "httpStatus": 200,
+          "promptTokens": 3227,
+          "completionTokens": 206
+        }
+      ],
+      "validationLatencyMs": 4190,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-T-LATER",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 6,
+            "end": 16,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4216
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "0c0402fdada9307ad34448dd7fdbc31d24fb82902184fcbf189bfb94c53c6865",
+          "httpStatus": 200,
+          "promptTokens": 3227,
+          "completionTokens": 213
+        }
+      ],
+      "validationLatencyMs": 4216,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 5,
+            "ruleIds": []
+          },
+          {
+            "start": 5,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4851
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "ee358dc9614b8a0cb701ac97d014987d4004c927b8091250ba5c09c2bfdb760b",
+          "httpStatus": 200,
+          "promptTokens": 3295,
+          "completionTokens": 219
+        }
+      ],
+      "validationLatencyMs": 4851,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4691
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "ee358dc9614b8a0cb701ac97d014987d4004c927b8091250ba5c09c2bfdb760b",
+          "httpStatus": 200,
+          "promptTokens": 3295,
+          "completionTokens": 222
+        }
+      ],
+      "validationLatencyMs": 4691,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 5,
+            "ruleIds": []
+          },
+          {
+            "start": 5,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4726
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "ee358dc9614b8a0cb701ac97d014987d4004c927b8091250ba5c09c2bfdb760b",
+          "httpStatus": 200,
+          "promptTokens": 3295,
+          "completionTokens": 219
+        }
+      ],
+      "validationLatencyMs": 4726,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-BARE-BOUNDARY",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 5,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4573
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "a7d92df28cb002300c22698ca4c7c971196843749e532f785630bce708da5e9f",
+          "httpStatus": 200,
+          "promptTokens": 3277,
+          "completionTokens": 220
+        }
+      ],
+      "validationLatencyMs": 4573,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-BARE-BOUNDARY",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 5,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4899
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "a7d92df28cb002300c22698ca4c7c971196843749e532f785630bce708da5e9f",
+          "httpStatus": 200,
+          "promptTokens": 3277,
+          "completionTokens": 220
+        }
+      ],
+      "validationLatencyMs": 4899,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-BARE-BOUNDARY",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 5,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4771
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "a7d92df28cb002300c22698ca4c7c971196843749e532f785630bce708da5e9f",
+          "httpStatus": 200,
+          "promptTokens": 3277,
+          "completionTokens": 223
+        }
+      ],
+      "validationLatencyMs": 4771,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-DECIDES",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 12,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4669
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "2e7388dc34e477fa32b72de3182221d4bd32c04eb456098985f191d1387e45ba",
+          "httpStatus": 200,
+          "promptTokens": 3289,
+          "completionTokens": 210
+        }
+      ],
+      "validationLatencyMs": 4669,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-DECIDES",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 12,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5105
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "2e7388dc34e477fa32b72de3182221d4bd32c04eb456098985f191d1387e45ba",
+          "httpStatus": 200,
+          "promptTokens": 3289,
+          "completionTokens": 236
+        }
+      ],
+      "validationLatencyMs": 5105,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-DECIDES",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 12,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5577
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "2e7388dc34e477fa32b72de3182221d4bd32c04eb456098985f191d1387e45ba",
+          "httpStatus": 200,
+          "promptTokens": 3289,
+          "completionTokens": 240
+        }
+      ],
+      "validationLatencyMs": 5577,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-CAUSE",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 5,
+            "end": 13,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4158
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "0e0172e9ffa2ec2f7ab451c621582e140c4a411bbf597174936f92ed05a8716f",
+          "httpStatus": 200,
+          "promptTokens": 3287,
+          "completionTokens": 191
+        }
+      ],
+      "validationLatencyMs": 4158,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-CAUSE",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 5,
+            "end": 13,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4375
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "0e0172e9ffa2ec2f7ab451c621582e140c4a411bbf597174936f92ed05a8716f",
+          "httpStatus": 200,
+          "promptTokens": 3287,
+          "completionTokens": 206
+        }
+      ],
+      "validationLatencyMs": 4375,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-Q-CAUSE",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "respect_declined_sharing",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 5,
+            "end": 13,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4396
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "fa2d8402d70ebe32682e4ef01999245a99e634748a2d5014e43f0060c674388b",
+          "messagesSha256": "0e0172e9ffa2ec2f7ab451c621582e140c4a411bbf597174936f92ed05a8716f",
+          "httpStatus": 200,
+          "promptTokens": 3287,
+          "completionTokens": 189
+        }
+      ],
+      "validationLatencyMs": 4396,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-ACK-SOLICIT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 21,
+            "end": 29,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3866
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "607bb5a08826f65e14643bbbe82a8cebd848b183dcf3e326006325ee214c4f73",
+          "httpStatus": 200,
+          "promptTokens": 3596,
+          "completionTokens": 176
+        }
+      ],
+      "validationLatencyMs": 3866,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-ACK-SOLICIT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 21,
+            "end": 29,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 3777
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "607bb5a08826f65e14643bbbe82a8cebd848b183dcf3e326006325ee214c4f73",
+          "httpStatus": 200,
+          "promptTokens": 3596,
+          "completionTokens": 177
+        }
+      ],
+      "validationLatencyMs": 3777,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-ACK-SOLICIT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 21,
+            "end": 29,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4023
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "607bb5a08826f65e14643bbbe82a8cebd848b183dcf3e326006325ee214c4f73",
+          "httpStatus": 200,
+          "promptTokens": 3596,
+          "completionTokens": 176
+        }
+      ],
+      "validationLatencyMs": 4023,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-ACK-OK",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4714
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "78ed56cfd8a6a64adc8af390fd5a7fa77715085433b5e6faaf02fc42a99854a1",
+          "httpStatus": 200,
+          "promptTokens": 3600,
+          "completionTokens": 224
+        }
+      ],
+      "validationLatencyMs": 4714,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-ACK-OK",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4205
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "78ed56cfd8a6a64adc8af390fd5a7fa77715085433b5e6faaf02fc42a99854a1",
+          "httpStatus": 200,
+          "promptTokens": 3600,
+          "completionTokens": 209
+        }
+      ],
+      "validationLatencyMs": 4205,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-ACK-OK",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4594
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "78ed56cfd8a6a64adc8af390fd5a7fa77715085433b5e6faaf02fc42a99854a1",
+          "httpStatus": 200,
+          "promptTokens": 3600,
+          "completionTokens": 214
+        }
+      ],
+      "validationLatencyMs": 4594,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-ACK-ADDED-AFFECT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 7,
+            "end": 14,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4000
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "e3d6a75fd6fac880b3cd2338f0c9c3d1c5f4fd9fc54087d1e4f0086c2666c1d0",
+          "httpStatus": 200,
+          "promptTokens": 3596,
+          "completionTokens": 189
+        }
+      ],
+      "validationLatencyMs": 4000,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-ACK-ADDED-AFFECT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 27,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4592
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "e3d6a75fd6fac880b3cd2338f0c9c3d1c5f4fd9fc54087d1e4f0086c2666c1d0",
+          "httpStatus": 200,
+          "promptTokens": 3596,
+          "completionTokens": 204
+        }
+      ],
+      "validationLatencyMs": 4592,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-ACK-ADDED-AFFECT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 27,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4605
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "e3d6a75fd6fac880b3cd2338f0c9c3d1c5f4fd9fc54087d1e4f0086c2666c1d0",
+          "httpStatus": 200,
+          "promptTokens": 3596,
+          "completionTokens": 199
+        }
+      ],
+      "validationLatencyMs": 4605,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-OPEN",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4154
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "880f457a50812131e8f88f8a356d8f05e5aa3d2348fca8c84b2529aab18e32c7",
+          "httpStatus": 200,
+          "promptTokens": 3567,
+          "completionTokens": 192
+        }
+      ],
+      "validationLatencyMs": 4154,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-OPEN",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4490
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "880f457a50812131e8f88f8a356d8f05e5aa3d2348fca8c84b2529aab18e32c7",
+          "httpStatus": 200,
+          "promptTokens": 3567,
+          "completionTokens": 193
+        }
+      ],
+      "validationLatencyMs": 4491,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-OPEN",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4155
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "880f457a50812131e8f88f8a356d8f05e5aa3d2348fca8c84b2529aab18e32c7",
+          "httpStatus": 200,
+          "promptTokens": 3567,
+          "completionTokens": 186
+        }
+      ],
+      "validationLatencyMs": 4155,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-WHY",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 2,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 11,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4395
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "a64723f8f487bc5ec33fa166cc8ec024125b7014b7a2105fa3c0a5b4a5294bc7",
+          "httpStatus": 200,
+          "promptTokens": 3553,
+          "completionTokens": 201
+        }
+      ],
+      "validationLatencyMs": 4395,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-WHY",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 2,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 11,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5600
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "a64723f8f487bc5ec33fa166cc8ec024125b7014b7a2105fa3c0a5b4a5294bc7",
+          "httpStatus": 200,
+          "promptTokens": 3553,
+          "completionTokens": 212
+        }
+      ],
+      "validationLatencyMs": 5600,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-WHY",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 2,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 11,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4493
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "a64723f8f487bc5ec33fa166cc8ec024125b7014b7a2105fa3c0a5b4a5294bc7",
+          "httpStatus": 200,
+          "promptTokens": 3553,
+          "completionTokens": 213
+        }
+      ],
+      "validationLatencyMs": 4493,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-REASK",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 9,
+            "ruleIds": []
+          },
+          {
+            "start": 9,
+            "end": 20,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4518
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "10d0fa921d4da77abadf431976f3c594faac53ae282825cb2a583f3c54ec560a",
+          "httpStatus": 200,
+          "promptTokens": 3578,
+          "completionTokens": 194
+        }
+      ],
+      "validationLatencyMs": 4518,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-REASK",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 9,
+            "end": 20,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4361
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "10d0fa921d4da77abadf431976f3c594faac53ae282825cb2a583f3c54ec560a",
+          "httpStatus": 200,
+          "promptTokens": 3578,
+          "completionTokens": 180
+        }
+      ],
+      "validationLatencyMs": 4361,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-REASK",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 9,
+            "end": 20,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4320
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "10d0fa921d4da77abadf431976f3c594faac53ae282825cb2a583f3c54ec560a",
+          "httpStatus": 200,
+          "promptTokens": 3578,
+          "completionTokens": 200
+        }
+      ],
+      "validationLatencyMs": 4320,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-MORE",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 24,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4427
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "47de27790694fba4fa7cc6a1fc53b434f8d5e784d8bcff8317039a5669f53700",
+          "httpStatus": 200,
+          "promptTokens": 3590,
+          "completionTokens": 196
+        }
+      ],
+      "validationLatencyMs": 4427,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-MORE",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 24,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4191
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "47de27790694fba4fa7cc6a1fc53b434f8d5e784d8bcff8317039a5669f53700",
+          "httpStatus": 200,
+          "promptTokens": 3590,
+          "completionTokens": 186
+        }
+      ],
+      "validationLatencyMs": 4191,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V1-INV-MORE",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "invite_optional_sharing",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 24,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4199
+        }
+      ],
+      "requests": [
+        {
+          "model": "qwen3.8-max-0902",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "b4bf176e71829c09288e5ce9e9ed2d7834752ce84f1287a7491f555450546af4",
+          "messagesSha256": "47de27790694fba4fa7cc6a1fc53b434f8d5e784d8bcff8317039a5669f53700",
+          "httpStatus": 200,
+          "promptTokens": 3590,
+          "completionTokens": 186
+        }
+      ],
+      "validationLatencyMs": 4199,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    }
+  ]
+}

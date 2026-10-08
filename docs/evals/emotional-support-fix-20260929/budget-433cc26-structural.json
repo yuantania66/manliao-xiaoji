@@ -1,0 +1,623 @@
+{
+  "note": "Structural copy; reply texts and evidence text kept locally.",
+  "summary": {
+    "head": "969bbde",
+    "model": "qwen3.7-max",
+    "judgeModel": "qwen3.8-max-0902",
+    "runsPerScenario": 5,
+    "total": 10,
+    "passed": 10,
+    "constraintFailures": 0,
+    "regenerations": 5,
+    "committedForbiddenScreenHits": 0,
+    "committedAmbiguousForHumanReview": 0,
+    "byScenario": {
+      "emotion-being-ignored": {
+        "passed": 5,
+        "regenerations": 5
+      },
+      "relational-challenge-no-history": {
+        "passed": 5,
+        "regenerations": 0
+      }
+    }
+  },
+  "rows": [
+    {
+      "scenarioId": "emotion-being-ignored",
+      "runIndex": 1,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "finalSource": "llm_regenerate",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": true,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "semanticAudit": {
+            "status": "not_satisfied",
+            "containsContradictoryMove": true,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 10,
+                "end": 40,
+                "ruleIds": [
+                  "ES-FOCUS",
+                  "ES-SCOPE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        },
+        {
+          "attempt": 2,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-AFFECT-EVIDENCE",
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 41,
+                "ruleIds": [
+                  "ES-FOCUS",
+                  "ES-AFFECT-EVIDENCE",
+                  "ES-SCOPE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "runIndex": 2,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "finalSource": "llm_regenerate",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": true,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "semanticAudit": {
+            "status": "not_satisfied",
+            "containsContradictoryMove": true,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 10,
+                "end": 37,
+                "ruleIds": [
+                  "ES-FOCUS"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        },
+        {
+          "attempt": 2,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 33,
+                "ruleIds": [
+                  "ES-FOCUS",
+                  "ES-AFFECT-EVIDENCE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "runIndex": 3,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "finalSource": "llm_regenerate",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": true,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "semanticAudit": {
+            "status": "not_satisfied",
+            "containsContradictoryMove": true,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 10,
+                "end": 35,
+                "ruleIds": [
+                  "ES-FOCUS"
+                ]
+              },
+              {
+                "start": 10,
+                "end": 21,
+                "ruleIds": [
+                  "ES-SCOPE",
+                  "ES-SCOPE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        },
+        {
+          "attempt": 2,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 33,
+                "ruleIds": [
+                  "ES-FOCUS",
+                  "ES-AFFECT-EVIDENCE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "runIndex": 4,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "finalSource": "llm_regenerate",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": true,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "semanticAudit": {
+            "status": "not_satisfied",
+            "containsContradictoryMove": true,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 22,
+                "end": 32,
+                "ruleIds": [
+                  "ES-SCOPE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        },
+        {
+          "attempt": 2,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 35,
+                "ruleIds": [
+                  "ES-FOCUS",
+                  "ES-AFFECT-EVIDENCE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "emotion-being-ignored",
+      "runIndex": 5,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "finalSource": "llm_regenerate",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": true,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "semanticAudit": {
+            "status": "not_satisfied",
+            "containsContradictoryMove": true,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-FOCUS"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 25,
+                "end": 31,
+                "ruleIds": [
+                  "ES-SCOPE"
+                ]
+              },
+              {
+                "start": 10,
+                "end": 15,
+                "ruleIds": [
+                  "ES-FOCUS"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        },
+        {
+          "attempt": 2,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 1,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 35,
+                "ruleIds": [
+                  "ES-FOCUS",
+                  "ES-AFFECT-EVIDENCE"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "relational-challenge-no-history",
+      "runIndex": 1,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "finalSource": "llm",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25,
+                "ruleIds": [
+                  "ES-ACK-BOUNDARY"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "relational-challenge-no-history",
+      "runIndex": 2,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "finalSource": "llm",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25,
+                "ruleIds": [
+                  "ES-ACK-BOUNDARY"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "relational-challenge-no-history",
+      "runIndex": 3,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "finalSource": "llm",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25,
+                "ruleIds": [
+                  "ES-ACK-BOUNDARY"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "relational-challenge-no-history",
+      "runIndex": 4,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "finalSource": "llm",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 24,
+                "ruleIds": [
+                  "ES-ACK-BOUNDARY"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "relational-challenge-no-history",
+      "runIndex": 5,
+      "actualActions": [
+        "offer_emotional_support"
+      ],
+      "actualSupportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "finalSource": "llm",
+      "executionPhase": "VALIDATED",
+      "executionFailure": null,
+      "regenerateAttempted": false,
+      "promptVersion": "chat-response-plan-v32",
+      "attempts": [
+        {
+          "attempt": 1,
+          "validationFailures": [],
+          "semanticAudit": {
+            "status": "satisfied",
+            "containsContradictoryMove": false,
+            "semanticQuestionCount": 0,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "outOfScopeRuleIds": [],
+            "evidence": [
+              {
+                "start": 0,
+                "end": 25,
+                "ruleIds": [
+                  "ES-ACK-BOUNDARY"
+                ]
+              }
+            ]
+          },
+          "semanticProviderFailure": null
+        }
+      ],
+      "screen": {
+        "forbidden": false,
+        "ambiguous": false
+      },
+      "passed": true
+    }
+  ]
+}

@@ -9,13 +9,20 @@ import type { AiConversationMessage } from "../services/ai/types";
 import {
   TRAJECTORY_REPORT_PATH,
   TRAJECTORY_RUNNER_VERSION,
+  buildCommittedHistoryEntry,
   buildTrajectoryChecks,
   buildTurnResult,
+  collectForensicsRecords,
+  describeFeatureFlags,
+  computeEvalToolFingerprint,
+  computeProductSourceFingerprint,
   computeRelevantSourceFingerprint,
+  summarizeForensics,
   getCurrentCommit,
   locateRepeatedOpeningSkeletons,
   loadTrajectoryDataset,
   renderTrajectoryReport,
+  trajectoryGateExitCode,
   type TrajectoryRunMode,
   type TrajectoryRunResult,
 } from "./conversation-trajectory-eval-lib";
@@ -42,6 +49,8 @@ const variant = variantArg?.split("=")[1]?.trim() || "canonical";
 const experimentArg = process.argv.find((arg) => arg.startsWith("--experiment="));
 const experiment = experimentArg?.split("=")[1]?.trim() || "canonical";
 const isGroundednessExperiment = experiment === "exp-bl-012a";
+const productUnderTest = process.argv.find((arg) => arg.startsWith("--product-under-test="))?.split("=")[1]?.trim() || "unspecified";
+const forensicsOutput = process.argv.find((arg) => arg.startsWith("--forensics-output="))?.split("=")[1]?.trim() || null;
 if (experiment !== "canonical" && !isGroundednessExperiment) {
   throw new Error(`Experiment ${experiment} is not registered.`);
 }
@@ -62,6 +71,7 @@ const outputPath = isGroundednessExperiment
   : TRAJECTORY_REPORT_PATH;
 
 const run = async () => {
+  const productSourceFingerprintBefore = computeProductSourceFingerprint();
   const dataset = isGroundednessExperiment ? getGroundednessExperimentDataset() : loadTrajectoryDataset();
   const results: TrajectoryRunResult[] = [];
 
@@ -71,7 +81,8 @@ const run = async () => {
       const turns = [];
 
       for (const turn of trajectory.turns) {
-        recentMessages.push({ role: "user", content: turn.user });
+        const userTurnId = `trajectory-eval-${trajectory.id}-run-${runIndex}-${turn.turnId}`;
+        recentMessages.push({ id: userTurnId, role: "user", content: turn.user, status: "saved" });
 
         if (mode === "replay") {
           const replayTurn = buildTurnResult({ turn, assistant: turn.observedAssistant ?? null, mode });
@@ -86,6 +97,7 @@ const run = async () => {
             : recentMessages.slice(0, -1);
           const result = await createChatReply({
             conversationId: `trajectory-eval-${trajectory.id}-run-${runIndex}`,
+            currentTurnId: userTurnId,
             userId: "trajectory-eval-user",
             userMessage: turn.user,
             recentMessages: adaptedRecentMessages,
@@ -94,7 +106,8 @@ const run = async () => {
           });
           const assistant = result.generation.text;
           turns.push(buildTurnResult({ turn, assistant, result, mode }));
-          recentMessages.push({ role: "assistant", content: assistant, promptVersion: result.generation.promptVersion });
+          const committed = buildCommittedHistoryEntry(result, `${userTurnId}-assistant`);
+          if (committed) recentMessages.push(committed);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           turns.push(buildTurnResult({ turn, assistant: null, mode, error: message }));
@@ -121,6 +134,13 @@ const run = async () => {
   const promptVersion = completed.find((turn) => turn.promptVersion !== "captured")?.promptVersion ?? "captured-replay";
   const provider = mode === "real" ? getAiProvider() : "captured-replay";
   const model = mode === "real" ? process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel() : "captured-replay";
+  const productSourceFingerprintAfter = computeProductSourceFingerprint();
+  const productSourceFingerprint = productSourceFingerprintBefore === productSourceFingerprintAfter
+    ? productSourceFingerprintAfter
+    : `changed-during-run: before=${productSourceFingerprintBefore} after=${productSourceFingerprintAfter}`;
+  const evalToolFingerprint = computeEvalToolFingerprint();
+  const forensicsRecords = collectForensicsRecords(results);
+  const forensicsSummary = summarizeForensics(forensicsRecords);
   const report = renderTrajectoryReport(
     {
       datasetVersion: dataset.datasetVersion,
@@ -138,13 +158,48 @@ const run = async () => {
       promptVersion,
       freshness: "current",
       staleReason: "",
+      productUnderTest,
+      productSourceFingerprint,
+      evalToolFingerprint,
+      featureFlags: describeFeatureFlags(),
     },
     results
   );
 
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, report, "utf8");
+  if (forensicsOutput) {
+    mkdirSync(dirname(forensicsOutput), { recursive: true });
+    writeFileSync(
+      forensicsOutput,
+      `${JSON.stringify(
+        {
+          runnerVersion: TRAJECTORY_RUNNER_VERSION,
+          evalToolCommit: getCurrentCommit(),
+          evalToolFingerprint,
+          productUnderTest,
+          productSourceFingerprint,
+          featureFlags: describeFeatureFlags(),
+          summary: forensicsSummary,
+          records: forensicsRecords,
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
+  }
 
+  const deterministicErrors = results.flatMap((item) => [
+    ...item.turns.flatMap((turn) => turn.machineCheckErrors),
+    ...item.trajectoryMachineCheckErrors,
+  ]);
+  const gateExitCode = trajectoryGateExitCode({
+    mode,
+    experiment,
+    deterministicErrorCount: deterministicErrors.length,
+    safetyFailClosedCount: forensicsSummary.safetyBlocked.length,
+  });
   console.log(
     JSON.stringify(
       {
@@ -158,15 +213,20 @@ const run = async () => {
         trajectories: results.length,
         completedTurns: completed.length,
         pendingTurns: results.flatMap((item) => item.turns).filter((turn) => turn.status === "pending_reproduction").length,
-        deterministicErrors: results.flatMap((item) => [
-          ...item.turns.flatMap((turn) => turn.machineCheckErrors),
-          ...item.trajectoryMachineCheckErrors,
-        ]),
+        deterministicErrors,
+        gateExitCode,
+        productUnderTest,
+        productSourceFingerprint,
+        evalToolFingerprint,
+        featureFlags: describeFeatureFlags(),
+        forensicsOutput,
+        forensics: mode === "real" ? forensicsSummary : null,
       },
       null,
       2
     )
   );
+  if (gateExitCode !== 0) process.exitCode = gateExitCode;
 };
 
 run().catch((error) => {

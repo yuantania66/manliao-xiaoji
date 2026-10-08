@@ -2,12 +2,19 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
+  buildCommittedResponseMove,
   buildProactiveGreetingAssistantMoveEnvelope,
+  buildResponsePlanAssistantMoveEnvelope,
 } from "../conversation-os";
+import {
+  MOVE_FIT_REPAIR_ADOPTION_EVIDENCE,
+  UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE,
+} from "../conversation-os/control/turnInterpreter";
 import {
   assembleConversationControlContext,
   buildDialogueState,
   createResponsePlan,
+  createResponsePlanPreflightAuthoritySnapshot,
   interpretTurnDeterministically,
   mergeModelInterpretation,
   type ClinicalStrategyAdvice,
@@ -15,9 +22,15 @@ import {
   type RelationalInterpretationCandidate,
 } from "../conversation-os/control";
 import { determineConversationState } from "../conversation-os/state";
+import { preflightResponsePlan } from "../services/ai/chatExecutionLifecycle";
+import { validatePlannedFunctionSemanticOutput } from "../services/ai/plannedFunctionSemanticValidator";
 import { formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
 import { validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
 import type { AiConversationMessage } from "../services/ai/types";
+import {
+  parseCommittedAssistantMoveMetadata,
+  serializeCommittedAssistantMoveMetadata,
+} from "../services/helping/committedHelpingMoveMetadata";
 
 const clinicalAdvice: ClinicalStrategyAdvice = {
   strategy: "test-only",
@@ -1367,7 +1380,520 @@ assert(!surfacePrompt.includes("availableFacts"));
 assert(surfacePrompt.includes("relevanceProvenance:"));
 assert(surfacePrompt.includes(`planningDepth: ${screenshotRegression.responsePlan.planningDepth}`));
 
-console.log(JSON.stringify({
+// A repair of a claimless Assistant turn survives an unverifiable target claim only
+// when the turn explicitly records no claims; everything else stays fail-closed.
+const claimlessRepairMessage = "我没那么严重吧";
+const claimlessRepairText = "你现在一定非常崩溃。";
+const uncommittedRepairText = "你现在一定非常崩溃";
+const claimlessMove = (sourceTurnId: string) => ({
+  purpose: ["offer_emotional_support"],
+  claims: [],
+  assumptions: [],
+  questionOrRequest: null,
+  expectedUserContribution: "none" as const,
+  userBurden: "none" as const,
+  sourceTurnId,
+  evidence: ["claimless ordinary committed reply fixture"],
+});
+const claimlessHistory = (
+  assistant: Partial<AiConversationMessage> = {}
+): AiConversationMessage[] => [
+  { id: "claimless-user", role: "user", content: "今天有点累。", status: "saved" },
+  {
+    id: "claimless-assistant",
+    role: "assistant",
+    content: claimlessRepairText,
+    status: "saved",
+    replyToMessageId: "claimless-user",
+    committedAssistantMove: claimlessMove("claimless-user"),
+    ...assistant,
+  },
+];
+const claimlessRepairCandidate = (
+  overrides: Partial<RelationalInterpretationCandidate> = {}
+): RelationalInterpretationCandidate => ({
+  relation: "repairs_previous_move",
+  confidence: 0.95,
+  targetTurnId: "claimless-assistant",
+  targetProposition: uncommittedRepairText,
+  targetOperation: "repair_or_withdraw",
+  evidence: ["The User rejects the intensity attributed by the previous Assistant turn."],
+  ...overrides,
+});
+const assertRepairPlanned = (result: ReturnType<typeof build>, label: string) => {
+  assert.equal(result.deterministic.stateUpdate.repairProposal, null, label);
+  const repair = result.interpretation.responseRelation.candidates.find((candidate) =>
+    candidate.relation === "repairs_previous_move"
+  );
+  assert(repair, label);
+  assert.equal(repair.targetTurnId, "claimless-assistant", label);
+  assert.equal(repair.targetProposition, undefined, label);
+  assert.equal(repair.targetOperation, undefined, label);
+  assert(repair.evidence.includes(UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE), label);
+  const proposal = result.interpretation.stateUpdate.repairProposal;
+  assert.equal(proposal?.targetTurnId, "claimless-assistant", label);
+  assert.deepEqual(proposal?.rejectedPropositionIds, ["claimless-assistant:model-rejected-1"], label);
+  const rejected = result.interpretation.stateUpdate.commonGround.find((item) =>
+    item.propositionId === "claimless-assistant:model-rejected-1"
+  );
+  assert.equal(rejected?.proposition, claimlessRepairText, label);
+  assert.equal(result.dialogueState.repairState.status, "active", label);
+  assert.equal(result.dialogueState.currentActivity.primary, "repairing_common_ground", label);
+  assert(result.responsePlan.responseActions.includes("repair_previous_wording"), label);
+};
+const assertRepairRejected = (result: ReturnType<typeof build>, label: string) => {
+  assert.equal(result.deterministic.stateUpdate.repairProposal, null, label);
+  assert(!result.interpretation.responseRelation.candidates.some((candidate) =>
+    candidate.evidence.includes(UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE)
+  ), label);
+  assert.equal(result.interpretation.stateUpdate.repairProposal, null, label);
+  assert.notEqual(result.dialogueState.currentActivity.primary, "repairing_common_ground", label);
+  assert(!result.responsePlan.responseActions.includes("repair_previous_wording"), label);
+};
+
+assertRepairPlanned(build({
+  userMessage: claimlessRepairMessage,
+  recentMessages: claimlessHistory(),
+  modelCandidates: [claimlessRepairCandidate()],
+}), "committed move with no claims");
+assertRepairPlanned(build({
+  userMessage: claimlessRepairMessage,
+  recentMessages: claimlessHistory({
+    committedAssistantMove: undefined,
+    interactionMoveEnvelope: buildResponsePlanAssistantMoveEnvelope({
+      assistantMoveId: "claimless-assistant",
+      planId: "claimless-plan",
+      sourceUserTurnId: "claimless-user",
+      committedMove: claimlessMove("claimless-user"),
+    }),
+  }),
+  modelCandidates: [claimlessRepairCandidate()],
+}), "guest envelope with no claims");
+
+const claimedRepairHistory = claimlessHistory({
+  committedAssistantMove: committedClaimMove(claimlessRepairText, "claimless-user"),
+});
+const exactClaimedRepair = build({
+  userMessage: claimlessRepairMessage,
+  recentMessages: claimedRepairHistory,
+  modelCandidates: [claimlessRepairCandidate({ targetProposition: claimlessRepairText })],
+});
+assert.deepEqual(
+  exactClaimedRepair.interpretation.stateUpdate.repairProposal?.rejectedPropositionIds,
+  ["claimless-assistant:claim-1"]
+);
+assert(!exactClaimedRepair.interpretation.responseRelation.candidates.some((candidate) =>
+  candidate.evidence.includes(UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE)
+));
+assert(exactClaimedRepair.responsePlan.responseActions.includes("repair_previous_wording"));
+
+const invalidClaimlessRepairs: Array<{
+  label: string;
+  recentMessages: AiConversationMessage[];
+  candidate: RelationalInterpretationCandidate;
+}> = [
+  {
+    label: "claims exist, binding missing",
+    recentMessages: claimedRepairHistory,
+    candidate: claimlessRepairCandidate({ targetProposition: undefined, targetOperation: undefined }),
+  },
+  {
+    label: "claims exist, binding mismatched",
+    recentMessages: claimedRepairHistory,
+    candidate: claimlessRepairCandidate(),
+  },
+  {
+    label: "claims data unavailable",
+    recentMessages: claimlessHistory({ committedAssistantMove: undefined }),
+    candidate: claimlessRepairCandidate(),
+  },
+  {
+    label: "targetless",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ targetTurnId: undefined }),
+  },
+  {
+    label: "unknown target",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ targetTurnId: "missing-assistant" }),
+  },
+  {
+    label: "user-turn target",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ targetTurnId: "claimless-user" }),
+  },
+  {
+    label: "stale Assistant target",
+    recentMessages: [
+      {
+        id: "claimless-old-assistant",
+        role: "assistant",
+        content: "旧的回复。",
+        status: "saved",
+        committedAssistantMove: claimlessMove("claimless-old-user"),
+      },
+      ...claimlessHistory(),
+    ],
+    candidate: claimlessRepairCandidate({ targetTurnId: "claimless-old-assistant" }),
+  },
+  {
+    label: "below repair threshold",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ confidence: 0.9 }),
+  },
+  {
+    label: "non-repair operation",
+    recentMessages: claimlessHistory(),
+    candidate: claimlessRepairCandidate({ relation: "requests_answer", targetOperation: "explain" }),
+  },
+];
+for (const { label, recentMessages, candidate } of invalidClaimlessRepairs) {
+  assertRepairRejected(build({
+    userMessage: claimlessRepairMessage,
+    recentMessages,
+    modelCandidates: [candidate],
+  }), label);
+}
+
+// Without an active handoff, a validated challenges_move_fit on the latest claimless
+// Assistant turn becomes an interaction-move withdrawal; every other shape is rejected.
+const moveFitCandidate = (
+  overrides: Partial<RelationalInterpretationCandidate> = {}
+): RelationalInterpretationCandidate => ({
+  relation: "challenges_move_fit",
+  confidence: 0.95,
+  targetTurnId: "move-fit-assistant",
+  evidence: ["The User says the previous Assistant way of helping did not fit."],
+  ...overrides,
+});
+const moveFitHistory = (
+  userText: string,
+  assistantText: string,
+  assistant: Partial<AiConversationMessage> = {}
+): AiConversationMessage[] => [
+  { id: "move-fit-user", role: "user", content: userText },
+  {
+    id: "move-fit-assistant",
+    role: "assistant",
+    content: assistantText,
+    status: "saved",
+    replyToMessageId: "move-fit-user",
+    committedAssistantMove: claimlessMove("move-fit-user"),
+    ...assistant,
+  },
+];
+const moveFitComplaints = [
+  {
+    label: "advice complaint",
+    userText: "我只想说说今天的事，不要建议",
+    assistantText: "你可以先列三个方案，再决定怎么做。",
+    complaint: "我说了不想要建议，你还是在教我怎么做",
+    subtype: "unsolicited_advice",
+    reply: "是我刚才不该直接给你列方案、教你怎么做，这个建议我收回。你想说今天的事，我就只听你说。",
+  },
+  {
+    label: "question-pressure complaint",
+    userText: "那件事让我很难受",
+    assistantText: "具体什么时候、在哪里、还有谁在场？",
+    complaint: "你又在追问，没有回应我刚才说的重点",
+    subtype: "pressure_question",
+    reply: "是我刚才一连串追问，没有回应你说的难受，这样问不对。那件事让你很难受，这一点我接住了。",
+  },
+  {
+    label: "generic-listening complaint",
+    userText: "我最在意的是他当时那句话",
+    assistantText: "我在，我会认真听你说。",
+    complaint: "你没有听我说的重点，只是在说你会听",
+    subtype: "generic_listening",
+    reply: "是我刚才只说了会认真听，没有接住你的重点，那是空话。你最在意的是他当时那句话。",
+  },
+] as const;
+const assertNoMoveFitAdoption = (result: ReturnType<typeof build>, label: string) => {
+  assert.notEqual(result.interpretation.stateUpdate.repairProposal?.sourceRelation, "challenges_move_fit", label);
+  assert.notEqual(result.dialogueState.repairState.sourceRelation, "challenges_move_fit", label);
+  assert(!result.interpretation.stateUpdate.repairProposal?.evidence.includes(MOVE_FIT_REPAIR_ADOPTION_EVIDENCE), label);
+};
+const moveFitChains: Array<{ label: string; subtype: string | null }> = [];
+const moveFitSemanticChecks: Promise<void>[] = [];
+for (const complaint of moveFitComplaints) {
+  const result = build({
+    userMessage: complaint.complaint,
+    recentMessages: moveFitHistory(complaint.userText, complaint.assistantText),
+    modelCandidates: [moveFitCandidate()],
+  });
+  const label = complaint.label;
+  assert.equal(result.deterministic.stateUpdate.repairProposal, null, label);
+  assert(relations(result).includes("challenges_move_fit"), label);
+  assert(!relations(result).includes("repairs_previous_move"), label);
+  const proposal = result.interpretation.stateUpdate.repairProposal;
+  assert.equal(proposal?.sourceRelation, "challenges_move_fit", label);
+  assert.equal(proposal?.targetTurnId, "move-fit-assistant", label);
+  assert.deepEqual(proposal?.rejectedPropositionIds, ["move-fit-assistant:model-challenged-move-1"], label);
+  assert(proposal?.evidence.includes(MOVE_FIT_REPAIR_ADOPTION_EVIDENCE), label);
+  assert.equal(result.dialogueState.repairState.status, "active", label);
+  assert.equal(result.dialogueState.repairState.sourceRelation, "challenges_move_fit", label);
+  assert.equal(result.dialogueState.currentActivity.primary, "repairing_common_ground", label);
+  assert.equal(result.responsePlan.interactionMoveHandoffPlan, null, label);
+  assert.deepEqual(result.responsePlan.responseActions, ["repair_previous_wording"], label);
+  assert.equal(result.responsePlan.questionPolicy.mode, "none", label);
+  const contract = result.responsePlan.positiveFunctionContract;
+  assert(contract?.action === "repair_previous_wording", label);
+  assert.equal(contract.repairMode, "interaction_move_withdrawal", label);
+  assert.equal(contract.interactionMoveSubtype, complaint.subtype, label);
+  assert.equal(contract.replacementFact, null, label);
+  assert.equal(contract.targetTurnId, "move-fit-assistant", label);
+  assert.equal(contract.targetText, complaint.assistantText, label);
+  assert(contract.evidence.includes(MOVE_FIT_REPAIR_ADOPTION_EVIDENCE), label);
+  const preflight = preflightResponsePlan(
+    result.responsePlan,
+    createResponsePlanPreflightAuthoritySnapshot({
+      context: result.context,
+      interpretation: result.interpretation,
+      dialogueState: result.dialogueState,
+    })
+  );
+  assert.deepEqual(preflight.failureReasons, [], label);
+  const deterministicValidation = validateResponsePlanOutput({ plan: result.responsePlan, reply: complaint.reply });
+  assert.deepEqual(deterministicValidation.failureReasons, [], label);
+  // Fixed satisfied verdict proves binding and routing only, not model understanding.
+  moveFitSemanticChecks.push(validatePlannedFunctionSemanticOutput({
+    plan: result.responsePlan,
+    reply: complaint.reply,
+    semanticContext: { currentUserText: complaint.complaint, handoffTargetAssistantText: null },
+    provider: async (input) => {
+      assert.deepEqual(input.positiveFunctionBinding, contract, label);
+      return {
+        schemaVersion: 1,
+        planId: result.responsePlan.planId,
+        handoff: null,
+        positiveFunction: {
+          binding: {
+            action: contract.action,
+            repairMode: contract.repairMode,
+            sourceTurnId: contract.sourceTurnId,
+            targetTurnId: contract.targetTurnId,
+          },
+          status: "satisfied" as const,
+          realizedAction: contract.action,
+          targetAddressed: true,
+          contractRealized: true,
+          containsContradictoryMove: false,
+          evidence: [{
+            start: 0,
+            end: complaint.reply.length,
+            text: complaint.reply,
+            reason: "Owns and withdraws the challenged interaction move.",
+          }],
+        },
+        semanticQuestionCount: 0,
+      };
+    },
+  }).then((semanticValidation) => {
+    assert.deepEqual(semanticValidation.failureReasons, [], label);
+  }));
+  const committedMove = buildCommittedResponseMove({
+    plan: result.responsePlan,
+    replyText: complaint.reply,
+    sourceUserTurnId: result.context.currentTurnId,
+    planId: result.responsePlan.planId,
+    requestId: `${label}:request`,
+  });
+  const readBack = parseCommittedAssistantMoveMetadata(JSON.parse(JSON.stringify(
+    serializeCommittedAssistantMoveMetadata({ assistantMove: committedMove })
+  )));
+  assert.equal(readBack.status, "valid", label);
+  assert(readBack.status === "valid");
+  assert.deepEqual(readBack.assistantMove.purpose, ["repair_previous_wording"], label);
+  assert.deepEqual(readBack.assistantMove.claims, [], label);
+  assert.equal(readBack.assistantMove.questionOrRequest, null, label);
+  const nextTurn = build({
+    userMessage: "嗯",
+    recentMessages: [
+      ...moveFitHistory(complaint.userText, complaint.assistantText),
+      { id: result.context.currentTurnId, role: "user", content: complaint.complaint, status: "saved" },
+      {
+        id: "move-fit-repair-reply",
+        role: "assistant",
+        content: complaint.reply,
+        status: "saved",
+        replyToMessageId: result.context.currentTurnId,
+        committedAssistantMove: readBack.assistantMove,
+      },
+    ],
+  });
+  assert.deepEqual(nextTurn.dialogueState.lastCommittedAssistantMove?.purpose, ["repair_previous_wording"], label);
+  assert.equal(nextTurn.dialogueState.repairState.status, "none", label);
+  const continuedAdvice = validateResponsePlanOutput({
+    plan: result.responsePlan,
+    reply: "是我刚才说得不对。那你要不要先说说具体发生了什么？",
+  });
+  assert(continuedAdvice.failureReasons.includes("question_not_allowed_by_plan"), label);
+  moveFitChains.push({ label, subtype: contract.interactionMoveSubtype });
+}
+
+const adviceComplaint = moveFitComplaints[0];
+const rejectedMoveFit: Array<{
+  label: string;
+  userMessage?: string;
+  recentMessages: AiConversationMessage[];
+  candidate: RelationalInterpretationCandidate;
+}> = [
+  {
+    label: "complaint without history",
+    recentMessages: [],
+    candidate: moveFitCandidate(),
+  },
+  {
+    label: "history without committed move",
+    recentMessages: moveFitHistory(adviceComplaint.userText, adviceComplaint.assistantText, {
+      committedAssistantMove: undefined,
+      status: undefined,
+      replyToMessageId: undefined,
+    }),
+    candidate: moveFitCandidate(),
+  },
+  {
+    label: "target has committed claims",
+    recentMessages: moveFitHistory(adviceComplaint.userText, adviceComplaint.assistantText, {
+      committedAssistantMove: committedClaimMove(adviceComplaint.assistantText, "move-fit-user"),
+    }),
+    candidate: moveFitCandidate(),
+  },
+  {
+    label: "targetless",
+    recentMessages: moveFitHistory(adviceComplaint.userText, adviceComplaint.assistantText),
+    candidate: moveFitCandidate({ targetTurnId: undefined }),
+  },
+  {
+    label: "user-turn target",
+    recentMessages: moveFitHistory(adviceComplaint.userText, adviceComplaint.assistantText),
+    candidate: moveFitCandidate({ targetTurnId: "move-fit-user" }),
+  },
+  {
+    label: "stale Assistant target",
+    recentMessages: [
+      {
+        id: "move-fit-old-assistant",
+        role: "assistant",
+        content: "你可以试试写下来。",
+        status: "saved",
+        committedAssistantMove: claimlessMove("move-fit-old-user"),
+      },
+      ...moveFitHistory(adviceComplaint.userText, adviceComplaint.assistantText),
+    ],
+    candidate: moveFitCandidate({ targetTurnId: "move-fit-old-assistant" }),
+  },
+  {
+    label: "below threshold",
+    recentMessages: moveFitHistory(adviceComplaint.userText, adviceComplaint.assistantText),
+    candidate: moveFitCandidate({ confidence: 0.92 }),
+  },
+  {
+    label: "carries a target proposition",
+    recentMessages: moveFitHistory(adviceComplaint.userText, adviceComplaint.assistantText),
+    candidate: moveFitCandidate({
+      targetProposition: adviceComplaint.assistantText,
+      targetOperation: "repair_or_withdraw",
+    }),
+  },
+  {
+    label: "normal answer",
+    userMessage: "好，我先想想第一个方案",
+    recentMessages: moveFitHistory(adviceComplaint.userText, adviceComplaint.assistantText),
+    candidate: moveFitCandidate({ relation: "answers_previous_move", confidence: 0.95 }),
+  },
+];
+for (const { label, userMessage, recentMessages, candidate } of rejectedMoveFit) {
+  const result = build({
+    userMessage: userMessage ?? adviceComplaint.complaint,
+    recentMessages,
+    modelCandidates: [candidate],
+  });
+  assertNoMoveFitAdoption(result, label);
+  if (label !== "carries a target proposition") {
+    assert(!result.responsePlan.responseActions.includes("repair_previous_wording"), label);
+  }
+}
+
+const moveFitGreetingEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+  assistantMoveId: "move-fit-greeting",
+  generationId: "move-fit-greeting-generation",
+  intent: {
+    move: "light_question",
+    requiredFunction: "ask_one_bounded_low_burden_question",
+    realization: { kind: "bounded_question", topic: "food", question: "今天有没有吃到什么还不错的东西？" },
+    expectedUserContribution: "answer",
+    userBurden: "low",
+  },
+});
+assert.deepEqual(moveFitGreetingEnvelope.committedMove.claims, []);
+const activeHandoffMoveFit = build({
+  userMessage: "你一上来就问这个，有点突兀",
+  recentMessages: [{
+    id: "move-fit-greeting",
+    role: "assistant",
+    content: "今天有没有吃到什么还不错的东西？",
+    status: "saved",
+    interactionMoveEnvelope: moveFitGreetingEnvelope,
+  }],
+  modelCandidates: [moveFitCandidate({ targetTurnId: "move-fit-greeting" })],
+});
+assertNoMoveFitAdoption(activeHandoffMoveFit, "active handoff");
+assert.equal(
+  activeHandoffMoveFit.responsePlan.interactionMoveHandoffPlan?.requiredFunction,
+  "withdraw_or_repair_targeted_move"
+);
+const activeHandoffContract = activeHandoffMoveFit.responsePlan.positiveFunctionContract;
+assert(activeHandoffContract?.action === "repair_previous_wording");
+assert.equal(activeHandoffContract.interactionMoveSubtype, null);
+
+const unclassifiedMoveFit = build({
+  userMessage: "你这样回我，感觉不太对",
+  recentMessages: moveFitHistory("今天下雨了", "雨天适合待在家里。"),
+  modelCandidates: [moveFitCandidate()],
+});
+assert.equal(unclassifiedMoveFit.dialogueState.repairState.sourceRelation, "challenges_move_fit");
+const unclassifiedContract = unclassifiedMoveFit.responsePlan.positiveFunctionContract;
+assert(unclassifiedContract?.action === "repair_previous_wording");
+assert.equal(unclassifiedContract.repairMode, "interaction_move_withdrawal");
+assert.equal(unclassifiedContract.interactionMoveSubtype, null);
+assert(
+  preflightResponsePlan(
+    unclassifiedMoveFit.responsePlan,
+    createResponsePlanPreflightAuthoritySnapshot({
+      context: unclassifiedMoveFit.context,
+      interpretation: unclassifiedMoveFit.interpretation,
+      dialogueState: unclassifiedMoveFit.dialogueState,
+    })
+  ).failureReasons.includes("missing_interaction_move_subtype_in_contract")
+);
+
+const factualWithMoveFit = build({
+  userMessage: "不是同事，是我姐姐，你把人弄错了",
+  recentMessages: moveFitHistory("她昨天又给我打电话了", "那个同事又联系你了。"),
+  modelCandidates: [moveFitCandidate()],
+});
+assertNoMoveFitAdoption(factualWithMoveFit, "factual correction labelled as move fit");
+assert(!factualWithMoveFit.responsePlan.responseActions.includes("repair_previous_wording"));
+const factualViaRepair = build({
+  userMessage: "不是同事，是我姐姐，你把人弄错了",
+  recentMessages: moveFitHistory("她昨天又给我打电话了", "那个同事又联系你了。"),
+  modelCandidates: [moveFitCandidate({ relation: "repairs_previous_move" })],
+});
+assertNoMoveFitAdoption(factualViaRepair, "factual correction via repair");
+const factualContract = factualViaRepair.responsePlan.positiveFunctionContract;
+assert(factualContract?.action === "repair_previous_wording");
+assert.equal(factualContract.repairMode, "factual_replacement");
+
+void Promise.all(moveFitSemanticChecks).then(() => console.log(JSON.stringify({
+  moveFitRepairCases: {
+    adoptedFullChain: moveFitChains,
+    rejected: rejectedMoveFit.length,
+    activeHandoffUnchanged: 1,
+    unclassifiedFailsClosed: 1,
+    factualCorrectionUnchanged: 1,
+  },
+  claimlessRepairCases: 3 + invalidClaimlessRepairs.length,
   screenshotRegressions: 4,
   blindCounterExamples: blindCases.length,
   multipleInterpretationsPreserved: ambiguous.interpretation.responseRelation.candidates.length,
@@ -1383,4 +1909,4 @@ console.log(JSON.stringify({
     surfaceReceivesFullGrounding: false,
     postPlannerReplan: false,
   },
-}, null, 2));
+}, null, 2)));

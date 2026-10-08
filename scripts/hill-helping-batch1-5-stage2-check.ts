@@ -22,6 +22,7 @@ import {
   loadPreservationDataset,
   type PreservationScenario,
 } from "./hill-helping-batch1-5-preservation-lib";
+import { cleanObservationFor } from "./semantic-observation-fixture";
 
 const main = async () => {
 const { dataset, sha256 } = loadPreservationDataset();
@@ -119,7 +120,8 @@ const plan = (id: string) => {
 const planForFrozenSurfaceReplay = (id: string): ResponsePlan => {
   const result = plan(id);
   return result.positiveFunctionContract?.action === "offer_emotional_support" &&
-    result.positiveFunctionContract.supportFunction === "return_amount_control"
+    (result.positiveFunctionContract.supportFunction === "return_amount_control" ||
+      result.positiveFunctionContract.supportFunction === "invite_optional_sharing")
     ? {
         ...result,
         positiveFunctionContract: {
@@ -382,6 +384,7 @@ const validateExactNegativeThroughCanonicalSemanticBoundary = async (
           contractRealized: false,
           containsContradictoryMove: false,
           evidence: [],
+          ...cleanObservationFor(input),
         },
         semanticQuestionCount: 0,
       };
