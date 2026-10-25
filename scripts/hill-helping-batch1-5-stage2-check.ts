@@ -370,12 +370,18 @@ const validateExactNegativeThroughCanonicalSemanticBoundary = async (
       handoffTargetAssistantText: null,
     },
     provider: async (input) => {
+      if (input.semanticTask === "relational_solicitation") {
+        assert.equal(testCase.id, "S2-EL-06", "This exact negative fixture already contains a request to explain.");
+        return { schemaVersion: 1, planId: input.planId, solicitation: "present", requestedUserAct: "explain again",
+          semanticRequestCount: 1, explicitRequestException: null,
+          evidence: [{ start: 0, end: testCase.reply.length, text: testCase.reply, reason: "Authored existing counterexample: 你可以再解释 invites the User to explain again, including optional permission." }] };
+      }
       assert.equal(input.planId, testCase.plan.planId);
       assert.equal(input.candidateReply, testCase.reply);
       assert.equal(input.currentUserText, contract.sourceText);
       assert.equal(input.handoffBinding, null);
       assert.deepEqual(input.positiveFunctionBinding, contract);
-      return {
+      const verdict = {
         schemaVersion: 1,
         planId: testCase.plan.planId,
         handoff: null,
@@ -391,11 +397,12 @@ const validateExactNegativeThroughCanonicalSemanticBoundary = async (
         },
         semanticQuestionCount: 0,
       };
+      return input.semanticTask === "relational_remaining" ? { task: "relational_remaining", scopeCompliance: "respected", verdict } : verdict;
     },
   });
   assert.deepEqual(
     result.failureReasons,
-    ["planned_function_semantic:positive_function_not_satisfied"],
+    testCase.id === "S2-EL-06" ? ["planned_function_semantic:relational_solicitation_not_satisfied", "planned_function_semantic:positive_function_not_satisfied", "planned_function_semantic:question_count_quality"] : ["planned_function_semantic:positive_function_not_satisfied"],
     `${testCase.id}:${wiring.defectLabel}`
   );
   return result;

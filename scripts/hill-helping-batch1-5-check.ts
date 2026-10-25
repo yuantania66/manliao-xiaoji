@@ -93,7 +93,11 @@ const validatePositiveSemanticFixture = async ({
       handoffTargetAssistantText: null,
       ordinaryRecentMessages: [], // This authored transport fixture has no conversation history.
     },
-    provider: async (input) => ({
+    provider: async (input) => {
+      if (input.semanticTask === "relational_solicitation") return { schemaVersion: 1, planId: input.planId,
+        solicitation: "absent", requestedUserAct: null, semanticRequestCount: 0, explicitRequestException: null,
+        evidence: [{ start: 0, end: reply.length, text: reply, reason: "Authored absence for remaining-status transport fixture; not a model observation." }] };
+      const verdict = {
       schemaVersion: 1,
       planId: input.planId,
       handoff: null,
@@ -109,7 +113,9 @@ const validatePositiveSemanticFixture = async ({
         ...cleanObservationFor(input),
       },
       semanticQuestionCount: (reply.match(/[？?]/gu) ?? []).length,
-    }),
+      };
+      return input.semanticTask === "relational_remaining" ? { task: "relational_remaining", scopeCompliance: "respected", verdict } : verdict;
+    },
   });
 };
 
@@ -952,8 +958,11 @@ const run = async () => {
       reply: "今天有点不好受啊，陪你安静一会儿。",
       semanticContext: { currentUserText, handoffTargetAssistantText: null, priorAssistantTurnAvailable: true, ordinaryRecentMessages: [] },
       provider: async (input) => {
-        const rules = plannedFunctionSemanticDeveloperContentFor(input);
-        return defaultPlannedFunctionSemanticProvider(input, ({ messages }) => {
+        // Historical hashes intentionally capture the pre-isolation full prompt. Actual runtime task wires
+        // are independently checked by relational-judgment-isolation-check without changing these hashes.
+        const historicalInput = { ...input, semanticTask: undefined };
+        const rules = plannedFunctionSemanticDeveloperContentFor(historicalInput);
+        return defaultPlannedFunctionSemanticProvider(historicalInput, ({ messages }) => {
           assert.equal(messages[0].content, rules.scoped, "Only the scoped rules reach the external boundary.");
           captured.push({ developer: restoreExplicitAffectRules(historicalInvitationCopy(rules.unscoped, plan)), user: messages[1].content, scoped: messages[0].content, current: rules.unscoped });
           throw new Error("capture judge prompt only");

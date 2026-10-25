@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import type {
   PositiveFunctionContract,
@@ -9,6 +10,7 @@ import type {
 } from "../conversation-os/control";
 import { AppError } from "../lib/errors";
 import { getMainModel } from "../services/ai/aiService";
+import { callModel } from "../services/ai/modelProvider";
 import { formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
 import { ExternalPromptRejectedError } from "../services/ai/externalPromptInspection";
 import {
@@ -16,14 +18,14 @@ import {
   normalizePlannedFunctionSemanticEvidence,
   plannedFunctionSemanticDeveloperContentFor,
   parsePlannedFunctionSemanticProviderOutput,
-  validatePlannedFunctionSemanticOutput,
+  validatePlannedFunctionSemanticOutput as validateSemanticWithIsolatedTasks,
   type PlannedFunctionSemanticProvider,
   type PlannedFunctionSemanticProviderInput,
   type PlannedFunctionSemanticVerdict,
   type PositiveFunctionVerdictBinding,
 } from "../services/ai/plannedFunctionSemanticValidator";
 import {
-  enforceResponsePlan,
+  enforceResponsePlan as enforceResponsePlanWithIsolatedTasks,
   formatResponsePlanRegenerateConstraint,
   validateResponsePlanOutput,
 } from "../services/ai/responsePlanValidator";
@@ -31,6 +33,22 @@ import type { AiGenerationResult } from "../services/ai/types";
 import { cases as qwenEvalCases, inputFor as qwenInputFor } from "./planned-function-semantic-qwen-eval";
 import { affectEvidenceFor, cleanObservationFor } from "./semantic-observation-fixture";
 import { AFFECT_INTERPRETATION_BOUNDARY, ATTRIBUTION_RULE_CLARIFICATIONS, AFFECT_EVIDENCE_RULE, RELATIONAL_AFFECT_DRIFT_RULE, FOLLOWUP_RULE_EDITS, REPAIR1_RULE_EDITS, REPAIR2_RULE_EDITS, restoreUserFocusRule, restoreRepair1Rules, restoreFirstFollowupRules, restoreExplicitAffectRules } from "./emotional-affect-rule-fixture";
+
+// Legacy single-verdict unit fixtures continue to test remaining requirements unchanged.
+// This authored absence is only fixture compatibility, not evidence that a real model recognizes solicitation.
+// The dedicated relational-judgment-isolation-check exercises actual isolated positive/negative results.
+const legacyRemainingProvider = (legacy: PlannedFunctionSemanticProvider): PlannedFunctionSemanticProvider => async input => {
+  if (input.semanticTask === "relational_solicitation") return { schemaVersion: 1, planId: input.planId,
+    solicitation: "absent", requestedUserAct: null, semanticRequestCount: 0, explicitRequestException: null,
+    evidence: [{ start: 0, end: input.candidateReply.length, text: input.candidateReply, reason: "Authored legacy fixture absence; not a model observation." }] };
+  const value = await legacy(input);
+  return input.semanticTask === "relational_remaining" ? { task: "relational_remaining", scopeCompliance: "respected", verdict: value } : value;
+};
+const validatePlannedFunctionSemanticOutput: typeof validateSemanticWithIsolatedTasks = options =>
+  validateSemanticWithIsolatedTasks({ ...options, ...(options.provider ? { provider: legacyRemainingProvider(options.provider) } : {}) });
+const enforceResponsePlan: typeof enforceResponsePlanWithIsolatedTasks = options =>
+  enforceResponsePlanWithIsolatedTasks({ ...options, ...(options.plannedFunctionSemanticProvider
+    ? { plannedFunctionSemanticProvider: legacyRemainingProvider(options.plannedFunctionSemanticProvider) } : {}) });
 
 const turnId = "user-turn-current";
 const handoffTargetId = "assistant-move-target";
@@ -794,7 +812,7 @@ const judgeRubric = judgeMessages.join("\n");
 // acknowledge_current_relational_impact defines ES-AFFECT-EVIDENCE inside affectObservation, which decides it.
 assert(judgeRubric.includes("affectObservation, for acknowledge_current_relational_impact: affectDrift applies ES-AFFECT-EVIDENCE to emotional attribution"));
 assert.equal(judgeRubric.includes("\nES-AFFECT-EVIDENCE: "), false, "The overall verdict does not also judge ES-AFFECT-EVIDENCE.");
-for (const ruleId of ["ES-SCOPE", "ES-ACK-BOUNDARY", "ES-ACK-NO-SOLICIT", "ES-ACK-NO-FABRICATION"]) {
+for (const ruleId of ["ES-SCOPE", "ES-ACK-BOUNDARY", "ES-ACK-NO-FABRICATION"]) {
   assert(judgeRubric.includes(`${ruleId}:`) || judgeRubric.includes(`${ruleId} applies`), `judge rubric must define ${ruleId}`);
 }
 assert(judgeRubric.includes("only the rules defined for the selected supportFunction"));
@@ -807,9 +825,9 @@ assert(
   "ES-AFFECT-EVIDENCE must cover impersonal and relational-impact emotion labels without word lists"
 );
 assert(
-  judgeRubric.includes("Judge reference by the full currentUserText, not by the word used") &&
-    judgeRubric.includes("the same phrase introduces a scene when the User stated no such moment or situation"),
-  "ES-SCOPE must judge back-references by context, not by a banned word"
+  judgeRubric.includes("a stated event alone does not establish an unstated causal connection") &&
+    judgeRubric.includes("belongs exclusively to the solicitation task"),
+  "Remaining ES-SCOPE retains factual boundaries without owning solicitation"
 );
 const captureScopedJudge = async (input: PlannedFunctionSemanticProviderInput) => {
   let captured: { developer: string; user: string } | undefined;
@@ -842,13 +860,13 @@ assert(
   "ES rules must be scoped to emotional-support verdicts"
 );
 assert(
-  judgeRubric.includes("Naming such content only to release the User from providing it") &&
-    judgeRubric.includes("solicits nothing and does not violate ES-SCOPE") &&
-    judgeRubric.includes("a release that also asks for, invites, or offers such content as an option still violates it"),
+  focusJudgeRubric.includes("Naming such content only to release the User from providing it") &&
+    focusJudgeRubric.includes("solicits nothing and does not violate ES-SCOPE") &&
+    focusJudgeRubric.includes("a release that also asks for, invites, or offers such content as an option still violates it"),
   "ES-SCOPE must separate releasing a narrative burden from soliciting narrative"
 );
 assert(
-  judgeRubric.includes("Whether a release realizes the planned supportFunction is decided by the function-exclusivity rule above, not by ES-SCOPE."),
+  focusJudgeRubric.includes("Whether a release realizes the planned supportFunction is decided by the function-exclusivity rule above, not by ES-SCOPE."),
   "function fit of a release stays with the exclusivity rule"
 );
 const dualJudgeRubric = (await captureScopedJudge({
@@ -1808,7 +1826,8 @@ for (const { kind, item, key } of observedCases) {
     evidenceReason: "ES-ACK-NO-SOLICIT: asks the User to point out the miss; ES-SCOPE also cited",
   }));
   assert.equal(rejected.passed, false);
-  assert.deepEqual(rejected.observationAssessment?.ruleIds, ["ES-ACK-NO-SOLICIT", "ES-SCOPE"]);
+  assert.deepEqual(rejected.hardFailureReasons, ["planned_function_semantic:relational_remaining_ownership_conflict"]);
+  assert(rejected.verdict?.positiveFunction?.evidence[0].reason.includes("ES-ACK-NO-SOLICIT"), "Out-of-scope original rejection is preserved, never erased.");
   const fabricatedHistory = await judgeWith(relationalQwenCase, respectVerdictFor(relationalQwenCase, {
     status: "not_satisfied",
     extra: { affectObservation: { affectDrift: "none" } },
@@ -1825,6 +1844,125 @@ for (const { kind, item, key } of observedCases) {
   assert.equal(borrowed.passed, false, "An overall rejection with clean observations fails closed.");
   assert.deepEqual(borrowed.observationAssessment?.ruleIds, [], "A current refusal never inherits an ES-ACK-* id.");
 }
+
+
+// Local semantic observations below are authored expectations, not model accuracy evidence.
+// Keep the actual292 model rejection intact; do not turn prompt wiring into a PASS claim.
+const unknownFixture = JSON.parse(readFileSync(join(process.cwd(), "scripts/relational-unknown-solicitation-fixture.json"), "utf8")) as {
+  original292: { requestRaw: string; requestSha256: string; responseRaw: string; responseSha256: string };
+  originalRule: string;
+  cases: Array<{ id: string; userText: string; reply: string; solicitation: boolean; expectedPass: boolean;
+    rule: string | null; drift: "none" | "added_category" }>;
+};
+for (const [raw, hash] of [[unknownFixture.original292.requestRaw, unknownFixture.original292.requestSha256],
+  [unknownFixture.original292.responseRaw, unknownFixture.original292.responseSha256]]) {
+  assert.equal(createHash("sha256").update(raw).digest("hex"), hash);
+}
+const original292Request = JSON.parse(unknownFixture.original292.requestRaw) as { messages: Array<{ role: string; content: string }> };
+const original292Payload = JSON.parse(original292Request.messages.at(-1)!.content);
+const original292Verdict = JSON.parse(JSON.parse(unknownFixture.original292.responseRaw).choices[0].message.content) as PlannedFunctionSemanticVerdict;
+const original292Plan = basePlan();
+original292Plan.planId = original292Payload.planId;
+original292Plan.disclosureScope.turnId = original292Payload.positiveFunctionBinding.sourceTurnId;
+original292Plan.responseActions = ["offer_emotional_support"];
+original292Plan.positiveFunctionContract = structuredClone(original292Payload.positiveFunctionBinding);
+const original292Context = { currentUserText: original292Payload.currentUserText, handoffTargetAssistantText: null,
+  ordinaryRecentMessages: [], priorAssistantTurnAvailable: false };
+const original292Replay = await validatePlannedFunctionSemanticOutput({ plan: original292Plan,
+  reply: original292Payload.candidateReply, semanticContext: original292Context, provider: async () => original292Verdict });
+assert.equal(original292Replay.providerFailure, undefined);
+assert.equal(original292Replay.passed, false, "The original model's semantic rejection stays an authentic rejection, not a format failure or rewritten PASS.");
+assert(original292Replay.failureReasons.includes("planned_function_semantic:relational_remaining_ownership_conflict"));
+assert.equal(original292Replay.verdict?.positiveFunction?.evidence[0].reason, original292Verdict.positiveFunction?.evidence[0].reason);
+let actualUnknownMessages: Array<{ role: string; content: string }> = [];
+await defaultPlannedFunctionSemanticProvider({ planId: original292Payload.planId, handoffBinding: null,
+  positiveFunctionBinding: original292Payload.positiveFunctionBinding, currentUserText: original292Context.currentUserText,
+  handoffTargetAssistantText: null, candidateReply: original292Payload.candidateReply,
+  ordinaryQuestionIndependentlySupported: false, priorAssistantTurnAvailable: false }, ({ messages }) => {
+    actualUnknownMessages = messages.map(({ role, content }) => ({ role, content }));
+    throw new Error("local prompt inspection only; no model call");
+  }).catch(() => undefined);
+const clarifiedRule = actualUnknownMessages[0].content.split("\n").find(line => line.startsWith("ES-ACK-NO-SOLICIT:"))!;
+assert(clarifiedRule.includes("without assigning the User an explaining, identifying, choosing, or answering act"));
+assert(clarifiedRule.includes("quote the actual request-bearing span"));
+assert(clarifiedRule.includes("Optional permission can still invite an explaining act"));
+assert(clarifiedRule.includes("does not make the whole reply satisfied or waive any other requirement"));
+// Inspection is before the existing provider maps developer→system; use that actual provider
+// with an in-memory transport, never a copied normalization implementation or a real request.
+let syntheticWireMessages: Array<{ role: string; content: string }> = [];
+let syntheticWireCalls = 0;
+const beforeWireFetch = globalThis.fetch;
+const wireEnvironmentKeys = ["AI_PROVIDER", "QWEN_API_KEY", "QWEN_BASE_URL"] as const;
+const beforeWireEnvironment = wireEnvironmentKeys.map(key => [key, process.env[key]] as const);
+try {
+  process.env.AI_PROVIDER = "qwen";
+  process.env.QWEN_API_KEY = "synthetic-unknown-solicitation-test-key";
+  process.env.QWEN_BASE_URL = "https://synthetic.invalid/compatible-mode/v1";
+  globalThis.fetch = async (url, init) => {
+    assert.equal(String(url), "https://synthetic.invalid/compatible-mode/v1/chat/completions");
+    syntheticWireCalls++;
+    syntheticWireMessages = JSON.parse(String(init?.body)).messages;
+    return new Response(unknownFixture.original292.responseRaw, { status: 200 });
+  };
+  await callModel({ messages: actualUnknownMessages as Parameters<typeof callModel>[0]["messages"],
+    model: "qwen3.7-max", temperature: 0 });
+} finally {
+  globalThis.fetch = beforeWireFetch;
+  for (const [key, value] of beforeWireEnvironment) {
+    if (value === undefined) delete process.env[key]; else process.env[key] = value;
+  }
+}
+assert.equal(syntheticWireCalls, 1, "Only one synthetic in-memory provider transport, no real model.");
+assert.deepEqual(syntheticWireMessages, original292Request.messages.map(m => ({ ...m,
+  content: m.content.replace(unknownFixture.originalRule, clarifiedRule) })), "Actual provider message normalization preserves the exact292 user payload; only NO-SOLICIT changes.");
+const authoredUnknownChecks = [];
+for (const item of unknownFixture.cases) {
+  const plan = structuredClone(original292Plan);
+  assert(plan.positiveFunctionContract?.action === "offer_emotional_support");
+  const contract = plan.positiveFunctionContract;
+  contract.sourceText = item.userText;
+  contract.affectEvidenceSpans = [{ source: "current_user_message", sourceTurnId: contract.sourceTurnId,
+    start: 0, end: item.userText.length, text: item.userText, category: "relational_impact", intensity: "moderate", object: "assistant_relationship" }];
+  contract.explicitAffectOrImpactTerms = [item.userText];
+  const before = structuredClone(plan);
+  const checked = await validatePlannedFunctionSemanticOutput({ plan, reply: item.reply,
+    semanticContext: { ...original292Context, currentUserText: item.userText }, provider: async input => {
+      const verdict = verdictFor({ input, positiveStatus: item.rule ? "not_satisfied" : "satisfied",
+        semanticQuestionCount: item.solicitation ? 1 : 0 });
+      verdict.positiveFunction!.affectObservation = { affectDrift: item.drift };
+      if (verdict.positiveFunction!.affectEvidence) verdict.positiveFunction!.affectEvidence.reason =
+        `${item.drift}: authored local observation of the existing affect case, separate from solicitation.`;
+      verdict.positiveFunction!.containsContradictoryMove = item.rule !== null;
+      verdict.positiveFunction!.evidence[0].reason = item.rule === "ES-ACK-NO-SOLICIT"
+        ? `${item.rule}: the quoted request invites the User to explain or point out the miss; authored local observation.`
+        : item.rule ? `${item.rule}: the candidate invents a specific previous Assistant utterance; authored local observation.`
+          : "The candidate states its information boundary without assigning an explaining act to the User; authored local observation, other fields remain independent.";
+      return verdict;
+    } });
+  assert.equal(checked.providerFailure, undefined, item.id);
+  assert(checked.verdict, item.id);
+  assert.equal(checked.passed, item.expectedPass, item.id);
+  assert.deepEqual(plan, before, "Judge clarification never changes the selected plan or evidence.");
+  authoredUnknownChecks.push({ id: item.id, passed: checked.passed, reasons: checked.failureReasons, evidenceType: "authored local verdict, not model evidence" });
+}
+let unchangedOtherPromptCount = 0;
+if (process.env.RELATIONAL_UNKNOWN_OLD_VALIDATOR) {
+  const old = await import(pathToFileURL(process.env.RELATIONAL_UNKNOWN_OLD_VALIDATOR).href);
+  for (const item of qwenEvalCases) {
+    const input = qwenInputFor(item);
+    if (input.positiveFunctionBinding?.action === "offer_emotional_support" &&
+        input.positiveFunctionBinding.supportFunction === "acknowledge_current_relational_impact") continue;
+    assert.equal(plannedFunctionSemanticDeveloperContentFor(input).scoped, old.plannedFunctionSemanticDeveloperContentFor(input).scoped, item.id);
+    unchangedOtherPromptCount++;
+  }
+}
+if (process.env.RELATIONAL_UNKNOWN_REPORT) writeFileSync(process.env.RELATIONAL_UNKNOWN_REPORT, JSON.stringify({
+  actual292Replay: { passed: original292Replay.passed, reasons: original292Replay.failureReasons, originalVerdictPreserved: true },
+  actualPromptChange: { before: unknownFixture.originalRule, after: clarifiedRule, onlyThisRuleChanged: true, userPayloadUnchanged: true },
+  authoredUnknownChecks, unchangedOtherPromptCount, syntheticWireTransports: syntheticWireCalls, modelCalls: 0, run3StillDisputed: true,
+  limitation: "Local contracts, actual prompt inspection and authored verdict composition only; real model correction is unverified."
+}, null, 2) + "\n");
+console.log("Unknown-vs-solicitation local regression checks passed; no real model correction claimed.");
 
 console.log("planned function semantic Validator checks passed");
 };

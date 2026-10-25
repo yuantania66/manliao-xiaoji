@@ -184,13 +184,21 @@ export const restoreFirstFollowupRules = (content: string) => {
   return content;
 };
 
+// Test-only inverse of the2026-10-24 NO-SOLICIT clarification; historical hashes stay unchanged.
+const UNKNOWN_SOLICIT_CLARIFICATION = " Distinguish the Assistant stating its own lack of understanding from directing the User to resolve that lack. A statement of not yet knowing what was missed, without assigning the User an explaining, identifying, choosing, or answering act, states the required information boundary and is not solicitation. For a solicitation rejection, quote the actual request-bearing span and explain what response it asks or invites the User to provide; uncertainty wording or a reference to an unknown part alone is not that evidence. Optional permission can still invite an explaining act, and a statement of uncertainty does not cancel a request elsewhere in the reply. Judge the whole meaning, including any explicit current User request, not punctuation or a phrase whitelist. This distinction does not make the whole reply satisfied or waive any other requirement.";
+
 export const restoreExplicitAffectRules = (content: string) => {
   assert.equal(content.split(CONTEXTUAL_ACCEPTANCE_SNAPSHOT).length - 1, 1);
   content = content.replace(CONTEXTUAL_ACCEPTANCE_SNAPSHOT + "\n", "")
     .replace(/drift, generic reassurance, advice/g, "drift, reassurance, advice");
   content = restoreFirstFollowupRules(content);
   for (const [current, historical] of FOLLOWUP_RULE_EDITS) content = content.split(current).join(historical);
-  const lines = content.split("\n");
+  let lines = content.split("\n");
+  const solicitationRulePresent = lines.some(line => line.startsWith("ES-ACK-NO-SOLICIT:"));
+  assert.equal(content.split(UNKNOWN_SOLICIT_CLARIFICATION).length - 1, solicitationRulePresent ? 1 : 0,
+    "Exactly the declared solicitation clarification is reversed for historical snapshot checks.");
+  content = content.replace(UNKNOWN_SOLICIT_CLARIFICATION, "");
+  lines = content.split("\n");
   const boundaryLines = lines.filter((line) => line.startsWith("Affect interpretation boundary:"));
   assert.deepEqual(boundaryLines, [AFFECT_INTERPRETATION_BOUNDARY], "Exactly the declared new boundary reaches the judge.");
   let restored = lines.filter((line) => line !== AFFECT_INTERPRETATION_BOUNDARY).join("\n");
