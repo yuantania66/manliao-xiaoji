@@ -10,7 +10,8 @@ import type {
   TurnInterpretation,
   TurnStateUpdate,
 } from "./types";
-import { projectUserMoveRelation } from "./interactionMoveHandoff";
+import { replacementFactFromCorrection } from "./correctionEvidence";
+import { projectUserMoveRelation, retainCommittedAssistantMoveEnvelope } from "./interactionMoveHandoff";
 
 const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
 
@@ -443,6 +444,7 @@ export const interpretTurnDeterministically = (context: ConversationControlConte
   return {
     ...relational,
     ordinaryPostureProposal: null,
+    acknowledgmentTreatmentEvidence: null,
     literalMeaning: text,
     primaryDialogueAct,
     secondarySignals,
@@ -526,8 +528,51 @@ const currentCommittedClaimAuthorityForContext = (
     : null;
 };
 
+export const UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE =
+  "Target Assistant turn has no committed claims; unverifiable target claim text was dropped.";
+
+export const MOVE_FIT_REPAIR_ADOPTION_EVIDENCE =
+  "No active handoff: validated challenges_move_fit on the latest committed Assistant turn adopted as interaction-move withdrawal repair.";
+
+// Missing committed-move data means claims are unavailable, not absent.
+const latestAssistantTurnExplicitlyHasNoClaims = (
+  context: ConversationControlContext | undefined,
+  targetTurnId: string | undefined
+) => {
+  if (!context || !targetTurnId) return false;
+  const latestAssistantTurn = [...context.adjacentTurns]
+    .reverse()
+    .find((turn) => turn.role === "assistant");
+  if (!latestAssistantTurn || latestAssistantTurn.id !== targetTurnId) return false;
+  const claimSources = [
+    context.interactionMoveHandoffTarget?.sourceAssistantMoveId === targetTurnId
+      ? context.interactionMoveHandoffTarget.envelope.committedMove.claims
+      : undefined,
+    retainCommittedAssistantMoveEnvelope(latestAssistantTurn)?.committedMove.claims,
+    latestAssistantTurn.committedAssistantMove?.claims,
+  ].filter((claims) => claims !== undefined);
+  return claimSources.length > 0 &&
+    claimSources.every((claims) => Array.isArray(claims) && claims.length === 0);
+};
+
 const isTargetOperation = (value: unknown): value is TargetPropositionOperation =>
   value === "explain" || value === "answer" || value === "affirm" || value === "repair_or_withdraw";
+
+const modelAcknowledgmentTreatmentEvidence = (
+  model: Partial<TurnInterpretation> | null
+): TurnInterpretation["acknowledgmentTreatmentEvidence"] => {
+  const raw = model?.acknowledgmentTreatmentEvidence;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw) ||
+      Object.keys(raw).sort().join(",") !== "acknowledgment,treatment") return null;
+  for (const span of [raw.acknowledgment, raw.treatment]) {
+    if (!span || typeof span !== "object" || Array.isArray(span) ||
+        Object.keys(span).sort().join(",") !== "end,source,sourceTurnId,start,text" ||
+        span.source !== "current_user_turn" || typeof span.sourceTurnId !== "string" ||
+        !Number.isInteger(span.start) || !Number.isInteger(span.end) || span.start < 0 || span.end <= span.start ||
+        typeof span.text !== "string" || !span.text.trim()) return null;
+  }
+  return structuredClone(raw);
+};
 
 const modelOrdinaryPostureProposal = (
   model: Partial<TurnInterpretation> | null
@@ -564,7 +609,24 @@ const modelOrdinaryPostureProposal = (
   const contribution = value.proposedContribution;
   if (!contribution || typeof contribution !== "object") return null;
   const proposed = contribution as Record<string, unknown>;
-  if (!hasExactKeys(proposed, ["targetSpanIndexes", "instruction"])) return null;
+  if (!hasExactKeys(proposed, ["targetSpanIndexes", "instruction", ...(Object.hasOwn(proposed, "purposeEvidence") ? ["purposeEvidence"] : []),
+      ...(Object.hasOwn(proposed, "acknowledgmentTreatmentEvidence") ? ["acknowledgmentTreatmentEvidence"] : [])])) return null;
+  const purpose = proposed.purposeEvidence;
+  if (purpose !== undefined && purpose !== null) {
+    if (typeof purpose !== "object" || Array.isArray(purpose)) return null;
+    const item = purpose as Record<string, unknown>;
+    if (!hasExactKeys(item, ["kind", "support", "acknowledgmentSpanIndex", "treatmentSpanIndex"]) ||
+        item.kind !== "limit_scope_of_acknowledgment" ||
+        !["supported", "only_repeats", "uncertain"].includes(item.support as string) ||
+        !Number.isInteger(item.acknowledgmentSpanIndex) || !Number.isInteger(item.treatmentSpanIndex)) return null;
+  }
+  const acknowledgmentTreatment = proposed.acknowledgmentTreatmentEvidence;
+  if (acknowledgmentTreatment !== undefined && acknowledgmentTreatment !== null) {
+    if (typeof acknowledgmentTreatment !== "object" || Array.isArray(acknowledgmentTreatment)) return null;
+    const item = acknowledgmentTreatment as Record<string, unknown>;
+    if (!hasExactKeys(item, ["acknowledgmentSpanIndex", "treatmentSpanIndex"]) ||
+        !Number.isInteger(item.acknowledgmentSpanIndex) || !Number.isInteger(item.treatmentSpanIndex)) return null;
+  }
   if (
     !Array.isArray(proposed.targetSpanIndexes) ||
     proposed.targetSpanIndexes.length === 0 ||
@@ -578,6 +640,10 @@ const modelOrdinaryPostureProposal = (
     proposedContribution: {
       targetSpanIndexes: proposed.targetSpanIndexes as number[],
       instruction: proposed.instruction,
+      ...(purpose !== undefined ? { purposeEvidence: purpose as NonNullable<TurnInterpretation["ordinaryPostureProposal"]>["proposedContribution"]["purposeEvidence"] } : {}),
+      ...(acknowledgmentTreatment !== undefined ? {
+        acknowledgmentTreatmentEvidence: acknowledgmentTreatment as NonNullable<TurnInterpretation["ordinaryPostureProposal"]>["proposedContribution"]["acknowledgmentTreatmentEvidence"],
+      } : {}),
     },
     evidence: value.evidence as string[],
   };
@@ -628,8 +694,15 @@ const modelRelationCandidates = (
       suppliedTargetProposition && suppliedTargetOperation
     );
     if (suppliedOneTargetField && !suppliedBothTargetFields) return [];
+    const dropsUnverifiableRepairClaim =
+      value.relation === "repairs_previous_move" &&
+      suppliedTargetOperation === "repair_or_withdraw" &&
+      confidence >= 0.93 &&
+      committedClaims.length === 0 &&
+      latestAssistantTurnExplicitlyHasNoClaims(context, targetTurnId);
     if (
       suppliedTargetProposition &&
+      !dropsUnverifiableRepairClaim &&
       !committedClaims.some((claim) => claim.text === suppliedTargetProposition)
     ) return [];
     if (
@@ -650,19 +723,22 @@ const modelRelationCandidates = (
       value.relation !== "requests_answer"
     ) return [];
     if (claimAuthority && claimTargetingRelation && !suppliedBothTargetFields) return [];
+    const evidence = Array.isArray(value.evidence)
+      ? value.evidence.filter((item): item is string => typeof item === "string")
+      : ["Model supplied a relational interpretation candidate."];
     return [{
       relation: value.relation,
       confidence,
       ...(targetTurnId ? { targetTurnId } : {}),
-      ...(suppliedTargetProposition && suppliedTargetOperation
+      ...(suppliedTargetProposition && suppliedTargetOperation && !dropsUnverifiableRepairClaim
         ? {
             targetProposition: suppliedTargetProposition,
             targetOperation: suppliedTargetOperation,
           }
         : {}),
-      evidence: Array.isArray(value.evidence)
-        ? value.evidence.filter((item): item is string => typeof item === "string")
-        : ["Model supplied a relational interpretation candidate."],
+      evidence: dropsUnverifiableRepairClaim
+        ? [...evidence, UNVERIFIABLE_REPAIR_CLAIM_DROPPED_EVIDENCE]
+        : evidence,
     }];
   });
 };
@@ -783,7 +859,7 @@ export const mergeModelInterpretation = (
     : context
       ? [...context.adjacentTurns].reverse().find((turn) => turn.role === "assistant")
       : null;
-  const inferredRepairUpdate =
+  const modelRepairUpdate =
     !deterministic.stateUpdate.repairProposal &&
     modelRepair &&
     repairTarget &&
@@ -802,6 +878,41 @@ export const mergeModelInterpretation = (
           evidence: modelRepair.evidence,
         }
       : null;
+  const latestAssistantTurn = context
+    ? [...context.adjacentTurns].reverse().find((turn) => turn.role === "assistant")
+    : undefined;
+  // Outside an active handoff, a validated move-fit challenge of the latest Assistant turn
+  // withdraws that interaction move; claims and concrete factual corrections keep their own path.
+  const latestAssistantTurnId = latestAssistantTurn?.id;
+  const moveFitRepair =
+    !deterministic.stateUpdate.repairProposal &&
+    !modelRepairUpdate &&
+    context &&
+    !context.interactionMoveHandoffTarget &&
+    !replacementFactFromCorrection(context.currentUserMessage) &&
+    latestAssistantTurnId
+      ? acceptedModelCandidates.find((candidate) =>
+          candidate.relation === "challenges_move_fit" &&
+          candidate.confidence >= 0.93 &&
+          candidate.targetTurnId === latestAssistantTurnId &&
+          !candidate.targetProposition &&
+          latestAssistantTurnExplicitlyHasNoClaims(context, latestAssistantTurnId)
+        ) ?? null
+      : null;
+  const moveFitRepairUpdate = moveFitRepair && latestAssistantTurn && latestAssistantTurnId
+    ? {
+        propositionId: `${latestAssistantTurnId}:model-challenged-move-1`,
+        proposition: latestAssistantTurn.content,
+        operation: "reject" as const,
+        subject: "assistant" as const,
+        speaker: "user" as const,
+        epistemicStatus: "rejected_by_user" as const,
+        sourceTurnId: latestAssistantTurnId,
+        confidence: moveFitRepair.confidence,
+        evidence: [...moveFitRepair.evidence, MOVE_FIT_REPAIR_ADOPTION_EVIDENCE],
+      }
+    : null;
+  const inferredRepairUpdate = modelRepairUpdate ?? moveFitRepairUpdate;
   const modelAnswerTarget = candidates.find((candidate) =>
     candidate.relation === "requests_answer" &&
     (candidate.targetOperation === "explain" || candidate.targetOperation === "answer") &&
@@ -874,6 +985,7 @@ export const mergeModelInterpretation = (
           targetTurnId: inferredRepairUpdate.sourceTurnId,
           rejectedPropositionIds: [inferredRepairUpdate.propositionId],
           evidence: inferredRepairUpdate.evidence,
+          ...(moveFitRepairUpdate ? { sourceRelation: "challenges_move_fit" as const } : {}),
         }
       : deterministic.stateUpdate.repairProposal,
   };
@@ -910,6 +1022,7 @@ export const mergeModelInterpretation = (
       evidence: candidate.evidence,
     })),
     ordinaryPostureProposal,
+    acknowledgmentTreatmentEvidence: modelAcknowledgmentTreatmentEvidence(model),
     confidence: modelConfidence,
     evidenceSources: model
       ? Array.from(new Set([...deterministic.evidenceSources, "model_interpretation"]))

@@ -1,11 +1,14 @@
 import type {
   ClinicalStrategyAdvice,
   ConversationControlContext,
+  DeclinedSharingSource,
   DialogueState,
+  EmotionalSupportFunction,
   InteractionMoveSubtype,
   OrdinaryHandoffBoundary,
   OrdinaryPosturePlan,
   OrdinaryPostureSourceSpan,
+  OrdinaryResponseFunction,
   PositiveFunctionContract,
   ResponseAction,
   ResponsePlan,
@@ -13,6 +16,8 @@ import type {
 } from "./types";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
 import { projectAffectEvidenceTerms } from "../state";
+import { hasExpressionBurden, sharingInvitationDeclinedSource, supportsOrdinaryExperienceInvitation } from "./ordinaryResponseBoundary";
+import { ordinaryPostureRelationSupported, selectSupportedOrdinaryPurpose } from "./ordinaryPurpose";
 import { parseCommittedAssistantMoveEnvelope } from "../interactionMoveEnvelope";
 import { planInteractionMoveHandoff } from "./interactionMoveHandoffPlanner";
 import { selectOrdinaryHandoffAction } from "./ordinaryHandoff";
@@ -21,6 +26,7 @@ import {
   buildCanonicalResponsePlanPreflightProvenance,
 } from "./responsePlanPreflightAuthority";
 import { getRequiredGroundingDisclosure } from "./assistantGrounding";
+import { replacementFactFromCorrection } from "./correctionEvidence";
 
 export type ClinicalAdviceProvider = (input: {
   need: "emotional_support" | "action_support";
@@ -35,6 +41,31 @@ export type ResponsePlanRecoveryDirective = {
   unavailableActions: readonly ["offer_emotional_support"];
 };
 
+// One Planner-owned stance, shared by Surface and the existing same-plan semantic gate.
+export const CONTEXTUAL_ACCEPTANCE_STANCE =
+  "Contextual acceptance: For a personal concern in the current User message, respond with an accepting, non-judgmental stance toward the User's expressed experience and relationships, without requiring the feeling to be justified or dismissed. Acceptance is a stance, not required spoken feeling validation or a follow-up question; it cannot replace another selected support function. Bare normalization, generic reassurance or paraphrase alone is insufficient. Accepting a feeling does not approve conduct, assign blame, guarantee outcomes, or establish hidden motives or psychological facts. Follow current corrections, refusals and tasks; do not require an emotion preface, question, advice or regulation exercise.";
+
+export const ORDINARY_RESPONSE_FUNCTION_INSTRUCTIONS: Record<OrdinaryResponseFunction, string> = {
+  respond_naturally: "直接自然地回应用户当前表达；允许有依据的情绪确认，即使贴近原话。提问权限允许时，可以接一个贴近当前经历、不给定答案的可选问题；此轮也可以不追问、不推进并就此结束，不要求新信息、解释或建议。用户明确只需知悉时，简短确认收到即可回应这个要求；不据此关闭整个会话或豁免其他已选义务。",
+  invite_optional_sharing: "先自然确认用户有依据的当前感受，再给出一个贴近其正在讲述的经历、具体而开放的表达入口，让用户自己说在意的部分。入口可以是邀请陈述或问题，用户完全可以不回答；不要求问号、建议或行动推进。仅确认、抽象说理或泛泛重邀不算完成；不重复索取已知答案、不预设内心或要求自我分析。事实、安全、拒绝、表达负担和独立提问权限优先。",
+  respect_declined_sharing: "尊重用户不想展开或不想被追问的边界，针对已经表达的内容自然回应即可结束；不再邀请、追问或要求说明拒绝的原因。",
+  reduce_expression_burden: "降低用户继续表达的负担，不要求讲清原因、完整整理或进一步分析；允许有限、零散的表达，也可以自然回应后结束。不得用机械在场表态或重复邀请代替回应。",
+};
+export const isOrdinaryResponseFunction = (value: unknown): value is OrdinaryResponseFunction =>
+  typeof value === "string" && Object.hasOwn(ORDINARY_RESPONSE_FUNCTION_INSTRUCTIONS, value);
+
+
+const ordinaryResponseFunctionFor = ({ context, interpretation, dialogueState, questionMode, questionsDeclined, allowIdle }: {
+  context: ConversationControlContext; interpretation: TurnInterpretation; dialogueState: DialogueState; questionMode: ResponsePlan["questionPolicy"]["mode"]; questionsDeclined: boolean; allowIdle: boolean;
+}): OrdinaryResponseFunction => {
+  if (questionsDeclined) return "respect_declined_sharing";
+  if (allowIdle) return "respond_naturally";
+  if (hasExpressionBurden(context.currentUserMessage)) return "reduce_expression_burden";
+  if (questionMode !== "none" && supportsOrdinaryExperienceInvitation(context, interpretation, dialogueState)) return "invite_optional_sharing";
+  return "respond_naturally";
+};
+
+
 const unique = <T>(items: T[]) => Array.from(new Set(items));
 
 const exactPostureSpanSource = (context: ConversationControlContext, span: OrdinaryPostureSourceSpan) => {
@@ -46,13 +77,19 @@ const exactPostureSpanSource = (context: ConversationControlContext, span: Ordin
   )?.content ?? null;
 };
 
-const acceptedOrdinaryPosture = ({ context, interpretation, priorityOwned, boundary }: {
+const acceptedOrdinaryPosture = ({ context, interpretation, priorityOwned, boundary, responseFunction, allowIdle }: {
   context: ConversationControlContext;
   interpretation: TurnInterpretation;
   priorityOwned: boolean;
   boundary: OrdinaryHandoffBoundary | null;
+  responseFunction: OrdinaryResponseFunction;
+  allowIdle: boolean;
 }): OrdinaryPosturePlan | null => {
   if (priorityOwned) return null;
+  // Existing refusal/burden decisions can constrain this turn. A manner or
+  // interpreter suggestion alone cannot authorize a required contribution.
+  const requiredInstruction = responseFunction === "respect_declined_sharing" || responseFunction === "reduce_expression_burden"
+    ? ORDINARY_RESPONSE_FUNCTION_INSTRUCTIONS[responseFunction] : null;
   const proposal = interpretation.ordinaryPostureProposal;
   const boundaryRejectsExplore = boundary?.userBoundaries.some((item) =>
     item === "no_analysis" || item === "no_questions" || item === "pause" || item === "stop"
@@ -68,14 +105,21 @@ const acceptedOrdinaryPosture = ({ context, interpretation, priorityOwned, bound
       Number.isInteger(index) && index >= 0 && index < proposal.sourceSpans.length
     ) && proposal.proposedContribution.instruction.trim().length > 0 &&
     proposal.proposedContribution.instruction.trim().length <= 240 && proposal.evidence.some((item) => item.trim()) &&
-    !(proposal.mode === "explore" && boundaryRejectsExplore) && !interpretation.responseRelation.ambiguous);
+    !(proposal.mode === "explore" && boundaryRejectsExplore) &&
+    ordinaryPostureRelationSupported(context, interpretation));
+  const supportedPurpose = !allowIdle && !requiredInstruction && responseFunction === "respond_naturally"
+    ? selectSupportedOrdinaryPurpose(context, interpretation) : null;
+  if (supportedPurpose) return {
+    mode: "accompany", ...supportedPurpose,
+    evidence: ["owner=conversation_os.response_planner", "purposeFrom=independent_current_user_acknowledgment_treatment_roles"],
+  };
   if (valid && proposal) return {
-    mode: proposal.mode,
+    mode: "accompany",
     sourceSpans: structuredClone(proposal.sourceSpans),
-    requiredContribution: {
+    requiredContribution: requiredInstruction ? {
       targetSpanIndexes: [...proposal.proposedContribution.targetSpanIndexes],
-      instruction: proposal.proposedContribution.instruction.trim(),
-    },
+      instruction: requiredInstruction,
+    } : null,
     evidence: unique(["owner=conversation_os.response_planner", ...proposal.evidence]),
   };
   const start = context.currentUserMessage.search(/\S/u);
@@ -84,7 +128,7 @@ const acceptedOrdinaryPosture = ({ context, interpretation, priorityOwned, bound
   return {
     mode: "accompany",
     sourceSpans: [{ source: "current_user_turn", sourceTurnId: context.currentTurnId, start, end, text: context.currentUserMessage.slice(start, end) }],
-    requiredContribution: { targetSpanIndexes: [0], instruction: "对用户当前已经表达的具体内容作出贴切回应，并保留由用户决定是否继续或转向的空间。" },
+    requiredContribution: requiredInstruction ? { targetSpanIndexes: [0], instruction: requiredInstruction } : null,
     evidence: ["owner=conversation_os.response_planner", proposal ? "interpreter_proposal_rejected" : "ambiguous_or_missing_proposal_defaults_to_accompany"],
   };
 };
@@ -203,7 +247,7 @@ const emotionalSupportFunctionFor = ({
   message: string;
   affectEvidence: ConversationControlContext["interaction"]["affectEvidence"];
 }): Extract<PositiveFunctionContract, { action: "offer_emotional_support" }>["supportFunction"] => {
-  if (/(?:不想|不要|不用).{0,8}(?:分析|解释|找原因|讲原因)|不知道为什么/u.test(message)) {
+  if (hasExpressionBurden(message)) {
     return "reduce_expression_burden";
   }
   if (/(?:说不清|不知道怎么说|不想多说|没法多说|只能说一点|什么也不想说)/u.test(message)) {
@@ -216,15 +260,44 @@ const emotionalSupportFunctionFor = ({
     affectEvidence.map((span) => `${span.category}:${span.object}`)
   );
   if (distinctAffectTargets.size > 1) return "return_focus_control";
-  return "return_amount_control";
+  return "invite_optional_sharing";
 };
 
-const replacementFactFromCorrection = (message: string) => {
-  const contrast = message.match(
-    /(?:不是|不叫)([^，,。；;\s]{1,18}?)[，,；;\s]*(?:而?是|叫)([^，,。；;]{1,24})/u
-  );
-  const replacement = contrast?.[2]?.trim();
-  return replacement?.replace(/^(?:我|你)(?:的)?/u, "").trim() || null;
+const EMOTIONAL_SUPPORT_DECLINED_REASON =
+  "The user declined questions or talking in this turn, or in the previous turn without reopening; acknowledge without inviting, asking, or requesting more.";
+const QUESTIONS_DECLINED_REASON =
+  "The user declined questions or talking in this turn, or in the previous turn without reopening; do not ask, invite, or request more, but still answer what the user asks.";
+
+
+const withoutSharingInvitation = (
+  contract: PositiveFunctionContract | null,
+  {
+    replaces,
+    replacement,
+    reason,
+    declinedSharingSource,
+  }: {
+    replaces: EmotionalSupportFunction[];
+    replacement: EmotionalSupportFunction;
+    reason: string;
+    declinedSharingSource?: DeclinedSharingSource | null;
+  }
+): PositiveFunctionContract | null => {
+  if (contract?.action !== "offer_emotional_support" || !replaces.includes(contract.supportFunction)) {
+    return contract;
+  }
+  const replaced = contract.supportFunction;
+  return {
+    ...contract,
+    supportFunction: replacement,
+    ...(declinedSharingSource ? { declinedSharingSource } : {}),
+    evidence: [
+      ...contract.evidence.map((item) =>
+        item === `supportFunction=${replaced}` ? `supportFunction=${replacement}` : item
+      ),
+      `sharingInvitationUnavailable=${reason}`,
+    ],
+  };
 };
 
 const interactionMoveSubtypeFor = ({
@@ -282,18 +355,24 @@ const positiveFunctionContractFor = ({
         targetText === identityRepair.targetProposition
       ? context.grounding.availableFacts.assistant.displayName
       : null;
-    const replacementFact = replacementFactFromCorrection(context.currentUserMessage) ?? identityReplacement;
+    // Move-fit repair withdraws the targeted move; a missing subtype needs independent preflight authority.
+    const moveFitRepair = dialogueState.repairState.sourceRelation === "challenges_move_fit";
+    const replacementFact = moveFitRepair
+      ? null
+      : replacementFactFromCorrection(context.currentUserMessage) ?? identityReplacement;
     const interactionMoveSubtype = replacementFact
       ? null
       : interactionMoveSubtypeFor({
           currentUserMessage: context.currentUserMessage,
           targetText,
         });
-    const repairMode = replacementFact
-      ? "factual_replacement"
-      : interactionMoveSubtype
-        ? "interaction_move_withdrawal"
-        : "proposition_withdrawal";
+    const repairMode = moveFitRepair
+      ? "interaction_move_withdrawal"
+      : replacementFact
+        ? "factual_replacement"
+        : interactionMoveSubtype
+          ? "interaction_move_withdrawal"
+          : "proposition_withdrawal";
     return {
       action: "repair_previous_wording",
       repairMode,
@@ -506,10 +585,12 @@ export const createResponsePlan = ({
         .slice(-4)
         .map((turn) => turn.content)
     : [];
+  const questionsDeclinedSource = sharingInvitationDeclinedSource(context);
   const ordinaryHandoffAction = selectOrdinaryHandoffAction({
     context,
     state: dialogueState,
     boundary: ordinaryHandoffBoundary,
+    questionsDeclined: !context.safety.triggered && questionsDeclinedSource !== null,
   });
   let actions = actionsForState({
     state: dialogueState,
@@ -572,7 +653,7 @@ export const createResponsePlan = ({
   const clinicalStrategy = clinicalNeed
     ? clinicalAdviceProvider({ need: clinicalNeed, context, interpretation })
     : null;
-  const positiveFunctionContract =
+  const selectedPositiveFunctionContract =
     interactionMoveHandoffPlan?.requiredFunction === "withdraw_or_repair_targeted_move"
       ? typedHandoffRepairContractFor({
           context,
@@ -600,8 +681,8 @@ export const createResponsePlan = ({
           dialogueState,
         });
   if (
-    positiveFunctionContract?.action === "repair_previous_wording" &&
-    positiveFunctionContract.interactionMoveSubtype === "pressure_question"
+    selectedPositiveFunctionContract?.action === "repair_previous_wording" &&
+    selectedPositiveFunctionContract.interactionMoveSubtype === "pressure_question"
   ) {
     actions = actions.filter((action) => action !== "take_light_topic_initiative");
   }
@@ -664,17 +745,31 @@ export const createResponsePlan = ({
           structurallyComplexConcurrent.length > 0
         ? "standard"
         : "minimal";
+  const acknowledgesRelationalImpact =
+    selectedPositiveFunctionContract?.action === "offer_emotional_support" &&
+    selectedPositiveFunctionContract.supportFunction === "acknowledge_current_relational_impact";
+  const declinedSharingSource = actions.includes("offer_emotional_support") ? questionsDeclinedSource : null;
+  const emotionalSupportDeclinesInvitation = declinedSharingSource !== null;
+  // A refusal holds without emotional evidence too; it removes follow-up questions, not answers.
+  const otherTurnDeclinesQuestions =
+    !emotionalSupportDeclinesInvitation && !context.safety.triggered && questionsDeclinedSource !== null;
   const handoffInvitesCalibration = actions.includes("invite_low_pressure_calibration");
   const handoffRequiresNoQuestion = actions.some((action) =>
     action === "continue_established_frame" ||
     action === "continue_established_thread" ||
     action === "offer_neutral_conversation_entry"
   );
+  const handoffQuestionsDeclined = Boolean(
+    interactionMoveHandoffPlan && (emotionalSupportDeclinesInvitation || otherTurnDeclinesQuestions)
+  );
   const questionMode = interactionMoveHandoffPlan
-    ? interactionMoveHandoffPlan.questionPolicy === "none"
+    ? interactionMoveHandoffPlan.questionPolicy === "none" || handoffQuestionsDeclined
       ? "none"
       : "optional_after_answer"
     : hasActivity(dialogueState, "pausing") ||
+    acknowledgesRelationalImpact ||
+    emotionalSupportDeclinesInvitation ||
+    otherTurnDeclinesQuestions ||
     allowIdle ||
     simpleDirectAnswer ||
     (repairsAssistant && !takesTopicInitiative) ||
@@ -690,16 +785,46 @@ export const createResponsePlan = ({
         : takesTopicInitiative
           ? "one_low_pressure_question"
           : "optional_after_answer";
+  const selectedContract = emotionalSupportDeclinesInvitation
+    ? withoutSharingInvitation(selectedPositiveFunctionContract, {
+        replaces: ["invite_optional_sharing", "return_amount_control", "return_focus_control"],
+        replacement: "respect_declined_sharing",
+        reason: "user_declined_questions_or_talking",
+        declinedSharingSource,
+      })
+    : questionMode === "none"
+      ? withoutSharingInvitation(selectedPositiveFunctionContract, {
+          replaces: ["invite_optional_sharing"],
+          replacement: "return_amount_control",
+          reason: "question_policy_none",
+        })
+      : selectedPositiveFunctionContract;
+  // Bind the final fallback action after idle arbitration; existing positive functions keep priority.
+  const positiveFunctionContract: PositiveFunctionContract | null = selectedContract ?? (
+    actions.includes("acknowledge_without_psychologizing")
+      ? {
+          action: "acknowledge_without_psychologizing",
+          sourceTurnId: context.currentTurnId,
+          sourceText: context.currentUserMessage,
+          allowIdle,
+          responseFunction: ordinaryResponseFunctionFor({context, interpretation, dialogueState, questionMode, questionsDeclined: questionsDeclinedSource !== null, allowIdle}),
+          evidence: [`currentUserMessage=${context.currentUserMessage}`],
+        }
+      : null
+  );
   const ordinaryPosture = acceptedOrdinaryPosture({
     context,
     interpretation,
     boundary: ordinaryHandoffBoundary,
+    allowIdle,
+    responseFunction: positiveFunctionContract?.action === "acknowledge_without_psychologizing"
+      ? positiveFunctionContract.responseFunction ?? "respond_naturally" : "respond_naturally",
     priorityOwned: Boolean(
       context.safety.triggered ||
       hasActivity(dialogueState, "pausing") ||
       repairsAssistant ||
       dialogueState.openObligations.length > 0 ||
-      positiveFunctionContract ||
+      (positiveFunctionContract && positiveFunctionContract.action !== "acknowledge_without_psychologizing") ||
       interactionMoveHandoffPlan ||
       requiredDisclosure.length > 0
     ),
@@ -785,12 +910,22 @@ export const createResponsePlan = ({
       mode: questionMode,
       reason: interactionMoveHandoffPlan?.questionPolicy === "none"
         ? "The active interaction-move handoff requires no follow-up question."
+        : handoffQuestionsDeclined
+          ? emotionalSupportDeclinesInvitation
+            ? EMOTIONAL_SUPPORT_DECLINED_REASON
+            : QUESTIONS_DECLINED_REASON
         : interactionMoveHandoffPlan?.questionPolicy === "optional_after_completion"
           ? interactionMoveHandoffPlan.requiredFunction === "complete_reciprocal_contact"
             ? "After reciprocal contact is completed, one low-pressure invitation may let the user choose what to discuss."
             : "A question is optional only after the handoff function is completed and independently supported by the ordinary plan."
       : hasActivity(dialogueState, "pausing")
         ? "Interaction State is paused."
+        : acknowledgesRelationalImpact
+          ? "Relational-impact acknowledgement is complete once the impact and information boundary are stated; do not ask or invite the user to explain, choose, or show what the assistant missed. Current-turn answer obligations still apply."
+        : emotionalSupportDeclinesInvitation
+          ? EMOTIONAL_SUPPORT_DECLINED_REASON
+        : otherTurnDeclinesQuestions
+          ? QUESTIONS_DECLINED_REASON
         : handoffInvitesCalibration
           ? "Helping applicability is uncertain; ask one low-pressure calibration question without assigning meaning."
         : handoffRequiresNoQuestion
@@ -824,12 +959,15 @@ export const createResponsePlan = ({
         : "Interaction State contains no accepted stop transition.",
     },
     tone: ordinaryChat
-      ? ["natural colloquial Chinese", "direct", "neutral-friendly without reassurance"]
+      ? ["natural colloquial Chinese", "direct", actions.includes("acknowledge_without_psychologizing")
+          ? "neutral-friendly without generic reassurance" : "neutral-friendly without reassurance"]
       : ["natural Chinese", "direct", "warm without counselling jargon"],
     stance: [
-      "Realize only propositions and actions present in this ResponsePlan.",
+      "Realize the actions and evidence boundaries of this ResponsePlan. Contextual acceptance already permitted by the plan may respond to the User's expressed situation, feelings and their relationships without being a previously stated proposition; this does not authorize unsupported factual claims or hidden motives or psychological states.",
       "Do not promote hypotheses into common ground.",
       "Do not restate propositions rejected by the user.",
+      ...(actions.some((action) => action === "acknowledge_without_psychologizing" || action === "offer_emotional_support")
+        ? [CONTEXTUAL_ACCEPTANCE_STANCE] : []),
     ],
     lengthGuidance: simpleDirectAnswer
       ? "Usually one concise sentence; at most two."

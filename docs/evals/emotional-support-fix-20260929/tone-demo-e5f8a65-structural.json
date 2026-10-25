@@ -1,0 +1,277 @@
+{
+  "note": "Structural copy; user messages, reply texts and evidence text kept locally.",
+  "summary": {
+    "head": "e5f8a65",
+    "model": "qwen3.7-max",
+    "judgeModel": "qwen3.8-max-0902",
+    "runsPerScenario": 3,
+    "scenarios": [
+      "declines-talking",
+      "declines-questions",
+      "prior-pause",
+      "reopened-after-pause"
+    ],
+    "plannedTotal": 12,
+    "skippedTurns": 0,
+    "completed": 12,
+    "stoppedOn": null,
+    "planMismatches": 12,
+    "committed": 0,
+    "constraintFailures": 12,
+    "regenerations": 0
+  },
+  "rows": [
+    {
+      "scenarioId": "declines-talking",
+      "runIndex": 1,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "none",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "declines-talking",
+      "runIndex": 2,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "none",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "declines-talking",
+      "runIndex": 3,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "none",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "declines-questions",
+      "runIndex": 1,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "none",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "declines-questions",
+      "runIndex": 2,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "none",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "declines-questions",
+      "runIndex": 3,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "none",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "prior-pause",
+      "runIndex": 1,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "none",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "prior-pause",
+      "runIndex": 2,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "none",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "prior-pause",
+      "runIndex": 3,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "respect_declined_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "none",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "reopened-after-pause",
+      "runIndex": 1,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "invite_optional_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "optional_after_answer",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "reopened-after-pause",
+      "runIndex": 2,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "invite_optional_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "optional_after_answer",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    },
+    {
+      "scenarioId": "reopened-after-pause",
+      "runIndex": 3,
+      "actualActions": [],
+      "actualSupportFunction": null,
+      "expectedSupportFunction": "invite_optional_sharing",
+      "questionPolicy": null,
+      "expectedQuestionPolicy": "optional_after_answer",
+      "finalSource": "constraint_failure",
+      "executionFailure": {
+        "code": "SAFETY_BLOCKED",
+        "category": null,
+        "failedPhase": "safety",
+        "surfaceAttemptsStarted": 0,
+        "planPreflightAttempts": 1,
+        "infrastructureRerunEligible": false
+      },
+      "regenerateAttempted": false,
+      "promptVersion": "safety-semantic-triage-v3",
+      "attempts": []
+    }
+  ]
+}

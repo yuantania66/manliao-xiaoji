@@ -7,7 +7,13 @@ import type {
   ResponsePlan,
   TurnInterpretation,
 } from "./types";
+import { hasExpressionBurden, sharingInvitationDeclinedSource, supportsOrdinaryExperienceInvitation } from "./ordinaryResponseBoundary";
 import { planInteractionMoveHandoff } from "./interactionMoveHandoffPlanner";
+import { selectSupportedOrdinaryPurpose } from "./ordinaryPurpose";
+import { replacementFactFromCorrection } from "./correctionEvidence";
+import { MOVE_FIT_REPAIR_ADOPTION_EVIDENCE } from "./turnInterpreter";
+import { retainCommittedAssistantMoveEnvelope } from "./interactionMoveHandoff";
+import { parseCommittedAssistantMoveMetadata } from "@/services/helping/committedHelpingMoveMetadata";
 
 type RelevanceProvenance = ResponsePlan["relevanceProvenance"][number];
 
@@ -21,6 +27,15 @@ type DeepReadonly<T> = T extends (...args: never[]) => unknown
 
 export type ResponsePlanPreflightAuthoritySnapshot = DeepReadonly<{
   expectedInteractionMoveHandoffPlan: InteractionMoveHandoffPlan | null;
+  ordinaryMoveFitRepairAuthority?: {
+    userTurnId: string;
+    userText: string;
+    assistantMoveId: string;
+    assistantText: string;
+    confidence: number;
+  } | null;
+  ordinaryContributionAuthority?: { questionsDeclined: boolean; expressionBurden: boolean; experienceInvitationSupported?: boolean;
+    supportedPurpose?: Pick<OrdinaryPosturePlan, "sourceSpans" | "requiredContribution"> | null };
   currentSource: {
     conversationId: string;
     userTurnId: string;
@@ -133,10 +148,61 @@ export const buildCanonicalOrdinaryPostureProvenance = (
       ...posture.sourceSpans.map((span, index) =>
         `sourceSpan[${index}]=${span.source}:${span.sourceTurnId}:${span.start}:${span.end}:${JSON.stringify(span.text)}`
       ),
-      `targetSpanIndexes=${JSON.stringify(posture.requiredContribution.targetSpanIndexes)}`,
-      `instruction=${JSON.stringify(posture.requiredContribution.instruction)}`,
+      `targetSpanIndexes=${JSON.stringify(posture.requiredContribution?.targetSpanIndexes ?? null)}`,
+      `instruction=${JSON.stringify(posture.requiredContribution?.instruction ?? null)}`,
+      ...(posture.requiredContribution?.purposeEvidence
+        ? [`purposeEvidence=${JSON.stringify(posture.requiredContribution.purposeEvidence)}`] : []),
       ...posture.evidence.map((item, index) => `postureEvidence[${index}]=${JSON.stringify(item)}`),
     ],
+  };
+};
+
+// Reconstruct this authority from the interpreted turn and committed source, never from a Plan.
+const ordinaryMoveFitRepairAuthorityFor = ({ context, interpretation, dialogueState }: {
+  context: ConversationControlContext;
+  interpretation: TurnInterpretation;
+  dialogueState: DialogueState;
+}): ResponsePlanPreflightAuthoritySnapshot["ordinaryMoveFitRepairAuthority"] => {
+  const target = [...context.adjacentTurns].reverse().find((turn) => turn.role === "assistant");
+  const proposal = interpretation.stateUpdate.repairProposal;
+  const repair = dialogueState.repairState;
+  if (context.safety.triggered || context.interactionMoveHandoffTarget ||
+      replacementFactFromCorrection(context.currentUserMessage) ||
+      !context.currentTurnId || !context.currentUserMessage.trim() ||
+      !interpretation.evidenceSources.includes("model_interpretation") ||
+      interpretation.contentMeaning.literalText !== context.currentUserMessage.replace(/\s+/g, " ").trim() ||
+      !interpretation.contentMeaning.explicitPropositions.some((item) =>
+        item.sourceTurnId === context.currentTurnId && item.text === interpretation.contentMeaning.literalText
+      ) ||
+      !target?.id || target.status !== "saved" || !target.content.trim() ||
+      proposal?.sourceRelation !== "challenges_move_fit" || proposal.targetTurnId !== target.id ||
+      !proposal.evidence.includes(MOVE_FIT_REPAIR_ADOPTION_EVIDENCE) ||
+      repair.status !== "active" || repair.sourceRelation !== "challenges_move_fit" ||
+      repair.targetTurnId !== target.id || !repair.evidence.includes(MOVE_FIT_REPAIR_ADOPTION_EVIDENCE)) return null;
+  const candidate = interpretation.responseRelation.candidates.find((item) =>
+    item.relation === "challenges_move_fit" && item.targetTurnId === target.id &&
+    Number.isFinite(item.confidence) && item.confidence >= 0.93 && item.confidence <= 1 &&
+    !item.targetProposition && item.evidence.some((value) => value.trim())
+  );
+  if (!candidate || !interpretation.stateUpdate.commonGround.some((item) =>
+    item.operation === "reject" && item.subject === "assistant" && item.speaker === "user" &&
+    item.epistemicStatus === "rejected_by_user" && item.sourceTurnId === target.id &&
+    item.proposition === target.content && proposal.rejectedPropositionIds.includes(item.propositionId) &&
+    item.confidence >= 0.93 && item.evidence.includes(MOVE_FIT_REPAIR_ADOPTION_EVIDENCE)
+  )) return null;
+  const envelope = retainCommittedAssistantMoveEnvelope(target);
+  const legacy = parseCommittedAssistantMoveMetadata(target.committedAssistantMove);
+  if ((target.interactionMoveEnvelope != null && !envelope) ||
+      (context.interactionMoveHandoffEnvelopePresent && context.adjacentTurns.at(-1) === target && !envelope) ||
+      legacy.status === "invalid" || (!envelope && legacy.status !== "valid") ||
+      (envelope && envelope.committedMove.claims.length !== 0) ||
+      (legacy.status === "valid" && legacy.assistantMove.claims.length !== 0)) return null;
+  return {
+    userTurnId: context.currentTurnId,
+    userText: context.currentUserMessage,
+    assistantMoveId: target.id,
+    assistantText: target.content,
+    confidence: candidate.confidence,
   };
 };
 
@@ -178,6 +244,13 @@ export const createResponsePlanPreflightAuthoritySnapshot = ({
     : null;
   const snapshot = {
     expectedInteractionMoveHandoffPlan,
+    ordinaryMoveFitRepairAuthority: ordinaryMoveFitRepairAuthorityFor({ context, interpretation, dialogueState }),
+    ordinaryContributionAuthority: {
+      questionsDeclined: sharingInvitationDeclinedSource(context) !== null,
+      expressionBurden: hasExpressionBurden(context.currentUserMessage),
+      experienceInvitationSupported: supportsOrdinaryExperienceInvitation(context, interpretation, dialogueState),
+      supportedPurpose: selectSupportedOrdinaryPurpose(context, interpretation),
+    },
     currentSource: {
       conversationId: context.conversationId,
       userTurnId: context.currentTurnId,

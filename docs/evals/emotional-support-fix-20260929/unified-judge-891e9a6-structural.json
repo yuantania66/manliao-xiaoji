@@ -1,0 +1,1818 @@
+{
+  "note": "Structural copy; replies and evidence text kept locally.",
+  "summary": {
+    "head": "891e9a6",
+    "judgeModel": "qwen3.8-max-0902",
+    "cases": 14,
+    "passes": 3,
+    "plannedJudgments": 42,
+    "completedJudgments": 42,
+    "outboundCalls": 42,
+    "outboundCap": 48,
+    "budgetExhausted": false,
+    "stoppedOn": null,
+    "complete": true,
+    "verdictsByGroup": {
+      "pause_positive": {
+        "correctJudgments": 9,
+        "plannedJudgments": 12,
+        "consistentCases": 4,
+        "cases": 4
+      },
+      "pause_negative": {
+        "correctJudgments": 15,
+        "plannedJudgments": 15,
+        "consistentCases": 5,
+        "cases": 5
+      },
+      "intensity": {
+        "correctJudgments": 3,
+        "plannedJudgments": 3,
+        "consistentCases": 1,
+        "cases": 1
+      },
+      "current_refusal_regression": {
+        "correctJudgments": 12,
+        "plannedJudgments": 12,
+        "consistentCases": 4,
+        "cases": 4
+      }
+    },
+    "attributionCounts": {
+      "rejection_on_positive": 3,
+      "correct": 29,
+      "wrong_rule": 4,
+      "out_of_function_citation": 6
+    }
+  },
+  "perCase": [
+    {
+      "caseId": "P1-leading-receipt-restate",
+      "group": "pause_positive",
+      "expectedPassed": true,
+      "attribution": {
+        "kind": "no_rule_expected"
+      },
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 0,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-RECEIPT"
+        ],
+        [
+          "ES-PAUSE-RECEIPT"
+        ],
+        [
+          "ES-PAUSE-RECEIPT"
+        ]
+      ],
+      "attributionStatus": [
+        "rejection_on_positive",
+        "rejection_on_positive",
+        "rejection_on_positive"
+      ]
+    },
+    {
+      "caseId": "P2-restate-company",
+      "group": "pause_positive",
+      "expectedPassed": true,
+      "attribution": {
+        "kind": "no_rule_expected"
+      },
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [],
+        [],
+        []
+      ],
+      "attributionStatus": [
+        "correct",
+        "correct",
+        "correct"
+      ]
+    },
+    {
+      "caseId": "P3-restate-today-company",
+      "group": "pause_positive",
+      "expectedPassed": true,
+      "attribution": {
+        "kind": "no_rule_expected"
+      },
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [],
+        [],
+        []
+      ],
+      "attributionStatus": [
+        "correct",
+        "correct",
+        "correct"
+      ]
+    },
+    {
+      "caseId": "P4-reference",
+      "group": "pause_positive",
+      "expectedPassed": true,
+      "attribution": {
+        "kind": "no_rule_expected"
+      },
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [],
+        [],
+        []
+      ],
+      "attributionStatus": [
+        "correct",
+        "correct",
+        "correct"
+      ]
+    },
+    {
+      "caseId": "N1-receipt-company-quiet",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "attribution": {
+        "kind": "expected_rule",
+        "rule": "ES-PAUSE-RECEIPT"
+      },
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-RECEIPT"
+        ],
+        [
+          "ES-PAUSE-RECEIPT"
+        ],
+        [
+          "ES-PAUSE-RECEIPT"
+        ]
+      ],
+      "attributionStatus": [
+        "correct",
+        "correct",
+        "correct"
+      ]
+    },
+    {
+      "caseId": "N2-receipt-company-then",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "attribution": {
+        "kind": "expected_rule",
+        "rule": "ES-PAUSE-RECEIPT"
+      },
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-RECEIPT"
+        ],
+        [
+          "ES-PAUSE-RECEIPT"
+        ],
+        [
+          "ES-PAUSE-RECEIPT"
+        ]
+      ],
+      "attributionStatus": [
+        "correct",
+        "correct",
+        "correct"
+      ]
+    },
+    {
+      "caseId": "N3-receipt-company",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "attribution": {
+        "kind": "expected_rule",
+        "rule": "ES-PAUSE-RECEIPT"
+      },
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-RECEIPT"
+        ],
+        [
+          "ES-PAUSE-RECEIPT"
+        ],
+        [
+          "ES-PAUSE-RECEIPT"
+        ]
+      ],
+      "attributionStatus": [
+        "correct",
+        "correct",
+        "correct"
+      ]
+    },
+    {
+      "caseId": "N4-assistant-own-feeling",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "attribution": {
+        "kind": "expected_rule",
+        "rule": "ES-PAUSE-SUBSTITUTE"
+      },
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-RECEIPT",
+          "ES-AFFECT-EVIDENCE",
+          "ES-PAUSE-SUBSTITUTE"
+        ],
+        [
+          "ES-PAUSE-RECEIPT",
+          "ES-PAUSE-SUBSTITUTE"
+        ],
+        [
+          "ES-PAUSE-RECEIPT"
+        ]
+      ],
+      "attributionStatus": [
+        "wrong_rule",
+        "wrong_rule",
+        "wrong_rule"
+      ]
+    },
+    {
+      "caseId": "N5-action-suggestion",
+      "group": "pause_negative",
+      "expectedPassed": false,
+      "attribution": {
+        "kind": "expected_rule",
+        "rule": "ES-PAUSE-ACTION"
+      },
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-PAUSE-ACTION"
+        ],
+        [
+          "ES-PAUSE-ACTION"
+        ],
+        [
+          "ES-PAUSE-ACTION"
+        ]
+      ],
+      "attributionStatus": [
+        "correct",
+        "correct",
+        "correct"
+      ]
+    },
+    {
+      "caseId": "I1-intensified",
+      "group": "intensity",
+      "expectedPassed": false,
+      "attribution": {
+        "kind": "expected_rule",
+        "rule": "ES-AFFECT-EVIDENCE"
+      },
+      "judged": 3,
+      "passedCount": 0,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        [
+          "ES-AFFECT-EVIDENCE",
+          "ES-PAUSE-RECEIPT"
+        ]
+      ],
+      "attributionStatus": [
+        "correct",
+        "correct",
+        "wrong_rule"
+      ]
+    },
+    {
+      "caseId": "R1-declines-talking-boundary",
+      "group": "current_refusal_regression",
+      "expectedPassed": true,
+      "attribution": {
+        "kind": "no_rule_expected"
+      },
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [],
+        [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        [
+          "ES-ACK-NO-SOLICIT"
+        ]
+      ],
+      "attributionStatus": [
+        "correct",
+        "out_of_function_citation",
+        "out_of_function_citation"
+      ]
+    },
+    {
+      "caseId": "R2-declines-questions-listening",
+      "group": "current_refusal_regression",
+      "expectedPassed": true,
+      "attribution": {
+        "kind": "no_rule_expected"
+      },
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        []
+      ],
+      "attributionStatus": [
+        "out_of_function_citation",
+        "out_of_function_citation",
+        "correct"
+      ]
+    },
+    {
+      "caseId": "R3-declines-talking-company",
+      "group": "current_refusal_regression",
+      "expectedPassed": true,
+      "attribution": {
+        "kind": "no_rule_expected"
+      },
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [],
+        [],
+        []
+      ],
+      "attributionStatus": [
+        "correct",
+        "correct",
+        "correct"
+      ]
+    },
+    {
+      "caseId": "R4-declines-questions-available",
+      "group": "current_refusal_regression",
+      "expectedPassed": true,
+      "attribution": {
+        "kind": "no_rule_expected"
+      },
+      "judged": 3,
+      "passedCount": 3,
+      "verdictCorrect": 3,
+      "consistent": true,
+      "ruleIds": [
+        [],
+        [
+          "ES-ACK-BOUNDARY"
+        ],
+        [
+          "ES-ACK-BOUNDARY"
+        ]
+      ],
+      "attributionStatus": [
+        "correct",
+        "out_of_function_citation",
+        "out_of_function_citation"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "caseId": "P1-leading-receipt-restate",
+      "group": "pause_positive",
+      "pass": 1,
+      "expectedPassed": true,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": false,
+      "attributionStatus": "rejection_on_positive",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P2-restate-company",
+      "group": "pause_positive",
+      "pass": 1,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": []
+          },
+          {
+            "start": 8,
+            "end": 19,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P3-restate-today-company",
+      "group": "pause_positive",
+      "pass": 1,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P4-reference",
+      "group": "pause_positive",
+      "pass": 1,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N1-receipt-company-quiet",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N2-receipt-company-then",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N3-receipt-company",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N4-assistant-own-feeling",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "wrong_rule",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT",
+          "ES-AFFECT-EVIDENCE",
+          "ES-PAUSE-SUBSTITUTE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 28,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT",
+              "ES-AFFECT-EVIDENCE",
+              "ES-PAUSE-SUBSTITUTE"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N5-action-suggestion",
+      "group": "pause_negative",
+      "pass": 1,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-PAUSE-ACTION"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "I1-intensified",
+      "group": "intensity",
+      "pass": 1,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R1-declines-talking-boundary",
+      "group": "current_refusal_regression",
+      "pass": 1,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 15,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R2-declines-questions-listening",
+      "group": "current_refusal_regression",
+      "pass": 1,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "out_of_function_citation",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R3-declines-talking-company",
+      "group": "current_refusal_regression",
+      "pass": 1,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 2,
+            "end": 8,
+            "ruleIds": []
+          },
+          {
+            "start": 9,
+            "end": 18,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R4-declines-questions-available",
+      "group": "current_refusal_regression",
+      "pass": 1,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": []
+          },
+          {
+            "start": 7,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P1-leading-receipt-restate",
+      "group": "pause_positive",
+      "pass": 2,
+      "expectedPassed": true,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": false,
+      "attributionStatus": "rejection_on_positive",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P2-restate-company",
+      "group": "pause_positive",
+      "pass": 2,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": []
+          },
+          {
+            "start": 8,
+            "end": 19,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P3-restate-today-company",
+      "group": "pause_positive",
+      "pass": 2,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 11,
+            "ruleIds": []
+          },
+          {
+            "start": 12,
+            "end": 22,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P4-reference",
+      "group": "pause_positive",
+      "pass": 2,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N1-receipt-company-quiet",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N2-receipt-company-then",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N3-receipt-company",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N4-assistant-own-feeling",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "wrong_rule",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT",
+          "ES-PAUSE-SUBSTITUTE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 28,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT",
+              "ES-PAUSE-SUBSTITUTE"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N5-action-suggestion",
+      "group": "pause_negative",
+      "pass": 2,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-PAUSE-ACTION"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "I1-intensified",
+      "group": "intensity",
+      "pass": 2,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R1-declines-talking-boundary",
+      "group": "current_refusal_regression",
+      "pass": 2,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "out_of_function_citation",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 15,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R2-declines-questions-listening",
+      "group": "current_refusal_regression",
+      "pass": 2,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "out_of_function_citation",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R3-declines-talking-company",
+      "group": "current_refusal_regression",
+      "pass": 2,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 2,
+            "end": 8,
+            "ruleIds": []
+          },
+          {
+            "start": 9,
+            "end": 18,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R4-declines-questions-available",
+      "group": "current_refusal_regression",
+      "pass": 2,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "out_of_function_citation",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          },
+          {
+            "start": 7,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P1-leading-receipt-restate",
+      "group": "pause_positive",
+      "pass": 3,
+      "expectedPassed": true,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": false,
+      "attributionStatus": "rejection_on_positive",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P2-restate-company",
+      "group": "pause_positive",
+      "pass": 3,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": []
+          },
+          {
+            "start": 8,
+            "end": 19,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P3-restate-today-company",
+      "group": "pause_positive",
+      "pass": 3,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 23,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "P4-reference",
+      "group": "pause_positive",
+      "pass": 3,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": []
+          },
+          {
+            "start": 9,
+            "end": 16,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N1-receipt-company-quiet",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N2-receipt-company-then",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N3-receipt-company",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N4-assistant-own-feeling",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "wrong_rule",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 28,
+            "ruleIds": [
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "N5-action-suggestion",
+      "group": "pause_negative",
+      "pass": 3,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-PAUSE-ACTION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-PAUSE-ACTION"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "I1-intensified",
+      "group": "intensity",
+      "pass": 3,
+      "expectedPassed": false,
+      "passed": false,
+      "failureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "outboundCalls": 1,
+      "developerSha": [
+        "902c41dd0df3a404"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "wrong_rule",
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-PAUSE-RECEIPT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE",
+              "ES-PAUSE-RECEIPT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R1-declines-talking-boundary",
+      "group": "current_refusal_regression",
+      "pass": 3,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "out_of_function_citation",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 15,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R2-declines-questions-listening",
+      "group": "current_refusal_regression",
+      "pass": 3,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 6,
+            "ruleIds": []
+          },
+          {
+            "start": 6,
+            "end": 16,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R3-declines-talking-company",
+      "group": "current_refusal_regression",
+      "pass": 3,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "correct",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 2,
+            "end": 8,
+            "ruleIds": []
+          },
+          {
+            "start": 9,
+            "end": 18,
+            "ruleIds": []
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "R4-declines-questions-available",
+      "group": "current_refusal_regression",
+      "pass": 3,
+      "expectedPassed": true,
+      "passed": true,
+      "failureReasons": [],
+      "outboundCalls": 1,
+      "developerSha": [
+        "42483a8ef1c70c04"
+      ],
+      "verdictCorrect": true,
+      "attributionStatus": "out_of_function_citation",
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          },
+          {
+            "start": 7,
+            "end": 17,
+            "ruleIds": []
+          }
+        ]
+      }
+    }
+  ]
+}

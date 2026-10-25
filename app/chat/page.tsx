@@ -87,6 +87,7 @@ const loadInitialChat = async (requestedSessionId?: string): Promise<InitialChat
     const items = newestItems.slice(0, 50).reverse();
 
     return {
+      ownerId: session.user.id,
       sessionId: chatSession.id,
       hasMore,
       nextCursor: hasMore ? items[0]?.id ?? null : null,

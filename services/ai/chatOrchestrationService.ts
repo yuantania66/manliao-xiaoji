@@ -3,12 +3,13 @@ import { ExternalPromptRejectedError } from "./externalPromptInspection";
 import {
   createSafetyGeneration,
   isCrisisInput,
+  SAFETY_PROMPT_VERSION,
   triageSafety,
   type SafetySemanticProvider,
 } from "./chatSafety";
 import { createClinicalMemoryContext } from "./clinicalMemoryAdapter";
 import { buildAiDebugTrace } from "./debugTrace";
-import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
+import { JUDGE_PROMPT_VERSION, sanitizeChatHistory, scopeHistoryForResponsePlan } from "./promptBuilder";
 import type { ChatPromptEvaluationAdapter } from "./promptBuilder";
 import {
   AiConversationMessage,
@@ -43,7 +44,12 @@ import {
 } from "./purposeSubjectOwnershipAuthority";
 import { enforceResponsePlan } from "./responsePlanValidator";
 import type { InteractionMoveHandoffSemanticProvider } from "./interactionMoveHandoffOutputValidator";
-import type { PlannedFunctionSemanticProvider } from "./plannedFunctionSemanticValidator";
+import { usesContextualUseObservation } from "./plannedFunctionSemanticValidator";
+import type {
+  PlannedFunctionSemanticDiagnostics,
+  PlannedFunctionSemanticProvider,
+  PlannedFunctionSemanticVerdict,
+} from "./plannedFunctionSemanticValidator";
 import {
   buildAttemptTransitions,
   classifyExecutionError,
@@ -116,6 +122,10 @@ export type ChatReplyResult = {
   helpingTrace: HillHelpingShadowTrace;
   controlTrace?: ConversationControlTrace;
   execution: ChatExecutionTrace;
+  /** Debug-trace only; aligned with controlTrace.validation attempts. */
+  plannedFunctionSemanticVerdicts?: Array<PlannedFunctionSemanticVerdict | null>;
+  /** Debug-trace only; sanitized judge provider-failure category per attempt. */
+  plannedFunctionSemanticDiagnostics?: PlannedFunctionSemanticDiagnostics[];
 };
 
 const getFallbackRiskLevel = (content: string): AiRiskLevel => (isCrisisInput(content) ? "crisis" : "low");
@@ -233,7 +243,7 @@ export const createChatReply = async ({
     const generation: AiGenerationResult = {
       text: "",
       model: "safety-gate",
-      promptVersion: "safety-semantic-triage-v2",
+      promptVersion: SAFETY_PROMPT_VERSION,
       latencyMs: 0,
       postProcessSteps: [],
       finalReplySource: "constraint_failure",
@@ -628,6 +638,13 @@ export const createChatReply = async ({
       plannedFunctionSemanticContext: {
         currentUserText: userMessage,
         handoffTargetAssistantText: handoffTargetMessage?.content ?? null,
+        priorAssistantTurnAvailable: recentMessages.some((message) => message.role === "assistant"),
+        ...(usesContextualUseObservation(responsePlan.positiveFunctionContract)
+          ? { ordinaryRecentMessages: sanitizeChatHistory({
+              userMessage,
+              recentMessages: scopeHistoryForResponsePlan({ userMessage, recentMessages, responsePlan }),
+            }).included }
+          : {}),
       },
       inspectPlannedFunctionExternalPrompt: inspectExternalPrompt
         ? ({ messages }) => inspectExternalPrompt({
@@ -636,7 +653,7 @@ export const createChatReply = async ({
           })
         : undefined,
       handoffSemanticProvider: interactionMoveHandoffSemanticProvider,
-      generate: async (constraint, executionPlan) => {
+      generate: async (constraint, executionPlan, regenerationFeedback) => {
         attemptIds.push(createExecutionIdentity({}).requestId);
         return generateChatReply({
           conversationId,
@@ -647,6 +664,7 @@ export const createChatReply = async ({
           responsePlan: executionPlan,
           evaluationAdapter,
           responsePlanRegenerateConstraint: constraint,
+          regenerationFeedback,
           inspectExternalPrompt: inspectExternalPrompt
             ? ({ messages }) => inspectExternalPrompt({ stage: "surface_realization", messages })
             : undefined,
@@ -751,6 +769,12 @@ export const createChatReply = async ({
       helpingTrace,
       controlTrace,
       execution,
+      ...(includeDebugTrace
+        ? {
+            plannedFunctionSemanticVerdicts: enforced.semanticVerdicts,
+            plannedFunctionSemanticDiagnostics: enforced.semanticDiagnostics,
+          }
+        : {}),
       debugTrace: buildMaybeDebugTrace({
         includeDebugTrace,
         userMessage,
@@ -843,6 +867,7 @@ export const createChatReply = async ({
         code: classified.code,
         reason: classified.reason,
         retryable: true,
+        category: classified.category,
       },
     };
 

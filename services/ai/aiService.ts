@@ -1,3 +1,4 @@
+import type { OrdinaryRegenerationFeedback } from "./responsePlanValidator";
 import { AppError } from "@/lib/errors";
 
 import {
@@ -31,6 +32,7 @@ export const generateChatReply = async ({
   responsePlan,
   evaluationAdapter,
   responsePlanRegenerateConstraint = null,
+  regenerationFeedback,
   inspectExternalPrompt,
 }: {
   conversationId?: string;
@@ -41,6 +43,7 @@ export const generateChatReply = async ({
   responsePlan: ResponsePlan;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
   responsePlanRegenerateConstraint?: string | null;
+  regenerationFeedback?: OrdinaryRegenerationFeedback | null;
   inspectExternalPrompt?: (input: { stage: "surface_realization"; messages: import("./types").AiModelMessage[] }) => void | Promise<void>;
 }): Promise<AiGenerationResult> => {
   void conversationId;
@@ -52,6 +55,7 @@ export const generateChatReply = async ({
     responsePlan,
     evaluationAdapter,
     semanticEvidenceRegenerateConstraint: responsePlanRegenerateConstraint,
+    regenerationFeedback,
   });
   await inspectPromptBeforeExternalCall(inspectExternalPrompt, {
     stage: "surface_realization" as const,

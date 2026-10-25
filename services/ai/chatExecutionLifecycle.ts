@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { CommittedAssistantMoveEnvelopeV1 } from "@/conversation-os";
 import type { ResponsePlan, ResponseValidationResult } from "@/conversation-os/control";
-import type { ResponsePlanRecoveryDirective } from "@/conversation-os/control/responsePlanner";
+import { ORDINARY_RESPONSE_FUNCTION_INSTRUCTIONS, isOrdinaryResponseFunction, type ResponsePlanRecoveryDirective } from "@/conversation-os/control/responsePlanner";
 import { validateInteractionMoveHandoffPlan } from "@/conversation-os/control/interactionMoveHandoffPlanner";
 import {
   buildCanonicalOrdinaryPostureProvenance,
@@ -11,6 +11,7 @@ import {
 } from "@/conversation-os/control/responsePlanPreflightAuthority";
 import { projectAffectEvidenceTerms } from "@/conversation-os/state";
 
+import { classifyProviderFailureCategory, type ProviderFailureCategory } from "./providerFailureCategory";
 import type { AiGenerationResult } from "./types";
 
 export type ChatExecutionPhase =
@@ -29,6 +30,8 @@ export type ChatExecutionFailureCode =
   | "PROVIDER_ERROR"
   | "TIMEOUT"
   | "PERSISTENCE_ERROR";
+
+export type ChatExecutionFailureCategory = ProviderFailureCategory;
 
 export type ChatExecutionAttempt = {
   attemptId: string;
@@ -65,6 +68,7 @@ export type ChatExecutionTrace = {
     code: ChatExecutionFailureCode;
     reason: string;
     retryable: boolean;
+    category?: ChatExecutionFailureCategory;
   };
   committedMessageId?: string;
   interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1;
@@ -135,7 +139,7 @@ export const preflightResponsePlan = (
     plan.behaviorSource === "legacy_compat" ||
     handoff ||
     plan.answerObligations.length > 0 ||
-    plan.positiveFunctionContract ||
+    (plan.positiveFunctionContract && plan.positiveFunctionContract.action !== "acknowledge_without_psychologizing") ||
     plan.requiredDisclosure.length > 0 ||
     plan.responseActions.includes("respect_pause") ||
     plan.responseActions.includes("repair_previous_wording")
@@ -174,18 +178,38 @@ export const preflightResponsePlan = (
           ) failureReasons.push("ordinary_posture_source_span_authority_mismatch");
         }
       }
-      const indexes = posture.requiredContribution?.targetSpanIndexes;
-      if (
-        !Array.isArray(indexes) ||
-        indexes.length === 0 ||
-        new Set(indexes).size !== indexes.length ||
-        indexes.some((index) =>
-          !Number.isInteger(index) || index < 0 || index >= posture.sourceSpans.length
-        )
-      ) failureReasons.push("invalid_ordinary_posture_target_span_indexes");
-      const instruction = posture.requiredContribution?.instruction?.trim() ?? "";
-      if (instruction.length === 0 || instruction.length > 240) {
-        failureReasons.push("invalid_ordinary_posture_instruction");
+      if (posture.requiredContribution !== null) {
+        const indexes = posture.requiredContribution?.targetSpanIndexes;
+        if (
+          !Array.isArray(indexes) ||
+          indexes.length === 0 ||
+          new Set(indexes).size !== indexes.length ||
+          indexes.some((index) =>
+            !Number.isInteger(index) || index < 0 || index >= posture.sourceSpans.length
+          )
+        ) failureReasons.push("invalid_ordinary_posture_target_span_indexes");
+        const instruction = posture.requiredContribution?.instruction?.trim() ?? "";
+        if (instruction.length === 0 || instruction.length > 240) {
+          failureReasons.push("invalid_ordinary_posture_instruction");
+        }
+        const contract = plan.positiveFunctionContract;
+        const supportedPurpose = authority.ordinaryContributionAuthority?.supportedPurpose;
+        const supportedNaturalPurpose = contract?.action === "acknowledge_without_psychologizing" &&
+          contract.responseFunction === "respond_naturally" && !contract.allowIdle && supportedPurpose !== null && supportedPurpose !== undefined &&
+          authority.ordinaryContributionAuthority?.questionsDeclined === false &&
+          authority.ordinaryContributionAuthority?.expressionBurden === false &&
+          sameJsonValue(posture.sourceSpans, supportedPurpose.sourceSpans) &&
+          sameJsonValue(posture.requiredContribution, supportedPurpose.requiredContribution);
+        const supportedBoundary = contract?.action === "acknowledge_without_psychologizing" &&
+          (contract.responseFunction === "respect_declined_sharing" || contract.responseFunction === "reduce_expression_burden") &&
+          (contract.responseFunction === "respect_declined_sharing"
+            ? authority.ordinaryContributionAuthority?.questionsDeclined === true
+            : authority.ordinaryContributionAuthority?.expressionBurden === true && authority.ordinaryContributionAuthority?.questionsDeclined === false) &&
+          instruction === ORDINARY_RESPONSE_FUNCTION_INSTRUCTIONS[contract.responseFunction] &&
+          posture.requiredContribution.purposeEvidence === undefined;
+        if (posture.mode !== "accompany" || (!supportedBoundary && !supportedNaturalPurpose)) {
+          failureReasons.push("ordinary_contribution_without_supported_purpose");
+        }
       }
       if (!Array.isArray(posture.evidence) || !posture.evidence.some((item) => item.trim())) {
         failureReasons.push("missing_ordinary_posture_evidence");
@@ -234,6 +258,29 @@ export const preflightResponsePlan = (
     repairContract.sourceTurnId === handoff.sourceUserTurnId &&
     repairContract.replacementFact === null
   );
+  const ordinaryRepairAuthority = authority?.ordinaryMoveFitRepairAuthority;
+  const ordinaryMoveFitRepairContractMatches = Boolean(
+    !handoff && ordinaryRepairAuthority && authority &&
+    plan.behaviorSource === "ordinary_conversation" &&
+    plan.responseActions.length === 1 && plan.responseActions[0] === "repair_previous_wording" &&
+    Number.isFinite(ordinaryRepairAuthority.confidence) && ordinaryRepairAuthority.confidence >= 0.93 &&
+    ordinaryRepairAuthority.confidence <= 1 &&
+    ordinaryRepairAuthority.userTurnId === authority.currentSource.userTurnId &&
+    ordinaryRepairAuthority.userText === authority.currentSource.userText &&
+    plan.disclosureScope.conversationId === authority.currentSource.conversationId &&
+    plan.disclosureScope.turnId === ordinaryRepairAuthority.userTurnId &&
+    repairContract?.repairMode === "interaction_move_withdrawal" &&
+    repairContract.replacementFact === null &&
+    repairContract.sourceTurnId === ordinaryRepairAuthority.userTurnId &&
+    repairContract.sourceText === ordinaryRepairAuthority.userText &&
+    repairContract.targetTurnId === ordinaryRepairAuthority.assistantMoveId &&
+    repairContract.targetText === ordinaryRepairAuthority.assistantText
+  );
+  const ordinaryMoveFitRepairProven = ordinaryMoveFitRepairContractMatches &&
+    repairContract?.interactionMoveSubtype === null;
+  if (ordinaryRepairAuthority && repairContract?.interactionMoveSubtype === null && !ordinaryMoveFitRepairContractMatches) {
+    failureReasons.push("ordinary_move_fit_repair_contract_mismatch");
+  }
   if (handoff) {
     failureReasons.push(...validateInteractionMoveHandoffPlan(handoff));
     if (handoff.sourceUserTurnId !== plan.disclosureScope.turnId) {
@@ -291,17 +338,40 @@ export const preflightResponsePlan = (
       }
     }
   }
-  const positiveActions = plan.responseActions.filter((action) =>
+  const positiveActions: ResponsePlan["responseActions"] = plan.responseActions.filter((action) =>
     action === "establish_assistant_identity" ||
     action === "offer_emotional_support" ||
     action === "repair_previous_wording"
   );
+  if (positiveActions.length === 0 && plan.responseActions.includes("acknowledge_without_psychologizing")) {
+    positiveActions.push("acknowledge_without_psychologizing");
+  }
   const positiveAction = positiveActions[0];
   if (positiveActions.length > 1) {
     failureReasons.push("multiple_positive_function_actions_not_supported");
   }
   if (positiveAction && plan.positiveFunctionContract?.action !== positiveAction) {
     failureReasons.push(`missing_or_mismatched_positive_function_contract:${positiveAction}`);
+  }
+  if (plan.positiveFunctionContract?.action === "acknowledge_without_psychologizing") {
+    const contract = plan.positiveFunctionContract;
+    if (!authority || contract.sourceTurnId !== authority.currentSource.userTurnId ||
+        contract.sourceTurnId !== plan.disclosureScope.turnId ||
+        contract.sourceText !== authority.currentSource.userText ||
+        !contract.sourceText.trim() || contract.evidence.length === 0 ||
+        contract.allowIdle !== (plan.closurePolicy.mode === "allow_idle") ||
+        (contract.responseFunction !== undefined && !isOrdinaryResponseFunction(contract.responseFunction)) ||
+        (contract.responseFunction === "respect_declined_sharing" && authority.ordinaryContributionAuthority?.questionsDeclined !== true) ||
+        (contract.responseFunction === "reduce_expression_burden" &&
+          (authority.ordinaryContributionAuthority?.expressionBurden !== true || authority.ordinaryContributionAuthority?.questionsDeclined !== false)) ||
+        (contract.responseFunction === "invite_optional_sharing" && (plan.questionPolicy.mode === "none" || contract.allowIdle ||
+          authority.ordinaryContributionAuthority?.experienceInvitationSupported !== true)) ||
+        (authority.ordinaryContributionAuthority?.experienceInvitationSupported === true &&
+          !contract.allowIdle && plan.questionPolicy.mode !== "none" &&
+          !authority.ordinaryContributionAuthority.questionsDeclined && !authority.ordinaryContributionAuthority.expressionBurden &&
+          contract.responseFunction !== "invite_optional_sharing")) {
+      failureReasons.push("invalid_ordinary_acknowledgement_contract");
+    }
   }
   if (plan.positiveFunctionContract?.action === "offer_emotional_support") {
     const contract = plan.positiveFunctionContract;
@@ -397,7 +467,7 @@ export const preflightResponsePlan = (
     plan.positiveFunctionContract?.action === "repair_previous_wording" &&
     plan.positiveFunctionContract.repairMode === "interaction_move_withdrawal" &&
     !plan.positiveFunctionContract.interactionMoveSubtype &&
-    !typedHandoffRepairProven
+    !typedHandoffRepairProven && !ordinaryMoveFitRepairProven
   ) {
     failureReasons.push("missing_interaction_move_subtype_in_contract");
   }
@@ -489,12 +559,14 @@ export const buildAttemptTransitions = ({
 export const classifyExecutionError = (error: unknown): {
   code: Extract<ChatExecutionFailureCode, "PROVIDER_ERROR" | "TIMEOUT">;
   reason: string;
+  category: ChatExecutionFailureCategory;
 } => {
   const reason = error instanceof Error ? error.message : "Unknown provider failure";
   const name = error instanceof Error ? error.name : "";
+  const category = classifyProviderFailureCategory(error);
   return /timeout|timed out|abort|超时/i.test(`${name} ${reason}`)
-    ? { code: "TIMEOUT", reason }
-    : { code: "PROVIDER_ERROR", reason };
+    ? { code: "TIMEOUT", reason, category }
+    : { code: "PROVIDER_ERROR", reason, category };
 };
 
 const USER_SAFE_FAILURE_MESSAGES: Record<ChatExecutionFailureCode, string> = {

@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { apiRequest, ClientApiError } from "@/lib/client-api";
-import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
+import { captureAuthAuthority, clearAuth, createAuthRequestScope, getStoredAuth, isAuthAuthorityCurrent, saveAuth, subscribeAuthChanges, updateAuthUser } from "@/lib/client-auth";
 
 type ProfileState = "guest" | "logged";
 
@@ -61,6 +61,13 @@ const getProfileSubtitle = (isLogged: boolean, user: AuthUser | null) => {
 };
 
 export default function MePage() {
+  const loginScope = useRef(createAuthRequestScope());
+  const codeScope = useRef(createAuthRequestScope());
+  const [authRevision, setAuthRevision] = useState(0);
+  useEffect(() => {
+    const unsubscribe = subscribeAuthChanges(() => setAuthRevision((value) => value + 1));
+    return () => { unsubscribe(); loginScope.current.invalidate(); codeScope.current.invalidate(); };
+  }, []);
   const [profileState, setProfileState] = useState<ProfileState>("guest");
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isLoginPanelOpen, setIsLoginPanelOpen] = useState(false);
@@ -79,6 +86,7 @@ export default function MePage() {
 
   useEffect(() => {
     const storedAuth = getStoredAuth();
+    const authority = captureAuthAuthority();
     setProfileState(getInitialProfileState());
     setCurrentUser(storedAuth?.user ?? null);
 
@@ -89,31 +97,36 @@ export default function MePage() {
     }
 
     let cancelled = false;
-    apiRequest<{ user: AuthUser }>("/api/auth/me")
+    const isCurrent = () => !cancelled && isAuthAuthorityCurrent(authority);
+    apiRequest<{ user: AuthUser }>("/api/auth/me", { authority, clearOnUnauthorized: false })
       .then(({ user }) => {
-        if (cancelled) return;
-        saveAuth({ token: storedAuth.token, expiresAt: storedAuth.expiresAt, user });
+        if (!isCurrent() || !updateAuthUser(authority, user)) return;
         setCurrentUser(user);
         setProfileState("logged");
       })
       .catch(() => {
-        if (cancelled) return;
-        clearAuth();
+        if (!isCurrent()) return;
         setCurrentUser(null);
         setProfileState("guest");
+        setIsAuthChecking(false);
+        clearAuth();
       })
       .finally(() => {
-        if (!cancelled) setIsAuthChecking(false);
+        if (isCurrent()) setIsAuthChecking(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authRevision]);
 
   const isLogged = profileState === "logged";
 
   const openLoginPanel = () => {
+    loginScope.current.invalidate();
+    codeScope.current.invalidate();
+    setIsLoggingIn(false);
+    setIsSendingCode(false);
     if (!hasAgreed) {
       setIsAgreementPromptOpen(true);
       return;
@@ -128,6 +141,10 @@ export default function MePage() {
   };
 
   const closeLoginPanel = () => {
+    loginScope.current.invalidate();
+    codeScope.current.invalidate();
+    setIsLoggingIn(false);
+    setIsSendingCode(false);
     setIsLoginPanelOpen(false);
     setPhoneError("");
   };
@@ -158,6 +175,8 @@ export default function MePage() {
   };
 
   const sendPhoneCode = async () => {
+    const operation = codeScope.current.begin();
+    if (!operation.isCurrent()) return;
     if (phone.length !== 11) {
       setPhoneError("请输入 11 位手机号码");
       return;
@@ -173,17 +192,21 @@ export default function MePage() {
         auth: false,
         body: { phone, scene: "login" },
       });
+      if (!operation.isCurrent()) return;
       setPhoneCodeSent(true);
       setPhoneCode("");
       setDevCodeHint(data.devCode ? `开发环境验证码：${data.devCode}` : "验证码已发送");
     } catch (error) {
+      if (!operation.isCurrent()) return;
       setPhoneError(getErrorMessage(error));
     } finally {
-      setIsSendingCode(false);
+      if (operation.isCurrent()) setIsSendingCode(false);
     }
   };
 
   const loginWithPhone = async () => {
+    const operation = loginScope.current.begin();
+    if (!operation.isCurrent()) return;
     if (phone.length !== 11) {
       setPhoneError("请输入 11 位手机号码");
       return;
@@ -209,15 +232,20 @@ export default function MePage() {
           body: { phone, code: phoneCode },
         }
       );
+      if (!operation.isCurrent()) return;
       finishLogin(data);
+      operation.acceptPublication();
     } catch (error) {
+      if (!operation.isCurrent()) return;
       setPhoneError(getErrorMessage(error));
     } finally {
-      setIsLoggingIn(false);
+      if (operation.isCurrent()) setIsLoggingIn(false);
     }
   };
 
   const loginWithWechat = async () => {
+    const operation = loginScope.current.begin();
+    if (!operation.isCurrent()) return;
     setIsLoggingIn(true);
     setPhoneError("");
 
@@ -230,15 +258,20 @@ export default function MePage() {
           body: { code: `web_mock_${Date.now()}` },
         }
       );
+      if (!operation.isCurrent()) return;
       finishLogin(data);
+      operation.acceptPublication();
     } catch (error) {
+      if (!operation.isCurrent()) return;
       setPhoneError(getErrorMessage(error));
     } finally {
-      setIsLoggingIn(false);
+      if (operation.isCurrent()) setIsLoggingIn(false);
     }
   };
 
   const agreeAndContinue = () => {
+    loginScope.current.invalidate();
+    codeScope.current.invalidate();
     setHasAgreed(true);
     setIsAgreementPromptOpen(false);
     setLoginMode("wechat");
@@ -326,7 +359,7 @@ export default function MePage() {
                   type="button"
                   aria-label={hasAgreed ? "取消同意协议" : "同意协议"}
                   className="mr-1 h-4 w-4 shrink-0 text-center text-[10px] leading-4 text-[var(--sage)]"
-                  onClick={() => setHasAgreed((value) => !value)}
+                  onClick={() => { loginScope.current.invalidate(); codeScope.current.invalidate(); setIsLoggingIn(false); setIsSendingCode(false); setHasAgreed((value) => !value); }}
                 >
                   {hasAgreed ? "●" : "○"}
                 </button>
@@ -425,6 +458,8 @@ export default function MePage() {
                     type="button"
                     className="absolute left-6 top-[52px] h-6 text-xs font-semibold leading-5 text-[var(--sage)]"
                     onClick={() => {
+                      loginScope.current.invalidate(); codeScope.current.invalidate();
+                      setIsLoggingIn(false); setIsSendingCode(false);
                       setLoginMode("methods");
                       setPhoneError("");
                     }}
@@ -440,7 +475,7 @@ export default function MePage() {
                       placeholder="输入手机号码"
                       value={phone}
                       onChange={(event) => {
-                        setPhone(event.target.value.replace(/\D/g, "").slice(0, 11));
+                        codeScope.current.invalidate(); loginScope.current.invalidate(); setIsSendingCode(false); setIsLoggingIn(false); setPhone(event.target.value.replace(/\D/g, "").slice(0, 11));
                         setPhoneError("");
                       }}
                     />
@@ -524,7 +559,7 @@ export default function MePage() {
                   <button
                     type="button"
                     className="absolute left-6 top-[82px] h-12 w-[298px] rounded-[18px] bg-[var(--sage)] text-left text-[13px] font-semibold leading-5 text-[var(--card-warm)]"
-                    onClick={() => setLoginMode("wechat")}
+                    onClick={() => { loginScope.current.invalidate(); codeScope.current.invalidate(); setIsLoggingIn(false); setIsSendingCode(false); setLoginMode("wechat"); }}
                   >
                     <span className="absolute left-5 top-3.5 text-base leading-5">
                       ◌

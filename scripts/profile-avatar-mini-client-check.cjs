@@ -54,6 +54,9 @@ const authPath = require.resolve("../miniprogram-project/utils/auth");
 require.cache[authPath] = { exports: {
   clearAuth: () => { auth = null; },
   getAuth: () => auth,
+  captureAuthAuthority: () => auth ? { token: auth.token, userId: auth.user.id, expiresAt: auth.expiresAt } : null,
+  isCurrentAuthAuthority: (value) => Boolean(value && auth && value.token === auth.token && value.userId === auth.user.id && value.expiresAt === auth.expiresAt),
+  isCurrentAuthFailure: () => false,
   getGuestProfile: () => null,
   isGuest: () => false,
   saveAuth: () => undefined,

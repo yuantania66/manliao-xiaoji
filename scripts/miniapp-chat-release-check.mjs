@@ -28,6 +28,9 @@ localData.nowIso = () => "2026-08-27T00:00:00.000Z";
 const auth = require("../miniprogram-project/utils/auth.js");
 let dataMode = "guest";
 auth.getDataMode = () => dataMode;
+const syntheticAuthAuthority = { generation: 1, token: "synthetic-test-token", userId: "synthetic-user", expiresAt: "2099-01-01T00:00:00Z" };
+auth.captureAuthAuthority = () => dataMode === "authenticated" ? { ...syntheticAuthAuthority } : null;
+auth.isCurrentAuthAuthority = (authority) => dataMode === "authenticated" && authority?.generation === syntheticAuthAuthority.generation;
 const layout = require("../miniprogram-project/utils/layout.js");
 layout.getSafeLayout = () => ({
   pageTop: 0,
@@ -51,7 +54,11 @@ api.sendMessage = (...args) => sendMessageImpl(...args);
 api.sendGuestMessage = (...args) => sendGuestMessageImpl(...args);
 api.getGuestGreeting = (input) => {
   greetingCalls += 1;
-  assert.deepEqual(input, {
+  const { authority, isCurrent, ...greetingInput } = input;
+  assert.equal(typeof authority?.epoch, "number");
+  assert.equal(typeof isCurrent, "function");
+  assert.equal(isCurrent(), true);
+  assert.deepEqual(greetingInput, {
     kind: "initial",
     recentMessages: [],
     recentGreetings: []

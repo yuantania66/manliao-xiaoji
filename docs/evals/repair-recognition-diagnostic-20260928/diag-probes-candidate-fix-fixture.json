@@ -1,0 +1,593 @@
+{
+  "diagnosticVersion": "repair-recognition-diagnostic-v1",
+  "side": "candidate-fix",
+  "mode": "probes",
+  "historyShape": "fixture",
+  "productHead": "4340e358375d3ea1688167daceb2b7828260b029",
+  "productDirty": "M conversation-os/control/turnInterpreter.ts",
+  "diagnosticLibSha": "sha256:250502bc15ac1377eb026d5017c7e3012dfa5e07fa56e24e577ddd597e504a2b",
+  "diagnosticRunnerSha": "sha256:2ec7c94c0d6338e5e2f7d517e87c7688ccc24a5e5cffd04ede2909b655dd217f",
+  "datasetSha": "sha256:12bd41f3c6c4370ddc3593cf997203037bc321a3b40d890ce196e9f6bcd6f243",
+  "nodeVersion": "v22.23.3",
+  "scenarioInputs": [
+    {
+      "id": "repair-advice-boundary",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:8026b190c51aba09"
+    },
+    {
+      "id": "repair-intensity-exaggeration",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:da3d2c579a91d734"
+    },
+    {
+      "id": "repair-wrong-person",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:0c086572a9be864e"
+    },
+    {
+      "id": "repair-question-pressure",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:848fb5ecc39e8b95"
+    },
+    {
+      "id": "repair-generic-listening",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:366aaad0e5733946"
+    },
+    {
+      "id": "repair-repeated-claim",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:f0e16229b26fa207"
+    },
+    {
+      "id": "repair-direct-relationship-challenge",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:01d0306c018a58b8"
+    },
+    {
+      "id": "repair-moralizing",
+      "group": "affected_repair",
+      "inputFingerprint": "sha256:93c5c7fde2cfd275"
+    },
+    {
+      "id": "repair-unsupported-fear",
+      "group": "passing_repair_control",
+      "inputFingerprint": "sha256:20699970603d90b1"
+    },
+    {
+      "id": "repair-topic-switch",
+      "group": "passing_repair_control",
+      "inputFingerprint": "sha256:eeb3308efa3e5fc2"
+    },
+    {
+      "id": "emotion-mild-unhappy",
+      "group": "non_repair_control",
+      "inputFingerprint": "sha256:26edc43154f15178"
+    },
+    {
+      "id": "emotion-lonely",
+      "group": "non_repair_control",
+      "inputFingerprint": "sha256:070ed81eea263af1"
+    },
+    {
+      "id": "TRJ-REPAIR-OBS-001:t1",
+      "group": "trajectory_meta_repair",
+      "inputFingerprint": "sha256:1144ae3349b18ee0"
+    }
+  ],
+  "probes": [
+    {
+      "scenarioId": "repair-advice-boundary",
+      "group": "affected_repair",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-intensity-exaggeration",
+      "group": "affected_repair",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-wrong-person",
+      "group": "affected_repair",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-question-pressure",
+      "group": "affected_repair",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-generic-listening",
+      "group": "affected_repair",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-repeated-claim",
+      "group": "affected_repair",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-direct-relationship-challenge",
+      "group": "affected_repair",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-moralizing",
+      "group": "affected_repair",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-unsupported-fear",
+      "group": "passing_repair_control",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": true,
+      "deterministicRepairProposal": true,
+      "deterministicConfidence": 0.96,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        }
+      }
+    },
+    {
+      "scenarioId": "repair-topic-switch",
+      "group": "passing_repair_control",
+      "legalTargets": {
+        "assistantTurnIds": [
+          "a1"
+        ],
+        "userTurnIds": [
+          "u1"
+        ],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": {
+        "repair_legal_assistant_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_with_uncommitted_proposition": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_user_turn_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "repair_absent_target": {
+          "repairProposal": true,
+          "repairTarget": "legal_assistant_turn"
+        },
+        "repair_legal_target_below_threshold": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "non_repair_continues_thread": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        },
+        "challenges_move_fit_legal_target": {
+          "repairProposal": false,
+          "repairTarget": "absent"
+        }
+      }
+    },
+    {
+      "scenarioId": "emotion-mild-unhappy",
+      "group": "non_repair_control",
+      "legalTargets": {
+        "assistantTurnIds": [],
+        "userTurnIds": [],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": null
+    },
+    {
+      "scenarioId": "emotion-lonely",
+      "group": "non_repair_control",
+      "legalTargets": {
+        "assistantTurnIds": [],
+        "userTurnIds": [],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": null
+    },
+    {
+      "scenarioId": "TRJ-REPAIR-OBS-001:t1",
+      "group": "trajectory_meta_repair",
+      "legalTargets": {
+        "assistantTurnIds": [],
+        "userTurnIds": [],
+        "assistantTurnsWithCommittedClaims": [],
+        "activeHandoffTargetId": null
+      },
+      "deterministicRepairSignal": false,
+      "deterministicRepairProposal": false,
+      "deterministicConfidence": 0.72,
+      "probes": null
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 
 import { failFromError, ok } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
+import { getGuestSessionManager, guestNoStore, readGuestJson } from "@/lib/guest-session";
 import { requireNonEmptyString } from "@/lib/validation";
 import {
   activeHandoff,
@@ -12,87 +13,6 @@ import {
 } from "@/conversation-os";
 import { createChatReply } from "@/services/ai/chatOrchestrationService";
 import { AiConversationMessage, AiJudgeResult } from "@/services/ai/types";
-
-type GuestRateLimitRecord = {
-  date: string;
-  count: number;
-};
-
-type GuestRateLimitGlobal = typeof globalThis & {
-  __manliaoGuestAiRateLimit?: Map<string, GuestRateLimitRecord>;
-  __manliaoGuestTurnExecutions?: Map<string, Promise<Record<string, unknown>>>;
-};
-
-const getGuestIpDailyLimit = () => {
-  const value = Number(process.env.GUEST_AI_IP_DAILY_LIMIT ?? "20");
-  return Number.isFinite(value) && value > 0 ? value : 20;
-};
-
-const getDateKey = () =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-
-const getRateLimitStore = () => {
-  const storeGlobal = globalThis as GuestRateLimitGlobal;
-  if (!storeGlobal.__manliaoGuestAiRateLimit) {
-    storeGlobal.__manliaoGuestAiRateLimit = new Map();
-  }
-  return storeGlobal.__manliaoGuestAiRateLimit;
-};
-
-const getGuestTurnExecutionStore = () => {
-  const storeGlobal = globalThis as GuestRateLimitGlobal;
-  if (!storeGlobal.__manliaoGuestTurnExecutions) {
-    storeGlobal.__manliaoGuestTurnExecutions = new Map();
-  }
-  return storeGlobal.__manliaoGuestTurnExecutions;
-};
-
-const getClientIp = (request: NextRequest) => {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return (
-    forwardedFor ||
-    request.headers.get("x-real-ip")?.trim() ||
-    request.headers.get("cf-connecting-ip")?.trim() ||
-    "unknown"
-  );
-};
-
-const assertGuestIpLimit = (request: NextRequest) => {
-  const ip = getClientIp(request);
-  const date = getDateKey();
-  const store = getRateLimitStore();
-  const current = store.get(ip);
-  const record = current?.date === date ? current : { date, count: 0 };
-
-  if (record.count >= getGuestIpDailyLimit()) {
-    throw new AppError("RATE_LIMITED", "游客体验暂时繁忙，请登录后继续慢慢说", 429);
-  }
-
-  store.set(ip, record);
-  return { ip, record };
-};
-
-const incrementGuestIpUsage = (ip: string) => {
-  const date = getDateKey();
-  const store = getRateLimitStore();
-  const current = store.get(ip);
-  const record = current?.date === date ? current : { date, count: 0 };
-  record.count += 1;
-  store.set(ip, record);
-};
-
-const readJson = async (request: Request) => {
-  try {
-    return await request.json();
-  } catch {
-    throw new AppError("VALIDATION_ERROR", "请求体必须是 JSON", 400);
-  }
-};
 
 const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
   if (!Array.isArray(value)) return [];
@@ -152,30 +72,32 @@ const shouldIncludeDebugTrace = (request: NextRequest, body: Record<string, unkn
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await readJson(request);
+    const body = await readGuestJson(request);
+    const sessions = getGuestSessionManager();
+    const authority = sessions.authorize(request, body.conversationId);
     const content = requireNonEmptyString(body.content, "content", 2000);
     const suppliedTurnId = typeof body.turnId === "string" ? body.turnId.trim() : "";
-    const turnId = /^[a-zA-Z0-9:_-]{8,160}$/.test(suppliedTurnId)
-      ? suppliedTurnId
-      : `guest-turn-${crypto.randomUUID()}`;
+    const turnId = suppliedTurnId;
     const recentMessages = normalizeRecentMessages(body.recentMessages);
-    const retrying = body.retry === true;
+    if (body.retry === true) throw new AppError("CONFLICT", "重试需要明确的尝试编号", 409, { reason: "GUEST_REQUEST_CONFLICT" });
     const includeDebugTrace = shouldIncludeDebugTrace(request, body);
-    const rateLimit = includeDebugTrace ? null : assertGuestIpLimit(request);
-    const store = getGuestTurnExecutionStore();
-    if (store.size > 1000) store.delete(store.keys().next().value ?? "");
-    const existing = store.get(turnId);
-    const execution = existing ?? (async () => {
+    const payload = await sessions.execute({
+      request,
+      authority,
+      endpoint: "reply",
+      turnId,
+      retryOfAttempt: body.retryOfAttempt,
+      inputs: { content, recentMessages, includeDebugTrace },
+    }, async (attempt) => {
       const createdAt = new Date().toISOString();
       const reply = await createChatReply({
-        conversationId: "guest-session",
+        conversationId: authority.conversationId,
         currentTurnId: turnId,
-        retrying,
+        retrying: attempt > 1,
         userMessage: content,
         recentMessages,
         includeDebugTrace,
       });
-      if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
       if (reply.execution.phase !== "VALIDATED") {
         if (includeDebugTrace) {
           console.error("guest chat execution failed", {
@@ -261,12 +183,9 @@ export async function POST(request: NextRequest) {
         rewriteAttempted: reply.rewriteAttempted,
         debugTrace: reply.debugTrace,
       };
-    })();
-    if (!existing) store.set(turnId, execution);
-    const payload = await execution;
-    if (payload.status === "failed") store.delete(turnId);
-    return ok(payload);
+    });
+    return guestNoStore(ok(payload));
   } catch (error) {
-    return failFromError(error);
+    return guestNoStore(failFromError(error));
   }
 }

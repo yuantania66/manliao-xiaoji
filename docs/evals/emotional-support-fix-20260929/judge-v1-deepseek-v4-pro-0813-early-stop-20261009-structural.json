@@ -1,0 +1,410 @@
+{
+  "status": "NO_GO_EARLY_STOP",
+  "reason": "At least one frozen labeled case failed; the complete 32/32 gate cannot pass",
+  "terminated_at": "2026-10-09T05:52:10.960903+00:00",
+  "planned_validations": 96,
+  "completed_validations": 17,
+  "recorded_model_requests": 28,
+  "failed_cases_observed": {
+    "C2-A2-UNSTATED-DISAPPOINTMENT": {
+      "expected": "fail",
+      "outcomes": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "mismatches": 3
+    },
+    "INV-STATED-EVENT-REASK": {
+      "expected": "fail",
+      "outcomes": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "mismatches": 3
+    },
+    "R5-PAUSE-COMPANY": {
+      "expected": "pass",
+      "outcomes": [
+        "pass",
+        "fail",
+        "fail"
+      ],
+      "mismatches": 2
+    }
+  },
+  "all_observed_cases": {
+    "C2-A2-UNSTATED-DISAPPOINTMENT": {
+      "expected": "fail",
+      "outcomes": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "mismatches": 3
+    },
+    "INV-REFERENCE": {
+      "expected": "pass",
+      "outcomes": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "mismatches": 0
+    },
+    "INV-STATED-EVENT-REASK": {
+      "expected": "fail",
+      "outcomes": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "mismatches": 3
+    },
+    "REF-ASKS": {
+      "expected": "fail",
+      "outcomes": [
+        "fail",
+        "fail",
+        "fail"
+      ],
+      "mismatches": 0
+    },
+    "R5-PAUSE-COMPANY": {
+      "expected": "pass",
+      "outcomes": [
+        "pass",
+        "fail",
+        "fail"
+      ],
+      "mismatches": 2
+    },
+    "R5-DECLINE-TALK-FEELING-AS-REASON": {
+      "expected": "fail",
+      "outcomes": [
+        "fail",
+        "fail"
+      ],
+      "mismatches": 0
+    }
+  },
+  "usage": {
+    "prompt_tokens": 104919,
+    "completion_tokens": 9471
+  },
+  "money_cny": {
+    "possible_in_flight_request_reserve": 0.31,
+    "trial_upper_accounted_bound": 1.509988,
+    "previous_ledger_spent": 23.73,
+    "cumulative_upper_accounted_bound": 25.239988,
+    "remaining_under_60_after_reserve": 34.760012,
+    "recorded_trial_cost_at_busy_rates": 1.199988,
+    "input_price_per_million_tokens": 9,
+    "output_price_per_million_tokens": 27,
+    "provider_invoice_reconciled": false
+  },
+  "limits": [
+    "Partial run, not a completed 32-case reliability score",
+    "An in-flight request may be billed; the 0.31 CNY is a reserve, not a confirmed charge",
+    "No rerun, no further paid gates, no product changes or deployment",
+    "Recorded cost is token-based accounting at busy rates, not a reconciled provider invoice",
+    "No complete runner summary or raw provider response archive was produced before termination",
+    "V1-Q-BARE-BOUNDARY was not reached",
+    "The 10 schema corrections cover completed validations only; no unrecorded request is counted as completed"
+  ],
+  "logs_sha256": {
+    "requests.jsonl": "eac5f483d06c9faf916faebdab3eca4d44ff49bda970ba4f28a3d5e9b9ff6c82",
+    "budget.jsonl": "d56b7803b8c6082b6f8a80e03403a303816c7b4862ccad45bcc4e473fa813f55",
+    "run.log": "14938dbcf0bcda3a38d848355f7c85ef4763d4c83746ea3c7999069144b84bae"
+  },
+  "candidate": "b40494f",
+  "head_at_run": "9e357cff2760b282b6c034b8a5042364ddcc1c91",
+  "model": "deepseek-v4-pro-0813",
+  "provider": "existing Alibaba Cloud DashScope account",
+  "settings": {
+    "thinking": false,
+    "temperature": 0,
+    "response_format": "json_object",
+    "max_tokens": 4096,
+    "timeout_ms": 45000
+  },
+  "frozen_v1": {
+    "cases": 32,
+    "repetitions": 3,
+    "case_sha256": "684b53d43ef5d61d59bac5ed06d9164ad621d34f1aaf635d948a41aa80be3685",
+    "labels_and_scoring": "unchanged",
+    "acceptance": "original complete gate: 32/32 reliable with required citations and no rule-scope violations"
+  },
+  "authorization": {
+    "additional_cny": 30,
+    "cumulative_cap_cny": 60,
+    "trial_cap_cny": 6,
+    "continue_paid_gates_only_after_v1_pass": true,
+    "deployment_authorized": false,
+    "source": "User explicitly approved the additional 30 CNY and cumulative 60 CNY cap on 2026-10-09"
+  },
+  "completed_validation_model_calls": 27,
+  "completed_schema_correction_requests": 10,
+  "recorded_requests_for_incomplete_validation": 1,
+  "completed_validations_structural": [
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "pass",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4820
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY",
+        "ES-ACK-NO-SOLICIT",
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4038
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY",
+        "ES-ACK-NO-SOLICIT",
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4132
+    },
+    {
+      "caseId": "INV-REFERENCE",
+      "repetition": 1,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8981
+    },
+    {
+      "caseId": "INV-REFERENCE",
+      "repetition": 2,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4940
+    },
+    {
+      "caseId": "INV-REFERENCE",
+      "repetition": 3,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8688
+    },
+    {
+      "caseId": "INV-STATED-EVENT-REASK",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "pass",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 3648
+    },
+    {
+      "caseId": "INV-STATED-EVENT-REASK",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "pass",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 7356
+    },
+    {
+      "caseId": "INV-STATED-EVENT-REASK",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "pass",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 3876
+    },
+    {
+      "caseId": "REF-ASKS",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-SCOPE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8807
+    },
+    {
+      "caseId": "REF-ASKS",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-SCOPE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8882
+    },
+    {
+      "caseId": "REF-ASKS",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-SCOPE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8391
+    },
+    {
+      "caseId": "R5-PAUSE-COMPANY",
+      "repetition": 1,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8929
+    },
+    {
+      "caseId": "R5-PAUSE-COMPANY",
+      "repetition": 2,
+      "expected": "pass",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 3768
+    },
+    {
+      "caseId": "R5-PAUSE-COMPANY",
+      "repetition": 3,
+      "expected": "pass",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8020
+    },
+    {
+      "caseId": "R5-DECLINE-TALK-FEELING-AS-REASON",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8083
+    },
+    {
+      "caseId": "R5-DECLINE-TALK-FEELING-AS-REASON",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8144
+    }
+  ],
+  "verification": {
+    "independent_read_only_review": "PASS",
+    "review_scope": "Completed validation counts, false passes, semantic false rejections, token accounting, receipt hashes and partial-run limitations",
+    "offline_before_live": [
+      "All 32 frozen initial message hashes matched the existing candidate requests",
+      "64 mocked initial and schema-correction requests passed the guard integration check",
+      "Budget guard checks, shell syntax and no-approval startup rejection passed"
+    ],
+    "artifact_checks": "Log hashes, request counts, recorded cost and semantic-failure classification checked before persisting"
+  },
+  "sources": [
+    "https://help.aliyun.com/zh/model-studio/deepseek-v4-pro",
+    "https://help.aliyun.com/zh/model-studio/deepseek-api",
+    "https://help.aliyun.com/en/model-studio/qwen-structured-output"
+  ],
+  "runner_files_sha256": {
+    "budget-guard.mjs": "94e868d2a6b0f4087fccceee56c9a8bdd6beb48729e593f06a071f5da37f8a0a",
+    "budget-guard-check.mjs": "ab38ae0afdf39c74199d1c563f148b382a506a5078534e8a54970c9e30094cf3",
+    "frozen-message-hashes.json": "d19e067c2e9c27e5b96ea1e18010b95b8edfd02abb9ac7181657af4104c7b536",
+    "run-once.sh": "0fe4e31b38384ae6cd7bf02443e416e57fe8844a29c762a08b8a9aef9304445a"
+  },
+  "local_evidence_directory": "/private/tmp/xinqing-judge-preflight-20261009/live-run"
+}

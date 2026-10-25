@@ -34,6 +34,11 @@ npm run check:release:required
 | `check:chat-safety-semantic` | Safety 语义分流与失败透明 |
 | `check:chat-turn-result-authority` | 单个用户回合只接受权威结果 |
 | `check:client-turn-id` | 客户端重试与幂等标识 |
+| `check:guest-session` | 本地单进程匿名 owner/conversation 绑定、期限/撤销、额度/并发/显式重试及 Web/Mini 晚到结果隔离；合成源码执行不替代浏览器、真机、DB 或真实模型门 |
+| `check:mini-chat-auth-authority` | Mini 已登录聊天 bootstrap/list/send、401清理及异步UI按身份/页面/会话核权；合成测试不替代微信真机及DB验收 |
+| `check:web-chat-auth-authority` | Web 预载/缓存owner绑定、历史/分页/发送/重试/动画及清理的身份、会话、页面与请求代次隔离；含跨账号、同token重登录与排队更新的合成反例 |
+| `check:web-auth-entry-authority` | Web 登录/资料刷新/退出/注销的原身份发布权；注销请求前核对页面owner，保留云成功后仅重试本地清理；不替代真实账号与DB验收 |
+| `check:mini-identity-authority` | Mini 统一登录/资料/注销及上传401按原身份代次核权；Guest初始化后的后续请求与布局回调另由 `check:guest-session` 覆盖 |
 | `check:interaction-move-handoff` | 关系 move 与 handoff 合同 |
 | `check:interaction-move-handoff-planner` | 唯一 Planner、计划与 authority |
 | `check:interaction-move-handoff-surface-validator` | Surface 与同计划 Validator |
@@ -45,6 +50,7 @@ npm run check:release:required
 | `check:account-cancel-e2e` | 账号、派生数据、会话和受管媒体删除闭环 |
 | `check:account-cancel-client-storage` | Web 当前账号缓存精确清理、失败与本地重试 |
 | `check:account-cancel-mini-client` | 小程序当前账号缓存精确清理、失败与本地重试 |
+| `check:miniapp-insights` | 小程序观察真实接口、7/30/90 天、空数据、游客、失败重试、403 重新授权、401、撤回授权与跨账号晚到响应隔离 |
 | `check:profile-avatar-e2e` | 私有头像上传、绑定、替换与注销清理合同 |
 | `check:profile-completion-gate-e2e` | 登录即形成持久注册账号、资料未完善仍可使用、可选资料更新与旧临时账号清理兼容 |
 | `check:profile-avatar-mini-client` | 小程序可选资料编辑、手动头像选择、编辑取消、账号隔离缓存与私有头像下载 |

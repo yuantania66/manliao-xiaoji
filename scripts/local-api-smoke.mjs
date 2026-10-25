@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -173,21 +174,33 @@ addCheck("phone login with dev code", async () => {
 
 addCheck("note create/list/detail/update/delete", async () => {
   const recordDate = "2026-07-02";
+  const clientRequestId = `smoke-note-${Date.now()}`;
+  const payload = {
+    content: "local smoke note query-marker-alpha", recordDate,
+    moodName: "晴朗", moodIcon: "sunny", mediaUrls: [], clientRequestId,
+  };
+  const missingIdPayload = { ...payload };
+  delete missingIdPayload.clientRequestId;
+  expectStatus(await request("/api/notes", {
+    method: "POST", body: JSON.stringify(missingIdPayload),
+  }), 400, "note create requires clientRequestId");
   const created = expectOk(
     await request("/api/notes", {
       method: "POST",
-      body: JSON.stringify({
-        content: "local smoke note query-marker-alpha",
-        recordDate,
-        moodName: "晴朗",
-        moodIcon: "sunny",
-        mediaUrls: [],
-        clientRequestId: `smoke-note-${Date.now()}`,
-      }),
+      body: JSON.stringify(payload),
     }),
     "create note"
   );
 
+  const replay = expectOk(await request("/api/notes", {
+    method: "POST", body: JSON.stringify(payload),
+  }), "replay text note");
+  if (replay.id !== created.id || await prisma.note.count({ where: { userId, clientRequestId } }) !== 1) {
+    throw new Error("text note replay: duplicate created");
+  }
+  expectStatus(await request("/api/notes", {
+    method: "POST", body: JSON.stringify({ ...payload, content: "conflicting payload" }),
+  }), 409, "text note idempotency conflict");
   const listData = expectOk(await request(`/api/notes?date=${recordDate}`), "list notes");
   if (!listData.items.some((item) => item.id === created.id)) {
     throw new Error("list notes: created note not found");
@@ -237,6 +250,7 @@ addCheck("notes and insights isolate users and drafts", async () => {
     await request("/api/notes", {
       method: "POST",
       body: JSON.stringify({
+        clientRequestId: `smoke-owner-alpha-${Date.now()}`,
         content: "owneralpha ".repeat(12),
         recordDate: today,
         moodName: "晴朗",
@@ -249,6 +263,7 @@ addCheck("notes and insights isolate users and drafts", async () => {
     await request("/api/notes", {
       method: "POST",
       body: JSON.stringify({
+        clientRequestId: `smoke-draft-alpha-${Date.now()}`,
         content: "draftonlyalpha ".repeat(20),
         recordDate: today,
         isDraft: true,
@@ -259,6 +274,7 @@ addCheck("notes and insights isolate users and drafts", async () => {
   await request("/api/notes", {
     method: "POST",
     body: JSON.stringify({
+      clientRequestId: `smoke-future-alpha-${Date.now()}`,
       content: "futureonlyalpha ".repeat(20),
       recordDate: "2099-01-01",
     }),
@@ -295,6 +311,7 @@ addCheck("notes and insights isolate users and drafts", async () => {
     await request("/api/notes", {
       method: "POST",
       body: JSON.stringify({
+        clientRequestId: `smoke-owner-beta-${Date.now()}`,
         content: "ownerbeta ".repeat(20),
         recordDate: today,
         moodName: "小雨",
@@ -330,7 +347,17 @@ addCheck("notes and insights isolate users and drafts", async () => {
 
   expectStatus(await request(`/api/notes/${foreignNote.id}`), 404, "foreign note detail");
 
-  const insights = expectOk(await request("/api/insights?range=90d"), "primary insights");
+  expectStatus(await request("/api/insights?range=90d"), 403, "insights requires explicit consent");
+  const consent = expectOk(await request("/api/insights", { method: "POST", body: "{}" }), "authorize primary insights");
+  if (typeof consent.consentToken !== "string" || !consent.consentToken) {
+    throw new Error("insights consent: missing server-issued token");
+  }
+  const consentHeaders = { "x-insights-consent": consent.consentToken };
+  token = secondaryLogin.token;
+  expectStatus(await request("/api/insights?range=90d", { headers: consentHeaders }), 403,
+    "insights consent cannot cross users");
+  token = primaryToken;
+  const insights = expectOk(await request("/api/insights?range=90d", { headers: consentHeaders }), "primary insights");
   if (insights.words.length > 6) throw new Error("primary insights: more than six words returned");
   if (!insights.words.some((item) => item.word === "owneralpha")) {
     throw new Error("primary insights: own word missing");
@@ -353,8 +380,8 @@ addCheck("notes and insights isolate users and drafts", async () => {
   token = "";
   expectStatus(await request("/api/insights?range=90d"), 401, "anonymous insights after login");
   token = primaryToken;
-  expectStatus(await request("/api/insights?range=365d"), 400, "invalid insights range");
-  expectStatus(await request("/api/insights?range=constructor"), 400, "prototype insights range");
+  expectStatus(await request("/api/insights?range=365d", { headers: consentHeaders }), 400, "invalid insights range");
+  expectStatus(await request("/api/insights?range=constructor", { headers: consentHeaders }), 400, "prototype insights range");
   expectStatus(await request("/api/notes/calendar?month=2026-13"), 400, "invalid note calendar month");
 });
 
@@ -395,6 +422,31 @@ addCheck("image-only note is idempotent and deletes derived data", async () => {
   uploadedUrl = "";
 });
 
+if (process.env.LOCAL_API_SMOKE_PROVIDER_FIXTURE === "1") addCheck("safety provider failure blocks generation and Assistant commit", async () => {
+  const session = expectOk(await request("/api/chat/sessions", {
+    method: "POST", body: JSON.stringify({ title: "local safety failure control" }),
+  }), "create safety control session");
+  const before = await prisma.chatMessage.count({ where: { sessionId: session.id, role: "ASSISTANT" } });
+  const result = await request(`/api/chat/sessions/${session.id}/messages`, {
+    method: "POST", body: JSON.stringify({ content: "我有点累，local-smoke-safety-failure" }),
+  });
+  expectStatus(result, 200, "safe failure transport");
+  const data = expectOk(result, "safety failure response");
+  assert.equal(data.status, "failed");
+  assert.equal(data.systemStatus.code, "SAFETY_BLOCKED");
+  assert(data.userMessage?.id && !data.assistantMessage);
+  assert.equal(await prisma.chatMessage.count({ where: { sessionId: session.id, role: "ASSISTANT" } }), before);
+  assert.equal(await prisma.chatMessage.count({ where: { replyToMessageId: data.userMessage.id, role: "ASSISTANT" } }), 0);
+  const status = await prisma.chatMessage.findUniqueOrThrow({ where: { id: data.systemMessage.id } });
+  assert.equal(status.role, "SYSTEM");
+  const audit = await prisma.aiGeneration.findFirstOrThrow({ where: { turnId: data.userMessage.id } });
+  assert.equal(audit.model, "safety-gate");
+  assert.equal(audit.outputText, "");
+  assert.equal(audit.status, "FAILED");
+  assert.equal(audit.executionTrace.phase, "FAILED");
+  assert.deepEqual(audit.executionTrace.attempts, []);
+});
+
 if (process.env.LOCAL_API_SMOKE_NOTES_ONLY !== "1") addCheck("chat create/send/history/search/calendar", async () => {
   const session = expectOk(
     await request("/api/chat/sessions", {
@@ -404,15 +456,29 @@ if (process.env.LOCAL_API_SMOKE_NOTES_ONLY !== "1") addCheck("chat create/send/h
     "create chat session"
   );
 
-  const messageData = expectOk(
-    await request(`/api/chat/sessions/${session.id}/messages`, {
-      method: "POST",
-      body: JSON.stringify({ content: "我有点累，local-smoke-chat" }),
-    }),
-    "send chat message"
-  );
+  const sent = await request(`/api/chat/sessions/${session.id}/messages`, {
+    method: "POST", body: JSON.stringify({ content: "我有点累，local-smoke-chat" }),
+  });
+  expectStatus(sent, 201, "chat commits before success");
+  const messageData = expectOk(sent, "send chat message");
   if (!messageData.userMessage?.id || !messageData.assistantMessage?.id) {
-    throw new Error("send chat message: missing user or assistant message");
+    throw new Error(`send chat message: missing user or assistant message ${JSON.stringify(messageData)}`);
+  }
+
+  assert.equal(messageData.status, "committed");
+  const committed = await prisma.chatMessage.findUniqueOrThrow({ where: { id: messageData.assistantMessage.id }, include: { aiGeneration: true } });
+  assert.equal(committed.role, "ASSISTANT");
+  assert.equal(committed.userId, userId);
+  assert.equal(committed.sessionId, session.id);
+  assert.equal(committed.replyToMessageId, messageData.userMessage.id);
+  assert.equal(committed.content, messageData.assistantMessage.content);
+  assert.equal(committed.aiGeneration.executionTrace.phase, "COMMITTED");
+  if (process.env.LOCAL_API_SMOKE_PROVIDER_FIXTURE === "1") {
+    assert.equal(committed.content, "有点累啊，愿意的话可以说说吗？");
+    assert.equal(committed.aiGeneration.model, "qwen:fixture-surface");
+    assert.equal(committed.aiGeneration.executionTrace.attempts.length, 1, "Fixture must not pass through regeneration");
+    assert.deepEqual(committed.aiGeneration.executionTrace.attempts[0].validation.failureReasons, []);
+    console.log("LOCAL_FIXTURE_CHAT_TRACE", JSON.stringify(committed.aiGeneration.executionTrace));
   }
 
   const history = expectOk(

@@ -1,8 +1,11 @@
 export {
+  declinesSharingInvitation,
   determineConversationState,
   extractAffectEvidence,
   isNoTopicMessage,
+  isAssistantSharingInvitation,
   projectAffectEvidenceTerms,
+  reopensInteraction,
 } from "./conversationStateService";
 export type {
   AffectEvidenceCategory,

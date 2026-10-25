@@ -1,3 +1,4 @@
+import { cleanObservationFor } from "./semantic-observation-fixture";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server } from "node:http";
@@ -41,6 +42,10 @@ import {
   sanitizeChatHistory,
 } from "../services/ai/promptBuilder";
 import { enforceResponsePlan } from "../services/ai/responsePlanValidator";
+import type {
+  PlannedFunctionSemanticProviderInput,
+  PlannedFunctionSemanticVerdict,
+} from "../services/ai/plannedFunctionSemanticValidator";
 import type { AiGenerationResult } from "../services/ai/types";
 
 const plan: ResponsePlan = {
@@ -55,7 +60,13 @@ const plan: ResponsePlan = {
   groundingFacts: [],
   requiredDisclosure: [],
   clinicalStrategy: null,
-  positiveFunctionContract: null,
+  positiveFunctionContract: {
+    action: "acknowledge_without_psychologizing",
+    sourceTurnId: "turn-1",
+    sourceText: "当前内容",
+    allowIdle: false,
+    evidence: ["currentUserMessage=当前内容"],
+  },
   interactionMoveHandoffPlan: null,
   ordinaryPosture: null,
   questionPolicy: { mode: "none", reason: "deterministic check" },
@@ -86,10 +97,7 @@ const ordinaryPlan: ResponsePlan = {
       end: 4,
       text: "当前内容",
     }],
-    requiredContribution: {
-      targetSpanIndexes: [0],
-      instruction: "对用户当前表达的具体内容作出贴切回应。",
-    },
+    requiredContribution: null,
     evidence: ["owner=conversation_os.response_planner"],
   },
   relevanceProvenance: [
@@ -103,10 +111,7 @@ const ordinaryPlan: ResponsePlan = {
         end: 4,
         text: "当前内容",
       }],
-      requiredContribution: {
-        targetSpanIndexes: [0],
-        instruction: "对用户当前表达的具体内容作出贴切回应。",
-      },
+      requiredContribution: null,
       evidence: ["owner=conversation_os.response_planner"],
     }),
   ],
@@ -124,6 +129,60 @@ const ordinaryAuthority = {
   expectedAnswerObligations: [],
   canonicalProvenance: [],
 } as const;
+
+const ordinarySemanticContext = {
+  currentUserText: "当前内容",
+  handoffTargetAssistantText: null,
+  ordinaryRecentMessages: [],
+};
+
+// Fixed verdicts exercise lifecycle wiring, not real-model response quality.
+const ordinaryVerdictFor = (
+  input: PlannedFunctionSemanticProviderInput,
+  semanticQuestionCount = 0
+): PlannedFunctionSemanticVerdict => {
+  const contract = input.positiveFunctionBinding;
+  const handoff = input.handoffBinding;
+  assert(contract?.action === "acknowledge_without_psychologizing");
+  assert.equal(contract.sourceText, input.currentUserText);
+  assert(Array.isArray(input.ordinaryRecentMessages));
+  const evidence = [{ start: 0, end: input.candidateReply.length, text: input.candidateReply,
+    reason: "Fixed lifecycle fixture verdict; not a model quality judgment." }];
+  return {
+    schemaVersion: 1,
+    planId: input.planId,
+    handoff: handoff ? {
+      binding: {
+        sourceAssistantMoveId: handoff.sourceAssistantMoveId,
+        sourceUserTurnId: handoff.sourceUserTurnId,
+        selectedRelation: handoff.selectedRelation,
+        requiredFunction: handoff.requiredFunction,
+        completionIntent: handoff.completionIntent,
+        questionPolicy: handoff.questionPolicy,
+      },
+      status: "satisfied",
+      realizedFunction: handoff.requiredFunction === "defer_handoff_completion" ? null : handoff.requiredFunction,
+      targetAddressed: true,
+      relationAddressed: true,
+      requiredFunctionRealized: handoff.completionIntent === "fulfill",
+      containsContradictoryMove: false,
+      handoffCompletionClaimed: false,
+      optionalQuestionAfterRequiredFunction: false,
+      evidence,
+    } : null,
+    positiveFunction: {
+      ...cleanObservationFor(input),
+      binding: { action: contract.action, sourceTurnId: contract.sourceTurnId, allowIdle: contract.allowIdle, ...(contract.responseFunction ? {responseFunction: contract.responseFunction} : {}) },
+      status: "satisfied",
+      realizedAction: contract.action,
+      targetAddressed: true,
+      contractRealized: true,
+      containsContradictoryMove: false,
+      evidence,
+    },
+    semanticQuestionCount,
+  };
+};
 
 const generation = (text: string): AiGenerationResult => ({
   text,
@@ -182,14 +241,14 @@ assert(preflightResponsePlan(postureModeTamper, ordinaryAuthority).failureReason
 assert(preflightResponsePlan(postureModeTamper, ordinaryAuthority).failureReasons.includes("ordinary_posture_provenance_mismatch"));
 
 const postureInstructionTamper = structuredClone(ordinaryPlan);
-postureInstructionTamper.ordinaryPosture!.requiredContribution.instruction = "篡改后的 instruction";
+postureInstructionTamper.ordinaryPosture!.requiredContribution = {targetSpanIndexes:[0], instruction:"篡改后的 instruction"};
 assert.deepEqual(
   preflightResponsePlan(postureInstructionTamper, ordinaryAuthority).failureReasons,
-  ["ordinary_posture_provenance_mismatch"]
+  ["ordinary_contribution_without_supported_purpose", "ordinary_posture_provenance_mismatch"]
 );
 
 const postureTargetTamper = structuredClone(ordinaryPlan);
-postureTargetTamper.ordinaryPosture!.requiredContribution.targetSpanIndexes = [0, 0];
+postureTargetTamper.ordinaryPosture!.requiredContribution = {targetSpanIndexes:[0,0],instruction:"未经采用的任务"};
 assert(preflightResponsePlan(postureTargetTamper, ordinaryAuthority).failureReasons.includes("invalid_ordinary_posture_target_span_indexes"));
 assert(preflightResponsePlan(postureTargetTamper, ordinaryAuthority).failureReasons.includes("ordinary_posture_provenance_mismatch"));
 
@@ -204,12 +263,13 @@ assert.deepEqual(
   ["ordinary_posture_provenance_mismatch"]
 );
 assert.equal(
-  preflightResponsePlan({ ...plan, decisionOwner: "conversation_os.response_planner", relevanceProvenance: [] }).passed,
+  preflightResponsePlan({ ...plan, decisionOwner: "conversation_os.response_planner", relevanceProvenance: [] }, ordinaryAuthority).passed,
   false
 );
 const emotionalActionWithoutContract: ResponsePlan = {
   ...plan,
   responseActions: ["offer_emotional_support"],
+  positiveFunctionContract: null,
   relevanceProvenance: [{
     planElement: "responseAction:offer_emotional_support",
     source: "current_turn",
@@ -245,7 +305,7 @@ const contractWithoutMatchingAction: ResponsePlan = {
 };
 assert.deepEqual(
   preflightResponsePlan(contractWithoutMatchingAction).failureReasons,
-  ["positive_function_contract_without_matching_action"]
+  ["missing_or_mismatched_positive_function_contract:acknowledge_without_psychologizing"]
 );
 const emotionalPlanWithoutEvidence: ResponsePlan = {
   ...emotionalActionWithoutContract,
@@ -306,7 +366,7 @@ const recoveredOrdinaryPlan: ResponsePlan = {
 assert.equal(
   createPlanPreflightRecoveryDirective(
     recoveredOrdinaryPlan,
-    preflightResponsePlan(recoveredOrdinaryPlan)
+    preflightResponsePlan(recoveredOrdinaryPlan, ordinaryAuthority)
   ),
   null,
   "A recovered plan cannot request another recovery."
@@ -395,6 +455,8 @@ assert.equal(
 let doubleFailureCalls = 0;
 const doubleFailure = await enforceResponsePlan({
   plan,
+  plannedFunctionSemanticContext: ordinarySemanticContext,
+  plannedFunctionSemanticProvider: async (input) => ordinaryVerdictFor(input, 1),
   generate: async () => {
     doubleFailureCalls += 1;
     return generation(doubleFailureCalls === 1 ? "还想说什么？" : "那你呢？");
@@ -462,6 +524,8 @@ assert(positiveSemanticDoubleFailure.validations.every((validation) => !validati
 let retryCalls = 0;
 const retrySuccess = await enforceResponsePlan({
   plan,
+  plannedFunctionSemanticContext: ordinarySemanticContext,
+  plannedFunctionSemanticProvider: async (input) => ordinaryVerdictFor(input, input.candidateReply === "还想说什么？" ? 1 : 0),
   generate: async () => generation(++retryCalls === 1 ? "还想说什么？" : "好，我们接着来。"),
 });
 assert.equal(retrySuccess.outcome, "validated");
@@ -471,28 +535,50 @@ assert.equal(retrySuccess.generation.finalReplySource, "llm_regenerate");
 const idleAnswerPlan: ResponsePlan = {
   ...plan,
   planId: "execution-check:idle-answer:response-plan",
+  disclosureScope: { conversationId: "execution-check", turnId: "idle-answer-turn" },
+  positiveFunctionContract: {
+    action: "acknowledge_without_psychologizing",
+    sourceTurnId: "idle-answer-turn",
+    sourceText: "我刚才在发呆，不想被评价，也别问了。",
+    allowIdle: false,
+    evidence: ["currentUserMessage=我刚才在发呆，不想被评价，也别问了。"],
+  },
   relevanceProvenance: [{
     planElement: "responseAction:acknowledge_without_psychologizing",
     source: "current_turn",
     sourceTurnId: "idle-answer-turn",
-    evidence: ["currentUserMessage=发呆"],
+    evidence: ["currentUserMessage=我刚才在发呆，不想被评价，也别问了。"],
   }],
 };
 let idleAnswerRetryConstraint = "";
 const idleAnswerRetry = await enforceResponsePlan({
   plan: idleAnswerPlan,
+  plannedFunctionSemanticContext: { ...ordinarySemanticContext,
+    currentUserText: "我刚才在发呆，不想被评价，也别问了。" },
+  plannedFunctionSemanticProvider: async (input) => {
+    const verdict = ordinaryVerdictFor(input);
+    if (input.candidateReply === "发呆也挺好。" && verdict.positiveFunction) {
+      // Fixed human expectation: evaluation now belongs to the existing semantic gate.
+      verdict.positiveFunction.status = "not_satisfied";
+      verdict.positiveFunction.realizedAction = null;
+      verdict.positiveFunction.targetAddressed = false;
+      verdict.positiveFunction.contractRealized = false;
+      verdict.positiveFunction.evidence[0].reason = "User explicitly declined evaluation; candidate adds an unsupported positive evaluation.";
+    }
+    return verdict;
+  },
   generate: async (constraint) => {
     if (!constraint) return generation("发呆也挺好。");
     idleAnswerRetryConstraint = constraint;
-    return generation("原来是发呆。");
+    return generation("好，我不作评价，也不追问。");
   },
 });
 assert.equal(idleAnswerRetry.outcome, "validated");
 assert.equal(idleAnswerRetry.regenerateAttempted, true);
 assert.equal(idleAnswerRetry.generation.finalReplySource, "llm_regenerate");
-assert(idleAnswerRetryConstraint.includes("删掉助手自行添加的评价词“挺好”"));
-assert(idleAnswerRetryConstraint.includes("不要换一个话题继续采访用户"));
-assert(!idleAnswerRetryConstraint.includes("原来是发呆。"));
+assert(idleAnswerRetryConstraint.includes("按同一普通承接合同"));
+assert(idleAnswerRetryConstraint.includes("禁止提问、邀请或索取用户回应"));
+assert(!idleAnswerRetryConstraint.includes("好，我不作评价，也不追问。"));
 
 const retryTransitions = buildAttemptTransitions({
   attempts: retrySuccess.attempts.map((attempt, index) => {
@@ -868,6 +954,13 @@ try {
     ...plan,
     planId: "handoff-commit-plan",
     disclosureScope: { conversationId: proactiveSession.id, turnId: handoffTurn.id },
+    positiveFunctionContract: {
+      action: "acknowledge_without_psychologizing",
+      sourceTurnId: handoffTurn.id,
+      sourceText: handoffTurn.content,
+      allowIdle: false,
+      evidence: [`currentUserMessage=${handoffTurn.content}`],
+    },
     interactionMoveHandoffPlan: {
       sourceAssistantMoveId: proactiveEnvelope.assistantMoveId,
       sourceGreetingFunction: proactiveEnvelope.handoff.greetingFunction,
@@ -890,43 +983,17 @@ try {
   const handoffReplyText = "很高兴见到你。";
   const enforcedHandoff = await enforceResponsePlan({
     plan: handoffPlan,
-    handoffSemanticContext: {
-      targetAssistantText: proactiveMessage.content,
+    plannedFunctionSemanticContext: {
+      handoffTargetAssistantText: proactiveMessage.content,
       currentUserText: handoffTurn.content,
+      ordinaryRecentMessages: [{ role: "assistant", content: proactiveMessage.content }],
     },
     generate: async () => {
       handoffPlan.interactionMoveHandoffPlan!.sourceAssistantMoveId = "mutated-outer-target";
       handoffPlan.interactionMoveHandoffPlan!.requiredFunction = "respect_user_boundary";
       return generation(handoffReplyText);
     },
-    handoffSemanticProvider: async (input) => ({
-      schemaVersion: 1,
-      planId: input.planId,
-      sourceAssistantMoveId: input.planBinding.sourceAssistantMoveId,
-      sourceUserTurnId: input.planBinding.sourceUserTurnId,
-      selectedRelation: input.planBinding.selectedRelation,
-      requiredFunction: input.planBinding.requiredFunction,
-      completionIntent: input.planBinding.completionIntent,
-      questionPolicy: input.planBinding.questionPolicy,
-      status: "satisfied",
-      realizedFunction: input.planBinding.requiredFunction === "defer_handoff_completion"
-        ? null
-        : input.planBinding.requiredFunction,
-      targetAddressed: true,
-      relationAddressed: true,
-      positiveFunctionRealized: true,
-      containsContradictoryMove: false,
-      handoffCompletionClaimed: false,
-      semanticQuestionCount: 0,
-      ordinaryQuestionIndependentlySupported: input.ordinaryQuestionIndependentlySupported,
-      optionalQuestionAfterPositiveFunction: false,
-      evidence: [{
-        start: 0,
-        end: input.candidateReply.length,
-        text: input.candidateReply,
-        reason: "validated frozen execution plan fixture",
-      }],
-    }),
+    plannedFunctionSemanticProvider: async (input) => ordinaryVerdictFor(input),
   });
   assert.equal(enforcedHandoff.outcome, "validated");
   assert(Object.isFrozen(enforcedHandoff.executionPlan));

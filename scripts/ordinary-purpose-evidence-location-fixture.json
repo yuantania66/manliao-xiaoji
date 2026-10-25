@@ -1,0 +1,61 @@
+{
+  "notice": "Saved actual provider responses are unchanged. Synthetic source-location variants are labelled in the test and do not establish model quality.",
+  "cases": {
+    "A": {
+      "reply": "明明自己也知道有疏忽，可被当众点出来，那种难堪确实不好受。",
+      "providerResponse": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "content": "{\n  \"schemaVersion\": 1,\n  \"planId\": \"synthetic-calm-r:9e357cf:single:synthetic-carryover:t3:response-plan\",\n  \"handoff\": null,\n  \"positiveFunction\": {\n    \"binding\": {\n      \"action\": \"acknowledge_without_psychologizing\",\n      \"sourceTurnId\": \"synthetic-carryover:t3\",\n      \"allowIdle\": false,\n      \"responseFunction\": \"respond_naturally\"\n    },\n    \"ordinaryUseObservation\": {\n      \"contentRelation\": \"repeats_or_normalizes_only\",\n      \"repetitionPurpose\": \"none\",\n      \"purposeEvidence\": []\n    },\n    \"status\": \"not_satisfied\",\n    \"realizedAction\": null,\n    \"targetAddressed\": true,\n    \"contractRealized\": false,\n    \"containsContradictoryMove\": false,\n    \"evidence\": [\n      {\n        \"start\": 0,\n        \"end\": 29,\n        \"text\": \"明明自己也知道有疏忽，可被当众点出来，那种难堪确实不好受。\",\n        \"reason\": \"The candidate restates the user's admission of oversight and feeling of embarrassment without adding new content, clarification, or organizing structure. With allowIdle=false and no supported repetition purpose (understanding_check, clarification, organizing), mere repetition/normalization does not satisfy the respond_naturally requirement.\"\n      }\n    ]\n  },\n  \"semanticQuestionCount\": 0\n}",
+              "role": "assistant"
+            }
+          }
+        ],
+        "created": 1792485629,
+        "id": "chatcmpl-04f8f099-d932-93cb-b4b5-6c4906cb7bc4",
+        "model": "qwen3.7-max",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 343,
+          "prompt_tokens": 1686,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "total_tokens": 2029
+        }
+      },
+      "sourceSha256": "6cebce5c22b2fead95dec66217f695bc01921e55c57b575d21ea4b8d2a947650"
+    },
+    "B": {
+      "reply": "承认这处疏忽，不意味着你就得接受被当众批评的方式。",
+      "providerResponse": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "content": "{\n  \"schemaVersion\": 1,\n  \"planId\": \"synthetic-calm-r:9e357cf:single:synthetic-carryover:t3:response-plan\",\n  \"handoff\": null,\n  \"positiveFunction\": {\n    \"binding\": {\n      \"action\": \"acknowledge_without_psychologizing\",\n      \"sourceTurnId\": \"synthetic-carryover:t3\",\n      \"allowIdle\": false,\n      \"responseFunction\": \"respond_naturally\"\n    },\n    \"ordinaryUseObservation\": {\n      \"contentRelation\": \"other_response\",\n      \"repetitionPurpose\": \"not_applicable\",\n      \"purposeEvidence\": [\n        {\n          \"source\": \"current_user\",\n          \"messageIndex\": null,\n          \"start\": 0,\n          \"end\": 25,\n          \"text\": \"他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。\"\n        }\n      ]\n    },\n    \"status\": \"satisfied\",\n    \"realizedAction\": \"acknowledge_without_psychologizing\",\n    \"targetAddressed\": true,\n    \"contractRealized\": true,\n    \"containsContradictoryMove\": false,\n    \"evidence\": [\n      {\n        \"start\": 0,\n        \"end\": 25,\n        \"text\": \"承认这处疏忽，不意味着你就得接受被当众批评的方式。\",\n        \"reason\": \"Responds naturally to the user's expressed tension between admitting fault and feeling humiliated by public criticism, validating that acknowledging the mistake does not obligate acceptance of the manner of criticism, without psychologizing or adding advice.\"\n      }\n    ]\n  },\n  \"semanticQuestionCount\": 0\n}",
+              "role": "assistant"
+            }
+          }
+        ],
+        "created": 1792485635,
+        "id": "chatcmpl-9d18bf78-880f-9ea8-bbfd-b9953d0d6198",
+        "model": "qwen3.7-max",
+        "object": "chat.completion",
+        "usage": {
+          "completion_tokens": 398,
+          "prompt_tokens": 1678,
+          "prompt_tokens_details": {
+            "cached_tokens": 1152
+          },
+          "total_tokens": 2076
+        }
+      },
+      "sourceSha256": "605954654fd17cb84a2d0cfcb809c4d2510b19fe87444d9e54e61986e840650c"
+    }
+  }
+}

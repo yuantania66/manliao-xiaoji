@@ -1,0 +1,676 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "hill-helping-batch1-5-preservation-v2-committed-history-2026-09-28",
+  "status": "frozen_before_candidate_run",
+  "purpose": "Cross-run quality preservation for emotional support and existing ordinary repair behavior during Batch 1.5.",
+  "gate": {
+    "runsPerScenario": 3,
+    "scenarioCount": 20,
+    "requiredValidatedRate": 1,
+    "requiredExpectedActionRate": 1,
+    "maximumConstraintFailures": 0,
+    "maximumHelpingProviderCalls": 0,
+    "maximumRegenerationRate": 0.2
+  },
+  "derivedFrom": {
+    "path": "clinical-evals/hill-helping-batch1-5-preservation.json",
+    "datasetVersion": "hill-helping-batch1-5-preservation-v1-2026-08-01",
+    "sha256": "12bd41f3c6c4370ddc3593cf997203037bc321a3b40d890ce196e9f6bcd6f243"
+  },
+  "derivation": {
+    "generator": "scripts/hill-helping-batch1-5-preservation-v2-generate.ts",
+    "method": [
+      "Each Assistant history turn is rebuilt as production commits it: buildCommittedResponseMove over the production deterministic ResponsePlan for its preceding User turn, then serializeCommittedAssistantMoveMetadata and parseCommittedAssistantMoveMetadata as the next-turn read path does.",
+      "claims: [] is written only when the derived plan has no grounding facts, no required disclosure and no open obligations, neither text references Assistant identity, and the round-tripped metadata is valid with zero claims.",
+      "Any other Assistant turn is left unchanged, so missing or unconfirmed claims never become claims: [].",
+      "No interaction-move envelope is written: production envelopes require validated commit evidence that a fixture cannot supply."
+    ],
+    "differences": [
+      "Assistant turns that pass derivation gain status=saved, replyToMessageId=<preceding User turn id> and committedAssistantMove; content, ids, User turns, userMessage, expectedAction and gate are unchanged."
+    ],
+    "comparability": [
+      "v2 is not equivalent to v1. v1 60/60 was measured with Assistant history carrying no committed move, so claims were unavailable; v2 measures the same 20 scenarios under production-protocol committed history.",
+      "Emotional-support scenarios have no history and are input-identical between v1 and v2.",
+      "Ordinary-repair scenarios differ in committed claims authority and lastCommittedAssistantMove (purpose, questionOrRequest), which can change interpretation and planning; v2 results must not be read as a v1 re-run.",
+      "The committed move is derived from the deterministic plan because the historical Assistant texts were authored, not generated; assistantTextValidatesUnderDerivedPlan records whether that text would pass the derived plan."
+    ],
+    "provenance": [
+      {
+        "scenarioId": "repair-unsupported-fear",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-unsupported-fear:u1:response-plan",
+            "derivedPlanActions": [
+              "acknowledge_without_psychologizing"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": true,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      },
+      {
+        "scenarioId": "repair-advice-boundary",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-advice-boundary:u1:response-plan",
+            "derivedPlanActions": [
+              "acknowledge_without_psychologizing"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": true,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      },
+      {
+        "scenarioId": "repair-intensity-exaggeration",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-intensity-exaggeration:u1:response-plan",
+            "derivedPlanActions": [
+              "offer_emotional_support"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": false,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      },
+      {
+        "scenarioId": "repair-wrong-person",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-wrong-person:u1:response-plan",
+            "derivedPlanActions": [
+              "acknowledge_without_psychologizing"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": true,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      },
+      {
+        "scenarioId": "repair-question-pressure",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-question-pressure:u1:response-plan",
+            "derivedPlanActions": [
+              "offer_emotional_support"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": true,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      },
+      {
+        "scenarioId": "repair-generic-listening",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-generic-listening:u1:response-plan",
+            "derivedPlanActions": [
+              "acknowledge_without_psychologizing"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": true,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      },
+      {
+        "scenarioId": "repair-repeated-claim",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-repeated-claim:u1:response-plan",
+            "derivedPlanActions": [
+              "offer_emotional_support"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": false,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      },
+      {
+        "scenarioId": "repair-direct-relationship-challenge",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-direct-relationship-challenge:u1:response-plan",
+            "derivedPlanActions": [
+              "offer_emotional_support"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": true,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      },
+      {
+        "scenarioId": "repair-moralizing",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-moralizing:u1:response-plan",
+            "derivedPlanActions": [
+              "acknowledge_without_psychologizing"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": true,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      },
+      {
+        "scenarioId": "repair-topic-switch",
+        "derivations": [
+          {
+            "assistantTurnId": "a1",
+            "outcome": "explicit_empty_claims",
+            "sourceUserTurnId": "u1",
+            "derivedPlanId": "preservation-v2:repair-topic-switch:u1:response-plan",
+            "derivedPlanActions": [
+              "acknowledge_without_psychologizing"
+            ],
+            "derivedQuestionPolicy": "optional_after_answer",
+            "groundingFactCount": 0,
+            "requiredDisclosureCount": 0,
+            "openObligationCount": 0,
+            "assistantTextValidatesUnderDerivedPlan": false,
+            "metadataRoundTrip": "valid"
+          }
+        ]
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "emotion-mild-unhappy",
+      "kind": "emotional_support",
+      "userMessage": "我今天有点不太高兴",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-vague-blocked",
+      "kind": "emotional_support",
+      "userMessage": "心里有点堵",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-sudden-sadness",
+      "kind": "emotional_support",
+      "userMessage": "今天突然有点难过",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-mixed-anger",
+      "kind": "emotional_support",
+      "userMessage": "我现在又委屈又生气",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-future-worry",
+      "kind": "emotional_support",
+      "userMessage": "明天那件事让我有点担心",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-being-ignored",
+      "kind": "emotional_support",
+      "userMessage": "刚才被忽略的时候挺难受的",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-embarrassed",
+      "kind": "emotional_support",
+      "userMessage": "我觉得有点丢脸",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-lonely",
+      "kind": "emotional_support",
+      "userMessage": "今晚莫名有点孤单",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-irritated",
+      "kind": "emotional_support",
+      "userMessage": "我现在真的很烦",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "emotion-no-analysis",
+      "kind": "emotional_support",
+      "userMessage": "我不想分析，只是有点难受",
+      "recentMessages": [],
+      "expectedAction": "offer_emotional_support"
+    },
+    {
+      "id": "repair-unsupported-fear",
+      "kind": "ordinary_repair",
+      "userMessage": "不是，我没说我害怕被否定，你理解偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我今天开会一直没说话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你其实是害怕被大家否定。",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "acknowledge_without_psychologizing"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": null,
+            "expectedUserContribution": "none",
+            "userBurden": "none",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-unsupported-fear:u1:response-plan",
+              "requestId=preservation-v2:repair-unsupported-fear:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-advice-boundary",
+      "kind": "ordinary_repair",
+      "userMessage": "我说了不想要建议，你还是在教我怎么做",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只想说说今天的事，不要建议"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你可以先列三个方案，再决定怎么做。",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "acknowledge_without_psychologizing"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": null,
+            "expectedUserContribution": "none",
+            "userBurden": "none",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-advice-boundary:u1:response-plan",
+              "requestId=preservation-v2:repair-advice-boundary:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-intensity-exaggeration",
+      "kind": "ordinary_repair",
+      "userMessage": "我没有撑不住，我只是说今天有点累",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "今天有点累"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "听起来你已经快撑不住了。",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "offer_emotional_support"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": null,
+            "expectedUserContribution": "none",
+            "userBurden": "none",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-intensity-exaggeration:u1:response-plan",
+              "requestId=preservation-v2:repair-intensity-exaggeration:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-wrong-person",
+      "kind": "ordinary_repair",
+      "userMessage": "不是同事，是我姐姐，你把人弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "她昨天又给我打电话了"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "那个同事又联系你了。",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "acknowledge_without_psychologizing"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": null,
+            "expectedUserContribution": "none",
+            "userBurden": "none",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-wrong-person:u1:response-plan",
+              "requestId=preservation-v2:repair-wrong-person:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-question-pressure",
+      "kind": "ordinary_repair",
+      "userMessage": "你又在追问，没有回应我刚才说的重点",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "那件事让我很难受"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "具体什么时候、在哪里、还有谁在场？",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "offer_emotional_support"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": {
+              "kind": "question"
+            },
+            "expectedUserContribution": "answer",
+            "userBurden": "low",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-question-pressure:u1:response-plan",
+              "requestId=preservation-v2:repair-question-pressure:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-generic-listening",
+      "kind": "ordinary_repair",
+      "userMessage": "你没有听我说的重点，只是在说你会听",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我最在意的是他当时那句话"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "我在，我会认真听你说。",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "acknowledge_without_psychologizing"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": null,
+            "expectedUserContribution": "none",
+            "userBurden": "none",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-generic-listening:u1:response-plan",
+              "requestId=preservation-v2:repair-generic-listening:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-repeated-claim",
+      "kind": "ordinary_repair",
+      "userMessage": "我已经说了不是内疚，你还在重复这个判断",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我只是觉得这件事很麻烦"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "这种内疚感一直压着你。",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "offer_emotional_support"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": null,
+            "expectedUserContribution": "none",
+            "userBurden": "none",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-repeated-claim:u1:response-plan",
+              "requestId=preservation-v2:repair-repeated-claim:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-direct-relationship-challenge",
+      "kind": "ordinary_repair",
+      "userMessage": "你一点都不懂我，刚才完全说偏了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不去不是因为害怕"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你是在逃避面对这件事。",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "offer_emotional_support"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": null,
+            "expectedUserContribution": "none",
+            "userBurden": "none",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-direct-relationship-challenge:u1:response-plan",
+              "requestId=preservation-v2:repair-direct-relationship-challenge:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-moralizing",
+      "kind": "ordinary_repair",
+      "userMessage": "我不是来听你讲应该不应该的，你把重点弄错了",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我不想去参加那次聚会"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "你应该勇敢一点，不能总躲着。",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "acknowledge_without_psychologizing"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": null,
+            "expectedUserContribution": "none",
+            "userBurden": "none",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-moralizing:u1:response-plan",
+              "requestId=preservation-v2:repair-moralizing:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    },
+    {
+      "id": "repair-topic-switch",
+      "kind": "ordinary_repair",
+      "userMessage": "我说的是和妈妈吵架，不是在问怎么放松",
+      "recentMessages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "content": "我刚和妈妈吵了一架"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "content": "要不要先做个呼吸练习放松一下？",
+          "status": "saved",
+          "replyToMessageId": "u1",
+          "committedAssistantMove": {
+            "purpose": [
+              "acknowledge_without_psychologizing"
+            ],
+            "claims": [],
+            "assumptions": [],
+            "questionOrRequest": {
+              "kind": "question"
+            },
+            "expectedUserContribution": "answer",
+            "userBurden": "low",
+            "sourceTurnId": "u1",
+            "evidence": [
+              "planId=preservation-v2:repair-topic-switch:u1:response-plan",
+              "requestId=preservation-v2:repair-topic-switch:history-derivation",
+              "Created only after the validated Assistant Message committed."
+            ]
+          }
+        }
+      ],
+      "expectedAction": "repair_previous_wording"
+    }
+  ]
+}

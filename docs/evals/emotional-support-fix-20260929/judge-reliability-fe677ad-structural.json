@@ -1,0 +1,3074 @@
+{
+  "note": "Structural copy; synthetic case replies and evidence text kept locally.",
+  "summary": {
+    "head": "fe677ad",
+    "repetitions": 3,
+    "labeledCases": 22,
+    "ambiguousCases": 3,
+    "judgeCalls": 69,
+    "outcomeMatches": 65,
+    "labeledCalls": 66,
+    "failCitationMatches": 38,
+    "failLabeledCalls": 42,
+    "ruleScopeViolationCalls": 0,
+    "reliableCases": 20,
+    "byCase": {
+      "ACK-COMPLETE-NO-SOLICIT": {
+        "category": "function_complete_no_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-BOUNDARY",
+            "ES-ACK-NO-SOLICIT",
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-ACK-BOUNDARY",
+            "ES-ACK-NO-SOLICIT",
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-ACK-BOUNDARY",
+            "ES-ACK-NO-SOLICIT",
+            "ES-AFFECT-EVIDENCE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "FOCUS-COMPLETE-NO-SOLICIT": {
+        "category": "function_complete_no_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-FOCUS",
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-FOCUS",
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "ACK-SOLICIT-AMOUNT-FOCUS-A": {
+        "category": "function_complete_then_solicits",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "ACK-SOLICIT-AMOUNT-FOCUS-B": {
+        "category": "function_complete_then_solicits",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "ACK-SOLICIT-SHOW-MISS": {
+        "category": "function_complete_then_solicits",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-NO-SOLICIT"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "FOCUS-INVITE-EVIDENCED": {
+        "category": "invitation_uses_existing_content",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-FOCUS"
+          ],
+          [
+            "ES-FOCUS"
+          ],
+          [
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "FOCUS-INVITE-UNSPECIFIED-OTHER": {
+        "category": "invitation_introduces_unknown_content",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "FOCUS-INVITE-WHAT-HAPPENED": {
+        "category": "invitation_introduces_unknown_content",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "ACK-FABRICATED-PRIOR-MISTAKE": {
+        "category": "no_history_fabrication",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-NO-FABRICATION"
+          ],
+          [
+            "ES-ACK-NO-FABRICATION"
+          ],
+          [
+            "ES-ACK-NO-FABRICATION"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-A1-MOMENT-BACKREF": {
+        "category": "c2_ruling_pass",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-FOCUS"
+          ],
+          [
+            "ES-FOCUS"
+          ],
+          [
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "AMB-FOCUS-SITUATION": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": null
+      },
+      "AMB-FOCUS-PLAN-GETS-AMOUNT": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": null
+      },
+      "AMB-ACK-JUST-NOW-DRIFT": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": null
+      },
+      "R2-OVERREJECT-RELEASE-AMOUNT": {
+        "category": "release_not_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-OVERREJECT-RELEASE-AMOUNT-LONELY": {
+        "category": "release_not_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST": {
+        "category": "release_wrapping_solicitation",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED": {
+        "category": "release_wrapping_solicitation",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-SCOPE-REPAIR-PASS": {
+        "category": "rule_scope_non_emotional_plan",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-SCOPE-REPAIR-FAIL-HISTORY": {
+        "category": "rule_scope_non_emotional_plan",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-A2-UNSTATED-DISAPPOINTMENT": {
+        "category": "c2_ruling_fail",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-NEAR-MOMENT-UNSTATED": {
+        "category": "mispass",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-NEAR-MOMENT-DETAILS": {
+        "category": "mispass",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          null
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "C2-NEAR-IMPERSONAL-GRIEVANCE": {
+        "category": "mispass",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-NEAR-ATTRIBUTED-ANGER": {
+        "category": "mispass",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-NEAR-STATED-DISAPPOINTMENT": {
+        "category": "overreject",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [
+            "ES-ACK-BOUNDARY",
+            "ES-ACK-NO-SOLICIT"
+          ],
+          [
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass"
+    },
+    {
+      "id": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass"
+    },
+    {
+      "id": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ]
+    },
+    {
+      "id": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ]
+    },
+    {
+      "id": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ]
+    },
+    {
+      "id": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass"
+    },
+    {
+      "id": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ]
+    },
+    {
+      "id": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ]
+    },
+    {
+      "id": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-FABRICATION"
+      ]
+    },
+    {
+      "id": "C2-A1-MOMENT-BACKREF",
+      "category": "c2_ruling_pass",
+      "expected": "pass"
+    },
+    {
+      "id": "AMB-FOCUS-SITUATION",
+      "category": "ambiguous",
+      "expected": "ambiguous"
+    },
+    {
+      "id": "AMB-FOCUS-PLAN-GETS-AMOUNT",
+      "category": "ambiguous",
+      "expected": "ambiguous"
+    },
+    {
+      "id": "AMB-ACK-JUST-NOW-DRIFT",
+      "category": "ambiguous",
+      "expected": "ambiguous"
+    },
+    {
+      "id": "R2-OVERREJECT-RELEASE-AMOUNT",
+      "category": "release_not_solicitation",
+      "expected": "pass"
+    },
+    {
+      "id": "R2-OVERREJECT-RELEASE-AMOUNT-LONELY",
+      "category": "release_not_solicitation",
+      "expected": "pass"
+    },
+    {
+      "id": "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ]
+    },
+    {
+      "id": "R2-SCOPE-REPAIR-PASS",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "pass"
+    },
+    {
+      "id": "R2-SCOPE-REPAIR-FAIL-HISTORY",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "fail"
+    },
+    {
+      "id": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "C2-NEAR-MOMENT-UNSTATED",
+      "category": "mispass",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "C2-NEAR-MOMENT-DETAILS",
+      "category": "mispass",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ]
+    },
+    {
+      "id": "C2-NEAR-IMPERSONAL-GRIEVANCE",
+      "category": "mispass",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "C2-NEAR-ATTRIBUTED-ANGER",
+      "category": "mispass",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "C2-NEAR-STATED-DISAPPOINTMENT",
+      "category": "overreject",
+      "expected": "pass"
+    }
+  ],
+  "calls": [
+    {
+      "caseId": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY",
+          "ES-ACK-NO-SOLICIT",
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY",
+              "ES-ACK-NO-SOLICIT",
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY",
+          "ES-ACK-NO-SOLICIT",
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY",
+              "ES-ACK-NO-SOLICIT",
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY",
+          "ES-ACK-NO-SOLICIT",
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY",
+              "ES-ACK-NO-SOLICIT",
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-FOCUS",
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-FOCUS",
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-FOCUS",
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 25,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 25,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 25,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 62,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 62,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 62,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 20,
+            "end": 33,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 33,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 33,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 39,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 39,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 24,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 22,
+            "end": 33,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 22,
+            "end": 33,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 20,
+            "end": 33,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-FABRICATION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": [
+              "ES-ACK-NO-FABRICATION"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-FABRICATION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": [
+              "ES-ACK-NO-FABRICATION"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-NO-FABRICATION"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": [
+              "ES-ACK-NO-FABRICATION"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-A1-MOMENT-BACKREF",
+      "category": "c2_ruling_pass",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 43,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-A1-MOMENT-BACKREF",
+      "category": "c2_ruling_pass",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 43,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-A1-MOMENT-BACKREF",
+      "category": "c2_ruling_pass",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 20,
+            "end": 34,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "AMB-FOCUS-SITUATION",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 36,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": null,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "AMB-FOCUS-PLAN-GETS-AMOUNT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 10,
+            "end": 29,
+            "ruleIds": [
+              "ES-FOCUS"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": null,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "AMB-ACK-JUST-NOW-DRIFT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": null,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT-LONELY",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT-LONELY",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT-LONELY",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 18,
+            "end": 33,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 18,
+            "end": 33,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 18,
+            "end": 33,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-PASS",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 22,
+            "ruleIds": []
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-PASS",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 22,
+            "ruleIds": []
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-PASS",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 22,
+            "ruleIds": []
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-FAIL-HISTORY",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": []
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-FAIL-HISTORY",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": []
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-FAIL-HISTORY",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": []
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 9,
+            "end": 16,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-UNSTATED",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-UNSTATED",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-UNSTATED",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-DETAILS",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 22,
+            "end": 36,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-DETAILS",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 22,
+            "end": 36,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-DETAILS",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:provider_failure"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": null,
+      "outcomeMatches": true,
+      "citationMatches": false,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-IMPERSONAL-GRIEVANCE",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 14,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-IMPERSONAL-GRIEVANCE",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 14,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-IMPERSONAL-GRIEVANCE",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 14,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-ATTRIBUTED-ANGER",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-ATTRIBUTED-ANGER",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-ATTRIBUTED-ANGER",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-STATED-DISAPPOINTMENT",
+      "category": "overreject",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY",
+          "ES-ACK-NO-SOLICIT"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY",
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-STATED-DISAPPOINTMENT",
+      "category": "overreject",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "C2-NEAR-STATED-DISAPPOINTMENT",
+      "category": "overreject",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    }
+  ]
+}

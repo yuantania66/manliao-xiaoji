@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 
 import {
   buildProactiveGreetingAssistantMoveEnvelope,
@@ -734,28 +735,26 @@ assert(authSource.includes("attempt < 2"));
 assert(guestRouteSource.includes("intent: generation.proactiveIntent"));
 assert(guestClientSource.includes('GUEST_RECENT_GREETINGS_KEY = "xinqingGuestRecentGreetings:v2"'));
 assert(guestClientSource.includes("releaseGuestOpenGreeting"));
-assert(guestClientSource.includes("attempt < 2"));
+assert(guestClientSource.includes("await requestGuest<{ assistantMessage: ChatMessageResponse }>"), "Greeting delegates to shared guest authority request");
+// Execute the existing actual-helper/UI regression instead of requiring a retry
+// loop in the page: only a pre-generation invalid-session 401 may recover once;
+// network/unknown results must not replay or publish stale greeting results.
+execFileSync(process.execPath, ["--import", "tsx", "scripts/client-guest-session-check.ts"], {
+  cwd: process.cwd(), env: process.env, stdio: "pipe", timeout: 60_000,
+});
 assert(guestClientSource.includes("greetingFailed: true"));
 assert(guestClientSource.includes("欢迎语暂时没生成，可以直接发消息或刷新重试。"));
 assert(guestClientSource.includes("interactionMoveEnvelope: greeting.interactionMoveEnvelope"));
-assert(
-  guestClientSource.includes(
-    "recentMessages: recentMessages.slice(-6).map((message) => ({\n            id: message.id,"
-  ),
-  "Guest greeting history must preserve committed message ids."
-);
-assert(
-  guestClientSource.includes(
-    "recentMessages: messages.slice(-24).map((message) => ({\n              id: message.id,"
-  ),
-  "Guest send history must preserve committed message ids."
-);
-assert(
-  guestClientSource.includes(
-    ".filter((message) => message.id !== pending.turnId)\n              .slice(-24)\n              .map((message) => ({\n                id: message.id,"
-  ),
-  "Guest retry history must preserve committed message ids."
-);
+assert.match(guestClientSource,
+  /recentMessages:\s*recentMessages\.slice\(-6\)\.map\(\(message\) => \(\{\s*id: message\.id,/u,
+  "Guest greeting history must preserve committed message ids.");
+assert.match(guestClientSource,
+  /recentMessages:\s*messages\.slice\(-24\)\.map\(\(message\) => \(\{\s*id: message\.id,/u,
+  "Guest send history must preserve committed message ids.");
+assert(guestClientSource.includes("guestRequest: { body: guestBody, authority: guestAuthority!, attempt:"),
+  "Explicit retry must retain the original request/history instead of rebuilding changed history.");
+assert(guestClientSource.includes('("/api/chat/guest", request.body, request.authority, request.attempt)'),
+  "Explicit retry must resend the captured original request and authority.");
 
 const guestBootstrapRaceChecks = (async () => {
   type TestMessage = { id: string; role: "user" | "assistant" };

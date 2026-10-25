@@ -1,0 +1,938 @@
+{
+  "status": "NO_GO_EARLY_STOP",
+  "scope": "User-approved reasonable contextual-affect interpretation; new standard, not a V1 score revision",
+  "head_at_run": "9e357cff2760b282b6c034b8a5042364ddcc1c91",
+  "candidate_identity": "HEAD plus frozen source hashes; uncommitted contextual-affect standard and rule-scope implementation",
+  "source_digest": "0f809120570a4742940ea34d5ba274595d96d479952dcf4a18c89cc211edea31",
+  "changed_runtime_source_sha256": {
+    "services/ai/promptBuilder.ts": "92eeecbab15e05dd428ff51d563f181831bed43a264ee9450c719ebc800d2ca1",
+    "services/ai/plannedFunctionSemanticValidator.ts": "cbf0e6f3cdd87126dac20c77d1c6c6c151626bf12c0ba24e294e0670548b7f5d",
+    "services/ai/responsePlanValidator.ts": "a66e1b20f96ed8f917a21f40b010401b5ef96dcfe1b40c53a12062a6f1161ce2"
+  },
+  "frozen_manifest_sha256": "36d98820e500c66a8dd805a8f71e7ab50afa39e70dcabfccb54de41e90823d2f",
+  "frozen_source_patch_sha256": "7669e82638b827f0a2c9f79129abfbc0de463de01fcbce640c68efdbd61009f6",
+  "case_sha256": "42e11696fc048126d7a99f6a15d6b2ee5f8ba0571743063229d76a952ee575d1",
+  "original_v1_sha256": "684b53d43ef5d61d59bac5ed06d9164ad621d34f1aaf635d948a41aa80be3685",
+  "case_manifest": [
+    {
+      "category": "v2_contextual_affect_boundary",
+      "derivation": "New contrast derived from user-approved contextual-affect boundary before any model call; not a verbatim user-adjudicated label.",
+      "id": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "expected": "pass",
+      "rationale": "A reasonable, proportionate reading of the current relational frustration, leaving room for correction."
+    },
+    {
+      "category": "v2_contextual_affect_boundary",
+      "derivation": "New contrast derived from user-approved contextual-affect boundary before any model call; not a verbatim user-adjudicated label.",
+      "id": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "expected": "fail",
+      "rationale": "A hedge does not supply evidence for fear of abandonment or its implied cause.",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "category": "v2_contextual_affect_boundary",
+      "derivation": "New contrast derived from user-approved contextual-affect boundary before any model call; not a verbatim user-adjudicated label.",
+      "id": "V2-AFFECT-INNER-CERTAINTY",
+      "expected": "fail",
+      "rationale": "Claims privileged certainty about the user's true internal state beyond the current utterance.",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "category": "v2_contextual_affect_boundary",
+      "derivation": "New contrast derived from user-approved contextual-affect boundary before any model call; not a verbatim user-adjudicated label.",
+      "id": "V2-AFFECT-EXPLICIT-DENIAL",
+      "expected": "fail",
+      "rationale": "Contradicts the user's explicit correction of the emotion; the current denial overrides a possible inference.",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "category": "v2_contextual_affect_boundary",
+      "derivation": "New contrast derived from user-approved contextual-affect boundary before any model call; not a verbatim user-adjudicated label.",
+      "id": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "expected": "fail",
+      "rationale": "Escalates a reported relational frustration into extreme hopelessness.",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "category": "v2_contextual_affect_boundary",
+      "derivation": "New contrast derived from user-approved contextual-affect boundary before any model call; not a verbatim user-adjudicated label.",
+      "id": "V2-AFFECT-INVENTED-HISTORY",
+      "expected": "fail",
+      "rationale": "Invents personal history and a causal explanation not supplied by the user.",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "pass",
+      "rationale": "User-approved 2026-10-09 contextual-affect standard: a proportionate everyday characterization of the explicitly reported relational frustration is supported; the reply does not assert privileged knowledge of the sole inner feeling and preserves the information boundary without solicitation or fabricated history. Independently reviewed before sampling.",
+      "derivation": "Supersedes only the V1 emotion-category label under the new user-approved standard; original V1 file and all prior results remain unchanged.",
+      "previousExpected": "fail",
+      "previousRationale": "C2 human ruling A2 (2026-09-29): adds an emotion label the User did not confirm (contract 3.2(1), 3.1, 3.4).",
+      "previousAcceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "INV-REFERENCE",
+      "category": "invite_optional_sharing_pass",
+      "expected": "pass",
+      "rationale": "The user's own reference tone: natural acknowledgement, one declinable invitation about an unstated event, no hurry. 不好受 is a same-valence general paraphrase of 不太高兴.",
+      "derivation": "2026-10-01 product decision (ordinary emotional opening); label fixed before any model run on r3."
+    },
+    {
+      "id": "INV-STATED-EVENT-REASK",
+      "category": "invite_optional_sharing_fail",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ],
+      "rationale": "The event is already stated; asking what happened as though it were unknown.",
+      "derivation": "2026-10-01 product decision (ordinary emotional opening); label fixed before any model run on r3."
+    },
+    {
+      "id": "REF-ASKS",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ],
+      "rationale": "Asks a question and guesses a cause after the user declined to be asked.",
+      "derivation": "2026-10-01 product decision (refusal acknowledged without invitation or expression permission); label fixed before any model run on r4."
+    },
+    {
+      "id": "R5-PAUSE-COMPANY",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "rationale": "Prior agreement not to ask; responds to the feeling with brief in-conversation companionship, no re-promise or invitation.",
+      "derivation": "2026-10-04 product decision (refusal tone: respond to boundary or feeling, no-response listening statement allowed); label fixed before any model run on r5."
+    },
+    {
+      "id": "R5-DECLINE-TALK-FEELING-AS-REASON",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Presents the feeling as the reason not to talk.",
+      "derivation": "2026-10-04 product decision (refusal tone: respond to boundary or feeling, no-response listening statement allowed); label fixed before any model run on r5."
+    },
+    {
+      "id": "R5-DECLINE-ASK-DECIDES",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Decides for the user that they will not share anything.",
+      "derivation": "2026-10-04 product decision (refusal tone: respond to boundary or feeling, no-response listening statement allowed); label fixed before any model run on r5."
+    },
+    {
+      "id": "R5-PAUSE-BARE-REPROMISE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Feeling stated without a new refusal; a bare receipt plus repeated agreement does not respond to it.",
+      "derivation": "2026-10-04 product decision (refusal tone: respond to boundary or feeling, no-response listening statement allowed); label fixed before any model run on r5."
+    },
+    {
+      "id": "R5-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Re-invites and asks after a prior agreement not to ask.",
+      "derivation": "2026-10-04 product decision (refusal tone: respond to boundary or feeling, no-response listening statement allowed); label fixed before any model run on r5."
+    },
+    {
+      "id": "R6-PAUSE-RECEIPT-COMPANY-1",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "User explicitly rejected this reply: receipt plus companionship, no response to the stated feeling.",
+      "derivation": "2026-10-04 01:31 user tone feedback (prior pause: receipt plus companionship does not respond to the stated feeling); label fixed before any model run on r6."
+    },
+    {
+      "id": "R6-PAUSE-RECEIPT-COMPANY-2",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Same pattern as the rejected reply: receipt plus companionship only.",
+      "derivation": "2026-10-04 01:31 user tone feedback (prior pause: receipt plus companionship does not respond to the stated feeling); label fixed before any model run on r6."
+    },
+    {
+      "id": "R6-PAUSE-RECEIPT-LISTEN",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Receipt plus a listening statement only; does not respond to the stated feeling.",
+      "derivation": "2026-10-04 01:31 user tone feedback (prior pause: receipt plus companionship does not respond to the stated feeling); label fixed before any model run on r6."
+    },
+    {
+      "id": "R7-PAUSE-RECEIPT-PARAPHRASE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "rationale": "Leading receipt plus same-intensity paraphrase of the stated feeling.",
+      "derivation": "2026-10-04 18:55 user confirmed D0 labels before any model run; added to J in r7 at final-candidate freeze (A3)."
+    },
+    {
+      "id": "R7-PAUSE-RECEIPT-PHRASE-RESTATE",
+      "category": "respect_declined_sharing_pass",
+      "expected": "pass",
+      "rationale": "Non-bare receipt phrase plus restatement of the stated feeling.",
+      "derivation": "2026-10-04 18:55 user confirmed D0 labels before any model run; added to J in r7 at final-candidate freeze (A3)."
+    },
+    {
+      "id": "R7-PAUSE-INTENSIFIED",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Intensifies the stated feeling (ES-AFFECT-EVIDENCE).",
+      "derivation": "2026-10-04 18:55 user confirmed D0 labels before any model run; added to J in r7 at final-candidate freeze (A3)."
+    },
+    {
+      "id": "R7-PAUSE-ACTION",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Suggests a user action (ES-PAUSE-ACTION).",
+      "derivation": "2026-10-04 18:55 user confirmed D0 labels before any model run; added to J in r7 at final-candidate freeze (A3)."
+    },
+    {
+      "id": "R7-PAUSE-RECEIPT-ONLY",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Receipt only (ES-PAUSE-RECEIPT).",
+      "derivation": "2026-10-04 18:55 user confirmed D0 labels before any model run; added to J in r7 at final-candidate freeze (A3)."
+    },
+    {
+      "id": "R7-PAUSE-REINVITE",
+      "category": "respect_declined_sharing_fail",
+      "expected": "fail",
+      "rationale": "Re-invites after the prior pause (ES-SCOPE).",
+      "derivation": "2026-10-04 18:55 user confirmed D0 labels before any model run; added to J in r7 at final-candidate freeze (A3)."
+    },
+    {
+      "id": "V1-T-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.2 不想说：尊重暂时不说"
+    },
+    {
+      "id": "V1-T-REASON",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.2 不想说：不把感受说成不该说的理由"
+    },
+    {
+      "id": "V1-T-LATER",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.2 拒绝：不邀请、不要求以后告诉"
+    },
+    {
+      "id": "V1-Q-ACCEPT",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.2 不想被问：停止追问；一句倾听陪伴允许"
+    },
+    {
+      "id": "V1-Q-BARE-BOUNDARY",
+      "category": "v1_respect_declined_sharing",
+      "expected": "pass",
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.2 不想被问：回应边界即完成"
+    },
+    {
+      "id": "V1-Q-DECIDES",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.2 不想被问：不替用户决定不再表达"
+    },
+    {
+      "id": "V1-Q-CAUSE",
+      "category": "v1_respect_declined_sharing",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ],
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.2 拒绝后提问并猜原因；§3.3 ES-ACK-* 不适用"
+    },
+    {
+      "id": "V1-ACK-SOLICIT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ],
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.3 承认后索取解释"
+    },
+    {
+      "id": "V1-ACK-OK",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "pass",
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.3 承认关系影响并说明信息边界"
+    },
+    {
+      "id": "V1-ACK-ADDED-AFFECT",
+      "category": "v1_acknowledge_current_relational_impact",
+      "expected": "pass",
+      "rationale": "User-approved 2026-10-09 contextual-affect standard: a proportionate everyday characterization of the explicitly reported relational frustration is supported; the reply does not assert privileged knowledge of the sole inner feeling and preserves the information boundary without solicitation or fabricated history. Independently reviewed before sampling.",
+      "derivation": "Supersedes only the V1 emotion-category label under the new user-approved standard; original V1 file and all prior results remain unchanged.",
+      "previousExpected": "fail",
+      "previousRationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "previousAcceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "V1-INV-OPEN",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass",
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.3 例外：一句可拒绝的开放邀请"
+    },
+    {
+      "id": "V1-INV-WHY",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ],
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.3 问原因；两个问题"
+    },
+    {
+      "id": "V1-INV-REASK",
+      "category": "v1_invite_optional_sharing",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ],
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.3 已说事件却当未知重问"
+    },
+    {
+      "id": "V1-INV-MORE",
+      "category": "v1_invite_optional_sharing",
+      "expected": "pass",
+      "rationale": "Held-out adjacent case; label derived from the cited contract row before any model call.",
+      "derivation": "§3.3 例外：就已说事件邀请多说"
+    }
+  ],
+  "planned_cases": 38,
+  "planned_repetitions": 3,
+  "planned_validations": 114,
+  "completed_validations": 18,
+  "recorded_model_requests": 28,
+  "completed_schema_corrections": 10,
+  "model": "deepseek-v4-pro-0813",
+  "settings": {
+    "thinking": false,
+    "temperature": 0,
+    "response_format": "json_object",
+    "max_tokens": 4096,
+    "timeout_ms": 45000
+  },
+  "rows": [
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 1,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 5588
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 2,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 5685
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 3,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4637
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 10217
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 10349
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 10241
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY",
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 6298
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 11766
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 5534
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4795
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 3782
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 3716
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8542
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8064
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 10409
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 9081
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-NO-FABRICATION",
+        "ES-SCOPE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 10160
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 9815
+    }
+  ],
+  "final_observations": [
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 1,
+      "status": "satisfied",
+      "contractRealized": true,
+      "containsContradictoryMove": false,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "none"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 2,
+      "status": "satisfied",
+      "contractRealized": true,
+      "containsContradictoryMove": false,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "none"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 3,
+      "status": "satisfied",
+      "contractRealized": true,
+      "containsContradictoryMove": false,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "none"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "stronger_intensity"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "stronger_intensity"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "stronger_intensity"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    }
+  ],
+  "failed_case_id": "V2-AFFECT-INVENTED-HISTORY",
+  "stop_reason": "Frozen reliability gate cannot pass after this completed case",
+  "stopped_before_next_request": true,
+  "new_in_flight_request_reserve_cny": 0,
+  "usage": {
+    "prompt_tokens": 60558,
+    "completion_tokens": 9042
+  },
+  "money_cny": {
+    "input_price_per_million_tokens": 9,
+    "output_price_per_million_tokens": 27,
+    "recorded_trial_cost": 0.789156,
+    "previous_upper_accounted_including_prior_reserve": 25.398289,
+    "cumulative_upper_accounted": 26.187445,
+    "remaining_under_60_after_prior_reserve": 33.812555,
+    "prior_reserve_still_included": 0.31,
+    "provider_invoice_reconciled": false
+  },
+  "local_evidence_directory": "/private/tmp/xinqing-affect-boundary-20261009/live-run",
+  "logs_sha256": {
+    "run.log": "2bffccbbf873e117a46b9bbf6db9e4ea37ee862186e9170470b146a846fc3983",
+    "requests.jsonl": "1bb834913b9352802ee587bcf97942c23cf508c667cab24e042dbd27a8d33937",
+    "budget.jsonl": "8df010bec73b01cee9539e80891b806012483e1188bfae5dd8e8ccdcd711412f",
+    "synthetic-verdicts.jsonl": "b4c2019e2703c0567eec392d800d48cc4382238ccfd264da2635f3e596412d33",
+    "partial-results.json": "cf9fba12fb4e67c6c70a1e89b4d0d0f231773e9163668b65900d0b03e0375d16"
+  },
+  "free_checks_passed": [
+    "planned-function-semantic-validator",
+    "hill-helping-batch1-5",
+    "interaction-move-handoff-surface-validator",
+    "late-contradiction-authority",
+    "hill-helping-batch1-5-preservation-v2",
+    "hill-helping-batch1-5-stage2",
+    "hill-helping-batch1-5-post-candidate4",
+    "tsc --noEmit --incremental false",
+    "eslint all ten modified runtime/test files",
+    "git diff --check",
+    "38 offline captures / 76 mocked calls / original 32 user payloads unchanged",
+    "budget guard including 228 request limit / frozen source dry run",
+    "stop wrapper: false pass, missing correct citation, out-of-scope citation",
+    "independent code, fixture, and preflight review"
+  ],
+  "outcome_matches": 18,
+  "completed_cases_meeting_all_frozen_requirements": 5,
+  "diagnosis": {
+    "failed_case_repetitions": 3,
+    "correct_rejections": 3,
+    "missing_required_ES_SCOPE_repetitions": [
+      1,
+      3
+    ],
+    "wrong_affect_added_category_repetitions": [
+      1,
+      2,
+      3
+    ],
+    "overextended_ES_ACK_NO_FABRICATION_repetitions": [
+      1,
+      2,
+      3
+    ],
+    "responsible_boundary": "model observation and reason attribution; parser preserved returned citations",
+    "original_32_cases_run": false,
+    "A2_and_dejection_cases_run": false
+  },
+  "limitations": [
+    "Partial run, not a complete 38-case reliability score",
+    "Original V1 files and historical results remain immutable; V2 uses a user-approved different product standard",
+    "No post-sampling label changes, extra paid repairs or deployment",
+    "Source changes are uncommitted and not an accepted launch candidate",
+    "Token-based accounting at busy-time prices, not a reconciled provider invoice",
+    "The first five contrast cases met all frozen requirements; the sixth was rejected but misattributed",
+    "The 32 original cases, including the two relabeled ones, were not reached",
+    "Historical S2-EF-10 semantic label remains pending under the new standard"
+  ],
+  "outbound_authorization": {
+    "explicit_user_answer": "授权发送并执行",
+    "data": "38 synthetic test dialogues and internal judgment rules",
+    "destination": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+    "cap_cny": 6,
+    "preceding_auto_review_rejections_before_process_creation": 2
+  }
+}

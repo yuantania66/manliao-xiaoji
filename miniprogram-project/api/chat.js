@@ -1,4 +1,5 @@
 const { request } = require("../utils/request");
+const { guestRequest, createGuestTurnId } = require("../utils/guest-session");
 
 const listSessions = () => request({ url: "/api/chat/sessions?pageSize=20" });
 
@@ -21,21 +22,12 @@ const sendMessage = (sessionId, content, turnId) =>
     data: { content, turnId }
   });
 
-const sendGuestMessage = ({ content, turnId, recentMessages }) =>
-  request({
-    url: "/api/chat/guest",
-    method: "POST",
-    auth: false,
-    data: { content, turnId, recentMessages }
-  });
+const sendGuestMessage = ({ content, turnId, recentMessages, retryOfAttempt, authority, isCurrent }) =>
+  guestRequest("/api/chat/guest", { content, turnId, recentMessages, retryOfAttempt }, authority, isCurrent);
 
-const getGuestGreeting = ({ kind = "initial", recentMessages = [], recentGreetings = [] } = {}) =>
-  request({
-    url: "/api/chat/guest/greeting",
-    method: "POST",
-    auth: false,
-    data: { kind, recentMessages, recentGreetings }
-  });
+const getGuestGreeting = ({ kind = "initial", recentMessages = [], recentGreetings = [],
+  turnId = createGuestTurnId(), retryOfAttempt, authority, isCurrent } = {}) =>
+  guestRequest("/api/chat/guest/greeting", { kind, recentMessages, recentGreetings, turnId, retryOfAttempt }, authority, isCurrent);
 
 const searchMessages = (query) =>
   request({

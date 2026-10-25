@@ -1,0 +1,704 @@
+{
+  "status": "NO_GO_EARLY_STOP",
+  "scope": "Correct rule attribution for independently grounded affect and fabricated user causes/history",
+  "target_repair_status": "FAIL",
+  "target_attribution_result": {
+    "caseId": "V2-AFFECT-INVENTED-HISTORY",
+    "repetitions": 3,
+    "passed": false,
+    "assessments": [
+      {
+        "repetition": 1,
+        "rawRuleIds": [
+          "ES-SCOPE",
+          "ES-ACK-BOUNDARY"
+        ],
+        "affectDrift": "added_category",
+        "status": "not_satisfied",
+        "contractRealized": false,
+        "containsContradictoryMove": true,
+        "hasCorrectScopeRule": true,
+        "hasWrongAffectRule": true,
+        "hasWrongAssistantHistoryRule": false,
+        "passed": false
+      },
+      {
+        "repetition": 2,
+        "rawRuleIds": [
+          "ES-SCOPE",
+          "ES-ACK-BOUNDARY"
+        ],
+        "affectDrift": "added_category",
+        "status": "not_satisfied",
+        "contractRealized": false,
+        "containsContradictoryMove": true,
+        "hasCorrectScopeRule": true,
+        "hasWrongAffectRule": true,
+        "hasWrongAssistantHistoryRule": false,
+        "passed": false
+      },
+      {
+        "repetition": 3,
+        "rawRuleIds": [
+          "ES-SCOPE",
+          "ES-ACK-BOUNDARY"
+        ],
+        "affectDrift": "added_category",
+        "status": "not_satisfied",
+        "contractRealized": false,
+        "containsContradictoryMove": true,
+        "hasCorrectScopeRule": true,
+        "hasWrongAffectRule": true,
+        "hasWrongAssistantHistoryRule": false,
+        "passed": false
+      }
+    ]
+  },
+  "full_v2_complete": false,
+  "head_at_run": "9e357cff2760b282b6c034b8a5042364ddcc1c91",
+  "candidate_identity": "HEAD plus frozen source hashes; uncommitted attribution clarification on the prior contextual-affect candidate",
+  "source_digest": "f966d53f990ce458de0049232384601599f13c6496fa1df81a69c49ebfd80818",
+  "validator_sha256": "1954a1bf08dacba9774434204e525bdae3d6bf358093f279fd775a2316faab70",
+  "frozen_manifest_sha256": "b5436fde08253d294d470a0f24dfe754392c98dc42bd39edb260ed8ca852872d",
+  "frozen_source_patch_sha256": "5c937588e98e36076a8f83299e18b1093a09ac51288cf8e893c8edfcadae4025",
+  "case_sha256": "42e11696fc048126d7a99f6a15d6b2ee5f8ba0571743063229d76a952ee575d1",
+  "same_v2_as_previous_run": true,
+  "planned_cases": 38,
+  "planned_repetitions": 3,
+  "planned_validations": 114,
+  "completed_validations": 18,
+  "outcome_matches": 18,
+  "recorded_model_requests": 28,
+  "completed_schema_corrections": 10,
+  "failed_case_id": "V2-AFFECT-INVENTED-HISTORY",
+  "model": "deepseek-v4-pro-0813",
+  "settings": {
+    "thinking": false,
+    "temperature": 0,
+    "response_format": "json_object",
+    "max_tokens": 4096,
+    "timeout_ms": 45000
+  },
+  "rows": [
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 1,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 9694
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 2,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 10051
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 3,
+      "expected": "pass",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 10537
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8898
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 9102
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-SCOPE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4711
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 10238
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 11809
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 9855
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 6923
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 3479
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 6848
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4264
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4127
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 3930
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-SCOPE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4486,
+      "attributionAssessment": {
+        "rawRuleIds": [
+          "ES-SCOPE",
+          "ES-ACK-BOUNDARY"
+        ],
+        "affectDrift": "added_category",
+        "status": "not_satisfied",
+        "contractRealized": false,
+        "containsContradictoryMove": true,
+        "hasCorrectScopeRule": true,
+        "hasWrongAffectRule": true,
+        "hasWrongAssistantHistoryRule": false,
+        "passed": false
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-SCOPE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4362,
+      "attributionAssessment": {
+        "rawRuleIds": [
+          "ES-SCOPE",
+          "ES-ACK-BOUNDARY"
+        ],
+        "affectDrift": "added_category",
+        "status": "not_satisfied",
+        "contractRealized": false,
+        "containsContradictoryMove": true,
+        "hasCorrectScopeRule": true,
+        "hasWrongAffectRule": true,
+        "hasWrongAssistantHistoryRule": false,
+        "passed": false
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "fail",
+      "ruleIds": [
+        "ES-AFFECT-EVIDENCE",
+        "ES-SCOPE",
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "providerFailure": null,
+      "modelCalls": 1,
+      "validationLatencyMs": 4646,
+      "attributionAssessment": {
+        "rawRuleIds": [
+          "ES-SCOPE",
+          "ES-ACK-BOUNDARY"
+        ],
+        "affectDrift": "added_category",
+        "status": "not_satisfied",
+        "contractRealized": false,
+        "containsContradictoryMove": true,
+        "hasCorrectScopeRule": true,
+        "hasWrongAffectRule": true,
+        "hasWrongAssistantHistoryRule": false,
+        "passed": false
+      }
+    }
+  ],
+  "final_observations": [
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 1,
+      "status": "satisfied",
+      "contractRealized": true,
+      "containsContradictoryMove": false,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "none"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 2,
+      "status": "satisfied",
+      "contractRealized": true,
+      "containsContradictoryMove": false,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "none"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "repetition": 3,
+      "status": "satisfied",
+      "contractRealized": true,
+      "containsContradictoryMove": false,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "none"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INNER-CERTAINTY",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "stronger_intensity"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "stronger_intensity"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 1,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 2,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "repetition": 3,
+      "status": "not_satisfied",
+      "contractRealized": false,
+      "containsContradictoryMove": true,
+      "observations": {
+        "affectObservation": {
+          "affectDrift": "added_category"
+        }
+      }
+    }
+  ],
+  "stopped_before_next_request": true,
+  "new_in_flight_request_reserve_cny": 0,
+  "usage": {
+    "prompt_tokens": 67984,
+    "completion_tokens": 8936
+  },
+  "money_cny": {
+    "input_price_per_million_tokens": 9,
+    "output_price_per_million_tokens": 27,
+    "recorded_trial_cost": 0.853128,
+    "previous_upper_accounted_including_prior_reserve": 26.187445,
+    "cumulative_upper_accounted": 27.040573,
+    "remaining_under_60_after_prior_reserve": 32.959427,
+    "prior_reserve_still_included": 0.31,
+    "provider_invoice_reconciled": false
+  },
+  "local_evidence_directory": "/private/tmp/xinqing-affect-attribution-20261009/live-run",
+  "logs_sha256": {
+    "run.log": "6226469bc7b06071f9160bf00ce2862254131db12ed660650df90b3137d9c347",
+    "requests.jsonl": "bb21f53c3c6283e06f63249be9c754618f9ca9e7314afaa07fe061cbddc6f2bd",
+    "budget.jsonl": "f3985dbb7ea63232333f7122bffd2555f4946a3bbc3ab5f6abf936fd1f7a767c",
+    "synthetic-verdicts.jsonl": "c69362f00446f6cafb9a64209eae0b86c2493c32a6f5709bc4391bcaa0c4232c",
+    "partial-results.json": "88da961eb2b0f2394bf99cbe2a41640c728cbfcd9a016556701859a20bc5160e",
+    "attribution-result.json": "2834fb2312817cbcf09fca74fc147659b97dbacbd31fa429ceb632cb30b1a5c1"
+  },
+  "limits": [
+    "Specific attribution repair and full V2 reliability are separate outcomes",
+    "No post-sampling label changes, extra paid repairs or deployment",
+    "Prior V1/V2 inputs and previous results are immutable",
+    "Token-based cost at busy-time rates, not reconciled provider invoice",
+    "Partial run, not a complete 38-case reliability score"
+  ],
+  "original_v2_completed_case_checks": {
+    "completed_cases": 6,
+    "outcome_citation_scope_matches": 18,
+    "completed_validations": 18,
+    "all_38_complete": false
+  },
+  "target_change_from_previous_trial": {
+    "correct_scope_citation_repetitions": 3,
+    "wrong_assistant_history_citation_repetitions": 0,
+    "wrong_affect_observation_repetitions": 3,
+    "raw_affect_rule_citation_repetitions": 0,
+    "affect_rule_added_by_code_from_observation": true
+  },
+  "diagnosis_limits": [
+    "Raw reasons address ES-SCOPE and ES-ACK-BOUNDARY, but do not explain added_category",
+    "No further explicit prompt contradiction was found by read-only reconstruction of actual frozen outgoing rules",
+    "Model internal rationale cannot be inferred from an unexplained enum; clarification alone has not completed the repair"
+  ],
+  "free_checks_passed": [
+    "planned-function-semantic-validator",
+    "hill-helping-batch1-5",
+    "interaction-move-handoff-surface-validator",
+    "late-contradiction-authority",
+    "hill-helping-batch1-5-preservation-v2",
+    "hill-helping-batch1-5-stage2",
+    "hill-helping-batch1-5-post-candidate4",
+    "tsc --noEmit --incremental false after one test-only type repair",
+    "eslint three changed source/test files",
+    "git diff --check",
+    "38 unchanged user payloads / 76 mocked captures / zero network",
+    "frozen source, V2 bytes and budget dry run",
+    "strict target observation/raw-citation stop tests",
+    "independent implementation/fixture/result/cost review"
+  ]
+}

@@ -1,5 +1,5 @@
 const authUtils = require("../../utils/auth");
-const { clearAuth, getAuth, saveAuth, updateCachedUser } = authUtils;
+const { clearAuth, getAuth, saveAuth, updateCachedUser, captureAuthAuthority, isCurrentAuthAuthority, isCurrentAuthFailure } = authUtils;
 const getGuestProfile = authUtils.getGuestProfile || (() => null);
 const isGuest = authUtils.isGuest || (() => false);
 const { getSafeLayout } = require("../../utils/layout");
@@ -71,7 +71,13 @@ Page({
     this.updateSafeLayout();
     const auth = getAuth();
     const userId = auth?.user?.id || "";
-    const userChanged = this.visibleUserId !== undefined && this.visibleUserId !== userId;
+    const userChanged = this.visibleUserId !== undefined && (this.visibleUserId !== userId ||
+      (this.visibleAuthAuthority && !isCurrentAuthAuthority(this.visibleAuthAuthority)));
+    this.visibleAuthAuthority = captureAuthAuthority();
+    if (userChanged) {
+      this.authCheckId = (this.authCheckId || 0) + 1;
+      this.authCheckPending = false;
+    }
     if (!auth && !isGuest()) {
       this.setData({ isLoggedIn: false, profileEditing: false, profileRequired: false, isSavingProfile: false });
       wx.redirectTo({ url: "/pages/auth/auth" });
@@ -101,9 +107,9 @@ Page({
       profileEditing: Boolean(auth && !userChanged && this.data.profileEditing)
     });
     if (auth?.user?.avatarUrl) {
-      const userId = auth.user.id;
+      const isCurrent = this.captureProfileGuard();
       downloadProfileAvatar(auth.user.avatarUrl).then((filePath) => {
-        if (getAuth()?.user?.id === userId && !this.data.avatarLocalPath) {
+        if (isCurrent() && !this.data.avatarLocalPath) {
           this.setData({ avatarPreview: filePath });
         }
       }).catch(() => undefined);
@@ -112,22 +118,27 @@ Page({
   },
 
   reconcileAuth() {
-    if (this.authCheckPending) return;
+    if (this.authCheckPending && this.authCheckGuard?.()) return;
     const auth = getAuth();
     if (!auth) return;
+    const authority = captureAuthAuthority();
+    const pageGuard = this.captureProfileGuard(authority);
     const checkId = (this.authCheckId || 0) + 1;
     this.authCheckId = checkId;
+    const isCurrent = (failure) => this.authCheckId === checkId && pageGuard(failure);
+    this.authCheckGuard = isCurrent;
+    let failure = null;
     this.authCheckPending = true;
     this.setData({ isCheckingAuth: true, membershipText: "正在验证登录状态...", loginError: "" });
     getMe()
       .then(({ user }) => {
-        if (this.authCheckId !== checkId || getAuth()?.user?.id !== auth.user.id || user.id !== auth.user.id) return;
+        if (!isCurrent() || user.id !== auth.user.id) return;
         const preserveProfileDraft = this.data.profileEditing;
         const generatedIdentity = getVisibleIdentity(user);
         const visibleNickname = generatedIdentity.nickname;
         let cacheWarning = "";
         try {
-          updateCachedUser(auth.user.id, user);
+          updateCachedUser(auth.user.id, user, authority);
         } catch {
           cacheWarning = "资料已从云端同步，但本机缓存暂未更新。";
         }
@@ -145,14 +156,15 @@ Page({
         });
         if (user.avatarUrl) {
           downloadProfileAvatar(user.avatarUrl).then((filePath) => {
-            if (getAuth()?.user?.id === user.id && !this.data.avatarLocalPath) {
+            if (isCurrent() && !this.data.avatarLocalPath) {
               this.setData({ avatarPreview: filePath });
             }
           }).catch(() => undefined);
         }
       })
-      .catch(() => {
-        if (this.authCheckId !== checkId) return;
+      .catch((error) => {
+        failure = error;
+        if (!isCurrent(error)) return;
         const stillStored = getAuth();
         this.setData({
           isLoggedIn: Boolean(stillStored),
@@ -164,7 +176,7 @@ Page({
         });
       })
       .finally(() => {
-        if (this.authCheckId === checkId) {
+        if (isCurrent(failure)) {
           this.authCheckPending = false;
           this.setData({ isCheckingAuth: false });
         }
@@ -338,14 +350,14 @@ Page({
   chooseProfileAvatarFromMedia() {
     const auth = getAuth();
     if (!auth || this.data.isSavingProfile) return;
-    const userId = auth.user.id;
+    const isCurrent = this.captureProfileGuard();
     wx.chooseImage({
       count: 1,
       sizeType: ["compressed"],
       sourceType: ["album", "camera"],
       success: (result) => {
         const filePath = result.tempFilePaths?.[0];
-        if (getAuth()?.user?.id !== userId || this.data.isSavingProfile) return;
+        if (!isCurrent() || this.data.isSavingProfile) return;
         if (!filePath) {
           this.setData({ loginError: "未能读取头像，请重新选择。" });
           return;
@@ -354,7 +366,7 @@ Page({
       },
       fail: (error) => {
         if (String(error?.errMsg || "").includes("cancel")) return;
-        if (getAuth()?.user?.id === userId && !this.data.isSavingProfile) {
+        if (isCurrent() && !this.data.isSavingProfile) {
           this.setData({ loginError: "头像选择失败，请稍后重试。" });
         }
       }
@@ -387,14 +399,18 @@ Page({
     }
     const operationId = (this.profileSaveId || 0) + 1;
     this.profileSaveId = operationId;
+    const authority = captureAuthAuthority();
+    const pageGuard = this.captureProfileGuard(authority);
+    const isCurrent = (failure) => this.profileSaveId === operationId && pageGuard(failure);
     this.setData({ isSavingProfile: true, loginError: "" });
     let uploadedId = "";
     let committed = false;
+    let failure = null;
     const upload = avatarLocalPath ? uploadProfileAvatar(avatarLocalPath) : Promise.resolve(null);
     upload
       .then((uploaded) => {
         uploadedId = uploaded ? uploaded.uploadId : "";
-        if (this.profileSaveId !== operationId || getAuth()?.user?.id !== userId) {
+        if (!isCurrent()) {
           throw new Error("账号已切换，已停止保存");
         }
         return updateMe({
@@ -404,10 +420,10 @@ Page({
       })
       .then(({ user }) => {
         committed = true;
-        if (this.profileSaveId !== operationId || getAuth()?.user?.id !== userId || user.id !== userId) return;
+        if (!isCurrent() || user.id !== userId) return;
         let cacheWarning = "";
         try {
-          updateCachedUser(userId, user);
+          updateCachedUser(userId, user, authority);
         } catch {
           cacheWarning = "资料已保存到云端，但本机缓存暂未更新；重新进入后会再次同步。";
         }
@@ -421,20 +437,21 @@ Page({
         });
         if (user.avatarUrl) {
           return downloadProfileAvatar(user.avatarUrl).then((filePath) => {
-            if (this.profileSaveId === operationId && getAuth()?.user?.id === userId) {
+            if (isCurrent()) {
               this.setData({ avatarPreview: filePath });
             }
           }).catch(() => undefined);
         }
       })
       .catch((error) => {
+        failure = error;
         if (uploadedId && !committed) discardProfileAvatar(uploadedId, authToken).catch(() => undefined);
-        if (this.profileSaveId === operationId && getAuth()?.user?.id === userId) {
+        if (isCurrent(error)) {
           this.setData({ loginError: error.message || "资料保存失败" });
         }
       })
       .finally(() => {
-        if (this.profileSaveId === operationId) this.setData({ isSavingProfile: false });
+        if (isCurrent(failure)) this.setData({ isSavingProfile: false });
       });
   },
 
@@ -451,9 +468,9 @@ Page({
       loginError: ""
     });
     if (auth?.user?.avatarUrl) {
-      const userId = auth.user.id;
+      const isCurrent = this.captureProfileGuard();
       downloadProfileAvatar(auth.user.avatarUrl).then((filePath) => {
-        if (getAuth()?.user?.id === userId) this.setData({ avatarPreview: filePath });
+        if (isCurrent()) this.setData({ avatarPreview: filePath });
       }).catch(() => undefined);
     }
   },
@@ -499,7 +516,14 @@ Page({
     }, 190);
   },
 
+  captureProfileGuard(authority = captureAuthAuthority()) {
+    const epoch = this.profilePageEpoch || 0;
+    return (failure) => (this.profilePageEpoch || 0) === epoch &&
+      (isCurrentAuthAuthority(authority) || isCurrentAuthFailure(authority, failure));
+  },
+
   onUnload() {
+    this.profilePageEpoch = (this.profilePageEpoch || 0) + 1;
     this.loginAttemptId = (this.loginAttemptId || 0) + 1;
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.profileSaveId = (this.profileSaveId || 0) + 1;

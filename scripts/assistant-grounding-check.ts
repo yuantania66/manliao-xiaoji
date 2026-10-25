@@ -149,7 +149,11 @@ const identityPrompt = buildChatPrompt({
 });
 const promptText = identityPrompt.messages.map((message) => message.content).join("\n");
 assert(!promptText.includes("availableFacts"));
-assert(promptText.includes("只说 groundingFacts 和 requiredDisclosure"));
+assert(promptText.includes("事实依据限于 groundingFacts、requiredDisclosure 中明确给出的事实"));
+assert(promptText.includes("不得编造事件、动机或心理状态"));
+assert(promptText.includes("hypothesis 或被用户否定的命题不得作为事实表达"));
+assert(promptText.includes(`groundingFacts: ${identity.responsePlan.groundingFacts.join(" / ") || "none"}`));
+assert(promptText.includes(`prohibitedClaims: ${identity.responsePlan.prohibitedClaims.join(" / ")}`));
 assert(promptText.includes("prohibitedClaims:"));
 assert(promptText.includes("requiredDisclosure: 助手称呼是小慢。 / 助手是AI聊天助手。"));
 

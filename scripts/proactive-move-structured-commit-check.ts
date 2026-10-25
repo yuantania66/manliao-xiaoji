@@ -276,17 +276,40 @@ const main = async () => {
     if (result.status !== "committed") throw new Error(label);
     return result.message;
   };
-  const invokeGuest = async (body: Record<string, unknown>) => {
+  const { POST: bootstrapGuest } = await import("../app/api/chat/guest/session/route");
+  const createGuestOwner = async () => {
+    const response = await bootstrapGuest(new Request("http://localhost/api/chat/guest/session", {
+      method: "POST", headers: { "Content-Type": "application/json", origin: "http://localhost" }, body: "{}",
+    }) as never);
+    assert.equal(response.status, 200);
+    const payload = await response.json() as { data: { conversationId: string } };
+    const cookie = response.headers.get("set-cookie")?.split(";")[0];
+    assert(cookie, "Guest test must use a credential issued by the real bootstrap route");
+    assert.equal(typeof payload.data.conversationId, "string");
+    return { cookie, conversationId: payload.data.conversationId };
+  };
+  const postGuest = async (body: Record<string, unknown>, cookie?: string) => {
     const response = await POST(new Request("http://localhost/api/chat/guest/greeting", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", origin: "http://localhost", ...(cookie ? { cookie } : {}) },
       body: JSON.stringify(body),
     }) as never);
-    return {
-      status: response.status,
-      json: await response.json() as Record<string, unknown>,
-    };
+    return { status: response.status, json: await response.json() as Record<string, unknown> };
   };
+  const invokeGuest = async (body: Record<string, unknown>) => {
+    // Each independent scenario has a fresh owner; production quotas stay intact.
+    const owner = await createGuestOwner();
+    const payload = { ...body, conversationId: owner.conversationId, turnId: `guest-contract-${randomUUID()}` };
+    return { ...await postGuest(payload, owner.cookie), replay: () => postGuest(payload, owner.cookie) };
+  };
+  const ownerA = await createGuestOwner();
+  const ownerB = await createGuestOwner();
+  const unauthorizedBody = { conversationId: ownerA.conversationId, turnId: `guest-denied-${randomUUID()}` };
+  const callsBeforeAuthorizationChecks = receivedPaths.length;
+  assert.equal((await postGuest(unauthorizedBody)).status, 401, "Missing credential stays rejected");
+  assert.equal((await postGuest(unauthorizedBody, ownerB.cookie)).status, 401, "Another owner's credential stays rejected");
+  assert.equal((await postGuest({ conversationId: ownerA.conversationId }, ownerA.cookie)).status, 409, "Missing turn id stays rejected");
+  assert.equal(receivedPaths.length, callsBeforeAuthorizationChecks, "Unauthorized or malformed requests never consume a model stub response");
   const requireGuestMessage = (json: Record<string, unknown>) => {
     assert.equal(json.ok, true);
     assert(json.data && typeof json.data === "object");
@@ -437,8 +460,12 @@ const main = async () => {
       interactionMoveEnvelope: parsedAuthEnvelope.envelope,
     }],
   });
-  assertQueueDrained("guest-auth-parity");
   assert.equal(guestSuccess.status, 200);
+  assertQueueDrained("guest-auth-parity");
+  const callsBeforeReplay = receivedPaths.length;
+  const guestReplay = await guestSuccess.replay();
+  assert.deepEqual(guestReplay, { status: guestSuccess.status, json: guestSuccess.json });
+  assert.equal(receivedPaths.length, callsBeforeReplay, "An identical completed turn replays without another generation");
   const guestMessage = requireGuestMessage(guestSuccess.json);
   const parsedGuestEnvelope = parseCommittedAssistantMoveEnvelope(guestMessage.interactionMoveEnvelope);
   assert.equal(parsedGuestEnvelope.status, "valid");

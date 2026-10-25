@@ -16,7 +16,11 @@ import { CalendarDays, Search } from "lucide-react";
 
 import type { CommittedAssistantMoveEnvelopeV1 } from "@/conversation-os";
 import { apiRequest, ClientApiError } from "@/lib/client-api";
-import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
+import { captureAuthAuthority, createAuthRequestScope, getStoredAuth, isAuthAuthorityCurrent, saveAuth, subscribeAuthChanges, type AuthAuthority } from "@/lib/client-auth";
+import {
+  captureGuestAuthority, isGuestAuthorityCurrent, requestGuest,
+  type GuestRequestAuthority,
+} from "@/lib/client-guest-session";
 import { createClientTurnId } from "@/lib/client-turn-id";
 import {
   advanceChatSessionAuthority,
@@ -62,6 +66,8 @@ type TurnScopedExecutionStatus = ExecutionSystemStatus & {
   inputText: string;
   isGuest: boolean;
   authority: ChatTurnResultAuthority;
+  authAuthority?: AuthAuthority;
+  guestRequest?: { body: Record<string, unknown>; authority: GuestRequestAuthority; attempt: number };
 };
 
 type AsyncTurnCompletionPath =
@@ -302,6 +308,7 @@ type ChatMessagesListResponse = {
 };
 
 type CachedChat = {
+  ownerId: string;
   sessionId: string;
   messages: Message[];
   hasMore?: boolean;
@@ -479,29 +486,17 @@ const toMessages = (items: ChatMessageResponse[]): Message[] =>
       interactionMoveEnvelope: item.interactionMoveEnvelope,
     }));
 
-const getChatCacheKey = () => {
-  const auth = getStoredAuth();
-  return auth?.token && auth.user?.id ? `${CHAT_CACHE_PREFIX}:${auth.user.id}` : null;
-};
-
-const readChatCache = (): CachedChat | null => {
-  if (typeof window === "undefined") return null;
-  const key = getChatCacheKey();
-  if (!key) return null;
-
+const readChatCache = (authority: AuthAuthority): CachedChat | null => {
+  if (typeof window === "undefined" || !authority.userId || !isAuthAuthorityCurrent(authority)) return null;
   try {
-    const cached = JSON.parse(window.sessionStorage.getItem(key) || "null") as CachedChat | null;
-    return cached?.sessionId && Array.isArray(cached.messages) ? cached : null;
-  } catch {
-    return null;
-  }
+    const cached = JSON.parse(window.sessionStorage.getItem(`${CHAT_CACHE_PREFIX}:${authority.userId}`) || "null") as CachedChat | null;
+    return cached?.ownerId === authority.userId && cached.sessionId && Array.isArray(cached.messages) ? cached : null;
+  } catch { return null; }
 };
 
-const writeChatCache = (value: CachedChat) => {
-  if (typeof window === "undefined") return;
-  const key = getChatCacheKey();
-  if (!key) return;
-  window.sessionStorage.setItem(key, JSON.stringify(value));
+const writeChatCache = (value: CachedChat, authority: AuthAuthority) => {
+  if (typeof window === "undefined" || !authority.userId || value.ownerId !== authority.userId || !isAuthAuthorityCurrent(authority)) return;
+  window.sessionStorage.setItem(`${CHAT_CACHE_PREFIX}:${authority.userId}`, JSON.stringify(value));
 };
 
 const getInitialGuestMode = () => {
@@ -566,30 +561,33 @@ const releaseGuestOpenGreeting = () => {
 const createGuestGreetingMessage = async ({
   kind,
   recentMessages,
+  isCurrent,
+  authority,
 }: {
   kind: "initial" | "return";
   recentMessages: Message[];
+  isCurrent: () => boolean;
+  authority: GuestRequestAuthority;
 }): Promise<Message | null> => {
   try {
+    if (!isCurrent() || !isGuestAuthorityCurrent(authority)) return null;
     const recentGreetings = readGuestRecentGreetings();
-    const data = await apiRequest<{ assistantMessage: ChatMessageResponse }>(
+    const data = await requestGuest<{ assistantMessage: ChatMessageResponse }>(
       "/api/chat/guest/greeting",
       {
-        method: "POST",
-        auth: false,
-        body: {
-          kind,
-          recentMessages: recentMessages.slice(-6).map((message) => ({
-            id: message.id,
-            role: message.role,
-            content: message.text,
-            promptVersion: message.promptVersion,
-            interactionMoveEnvelope: message.interactionMoveEnvelope,
-          })),
-          recentGreetings,
-        },
-      }
+        turnId: createClientTurnId(),
+        kind,
+        recentMessages: recentMessages.slice(-6).map((message) => ({
+          id: message.id,
+          role: message.role,
+          content: message.text,
+          promptVersion: message.promptVersion,
+          interactionMoveEnvelope: message.interactionMoveEnvelope,
+        })),
+        recentGreetings,
+      }, authority
     );
+    if (!isCurrent() || !isGuestAuthorityCurrent(authority)) return null;
     const greeting = {
       id: data.assistantMessage.id,
       role: "assistant" as const,
@@ -610,9 +608,12 @@ type GuestGreetingLoadResult = {
   greetingFailed: boolean;
 };
 
-const readOrSeedGuestMessages = async (): Promise<GuestGreetingLoadResult> => {
+const readOrSeedGuestMessages = async (
+  isCurrent: () => boolean,
+  authority: GuestRequestAuthority
+): Promise<GuestGreetingLoadResult> => {
   const messages = readGuestMessages();
-  if (!reserveGuestOpenGreeting()) {
+  if (!isCurrent() || !reserveGuestOpenGreeting()) {
     return { messages, greetingFailed: false };
   }
 
@@ -623,19 +624,19 @@ const readOrSeedGuestMessages = async (): Promise<GuestGreetingLoadResult> => {
     localMessageCount: messages.length,
     recentGreetings: readGuestRecentGreetings(),
   });
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    if (attempt > 0 && !reserveGuestOpenGreeting()) break;
-    const greeting = await createGuestGreetingMessage({
-      kind: greetingKind,
-      recentMessages: nonGreetingMessages,
-    });
-    if (greeting) {
-      const nextMessages = [...messages, greeting];
-      writeGuestMessages(nextMessages);
-      return { messages: nextMessages, greetingFailed: false };
-    }
-    releaseGuestOpenGreeting();
+  const greeting = await createGuestGreetingMessage({
+    kind: greetingKind,
+    recentMessages: nonGreetingMessages,
+    isCurrent,
+    authority,
+  });
+  if (!isCurrent()) return { messages, greetingFailed: false };
+  if (greeting) {
+    const nextMessages = [...messages, greeting];
+    writeGuestMessages(nextMessages);
+    return { messages: nextMessages, greetingFailed: false };
   }
+  releaseGuestOpenGreeting();
   return { messages, greetingFailed: true };
 };
 
@@ -689,35 +690,38 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
   const [input, setInput] = useState("");
   const canUseInitialChat =
     !requestedSessionId || requestedSessionId === initialChat?.sessionId;
-  const [messages, setMessages] = useState<Message[]>(
-    canUseInitialChat ? (initialChat?.messages ?? []) : []
-  );
-  const [sessionId, setSessionId] = useState<string | null>(
-    requestedSessionId ?? initialChat?.sessionId ?? null
-  );
+  // Server and first client render agree; owner validation happens before hydration.
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(requestedSessionId ?? null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(!canUseInitialChat || !initialChat);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
-  const [hasMoreOlderMessages, setHasMoreOlderMessages] = useState(initialChat?.hasMore ?? false);
-  const [olderMessagesCursor, setOlderMessagesCursor] = useState<string | null>(
-    initialChat?.nextCursor ?? null
-  );
+  const [hasMoreOlderMessages, setHasMoreOlderMessages] = useState(false);
+  const [olderMessagesCursor, setOlderMessagesCursor] = useState<string | null>(null);
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [typingMessageIds, setTypingMessageIds] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [executionStatus, setExecutionStatus] = useState<TurnScopedExecutionStatus | null>(null);
   const [greetingStatus, setGreetingStatus] = useState<ExecutionSystemStatus | null>(
-    canUseInitialChat ? (initialChat?.greetingStatus ?? null) : null
+    null
   );
   const [isDebugLoggingIn, setIsDebugLoggingIn] = useState(false);
+  const [authRevision, setAuthRevision] = useState(0);
+  const pageGenerationRef = useRef(0);
+  const chatAuthRef = useRef<AuthAuthority | null>(null);
+  const debugLoginScope = useRef(createAuthRequestScope());
+  const retryScopeRef = useRef(0);
+  const authRetryInFlightRef = useRef<object | null>(null);
+  const olderRequestRef = useRef<object | null>(null);
   const typingCancelledRef = useRef(false);
+  const guestRetryInFlightRef = useRef<TurnScopedExecutionStatus["guestRequest"]>(undefined);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const isLoadingOlderMessagesRef = useRef(false);
   const shouldAutoScrollToBottomRef = useRef(true);
   const prependScrollRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
   const hydratedFromCacheRef = useRef(false);
   const positionedTargetRef = useRef<string | null>(null);
-  const sessionContextKey = `${requestedSessionId ?? ""}\u0000${sessionId ?? ""}`;
+  const sessionContextKey = `${authRevision}\u0000${requestedSessionId ?? ""}\u0000${sessionId ?? ""}`;
   const sessionContextRef = useRef<{
     key: string;
     authority: ChatTurnAuthorityState;
@@ -746,7 +750,43 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     );
     setGreetingStatus(null);
     setErrorMessage("");
+    olderRequestRef.current = null;
+    isLoadingOlderMessagesRef.current = false;
+    setIsLoadingOlderMessages(false);
+    prependScrollRef.current = null;
+    setTypingMessageIds([]);
+    retryScopeRef.current += 1;
+    authRetryInFlightRef.current = null;
   }, [sessionContextKey, sessionId]);
+
+  useLayoutEffect(() => {
+    const unsubscribe = subscribeAuthChanges(() => {
+      if (chatAuthRef.current && isAuthAuthorityCurrent(chatAuthRef.current)) return;
+      const authority = sessionContextRef.current.authority;
+      sessionContextRef.current.authority = advanceChatSessionAuthority(authority, authority.session.sessionId);
+      chatAuthRef.current = null;
+      hydratedFromCacheRef.current = false;
+      setMessages([]);
+      setSessionId(requestedSessionId ?? null);
+      setExecutionStatus(null);
+      setGreetingStatus(null);
+      setTypingMessageIds([]);
+      setAuthRevision((value) => value + 1);
+    });
+    return unsubscribe;
+  }, [requestedSessionId]);
+
+  useLayoutEffect(() => () => {
+    pageGenerationRef.current += 1;
+    debugLoginScope.current.invalidate();
+    retryScopeRef.current += 1;
+    olderRequestRef.current = null;
+    const authority = sessionContextRef.current.authority;
+    sessionContextRef.current.authority = advanceChatSessionAuthority(
+      authority,
+      authority.session.sessionId
+    );
+  }, [requestedSessionId]);
 
   const applyTurnCompletionResult = useCallback(
     (
@@ -755,10 +795,11 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       completion: {
         executionStatus?: TurnScopedExecutionStatus | null;
         errorMessage?: string;
+        isCurrent?: () => boolean;
       }
     ) => {
       if ("executionStatus" in completion) {
-        setExecutionStatus((current) =>
+        setExecutionStatus((current) => completion.isCurrent && !completion.isCurrent() ? current :
           resolveChatTurnResult({
             current: sessionContextRef.current.authority,
             result: authority,
@@ -768,7 +809,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         );
       }
       if (completion.errorMessage !== undefined) {
-        setErrorMessage((current) =>
+        setErrorMessage((current) => completion.isCurrent && !completion.isCurrent() ? current :
           resolveChatTurnResult({
             current: sessionContextRef.current.authority,
             result: authority,
@@ -783,13 +824,19 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
 
   useEffect(() => {
     let cancelled = false;
+    const pageGeneration = pageGenerationRef.current;
 
     const loadChat = async () => {
       const storedAuth = getStoredAuth();
+      const authAuthority = captureAuthAuthority();
+      const isCurrentAuthLoad = () => !cancelled && pageGenerationRef.current === pageGeneration && isAuthAuthorityCurrent(authAuthority);
       const currentGuestMode = getInitialGuestMode();
       const isLocalDemoAuth = storedAuth?.token?.startsWith(LOCAL_DEMO_TOKEN_PREFIX);
 
       if (!storedAuth?.token || isLocalDemoAuth) {
+        chatAuthRef.current = null;
+        const guestAuthority = captureGuestAuthority();
+        const isCurrentGuestLoad = () => !cancelled && pageGenerationRef.current === pageGeneration && isGuestAuthorityCurrent(guestAuthority);
         if (!currentGuestMode) {
           window.sessionStorage.setItem(GUEST_MODE_KEY, "true");
         }
@@ -799,15 +846,17 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         const cachedGuestMessages = readGuestMessages();
         const guestLoad = await loadGuestGreetingAfterHistoryReady({
           onHistoryReady: () => {
+            if (!isCurrentGuestLoad()) return;
             setMessages(cachedGuestMessages);
             setHasMoreOlderMessages(false);
             setOlderMessagesCursor(null);
             setIsLoadingMessages(false);
           },
-          loadGreeting: readOrSeedGuestMessages,
+          loadGreeting: () => readOrSeedGuestMessages(isCurrentGuestLoad, guestAuthority),
         });
-        if (cancelled) return;
+        if (!isCurrentGuestLoad()) return;
         setMessages((current) => {
+          if (!isCurrentGuestLoad()) return current;
           const reconciled = reconcileGuestGreetingMessages({
             baseline: cachedGuestMessages,
             current,
@@ -824,46 +873,52 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         return;
       }
 
+      if (!isCurrentAuthLoad()) return;
+      chatAuthRef.current = authAuthority;
       setIsGuestMode(false);
-      const cached = readChatCache();
+      const ownedInitial = initialChat?.ownerId === authAuthority.userId ? initialChat : null;
+      const cached = readChatCache(authAuthority);
       if (!hydratedFromCacheRef.current && cached && !requestedSessionId) {
         hydratedFromCacheRef.current = true;
-        setSessionId(cached.sessionId);
+        setSessionId((current) => isCurrentAuthLoad() ? cached.sessionId : current);
         shouldAutoScrollToBottomRef.current = true;
-        setMessages(cached.messages);
-        setHasMoreOlderMessages(cached.hasMore ?? false);
-        setOlderMessagesCursor(cached.nextCursor ?? null);
+        setMessages((current) => isCurrentAuthLoad() ? cached.messages : current);
+        setHasMoreOlderMessages((current) => isCurrentAuthLoad() ? cached.hasMore ?? false : current);
+        setOlderMessagesCursor((current) => isCurrentAuthLoad() ? cached.nextCursor ?? null : current);
       }
 
-      if (initialChat && !requestedSessionId) {
-        writeChatCache(initialChat);
+      if (ownedInitial && !requestedSessionId) {
+        writeChatCache(ownedInitial, authAuthority);
       }
 
-      if (initialChat && canUseInitialChat) {
-        setSessionId(initialChat.sessionId);
+      if (ownedInitial && canUseInitialChat) {
+        setSessionId((current) => isCurrentAuthLoad() ? ownedInitial.sessionId : current);
         shouldAutoScrollToBottomRef.current = true;
-        setMessages(initialChat.messages);
-        setHasMoreOlderMessages(initialChat.hasMore ?? false);
-        setOlderMessagesCursor(initialChat.nextCursor ?? null);
-        setGreetingStatus(initialChat.greetingStatus ?? null);
-        setIsLoadingMessages(false);
+        setMessages((current) => isCurrentAuthLoad() ? ownedInitial.messages : current);
+        setHasMoreOlderMessages((current) => isCurrentAuthLoad() ? ownedInitial.hasMore ?? false : current);
+        setOlderMessagesCursor((current) => isCurrentAuthLoad() ? ownedInitial.nextCursor ?? null : current);
+        setGreetingStatus((current) => isCurrentAuthLoad() ? ownedInitial.greetingStatus ?? null : current);
+        setIsLoadingMessages((current) => isCurrentAuthLoad() ? false : current);
         return;
       }
 
-      setIsLoadingMessages(true);
-      setErrorMessage("");
+      setIsLoadingMessages((current) => isCurrentAuthLoad() ? true : current);
+      setErrorMessage((current) => isCurrentAuthLoad() ? "" : current);
 
       try {
-        let activeSessionId = requestedSessionId ?? cached?.sessionId ?? initialChat?.sessionId ?? null;
+        let activeSessionId = requestedSessionId ?? cached?.sessionId ?? ownedInitial?.sessionId ?? null;
         if (!activeSessionId) {
-          const sessions = await apiRequest<{ items: ChatSession[] }>("/api/chat/sessions");
+          const sessions = await apiRequest<{ items: ChatSession[] }>("/api/chat/sessions", { authority: authAuthority });
+          if (!isCurrentAuthLoad()) return;
           if (sessions.items[0]?.id) {
             activeSessionId = sessions.items[0].id;
           } else {
             const created = await apiRequest<ChatSession>("/api/chat/sessions", {
               method: "POST",
+              authority: authAuthority,
               body: { title: "慢慢说" },
             });
+            if (!isCurrentAuthLoad()) return;
             activeSessionId = created.id;
           }
         }
@@ -871,41 +926,44 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         let data: ChatMessagesListResponse;
         try {
           data = await apiRequest<ChatMessagesListResponse>(
-            `/api/chat/sessions/${activeSessionId}/messages?pageSize=50`
+            `/api/chat/sessions/${activeSessionId}/messages?pageSize=50`, { authority: authAuthority }
           );
         } catch (error) {
+          if (!isCurrentAuthLoad()) return;
           if (requestedSessionId || activeSessionId !== cached?.sessionId) throw error;
-          const sessions = await apiRequest<{ items: ChatSession[] }>("/api/chat/sessions");
+          const sessions = await apiRequest<{ items: ChatSession[] }>("/api/chat/sessions", { authority: authAuthority });
+          if (!isCurrentAuthLoad()) return;
           activeSessionId = sessions.items[0]?.id ?? null;
           if (!activeSessionId) throw error;
           data = await apiRequest<ChatMessagesListResponse>(
-            `/api/chat/sessions/${activeSessionId}/messages?pageSize=50`
+            `/api/chat/sessions/${activeSessionId}/messages?pageSize=50`, { authority: authAuthority }
           );
         }
 
-        if (cancelled) return;
+        if (!isCurrentAuthLoad()) return;
         const nextMessages = toMessages(data.items);
-        setSessionId(activeSessionId);
+        setSessionId((current) => isCurrentAuthLoad() ? activeSessionId : current);
         shouldAutoScrollToBottomRef.current = true;
-        setMessages(nextMessages);
-        setHasMoreOlderMessages(data.hasMore);
-        setOlderMessagesCursor(data.nextCursor);
-        setGreetingStatus(data.greetingStatus ?? null);
+        setMessages((current) => isCurrentAuthLoad() ? nextMessages : current);
+        setHasMoreOlderMessages((current) => isCurrentAuthLoad() ? data.hasMore : current);
+        setOlderMessagesCursor((current) => isCurrentAuthLoad() ? data.nextCursor : current);
+        setGreetingStatus((current) => isCurrentAuthLoad() ? data.greetingStatus ?? null : current);
         writeChatCache({
+          ownerId: authAuthority.userId!,
           sessionId: activeSessionId,
           messages: nextMessages,
           hasMore: data.hasMore,
           nextCursor: data.nextCursor,
-        });
+        }, authAuthority);
       } catch (error) {
-        if (cancelled) return;
+        if (!isCurrentAuthLoad()) return;
         shouldAutoScrollToBottomRef.current = true;
-        setMessages([]);
-        setHasMoreOlderMessages(false);
-        setOlderMessagesCursor(null);
-        setErrorMessage(getErrorMessage(error));
+        setMessages((current) => isCurrentAuthLoad() ? [] : current);
+        setHasMoreOlderMessages((current) => isCurrentAuthLoad() ? false : current);
+        setOlderMessagesCursor((current) => isCurrentAuthLoad() ? null : current);
+        setErrorMessage((current) => isCurrentAuthLoad() ? getErrorMessage(error) : current);
       } finally {
-        if (!cancelled) setIsLoadingMessages(false);
+        if (isCurrentAuthLoad()) setIsLoadingMessages((current) => isCurrentAuthLoad() ? false : current);
       }
     };
 
@@ -914,7 +972,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     return () => {
       cancelled = true;
     };
-  }, [canUseInitialChat, getErrorMessage, initialChat, requestedSessionId]);
+  }, [authRevision, canUseInitialChat, getErrorMessage, initialChat, requestedSessionId]);
 
   useEffect(() => {
     return () => {
@@ -977,6 +1035,13 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     const scrollElement = messagesScrollRef.current;
     if (!scrollElement) return;
 
+    const authAuthority = chatAuthRef.current;
+    const resultAuthority = sessionContextRef.current.authority.session;
+    if (!authAuthority || !isAuthAuthorityCurrent(authAuthority)) return;
+    const request = {};
+    olderRequestRef.current = request;
+    const isCurrent = () => olderRequestRef.current === request && isAuthAuthorityCurrent(authAuthority) &&
+      canApplyChatSessionResult({ current: sessionContextRef.current.authority, result: resultAuthority });
     isLoadingOlderMessagesRef.current = true;
     setIsLoadingOlderMessages(true);
     setErrorMessage("");
@@ -985,8 +1050,9 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       const data = await apiRequest<ChatMessagesListResponse>(
         `/api/chat/sessions/${sessionId}/messages?pageSize=50&before=${encodeURIComponent(
           olderMessagesCursor
-        )}`
+        )}`, { authority: authAuthority }
       );
+      if (!isCurrent()) return;
       const olderMessages = toMessages(data.items);
       prependScrollRef.current = {
         scrollHeight: scrollElement.scrollHeight,
@@ -994,6 +1060,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       };
       shouldAutoScrollToBottomRef.current = false;
       setMessages((current) => {
+        if (!isCurrent()) return current;
         const currentIds = new Set(current.map((message) => message.id));
         const uniqueOlderMessages = olderMessages.filter((message) => !currentIds.has(message.id));
         if (uniqueOlderMessages.length === 0) {
@@ -1002,21 +1069,24 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         }
         const nextMessages = [...uniqueOlderMessages, ...current];
         writeChatCache({
+          ownerId: authAuthority.userId!,
           sessionId,
           messages: nextMessages,
           hasMore: data.hasMore,
           nextCursor: data.nextCursor,
-        });
+        }, authAuthority);
         return nextMessages;
       });
-      setHasMoreOlderMessages(data.hasMore);
-      setOlderMessagesCursor(data.nextCursor);
+      setHasMoreOlderMessages((current) => isCurrent() ? data.hasMore : current);
+      setOlderMessagesCursor((current) => isCurrent() ? data.nextCursor : current);
     } catch (error) {
+      if (!isCurrent()) return;
       prependScrollRef.current = null;
-      setErrorMessage(getErrorMessage(error));
+      setErrorMessage((current) => isCurrent() ? getErrorMessage(error) : current);
     } finally {
+      if (!isCurrent()) return;
       isLoadingOlderMessagesRef.current = false;
-      setIsLoadingOlderMessages(false);
+      setIsLoadingOlderMessages((current) => isCurrent() ? false : current);
     }
   }, [
     getErrorMessage,
@@ -1060,25 +1130,26 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     targetMessageId,
   ]);
 
-  const revealAssistantReply = (messageId: string, fullText: string) =>
+  const revealAssistantReply = (messageId: string, fullText: string, isCurrent = () => true) =>
     new Promise<void>(async (resolve) => {
+      if (!isCurrent()) { resolve(); return; }
       let index = 0;
       typingCancelledRef.current = false;
-      setTypingMessageIds((current) =>
+      setTypingMessageIds((current) => !isCurrent() ? current :
         current.includes(messageId) ? current : [...current, messageId]
       );
-      setMessages((current) =>
+      setMessages((current) => !isCurrent() ? current :
         current.map((message) =>
           message.id === messageId ? { ...message, text: "" } : message
         )
       );
 
-      while (index < fullText.length && !typingCancelledRef.current) {
+      while (index < fullText.length && !typingCancelledRef.current && isCurrent()) {
         const nextIndex = getNextTypingIndex(fullText, index);
         const visibleText = fullText.slice(0, nextIndex);
         index = nextIndex;
 
-        setMessages((current) =>
+        setMessages((current) => !isCurrent() ? current :
           current.map((message) =>
             message.id === messageId
               ? { ...message, text: visibleText }
@@ -1088,7 +1159,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         await sleep(getTypingDelay(visibleText));
       }
 
-      setTypingMessageIds((current) => current.filter((id) => id !== messageId));
+      if (isCurrent()) setTypingMessageIds((current) => isCurrent() ? current.filter((id) => id !== messageId) : current);
       resolve();
     });
 
@@ -1104,6 +1175,8 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
       return;
     }
 
+    const authAuthority = isGuestMode ? null : chatAuthRef.current;
+    if (!isGuestMode && (!authAuthority || !isAuthAuthorityCurrent(authAuthority))) return;
     const optimisticId = createClientTurnId();
     const submittedAuthority = submitChatTurnAuthority(
       sessionContextRef.current.authority,
@@ -1111,7 +1184,11 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     );
     sessionContextRef.current.authority = submittedAuthority.state;
     const resultAuthority = submittedAuthority.result;
+    const guestAuthority = isGuestMode ? captureGuestAuthority() : null;
+    if (guestAuthority && !isGuestAuthorityCurrent(guestAuthority)) return;
     const isCurrentSessionResult = () =>
+      (!authAuthority || isAuthAuthorityCurrent(authAuthority)) &&
+      (!guestAuthority || isGuestAuthorityCurrent(guestAuthority)) &&
       canApplyChatSessionResult({
         current: sessionContextRef.current.authority,
         result: resultAuthority,
@@ -1120,30 +1197,34 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
     const now = new Date().toISOString();
     const userMessage: Message = { id: optimisticId, role: "user", text, createdAt: now };
     shouldAutoScrollToBottomRef.current = true;
-    setMessages((current) => [
+    setMessages((current) => !isCurrentSessionResult() ? current : [
       ...current,
       userMessage,
       { id: pendingAssistantId, role: "assistant", text: "...", createdAt: now },
     ]);
-    setTypingMessageIds((current) => [...current, pendingAssistantId]);
-    setInput("");
-    setErrorMessage("");
-    setExecutionStatus(null);
+    setTypingMessageIds((current) => !isCurrentSessionResult() ? current : [...current, pendingAssistantId]);
+    setInput((current) => isCurrentSessionResult() ? "" : current);
+    setErrorMessage((current) => isCurrentSessionResult() ? "" : current);
+    setExecutionStatus((current) => isCurrentSessionResult() ? null : current);
 
     if (isGuestMode) {
       const replacePendingAssistant = async (assistantMessage: Message) => {
-        setTypingMessageIds((current) =>
+        if (!isCurrentSessionResult()) return;
+        setTypingMessageIds((current) => !isCurrentSessionResult() ? current :
           current.filter((id) => id !== pendingAssistantId).concat(assistantMessage.id)
         );
         setMessages((current) => {
+          if (!isCurrentSessionResult()) return current;
           const next = current.map((message) =>
             message.id === pendingAssistantId ? { ...assistantMessage, text: "" } : message
           );
           writeGuestMessages(next);
           return next;
         });
-        await revealAssistantReply(assistantMessage.id, assistantMessage.text);
+        await revealAssistantReply(assistantMessage.id, assistantMessage.text, isCurrentSessionResult);
+        if (!isCurrentSessionResult()) return;
         setMessages((current) => {
+          if (!isCurrentSessionResult()) return current;
           writeGuestMessages(current);
           return current;
         });
@@ -1165,55 +1246,54 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         return;
       }
 
+      const guestBody = {
+        content: text,
+        turnId: optimisticId,
+        debugTrace: showAiDebugTrace,
+        recentMessages: messages.slice(-24).map((message) => ({
+          id: message.id, role: message.role, content: message.text,
+          promptVersion: message.promptVersion, createdAt: message.createdAt,
+          interactionMoveEnvelope: message.interactionMoveEnvelope,
+        })),
+      };
       try {
-        const data = await apiRequest<{
+        const data = await requestGuest<{
           status: "committed" | "failed";
+          guestAttempt: number;
           assistantMessage?: ChatMessageResponse;
           systemStatus?: ExecutionSystemStatus;
           debugTrace?: AiDebugTrace;
-        }>("/api/chat/guest", {
-          method: "POST",
-          auth: false,
-          body: {
-            content: text,
-            turnId: optimisticId,
-            debugTrace: showAiDebugTrace,
-            recentMessages: messages.slice(-24).map((message) => ({
-              id: message.id,
-              role: message.role,
-              content: message.text,
-              promptVersion: message.promptVersion,
-              createdAt: message.createdAt,
-              interactionMoveEnvelope: message.interactionMoveEnvelope,
-            })),
-          },
-        });
+        }>("/api/chat/guest", guestBody, guestAuthority!);
+        if (!isCurrentSessionResult()) return;
         if (!showAiDebugTrace) {
           incrementGuestAiUsage();
         }
-        if (!isCurrentSessionResult()) return;
         if (data.status === "failed" || !data.assistantMessage) {
           setMessages((current) => {
+            if (!isCurrentSessionResult()) return current;
             const next = current.filter((message) => message.id !== pendingAssistantId);
             writeGuestMessages(next);
             return next;
           });
-          setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+          setTypingMessageIds((current) => isCurrentSessionResult() ? current.filter((id) => id !== pendingAssistantId) : current);
           if (data.systemStatus) {
             const nextStatus = {
               ...data.systemStatus,
               inputText: text,
               isGuest: true,
               authority: resultAuthority,
+              guestRequest: { body: guestBody, authority: guestAuthority!, attempt: data.guestAttempt },
             };
             applyTurnCompletionResult("guest-submit-failure", resultAuthority, {
               executionStatus: nextStatus,
+              isCurrent: isCurrentSessionResult,
             });
           }
           return;
         }
         applyTurnCompletionResult("guest-submit-success", resultAuthority, {
           executionStatus: null,
+          isCurrent: isCurrentSessionResult,
         });
         if (!isCurrentSessionResult()) return;
         await replacePendingAssistant({
@@ -1226,16 +1306,18 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           debugTrace: data.debugTrace,
         });
       } catch (error) {
+        if (!isCurrentSessionResult()) return;
         if (isCurrentSessionResult()) {
-          setMessages((current) =>
+          setMessages((current) => !isCurrentSessionResult() ? current :
             current.filter(
               (message) => message.id !== pendingAssistantId && message.id !== optimisticId
             )
           );
-          setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+          setTypingMessageIds((current) => isCurrentSessionResult() ? current.filter((id) => id !== pendingAssistantId) : current);
         }
         applyTurnCompletionResult("guest-submit-transport", resultAuthority, {
           errorMessage: getErrorMessage(error),
+          isCurrent: isCurrentSessionResult,
         });
       }
       return;
@@ -1250,12 +1332,13 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         debugTrace?: AiDebugTrace;
       }>(`/api/chat/sessions/${sessionId}/messages`, {
         method: "POST",
+        authority: authAuthority!,
         body: { content: text, turnId: optimisticId, debugTrace: showAiDebugTrace },
       });
       if (!isCurrentSessionResult()) return;
       if (data.status === "failed" || !data.assistantMessage) {
-        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
-        setMessages((current) => [
+        setTypingMessageIds((current) => !isCurrentSessionResult() ? current : current.filter((id) => id !== pendingAssistantId));
+        setMessages((current) => !isCurrentSessionResult() ? current : [
           ...current.filter(
             (message) => message.id !== optimisticId && message.id !== pendingAssistantId
           ),
@@ -1271,22 +1354,25 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
             ...data.systemStatus,
             inputText: text,
             isGuest: false,
+            authAuthority: authAuthority!,
             authority: resultAuthority,
           };
           applyTurnCompletionResult("auth-submit-failure", resultAuthority, {
             executionStatus: nextStatus,
+            isCurrent: isCurrentSessionResult,
           });
         }
         return;
       }
       applyTurnCompletionResult("auth-submit-success", resultAuthority, {
         executionStatus: null,
+        isCurrent: isCurrentSessionResult,
       });
       const committedAssistantMessage = data.assistantMessage;
-      setTypingMessageIds((current) =>
+      setTypingMessageIds((current) => !isCurrentSessionResult() ? current :
         current.filter((id) => id !== pendingAssistantId).concat(committedAssistantMessage.id)
       );
-      setMessages((current) => [
+      setMessages((current) => !isCurrentSessionResult() ? current : [
         ...current.filter(
           (message) => message.id !== optimisticId && message.id !== pendingAssistantId
         ),
@@ -1307,63 +1393,88 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           debugTrace: data.debugTrace,
         },
       ]);
-      await revealAssistantReply(committedAssistantMessage.id, committedAssistantMessage.content);
+      await revealAssistantReply(committedAssistantMessage.id, committedAssistantMessage.content, isCurrentSessionResult);
       if (!isCurrentSessionResult()) return;
       const refreshed = await apiRequest<ChatMessagesListResponse>(
-        `/api/chat/sessions/${sessionId}/messages?pageSize=50`
+        `/api/chat/sessions/${sessionId}/messages?pageSize=50`, { authority: authAuthority! }
       );
       if (!isCurrentSessionResult()) return;
       writeChatCache({
+        ownerId: authAuthority!.userId!,
         sessionId,
         messages: toMessages(refreshed.items),
         hasMore: refreshed.hasMore,
         nextCursor: refreshed.nextCursor,
-      });
+      }, authAuthority!);
     } catch (error) {
       if (isCurrentSessionResult()) {
-        setMessages((current) =>
+        setMessages((current) => !isCurrentSessionResult() ? current :
           current.filter(
             (message) => message.id !== pendingAssistantId && message.id !== optimisticId
           )
         );
-        setTypingMessageIds((current) => current.filter((id) => id !== pendingAssistantId));
+        setTypingMessageIds((current) => !isCurrentSessionResult() ? current : current.filter((id) => id !== pendingAssistantId));
       }
       applyTurnCompletionResult("auth-submit-transport", resultAuthority, {
         errorMessage: getErrorMessage(error),
+        isCurrent: isCurrentSessionResult,
       });
     }
   };
 
   const handleExecutionRetry = async () => {
     if (greetingStatus?.retryable && sessionId && !isGuestMode) {
-      setGreetingStatus(null);
-      setErrorMessage("");
+      if (authRetryInFlightRef.current) return;
+      const request = {};
+      authRetryInFlightRef.current = request;
+      const retryGeneration = ++retryScopeRef.current;
+      const resultAuthority = sessionContextRef.current.authority.session;
+      const requestAuth = chatAuthRef.current;
+      const isCurrentSessionResult = () => Boolean(requestAuth && isAuthAuthorityCurrent(requestAuth)) &&
+        retryScopeRef.current === retryGeneration && canApplyChatSessionResult({
+          current: sessionContextRef.current.authority, result: resultAuthority,
+        });
+      if (!isCurrentSessionResult()) { authRetryInFlightRef.current = null; return; }
+      setGreetingStatus((current) => isCurrentSessionResult() ? null : current);
+      setErrorMessage((current) => isCurrentSessionResult() ? "" : current);
       try {
         const data = await apiRequest<ChatMessagesListResponse>(
-          `/api/chat/sessions/${sessionId}/messages?pageSize=50&retryGreeting=1`
+          `/api/chat/sessions/${sessionId}/messages?pageSize=50&retryGreeting=1`, { authority: requestAuth! }
         );
+        if (!isCurrentSessionResult()) return;
         const nextMessages = toMessages(data.items);
-        setMessages(nextMessages);
-        setHasMoreOlderMessages(data.hasMore);
-        setOlderMessagesCursor(data.nextCursor);
-        setGreetingStatus(data.greetingStatus ?? null);
+        setMessages((current) => isCurrentSessionResult() ? nextMessages : current);
+        setHasMoreOlderMessages((current) => isCurrentSessionResult() ? data.hasMore : current);
+        setOlderMessagesCursor((current) => isCurrentSessionResult() ? data.nextCursor : current);
+        setGreetingStatus((current) => isCurrentSessionResult() ? data.greetingStatus ?? null : current);
         writeChatCache({
+          ownerId: requestAuth!.userId!,
           sessionId,
           messages: nextMessages,
           hasMore: data.hasMore,
           nextCursor: data.nextCursor,
           greetingStatus: data.greetingStatus ?? null,
-        });
+        }, requestAuth!);
       } catch (error) {
-        setGreetingStatus(greetingStatus);
-        setErrorMessage(getErrorMessage(error));
+        if (!isCurrentSessionResult()) return;
+        setGreetingStatus((current) => isCurrentSessionResult() ? greetingStatus : current);
+        setErrorMessage((current) => isCurrentSessionResult() ? getErrorMessage(error) : current);
+      } finally {
+        if (authRetryInFlightRef.current === request) authRetryInFlightRef.current = null;
       }
       return;
     }
     const pending = executionStatus;
     if (!pending?.retryable || !sessionId) return;
     const resultAuthority = pending.authority;
+    if (!pending.isGuest && authRetryInFlightRef.current) return;
+    if (pending.isGuest && guestRetryInFlightRef.current === pending.guestRequest) return;
+    const retryGeneration = ++retryScopeRef.current;
+    const retryRequest = {};
     const isCurrentSessionResult = () =>
+      retryScopeRef.current === retryGeneration &&
+      (pending.isGuest || Boolean(pending.authAuthority && isAuthAuthorityCurrent(pending.authAuthority))) &&
+      (!pending.isGuest || Boolean(pending.guestRequest && isGuestAuthorityCurrent(pending.guestRequest.authority))) &&
       canApplyChatSessionResult({
         current: sessionContextRef.current.authority,
         result: resultAuthority,
@@ -1373,53 +1484,43 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         current: sessionContextRef.current.authority,
         result: resultAuthority,
       });
-    if (!ownsLatestTurnResult()) return;
+    if (!ownsLatestTurnResult() || !isCurrentSessionResult()) return;
+    if (!pending.isGuest) authRetryInFlightRef.current = retryRequest;
+    if (pending.isGuest) {
+      if (guestRetryInFlightRef.current === pending.guestRequest) return;
+      guestRetryInFlightRef.current = pending.guestRequest;
+    }
     setExecutionStatus(null);
     setErrorMessage("");
     try {
       if (pending.isGuest) {
-        const data = await apiRequest<{
+        const request = pending.guestRequest!;
+        const data = await requestGuest<{
           status: "committed" | "failed";
+          guestAttempt: number;
           assistantMessage?: ChatMessageResponse;
           systemStatus?: ExecutionSystemStatus;
           debugTrace?: AiDebugTrace;
-        }>("/api/chat/guest", {
-          method: "POST",
-          auth: false,
-          body: {
-            content: pending.inputText,
-            turnId: pending.turnId,
-            retry: true,
-            debugTrace: showAiDebugTrace,
-            recentMessages: messages
-              .filter((message) => message.id !== pending.turnId)
-              .slice(-24)
-              .map((message) => ({
-                id: message.id,
-                role: message.role,
-                content: message.text,
-                promptVersion: message.promptVersion,
-                createdAt: message.createdAt,
-                interactionMoveEnvelope: message.interactionMoveEnvelope,
-              })),
-          },
-        });
-        if (!showAiDebugTrace) incrementGuestAiUsage();
+        }>("/api/chat/guest", request.body, request.authority, request.attempt);
         if (!isCurrentSessionResult()) return;
+        if (!showAiDebugTrace) incrementGuestAiUsage();
         if (data.status === "failed" || !data.assistantMessage) {
           const nextStatus = {
             ...(data.systemStatus ?? pending),
             inputText: pending.inputText,
             isGuest: true,
             authority: resultAuthority,
+            guestRequest: { ...request, attempt: data.guestAttempt },
           };
           applyTurnCompletionResult("guest-retry-failure", resultAuthority, {
             executionStatus: nextStatus,
+            isCurrent: isCurrentSessionResult,
           });
           return;
         }
         applyTurnCompletionResult("guest-retry-success", resultAuthority, {
           executionStatus: null,
+          isCurrent: isCurrentSessionResult,
         });
         const assistant: Message = {
           id: data.assistantMessage.id,
@@ -1431,12 +1532,15 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           debugTrace: data.debugTrace,
         };
         setMessages((current) => {
+          if (!isCurrentSessionResult()) return current;
           const next = [...current, assistant];
           writeGuestMessages(next);
           return next;
         });
-        await revealAssistantReply(assistant.id, data.assistantMessage.content);
+        await revealAssistantReply(assistant.id, data.assistantMessage.content, isCurrentSessionResult);
+        if (!isCurrentSessionResult()) return;
         setMessages((current) => {
+          if (!isCurrentSessionResult()) return current;
           writeGuestMessages(current);
           return current;
         });
@@ -1450,6 +1554,7 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         debugTrace?: AiDebugTrace;
       }>(`/api/chat/sessions/${sessionId}/messages`, {
         method: "POST",
+        authority: pending.authAuthority,
         body: { retryTurnId: pending.turnId, debugTrace: showAiDebugTrace },
       });
       if (!isCurrentSessionResult()) return;
@@ -1458,15 +1563,18 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           ...(data.systemStatus ?? pending),
           inputText: pending.inputText,
           isGuest: false,
+          authAuthority: pending.authAuthority,
           authority: resultAuthority,
         };
         applyTurnCompletionResult("auth-retry-failure", resultAuthority, {
           executionStatus: nextStatus,
+          isCurrent: isCurrentSessionResult,
         });
         return;
       }
       applyTurnCompletionResult("auth-retry-success", resultAuthority, {
         executionStatus: null,
+        isCurrent: isCurrentSessionResult,
       });
       const assistant: Message = {
         id: data.assistantMessage.id,
@@ -1477,22 +1585,31 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
         interactionMoveEnvelope: data.assistantMessage.interactionMoveEnvelope,
         debugTrace: data.debugTrace,
       };
-      setMessages((current) => [...current, assistant]);
-      await revealAssistantReply(assistant.id, data.assistantMessage.content);
+      setMessages((current) => isCurrentSessionResult() ? [...current, assistant] : current);
+      await revealAssistantReply(assistant.id, data.assistantMessage.content, isCurrentSessionResult);
     } catch (error) {
+      if (!isCurrentSessionResult()) return;
       const completion = {
         executionStatus: pending,
         errorMessage: getErrorMessage(error),
+        isCurrent: isCurrentSessionResult,
       };
       if (pending.isGuest) {
         applyTurnCompletionResult("guest-retry-transport", resultAuthority, completion);
       } else {
         applyTurnCompletionResult("auth-retry-transport", resultAuthority, completion);
       }
+    } finally {
+      if (authRetryInFlightRef.current === retryRequest) authRetryInFlightRef.current = null;
+      if (pending.isGuest && guestRetryInFlightRef.current === pending.guestRequest) {
+        guestRetryInFlightRef.current = undefined;
+      }
     }
   };
 
   const loginForDebug = async () => {
+    const operation = debugLoginScope.current.begin();
+    if (!operation.isCurrent()) return;
     setIsDebugLoggingIn(true);
     setErrorMessage("");
 
@@ -1505,11 +1622,12 @@ function ChatContent({ initialChat }: { initialChat: InitialChatData }) {
           body: { code: `web_mock_debug_${Date.now()}` },
         }
       );
+      if (!operation.isCurrent()) return;
       saveAuth(data);
       window.sessionStorage.removeItem(GUEST_MODE_KEY);
       window.location.assign("/chat?debugAi=1");
     } catch (error) {
-      clearAuth();
+      if (!operation.isCurrent()) return;
       setErrorMessage(getErrorMessage(error));
       setIsDebugLoggingIn(false);
     }

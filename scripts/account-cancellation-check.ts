@@ -131,6 +131,9 @@ try {
       visibilityRevokedAt: new Date(),
     },
   });
+  const cancelledUsersBefore = await prisma.user.findMany({
+    where: { status: "CANCELLED" }, select: { id: true }, orderBy: { id: "asc" },
+  });
   const taskIds = await cancelAccountData({
     userId: target.user.id,
     phone: target.user.phone,
@@ -138,16 +141,9 @@ try {
   });
 
   assert.equal(await prisma.user.count({ where: { id: target.user.id } }), 0);
-  const tombstone = await prisma.user.findFirstOrThrow({
-    where: { status: "CANCELLED", phone: null, wechatOpenid: null },
-    orderBy: { createdAt: "desc" },
-  });
-  assert.equal(tombstone.status, "CANCELLED");
-  assert.notEqual(tombstone.id, target.user.id);
-  assert.equal(tombstone.phone, null);
-  assert.equal(tombstone.wechatOpenid, null);
-  assert.equal(tombstone.nickname, null);
-  assert.equal(tombstone.avatarUrl, null);
+  assert.deepEqual(await prisma.user.findMany({
+    where: { status: "CANCELLED" }, select: { id: true }, orderBy: { id: "asc" },
+  }), cancelledUsersBefore, "Physical deletion must not create an anonymous replacement user");
   assert.equal(await prisma.session.count({ where: { userId: target.user.id } }), 0);
   assert.equal(await prisma.chatSession.count({ where: { userId: target.user.id } }), 0);
   assert.equal(await prisma.assistantPublication.count({ where: { userId: target.user.id } }), 0);
@@ -158,13 +154,10 @@ try {
   assert.equal(await prisma.p4ProfileCache.count({ where: { userId: target.user.id } }), 0);
   assert.equal(await prisma.p6AcceptedMemorySnapshot.count({ where: { userId: target.user.id } }), 0);
   assert.equal(await prisma.feedback.count({ where: { userId: target.user.id } }), 0);
-  const anonymousFeedback = await prisma.feedback.findUniqueOrThrow({
-    where: { id: target.feedback.id },
-  });
-  assert.equal(anonymousFeedback.userId, null);
-  assert.equal(anonymousFeedback.content, "[account_cancelled]");
-  assert.equal(anonymousFeedback.contact, null);
-  assert.equal(anonymousFeedback.userAgent, null);
+  assert.equal(await prisma.feedback.findUnique({ where: { id: target.feedback.id } }), null,
+    "The original feedback ID must be deleted, not merely detached from its owner");
+  assert.deepEqual(await prisma.feedback.findUnique({ where: { id: unrelated.feedback.id } }), unrelated.feedback,
+    "Another user's feedback remains unchanged");
   assert.equal(taskIds.length, 1);
   assert.equal(await drainAccountCancellationFiles(taskIds), 0);
   assert.equal(existsSync(path.join(uploadRoot, target.storageKey)), false);
@@ -255,9 +248,9 @@ try {
 
   console.log(JSON.stringify({
     status: "PASS",
-    tombstone: "anonymous",
+    account: "physically_deleted_without_replacement",
     relatedData: "cascade_deleted",
-    feedback: "anonymized",
+    feedback: "deleted_by_original_id",
     privateFiles: "deleted_after_commit",
     rollback: "atomic",
     crossUser: "unchanged",

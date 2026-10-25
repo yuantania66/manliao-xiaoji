@@ -1,0 +1,1294 @@
+{
+  "note": "Structural copy; synthetic case replies and evidence text kept locally.",
+  "summary": {
+    "head": "9e357cf",
+    "judgeModelEnv": "qwen3.7-max",
+    "casesSha256": "0aa198796c040ba8c7e22b45f91ca9b64d0f1d009ab3c8dda79f8c804395ce74",
+    "repetitions": 3,
+    "labeledCases": 4,
+    "ambiguousCases": 0,
+    "judgeCalls": 12,
+    "outcomeMatches": 12,
+    "labeledCalls": 12,
+    "failCitationMatches": 9,
+    "failLabeledCalls": 9,
+    "ruleScopeViolationCalls": 0,
+    "reliableCases": 4,
+    "diagnostics": {
+      "totalModelCalls": 18,
+      "schemaRepairCalls": 6,
+      "formatFailureValidations": 6,
+      "malformedOrEvidenceMismatchValidations": 0,
+      "semanticMisjudgments": 0,
+      "citationMisses": 0,
+      "providerFailures": {},
+      "validationLatencyMs": {
+        "count": 12,
+        "meanMs": 7779,
+        "p50Ms": 9303,
+        "p90Ms": 11240,
+        "maxMs": 11449
+      },
+      "modelCallLatencyMs": {
+        "count": 18,
+        "meanMs": 5185,
+        "p50Ms": 5132,
+        "p90Ms": 6381,
+        "maxMs": 6437
+      },
+      "providerRequests": 18,
+      "requestConfigs": {
+        "model=deepseek-v4-pro-0813;response_format=json_object;enable_thinking=false;temperature=0": 18
+      },
+      "developerMessageSha256": {
+        "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457": 12,
+        "750cba42bd724f0ccafbad2c252851782833c2ae6949b1841ed03f3d29a62a8e": 6
+      },
+      "httpStatuses": {
+        "200": 18
+      },
+      "promptTokens": 49776,
+      "completionTokens": 7364,
+      "requestsWithoutUsage": 0
+    },
+    "byCase": {
+      "V2-AFFECT-INVENTED-HISTORY": {
+        "category": "v2_contextual_affect_boundary",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-AFFECT-EVIDENCE",
+            "ES-SCOPE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE",
+            "ES-SCOPE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE",
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V2-AFFECT-IMPLICIT-TENTATIVE": {
+        "category": "v2_contextual_affect_boundary",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [
+            "ES-ACK-BOUNDARY"
+          ],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V2-AFFECT-EXPLICIT-DENIAL": {
+        "category": "v2_contextual_affect_boundary",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "V2-AFFECT-INTENSIFIED-INFERENCE": {
+        "category": "v2_contextual_affect_boundary",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-AFFECT-EVIDENCE",
+            "ES-SCOPE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE",
+            "ES-SCOPE"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "V2-AFFECT-INVENTED-HISTORY",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "pass"
+    },
+    {
+      "id": "V2-AFFECT-EXPLICIT-DENIAL",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    }
+  ],
+  "calls": [
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 5
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "added_category"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "failedFields": [
+          "affectDrift"
+        ],
+        "uncertainFields": [],
+        "overallRejected": true
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5132
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "29d542f17320f1130842e58b65c977ced812996ab7c3b8a5b27e23809c15ad90",
+          "httpStatus": 200,
+          "promptTokens": 2697,
+          "completionTokens": 379
+        }
+      ],
+      "validationLatencyMs": 5145,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 5
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 17,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "added_category"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "failedFields": [
+          "affectDrift"
+        ],
+        "uncertainFields": [],
+        "overallRejected": true
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5272
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 4647
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "29d542f17320f1130842e58b65c977ced812996ab7c3b8a5b27e23809c15ad90",
+          "httpStatus": 200,
+          "promptTokens": 2697,
+          "completionTokens": 422
+        },
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "750cba42bd724f0ccafbad2c252851782833c2ae6949b1841ed03f3d29a62a8e",
+          "messagesSha256": "7c890d595991413898cf72e57fce7ebbdba479f224f6e2ca709a3aecd8a69de1",
+          "httpStatus": 200,
+          "promptTokens": 2830,
+          "completionTokens": 363
+        }
+      ],
+      "validationLatencyMs": 9920,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-INVENTED-HISTORY",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 5
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 31,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "added_category"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "failedFields": [
+          "affectDrift"
+        ],
+        "uncertainFields": [],
+        "overallRejected": true
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4748
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 4553
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "29d542f17320f1130842e58b65c977ced812996ab7c3b8a5b27e23809c15ad90",
+          "httpStatus": 200,
+          "promptTokens": 2697,
+          "completionTokens": 364
+        },
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "750cba42bd724f0ccafbad2c252851782833c2ae6949b1841ed03f3d29a62a8e",
+          "messagesSha256": "7c890d595991413898cf72e57fce7ebbdba479f224f6e2ca709a3aecd8a69de1",
+          "httpStatus": 200,
+          "promptTokens": 2830,
+          "completionTokens": 393
+        }
+      ],
+      "validationLatencyMs": 9303,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 10,
+              "end": 17
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 9,
+            "ruleIds": []
+          },
+          {
+            "start": 10,
+            "end": 40,
+            "ruleIds": []
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "none"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [],
+        "failedFields": [],
+        "uncertainFields": [],
+        "overallRejected": false
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5491
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "6e4c4895253a30bea03df065a5ed41d81eb08cce77301e13d7cfb380cca336df",
+          "httpStatus": 200,
+          "promptTokens": 2703,
+          "completionTokens": 435
+        }
+      ],
+      "validationLatencyMs": 5492,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 40
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 40,
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "none"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-ACK-BOUNDARY"
+        ],
+        "failedFields": [],
+        "uncertainFields": [],
+        "overallRejected": false
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5498
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 5378
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "6e4c4895253a30bea03df065a5ed41d81eb08cce77301e13d7cfb380cca336df",
+          "httpStatus": 200,
+          "promptTokens": 2703,
+          "completionTokens": 451
+        },
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "750cba42bd724f0ccafbad2c252851782833c2ae6949b1841ed03f3d29a62a8e",
+          "messagesSha256": "2a4db91c5f3fdc57dfe8c18aed7811951146bd6eebea7a1b2c3f29080820f0bc",
+          "httpStatus": 200,
+          "promptTokens": 2836,
+          "completionTokens": 440
+        }
+      ],
+      "validationLatencyMs": 10876,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 40
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 40,
+            "ruleIds": []
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "none"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [],
+        "failedFields": [],
+        "uncertainFields": [],
+        "overallRejected": false
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5345
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "6e4c4895253a30bea03df065a5ed41d81eb08cce77301e13d7cfb380cca336df",
+          "httpStatus": 200,
+          "promptTokens": 2703,
+          "completionTokens": 435
+        }
+      ],
+      "validationLatencyMs": 5345,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 8,
+              "end": 18
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "added_category"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "failedFields": [
+          "affectDrift"
+        ],
+        "uncertainFields": [],
+        "overallRejected": true
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5199
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "7d2bc3c58c68e8bdad7d7858bae2b586a97d05cfcfe84796b024ce5a813d9f5f",
+          "httpStatus": 200,
+          "promptTokens": 2799,
+          "completionTokens": 402
+        }
+      ],
+      "validationLatencyMs": 5200,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 15,
+              "end": 18
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "added_category"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "failedFields": [
+          "affectDrift"
+        ],
+        "uncertainFields": [],
+        "overallRejected": true
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4650
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 4718
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "7d2bc3c58c68e8bdad7d7858bae2b586a97d05cfcfe84796b024ce5a813d9f5f",
+          "httpStatus": 200,
+          "promptTokens": 2799,
+          "completionTokens": 381
+        },
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "750cba42bd724f0ccafbad2c252851782833c2ae6949b1841ed03f3d29a62a8e",
+          "messagesSha256": "b9447f4680f876749771012a2ee8243c07d49b187b38f01972927552b7bbda26",
+          "httpStatus": 200,
+          "promptTokens": 2932,
+          "completionTokens": 364
+        }
+      ],
+      "validationLatencyMs": 9369,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 8,
+              "end": 19
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "added_category"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "failedFields": [
+          "affectDrift"
+        ],
+        "uncertainFields": [],
+        "overallRejected": true
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5101
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "7d2bc3c58c68e8bdad7d7858bae2b586a97d05cfcfe84796b024ce5a813d9f5f",
+          "httpStatus": 200,
+          "promptTokens": 2799,
+          "completionTokens": 398
+        }
+      ],
+      "validationLatencyMs": 5102,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 8
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          },
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "stronger_intensity"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "failedFields": [
+          "affectDrift"
+        ],
+        "uncertainFields": [],
+        "overallRejected": true
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4858
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 6381
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "d0b15ed6d6b3370da998d938d8f4eeed5785057ccd1e3ea9471c248cc7bf2560",
+          "httpStatus": 200,
+          "promptTokens": 2697,
+          "completionTokens": 399
+        },
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "750cba42bd724f0ccafbad2c252851782833c2ae6949b1841ed03f3d29a62a8e",
+          "messagesSha256": "7bbdf991cbdbc1dbf61001457fe40d5e7970c9f6c3eae00f7d8e93605eb72da4",
+          "httpStatus": 200,
+          "promptTokens": 2830,
+          "completionTokens": 478
+        }
+      ],
+      "validationLatencyMs": 11240,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 8
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          },
+          {
+            "start": 0,
+            "end": 8,
+            "ruleIds": [
+              "ES-SCOPE"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "stronger_intensity"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-SCOPE"
+        ],
+        "failedFields": [
+          "affectDrift"
+        ],
+        "uncertainFields": [],
+        "overallRejected": true
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5011
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 6437
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "d0b15ed6d6b3370da998d938d8f4eeed5785057ccd1e3ea9471c248cc7bf2560",
+          "httpStatus": 200,
+          "promptTokens": 2697,
+          "completionTokens": 398
+        },
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "750cba42bd724f0ccafbad2c252851782833c2ae6949b1841ed03f3d29a62a8e",
+          "messagesSha256": "7bbdf991cbdbc1dbf61001457fe40d5e7970c9f6c3eae00f7d8e93605eb72da4",
+          "httpStatus": 200,
+          "promptTokens": 2830,
+          "completionTokens": 461
+        }
+      ],
+      "validationLatencyMs": 11449,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    },
+    {
+      "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+      "category": "v2_contextual_affect_boundary",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "outOfScopeRuleIds": [],
+        "affectEvidence": {
+          "userSpans": [
+            {
+              "start": 0,
+              "end": 7
+            }
+          ],
+          "candidateSpans": [
+            {
+              "start": 0,
+              "end": 9
+            }
+          ]
+        },
+        "evidence": [
+          {
+            "start": 0,
+            "end": 9,
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ]
+          }
+        ]
+      },
+      "observation": {
+        "affectDrift": "added_category"
+      },
+      "observationAssessment": {
+        "kind": "relationalImpact",
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE"
+        ],
+        "failedFields": [
+          "affectDrift"
+        ],
+        "uncertainFields": [],
+        "overallRejected": true
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4903
+        }
+      ],
+      "requests": [
+        {
+          "model": "deepseek-v4-pro-0813",
+          "responseFormat": "json_object",
+          "enableThinking": false,
+          "temperature": 0,
+          "developerMessageSha256": "2585edb96e46855863e1106178aae4c20583bf9a3d19bcbfa9e7238d69afe457",
+          "messagesSha256": "d0b15ed6d6b3370da998d938d8f4eeed5785057ccd1e3ea9471c248cc7bf2560",
+          "httpStatus": 200,
+          "promptTokens": 2697,
+          "completionTokens": 401
+        }
+      ],
+      "validationLatencyMs": 4904,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false
+    }
+  ]
+}

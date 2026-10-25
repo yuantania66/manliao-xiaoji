@@ -287,6 +287,9 @@ export const buildDialogueState = (
           targetTurnId: interpretation.stateUpdate.repairProposal.targetTurnId,
           rejectedPropositionIds: interpretation.stateUpdate.repairProposal.rejectedPropositionIds,
           evidence: interpretation.stateUpdate.repairProposal.evidence,
+          ...(interpretation.stateUpdate.repairProposal.sourceRelation
+            ? { sourceRelation: interpretation.stateUpdate.repairProposal.sourceRelation }
+            : {}),
         }
       : {
           status: "none",

@@ -1,0 +1,5333 @@
+{
+  "note": "Structural copy; synthetic case replies and evidence text kept locally.",
+  "summary": {
+    "head": "f338a75",
+    "repetitions": 3,
+    "labeledCases": 22,
+    "ambiguousCases": 3,
+    "judgeCalls": 69,
+    "outcomeMatches": 54,
+    "labeledCalls": 66,
+    "failCitationMatches": 32,
+    "failLabeledCalls": 42,
+    "ruleScopeViolationCalls": 0,
+    "reliableCases": 16,
+    "diagnostics": {
+      "totalModelCalls": 116,
+      "schemaRepairCalls": 47,
+      "formatFailureValidations": 47,
+      "malformedOrEvidenceMismatchValidations": 7,
+      "semanticMisjudgments": 12,
+      "citationMisses": 7,
+      "providerFailures": {},
+      "esFailureCategories": {
+        "es_solicits_new_content": 41,
+        "es_ack_invitation": 19,
+        "es_function_not_realized": 35,
+        "es_uncertain": 15,
+        "es_adds_unstated_content": 18,
+        "es_reference_unanchored": 5,
+        "es_other_contradiction": 17,
+        "es_affect_unanchored": 5,
+        "es_prior_turn_fabrication": 3,
+        "es_unattributed_rejection": 2
+      },
+      "esInconsistencies": {},
+      "validationLatencyMs": {
+        "count": 69,
+        "meanMs": 16887,
+        "p50Ms": 14559,
+        "p90Ms": 30554,
+        "maxMs": 34232
+      },
+      "modelCallLatencyMs": {
+        "count": 116,
+        "meanMs": 10045,
+        "p50Ms": 9724,
+        "p90Ms": 15274,
+        "maxMs": 18847
+      }
+    },
+    "byCase": {
+      "ACK-COMPLETE-NO-SOLICIT": {
+        "category": "function_complete_no_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "FOCUS-COMPLETE-NO-SOLICIT": {
+        "category": "function_complete_no_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "fail"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          null
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "ACK-SOLICIT-AMOUNT-FOCUS-A": {
+        "category": "function_complete_then_solicits",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "ACK-SOLICIT-AMOUNT-FOCUS-B": {
+        "category": "function_complete_then_solicits",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "ACK-SOLICIT-SHOW-MISS": {
+        "category": "function_complete_then_solicits",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "FOCUS-INVITE-EVIDENCED": {
+        "category": "invitation_uses_existing_content",
+        "expected": "pass",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          null,
+          null,
+          null
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "FOCUS-INVITE-UNSPECIFIED-OTHER": {
+        "category": "invitation_introduces_unknown_content",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "FOCUS-INVITE-WHAT-HAPPENED": {
+        "category": "invitation_introduces_unknown_content",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "ACK-FABRICATED-PRIOR-MISTAKE": {
+        "category": "no_history_fabrication",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-AFFECT-EVIDENCE",
+            "ES-ACK-NO-FABRICATION",
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-AFFECT-EVIDENCE",
+            "ES-ACK-NO-FABRICATION",
+            "ES-ACK-BOUNDARY"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-AFFECT-EVIDENCE",
+            "ES-ACK-NO-FABRICATION",
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-A1-MOMENT-BACKREF": {
+        "category": "c2_ruling_pass",
+        "expected": "pass",
+        "outcomes": [
+          "fail",
+          "pass",
+          "fail"
+        ],
+        "ruleIds": [
+          null,
+          [],
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "AMB-FOCUS-SITUATION": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": null
+      },
+      "AMB-FOCUS-PLAN-GETS-AMOUNT": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": null
+      },
+      "AMB-ACK-JUST-NOW-DRIFT": {
+        "category": "ambiguous",
+        "expected": "ambiguous",
+        "outcomes": [
+          "fail"
+        ],
+        "ruleIds": [
+          null
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": null
+      },
+      "R2-OVERREJECT-RELEASE-AMOUNT": {
+        "category": "release_not_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-OVERREJECT-RELEASE-AMOUNT-LONELY": {
+        "category": "release_not_solicitation",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST": {
+        "category": "release_wrapping_solicitation",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED": {
+        "category": "release_wrapping_solicitation",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-SCOPE-REPAIR-PASS": {
+        "category": "rule_scope_non_emotional_plan",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "R2-SCOPE-REPAIR-FAIL-HISTORY": {
+        "category": "rule_scope_non_emotional_plan",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-A2-UNSTATED-DISAPPOINTMENT": {
+        "category": "c2_ruling_fail",
+        "expected": "fail",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "C2-NEAR-MOMENT-UNSTATED": {
+        "category": "mispass",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ],
+          [
+            "ES-SCOPE"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-NEAR-MOMENT-DETAILS": {
+        "category": "mispass",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ],
+          [
+            "ES-SCOPE",
+            "ES-FOCUS"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      },
+      "C2-NEAR-IMPERSONAL-GRIEVANCE": {
+        "category": "mispass",
+        "expected": "fail",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "C2-NEAR-ATTRIBUTED-ANGER": {
+        "category": "mispass",
+        "expected": "fail",
+        "outcomes": [
+          "fail",
+          "fail",
+          "fail"
+        ],
+        "ruleIds": [
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-AFFECT-EVIDENCE",
+            "ES-ACK-BOUNDARY"
+          ],
+          null,
+          [
+            "ES-SCOPE",
+            "ES-ACK-NO-SOLICIT",
+            "ES-AFFECT-EVIDENCE",
+            "ES-ACK-BOUNDARY"
+          ]
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": false
+      },
+      "C2-NEAR-STATED-DISAPPOINTMENT": {
+        "category": "overreject",
+        "expected": "pass",
+        "outcomes": [
+          "pass",
+          "pass",
+          "pass"
+        ],
+        "ruleIds": [
+          [],
+          [],
+          []
+        ],
+        "ruleScopeViolations": 0,
+        "reliable": true
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass"
+    },
+    {
+      "id": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass"
+    },
+    {
+      "id": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ]
+    },
+    {
+      "id": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ]
+    },
+    {
+      "id": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-SOLICIT"
+      ]
+    },
+    {
+      "id": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass"
+    },
+    {
+      "id": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ]
+    },
+    {
+      "id": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ]
+    },
+    {
+      "id": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-ACK-NO-FABRICATION"
+      ]
+    },
+    {
+      "id": "C2-A1-MOMENT-BACKREF",
+      "category": "c2_ruling_pass",
+      "expected": "pass"
+    },
+    {
+      "id": "AMB-FOCUS-SITUATION",
+      "category": "ambiguous",
+      "expected": "ambiguous"
+    },
+    {
+      "id": "AMB-FOCUS-PLAN-GETS-AMOUNT",
+      "category": "ambiguous",
+      "expected": "ambiguous"
+    },
+    {
+      "id": "AMB-ACK-JUST-NOW-DRIFT",
+      "category": "ambiguous",
+      "expected": "ambiguous"
+    },
+    {
+      "id": "R2-OVERREJECT-RELEASE-AMOUNT",
+      "category": "release_not_solicitation",
+      "expected": "pass"
+    },
+    {
+      "id": "R2-OVERREJECT-RELEASE-AMOUNT-LONELY",
+      "category": "release_not_solicitation",
+      "expected": "pass"
+    },
+    {
+      "id": "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ]
+    },
+    {
+      "id": "R2-SCOPE-REPAIR-PASS",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "pass"
+    },
+    {
+      "id": "R2-SCOPE-REPAIR-FAIL-HISTORY",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "fail"
+    },
+    {
+      "id": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "C2-NEAR-MOMENT-UNSTATED",
+      "category": "mispass",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE"
+      ]
+    },
+    {
+      "id": "C2-NEAR-MOMENT-DETAILS",
+      "category": "mispass",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-SCOPE",
+        "ES-FOCUS"
+      ]
+    },
+    {
+      "id": "C2-NEAR-IMPERSONAL-GRIEVANCE",
+      "category": "mispass",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "C2-NEAR-ATTRIBUTED-ANGER",
+      "category": "mispass",
+      "expected": "fail",
+      "acceptedRuleIds": [
+        "ES-AFFECT-EVIDENCE"
+      ]
+    },
+    {
+      "id": "C2-NEAR-STATED-DISAPPOINTMENT",
+      "category": "overreject",
+      "expected": "pass"
+    }
+  ],
+  "calls": [
+    {
+      "caseId": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6606
+        }
+      ],
+      "validationLatencyMs": 6607,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7193
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 6418
+        }
+      ],
+      "validationLatencyMs": 13611,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "ACK-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 41,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6332
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 6360
+        }
+      ],
+      "validationLatencyMs": 12692,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 11150
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 8557
+        }
+      ],
+      "validationLatencyMs": 19708,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 32,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 10063
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 10878
+        }
+      ],
+      "validationLatencyMs": 20941,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "FOCUS-COMPLETE-NO-SOLICIT",
+      "category": "function_complete_no_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:malformed_verdict"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": null,
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 9566
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 9847
+        }
+      ],
+      "validationLatencyMs": 19414,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7089
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 7793
+        }
+      ],
+      "validationLatencyMs": 14882,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7065
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 7326
+        }
+      ],
+      "validationLatencyMs": 14391,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-A",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 8439
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 7882
+        }
+      ],
+      "validationLatencyMs": 16321,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 2
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 11664
+        }
+      ],
+      "validationLatencyMs": 11664,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "expression_permission",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 2
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 12910
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 12297
+        }
+      ],
+      "validationLatencyMs": 25207,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "expression_permission",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "ACK-SOLICIT-AMOUNT-FOCUS-B",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 2
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": []
+          },
+          {
+            "start": 17,
+            "end": 33,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 12141
+        }
+      ],
+      "validationLatencyMs": 12141,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "expression_permission",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 20,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7042
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 7517
+        }
+      ],
+      "validationLatencyMs": 14559,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 20,
+            "ruleIds": []
+          },
+          {
+            "start": 20,
+            "end": 33,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7157
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 8863
+        }
+      ],
+      "validationLatencyMs": 16020,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "ACK-SOLICIT-SHOW-MISS",
+      "category": "function_complete_then_solicits",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 20,
+            "ruleIds": []
+          },
+          {
+            "start": 20,
+            "end": 33,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7313
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 9697
+        }
+      ],
+      "validationLatencyMs": 17010,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:malformed_verdict"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": null,
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 13640
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 17294
+        }
+      ],
+      "validationLatencyMs": 30934,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:malformed_verdict"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": null,
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 13720
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 18847
+        }
+      ],
+      "validationLatencyMs": 32568,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "FOCUS-INVITE-EVIDENCED",
+      "category": "invitation_uses_existing_content",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:malformed_verdict"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": null,
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 16058
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 16000
+        }
+      ],
+      "validationLatencyMs": 32058,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_reference_unanchored",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-FOCUS"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 39,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 15100
+        }
+      ],
+      "validationLatencyMs": 15100,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_reference_unanchored",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-FOCUS"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 39,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 13292
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 15054
+        }
+      ],
+      "validationLatencyMs": 28346,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "FOCUS-INVITE-UNSPECIFIED-OTHER",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_reference_unanchored",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-FOCUS"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 39,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 13758
+        }
+      ],
+      "validationLatencyMs": 13758,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 15713
+        }
+      ],
+      "validationLatencyMs": 15713,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 15436
+        }
+      ],
+      "validationLatencyMs": 15437,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "FOCUS-INVITE-WHAT-HAPPENED",
+      "category": "invitation_introduces_unknown_content",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 14949
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 14909
+        }
+      ],
+      "validationLatencyMs": 29858,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-AFFECT-EVIDENCE",
+          "ES-ACK-NO-FABRICATION",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_reference_unanchored",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_affect_unanchored",
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "source": "emotion_mention",
+            "index": 0
+          },
+          {
+            "category": "es_prior_turn_fabrication",
+            "ruleIds": [
+              "ES-ACK-NO-FABRICATION"
+            ],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6162
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 8647
+        }
+      ],
+      "validationLatencyMs": 14809,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-AFFECT-EVIDENCE",
+          "ES-ACK-NO-FABRICATION",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_affect_unanchored",
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "source": "emotion_mention",
+            "index": 0
+          },
+          {
+            "category": "es_prior_turn_fabrication",
+            "ruleIds": [
+              "ES-ACK-NO-FABRICATION"
+            ],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_unattributed_rejection",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7518
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 6115
+        }
+      ],
+      "validationLatencyMs": 13633,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "ACK-FABRICATED-PRIOR-MISTAKE",
+      "category": "no_history_fabrication",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-AFFECT-EVIDENCE",
+          "ES-ACK-NO-FABRICATION",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_affect_unanchored",
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "source": "emotion_mention",
+            "index": 0
+          },
+          {
+            "category": "es_prior_turn_fabrication",
+            "ruleIds": [
+              "ES-ACK-NO-FABRICATION"
+            ],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ]
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6171
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 9307
+        }
+      ],
+      "validationLatencyMs": 15478,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "C2-A1-MOMENT-BACKREF",
+      "category": "c2_ruling_pass",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:malformed_verdict"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": null,
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 14094
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 17872
+        }
+      ],
+      "validationLatencyMs": 31966,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "C2-A1-MOMENT-BACKREF",
+      "category": "c2_ruling_pass",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 1,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 43,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 13582
+        }
+      ],
+      "validationLatencyMs": 13582,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "C2-A1-MOMENT-BACKREF",
+      "category": "c2_ruling_pass",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 43,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 16457
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 14096
+        }
+      ],
+      "validationLatencyMs": 30554,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "AMB-FOCUS-SITUATION",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 36,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 12248
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 11664
+        }
+      ],
+      "validationLatencyMs": 23912,
+      "formatFailure": true,
+      "outcomeMatches": null,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "AMB-FOCUS-PLAN-GETS-AMOUNT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_unattributed_rejection",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 10,
+            "ruleIds": []
+          },
+          {
+            "start": 10,
+            "end": 29,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 9593
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 9845
+        }
+      ],
+      "validationLatencyMs": 19438,
+      "formatFailure": true,
+      "outcomeMatches": null,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "AMB-ACK-JUST-NOW-DRIFT",
+      "category": "ambiguous",
+      "expected": "ambiguous",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:malformed_verdict"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": null,
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 9668
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 11293
+        }
+      ],
+      "validationLatencyMs": 20961,
+      "formatFailure": true,
+      "outcomeMatches": null,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 10868
+        }
+      ],
+      "validationLatencyMs": 10869,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "burden_release"
+      ]
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 6,
+            "end": 12,
+            "ruleIds": []
+          },
+          {
+            "start": 13,
+            "end": 24,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 11269
+        }
+      ],
+      "validationLatencyMs": 11269,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "burden_release"
+      ]
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 25,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 11950
+        }
+      ],
+      "validationLatencyMs": 11950,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "burden_release"
+      ]
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT-LONELY",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 10188
+        }
+      ],
+      "validationLatencyMs": 10188,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "burden_release"
+      ]
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT-LONELY",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 10496
+        }
+      ],
+      "validationLatencyMs": 10496,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "burden_release"
+      ]
+    },
+    {
+      "caseId": "R2-OVERREJECT-RELEASE-AMOUNT-LONELY",
+      "category": "release_not_solicitation",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 10276
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 11323
+        }
+      ],
+      "validationLatencyMs": 21599,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "burden_release"
+      ]
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 10689
+        }
+      ],
+      "validationLatencyMs": 10689,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "burden_release",
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_reference_unanchored",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 10294
+        }
+      ],
+      "validationLatencyMs": 10294,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "burden_release",
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-WRAPS-ACCOUNT-REQUEST",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 30,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 12744
+        }
+      ],
+      "validationLatencyMs": 12744,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "burden_release",
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 12106
+        }
+      ],
+      "validationLatencyMs": 12106,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "burden_release",
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 11029
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 10816
+        }
+      ],
+      "validationLatencyMs": 21845,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "R2-MISPASS-RELEASE-THEN-WHAT-HAPPENED",
+      "category": "release_wrapping_solicitation",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 34,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 11224
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 9724
+        }
+      ],
+      "validationLatencyMs": 20949,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-PASS",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": null,
+        "emotionalSupportInconsistencies": null,
+        "evidence": [
+          {
+            "start": 0,
+            "end": 22,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4251
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 5013
+        }
+      ],
+      "validationLatencyMs": 9264,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-PASS",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": null,
+        "emotionalSupportInconsistencies": null,
+        "evidence": [
+          {
+            "start": 0,
+            "end": 22,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6092
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 4624
+        }
+      ],
+      "validationLatencyMs": 10716,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-PASS",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": null,
+        "emotionalSupportInconsistencies": null,
+        "evidence": [
+          {
+            "start": 0,
+            "end": 7,
+            "ruleIds": []
+          },
+          {
+            "start": 8,
+            "end": 22,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4441
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 5426
+        }
+      ],
+      "validationLatencyMs": 9867,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-FAIL-HISTORY",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": null,
+        "emotionalSupportInconsistencies": null,
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4577
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 4333
+        }
+      ],
+      "validationLatencyMs": 8910,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-FAIL-HISTORY",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": null,
+        "emotionalSupportInconsistencies": null,
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 4717
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 4613
+        }
+      ],
+      "validationLatencyMs": 9331,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "R2-SCOPE-REPAIR-FAIL-HISTORY",
+      "category": "rule_scope_non_emotional_plan",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "repair_previous_wording",
+      "supportFunction": null,
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [
+        "planned_function_semantic:question_count_quality"
+      ],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": null,
+        "emotionalSupportInconsistencies": null,
+        "evidence": [
+          {
+            "start": 0,
+            "end": 19,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 5099
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 4440
+        }
+      ],
+      "validationLatencyMs": 9539,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6505
+        }
+      ],
+      "validationLatencyMs": 6505,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": false,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7739
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 6745
+        }
+      ],
+      "validationLatencyMs": 14486,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": false,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "category": "c2_ruling_fail",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 44,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7545
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 7113
+        }
+      ],
+      "validationLatencyMs": 14658,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": false,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-UNSTATED",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 7,
+            "end": 13,
+            "ruleIds": []
+          },
+          {
+            "start": 14,
+            "end": 24,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 11298
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 12821
+        }
+      ],
+      "validationLatencyMs": 24119,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-UNSTATED",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 7,
+            "end": 13,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 11225
+        }
+      ],
+      "validationLatencyMs": 11225,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-UNSTATED",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_amount_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_adds_unstated_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 7,
+            "end": 13,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 11172
+        }
+      ],
+      "validationLatencyMs": 11172,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "expression_permission",
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-DETAILS",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 45,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 14833
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 15274
+        }
+      ],
+      "validationLatencyMs": 30107,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-DETAILS",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 45,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 16704
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 17528
+        }
+      ],
+      "validationLatencyMs": 34232,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "C2-NEAR-MOMENT-DETAILS",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "return_focus_control",
+      "questionPolicy": "optional_after_answer",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 1,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-FOCUS"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 1
+          },
+          {
+            "category": "es_other_contradiction",
+            "ruleIds": [],
+            "source": "reply",
+            "index": null
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-FOCUS"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 45,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 15078
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 16836
+        }
+      ],
+      "validationLatencyMs": 31914,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference",
+        "content_reference",
+        "expression_permission"
+      ]
+    },
+    {
+      "caseId": "C2-NEAR-IMPERSONAL-GRIEVANCE",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 42,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7266
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 7002
+        }
+      ],
+      "validationLatencyMs": 14268,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": false,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "C2-NEAR-IMPERSONAL-GRIEVANCE",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 42,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7161
+        }
+      ],
+      "validationLatencyMs": 7161,
+      "formatFailure": false,
+      "outcomeMatches": false,
+      "citationMatches": false,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "C2-NEAR-IMPERSONAL-GRIEVANCE",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 42,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7049
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 7197
+        }
+      ],
+      "validationLatencyMs": 14246,
+      "formatFailure": true,
+      "outcomeMatches": false,
+      "citationMatches": false,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "C2-NEAR-ATTRIBUTED-ANGER",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-AFFECT-EVIDENCE",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_affect_unanchored",
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "source": "emotion_mention",
+            "index": 0
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": []
+          },
+          {
+            "start": 16,
+            "end": 32,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 9654
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 9563
+        }
+      ],
+      "validationLatencyMs": 19217,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "C2-NEAR-ATTRIBUTED-ANGER",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:malformed_verdict"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": null,
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 9339
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 12164
+        }
+      ],
+      "validationLatencyMs": 21503,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": false,
+      "ruleScopeViolation": false,
+      "esItemKinds": null
+    },
+    {
+      "caseId": "C2-NEAR-ATTRIBUTED-ANGER",
+      "category": "mispass",
+      "expected": "fail",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "fail",
+      "hardFailureReasons": [
+        "planned_function_semantic:positive_function_not_satisfied"
+      ],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "not_satisfied",
+        "containsContradictoryMove": true,
+        "semanticQuestionCount": 0,
+        "ruleIds": [
+          "ES-SCOPE",
+          "ES-ACK-NO-SOLICIT",
+          "ES-AFFECT-EVIDENCE",
+          "ES-ACK-BOUNDARY"
+        ],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [
+          {
+            "category": "es_uncertain",
+            "ruleIds": [
+              "ES-SCOPE"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_solicits_new_content",
+            "ruleIds": [
+              "ES-SCOPE",
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_ack_invitation",
+            "ruleIds": [
+              "ES-ACK-NO-SOLICIT"
+            ],
+            "source": "option",
+            "index": 0
+          },
+          {
+            "category": "es_affect_unanchored",
+            "ruleIds": [
+              "ES-AFFECT-EVIDENCE"
+            ],
+            "source": "emotion_mention",
+            "index": 0
+          },
+          {
+            "category": "es_function_not_realized",
+            "ruleIds": [
+              "ES-ACK-BOUNDARY"
+            ],
+            "source": "reply",
+            "index": null
+          }
+        ],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 16,
+            "ruleIds": []
+          },
+          {
+            "start": 16,
+            "end": 32,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 9953
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 9437
+        }
+      ],
+      "validationLatencyMs": 19390,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": true,
+      "ruleScopeViolation": false,
+      "esItemKinds": [
+        "content_reference"
+      ]
+    },
+    {
+      "caseId": "C2-NEAR-STATED-DISAPPOINTMENT",
+      "category": "overreject",
+      "expected": "pass",
+      "repetition": 1,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 40,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 7531
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 6850
+        }
+      ],
+      "validationLatencyMs": 14381,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "C2-NEAR-STATED-DISAPPOINTMENT",
+      "category": "overreject",
+      "expected": "pass",
+      "repetition": 2,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 40,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6633
+        },
+        {
+          "call": "schema_repair",
+          "latencyMs": 7365
+        }
+      ],
+      "validationLatencyMs": 13998,
+      "formatFailure": true,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    },
+    {
+      "caseId": "C2-NEAR-STATED-DISAPPOINTMENT",
+      "category": "overreject",
+      "expected": "pass",
+      "repetition": 3,
+      "planAction": "offer_emotional_support",
+      "supportFunction": "acknowledge_current_relational_impact",
+      "questionPolicy": "none",
+      "outcome": "pass",
+      "hardFailureReasons": [],
+      "advisoryFailureReasons": [],
+      "audit": {
+        "status": "satisfied",
+        "containsContradictoryMove": false,
+        "semanticQuestionCount": 0,
+        "ruleIds": [],
+        "outOfScopeRuleIds": [],
+        "emotionalSupportFailures": [],
+        "emotionalSupportInconsistencies": [],
+        "evidence": [
+          {
+            "start": 0,
+            "end": 40,
+            "ruleIds": []
+          }
+        ]
+      },
+      "providerFailure": null,
+      "modelCalls": [
+        {
+          "call": "initial",
+          "latencyMs": 6753
+        }
+      ],
+      "validationLatencyMs": 6753,
+      "formatFailure": false,
+      "outcomeMatches": true,
+      "citationMatches": null,
+      "ruleScopeViolation": false,
+      "esItemKinds": []
+    }
+  ]
+}

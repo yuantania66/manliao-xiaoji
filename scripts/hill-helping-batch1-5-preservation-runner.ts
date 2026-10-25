@@ -6,7 +6,9 @@ import { loadEnvConfig } from "@next/env";
 
 import { createChatReply } from "../services/ai/chatOrchestrationService";
 import { getAiProvider, getDefaultAiModel, isAiProviderConfigured } from "../services/ai/modelProvider";
-import { loadPreservationDataset } from "./hill-helping-batch1-5-preservation-lib";
+import { loadPreservationDataset, PRESERVATION_DATASET_PATH } from "./hill-helping-batch1-5-preservation-lib";
+import { executionFailureKey, executionFailureRecordFor } from "./execution-failure-audit";
+import { semanticVerdictAuditFor } from "./semantic-verdict-audit";
 
 loadEnvConfig(process.cwd());
 
@@ -21,7 +23,10 @@ if (!outputPath) throw new Error("--output is required.");
 if (!sourceId) throw new Error("--source-id is required.");
 assert(isAiProviderConfigured(), "A configured real AI provider is required for the preservation run.");
 
-const { dataset, sha256: datasetSha256 } = loadPreservationDataset();
+const datasetPath = getArg("dataset");
+const { dataset, sha256: datasetSha256 } = datasetPath
+  ? loadPreservationDataset(datasetPath)
+  : loadPreservationDataset();
 const run = async () => {
   const startedAt = new Date().toISOString();
   const rows = [];
@@ -40,6 +45,22 @@ const run = async () => {
       });
       const plan = reply.controlTrace?.responsePlan;
       const validation = reply.controlTrace?.validation.at(-1);
+      const repairState = reply.controlTrace?.dialogueState.repairState;
+      const repairContract = plan?.positiveFunctionContract?.action === "repair_previous_wording"
+        ? plan.positiveFunctionContract
+        : null;
+      const repairAdoption = {
+        status: repairState?.status ?? null,
+        ...(!repairState || repairState.status === "none"
+          ? { adoptedRelation: null, adoptionSource: "none" }
+          : repairState.sourceRelation === "challenges_move_fit"
+            ? { adoptedRelation: "challenges_move_fit", adoptionSource: "model_move_fit" }
+            : reply.controlTrace?.interpretation.correction
+              ? { adoptedRelation: null, adoptionSource: "deterministic_correction" }
+              : { adoptedRelation: "repairs_previous_move", adoptionSource: "model_repair" }),
+        repairMode: repairContract?.repairMode ?? null,
+        interactionMoveSubtype: repairContract?.interactionMoveSubtype ?? null,
+      };
       const row = {
         scenarioId: scenario.id,
         kind: scenario.kind,
@@ -50,8 +71,10 @@ const run = async () => {
         actualActions: plan?.responseActions ?? [],
         behaviorSource: plan?.behaviorSource ?? null,
         questionPolicy: plan?.questionPolicy.mode ?? null,
+        repairAdoption,
         reply: reply.generation.text,
         executionPhase: reply.execution.phase,
+        executionFailure: executionFailureRecordFor(reply.execution),
         planPreflightPassed: reply.execution.planPreflight.passed,
         planPreflightFailures: reply.execution.planPreflight.failureReasons,
         finalSource: reply.finalSource,
@@ -65,6 +88,8 @@ const run = async () => {
           validationPassed: reply.controlTrace?.validation[index]?.passed ?? false,
           validationFailures:
             reply.controlTrace?.validation[index]?.failureReasons ?? ["missing_attempt_validation"],
+          semanticAudit: semanticVerdictAuditFor(reply.plannedFunctionSemanticVerdicts?.[index]),
+          semanticProviderFailure: reply.plannedFunctionSemanticDiagnostics?.[index]?.providerFailure ?? null,
         })),
         helpingProviderAttempted: reply.helpingTrace.provider.attempted,
         interpretationProviderAttempted: reply.controlTrace?.interpretationModel.attempted ?? false,
@@ -75,9 +100,11 @@ const run = async () => {
         scenarioId: row.scenarioId,
         runIndex: row.runIndex,
         executionPhase: row.executionPhase,
+        executionFailure: row.executionFailure,
         finalSource: row.finalSource,
         actualActions: row.actualActions,
         regenerateAttempted: row.regenerateAttempted,
+        repairAdoption: row.repairAdoption,
       }));
     }
   }
@@ -101,6 +128,21 @@ const run = async () => {
     helpingProviderCalls,
     regenerations,
     regenerationRate: regenerations / total,
+    // Observational only: which repair path was adopted, independent of whether the row passed.
+    repairAdoptionBySource: rows.reduce<Record<string, number>>((counts, row) => {
+      const key = `${row.repairAdoption.adoptionSource}:${row.repairAdoption.repairMode ?? "none"}`;
+      counts[key] = (counts[key] ?? 0) + 1;
+      return counts;
+    }, {}),
+    // Observational only: sanitized failure classes; never used to exempt a failed row.
+    executionFailuresByKey: rows.reduce<Record<string, number>>((counts, row) => {
+      const key = executionFailureKey(row.executionFailure);
+      if (key) counts[key] = (counts[key] ?? 0) + 1;
+      return counts;
+    }, {}),
+    infrastructureRerunEligibleRows: rows.filter((row) => row.executionFailure?.infrastructureRerunEligible).length,
+    semanticOutOfScopeRuleCitations: rows.reduce((count, row) =>
+      count + row.attempts.filter((attempt) => (attempt.semanticAudit?.outOfScopeRuleIds.length ?? 0) > 0).length, 0),
   };
   const checks = {
     completeRunCount: total === dataset.gate.scenarioCount * dataset.gate.runsPerScenario,
@@ -115,10 +157,12 @@ const run = async () => {
   const artifact = {
     schemaVersion: 1,
     sourceId,
+    datasetPath: datasetPath || PRESERVATION_DATASET_PATH,
     datasetVersion: dataset.datasetVersion,
     datasetSha256,
     provider: getAiProvider(),
     model: process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
+    judgeModel: process.env.AI_SEMANTIC_VALIDATOR_MODEL?.trim() || process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
     startedAt,
     completedAt: new Date().toISOString(),
     gate: dataset.gate,

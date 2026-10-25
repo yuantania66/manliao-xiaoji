@@ -393,6 +393,50 @@ assert.deepEqual(tuple(reproducedReciprocalPlan.interactionMoveHandoffPlan), {
   completionIntent: "fulfill",
   questionPolicy: "optional_after_completion",
 });
+assert.equal(reproducedReciprocalPlan.questionPolicy.mode, "optional_after_answer");
+
+for (const [refusalText, requiredFunction] of [
+  ["嗨，别问我", "complete_reciprocal_contact"],
+  ["嗨，有点累，别问我", "continue_user_introduced_content"],
+] as const) {
+  const refusalContext = assembleConversationControlContext({
+    conversationId: "phm-a-reciprocal-refusal",
+    currentTurnId: "phm-a-reciprocal-refusal-turn",
+    userMessage: refusalText,
+    recentMessages,
+    conversationState: determineConversationState({ currentUserMessage: refusalText, recentMessages }),
+  });
+  const refusalInterpretation = mergeModelInterpretation(
+    interpretTurnDeterministically(refusalContext),
+    {
+      responseRelation: {
+        candidates: [{
+          relation: "acknowledges_previous_move",
+          confidence: 0.91,
+          targetTurnId: reciprocalEnvelope.assistantMoveId,
+          evidence: ["model reciprocal relation"],
+        }],
+        ambiguous: false,
+      },
+      confidence: 0.91,
+    },
+    refusalContext
+  );
+  const refusalDialogueState = buildDialogueState(refusalContext, refusalInterpretation);
+  const refusalPlan = createResponsePlan({
+    context: refusalContext,
+    interpretation: refusalInterpretation,
+    dialogueState: refusalDialogueState,
+    clinicalAdviceProvider: () => null,
+  });
+  assert.equal(refusalPlan.interactionMoveHandoffPlan?.requiredFunction, requiredFunction, `The refusal leaves handoff selection unchanged: ${refusalText}`);
+  assert.equal(refusalPlan.questionPolicy.mode, "none", `A current refusal removes the handoff's optional question: ${refusalText}`);
+  assert(preflightResponsePlan(refusalPlan, createResponsePlanPreflightAuthoritySnapshot({
+    context: refusalContext,
+    interpretation: refusalInterpretation,
+    dialogueState: refusalDialogueState,
+  })).passed, refusalText);
+}
 
 for (const greetingMove of ["simple_greeting", "open_statement"] as const) {
   const deterministicEnvelope = buildProactiveGreetingAssistantMoveEnvelope({

@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import vm from "node:vm";
+import ts from "typescript";
+import { apiRequest, ClientApiError } from "../lib/client-api";
+import { getAuthToken } from "../lib/client-auth";
 import {
   advanceChatSessionAuthority,
   canApplyChatSessionResult,
@@ -206,4 +210,144 @@ assert.equal(
 assert(writerSource.includes("setExecutionStatus((current) =>"));
 assert(writerSource.includes("setErrorMessage((current) =>"));
 
-console.log("chat turn result authority check passed");
+const memoryStorage = () => {
+  const values = new Map<string, string>();
+  return {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value); },
+    removeItem: (key: string) => { values.delete(key); },
+    entries: () => [...values.entries()],
+  };
+};
+
+const greetingStart = clientSource.indexOf("  const handleExecutionRetry = async () => {");
+const greetingEnd = clientSource.indexOf("    const pending = executionStatus;", greetingStart);
+const layoutStart = clientSource.indexOf("  useLayoutEffect(() => {");
+const layoutEnd = clientSource.indexOf("  const applyTurnCompletionResult", layoutStart);
+const cacheStart = clientSource.indexOf("const readChatCache =");
+const cacheEnd = clientSource.indexOf("const getInitialGuestMode =", cacheStart);
+assert(greetingStart >= 0 && greetingEnd > greetingStart);
+assert(layoutStart >= 0 && layoutEnd > layoutStart);
+assert(cacheStart >= 0 && cacheEnd > cacheStart);
+const greetingHarness = ts.transpileModule(
+  clientSource.slice(cacheStart, cacheEnd) + clientSource.slice(layoutStart, layoutEnd) +
+  clientSource.slice(greetingStart, greetingEnd) + "};\nglobalThis.retryGreeting = handleExecutionRetry;",
+  { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }
+).outputText;
+
+const checkGreetingRetry = async (transition: string, outcome: "success" | "failure") => {
+  let auth: { token: string; user: { id: string } } | null = {
+    token: "synthetic-token-A", user: { id: "synthetic-user-A" },
+  };
+  let resolve!: (value: unknown) => void;
+  let reject!: (error: Error) => void;
+  const pending = new Promise((yes, no) => { resolve = yes; reject = no; });
+  const storage = memoryStorage();
+  const local = memoryStorage();
+  const authModule = vm.createContext({ exports: {},
+    window: { localStorage: local, addEventListener() {} }, document: { cookie: "" },
+    require: () => ({ revokeGuestSession() {} }),
+  });
+  vm.runInContext(ts.transpileModule(readFileSync(new URL("../lib/client-auth.ts", import.meta.url), "utf8"), {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText, authModule);
+  const authClient = authModule.exports as typeof import("../lib/client-auth");
+  const publish = () => auth ? authClient.saveAuth(auth as import("../lib/client-auth").StoredAuth) : authClient.clearAuth();
+  publish();
+  const writes: string[] = [];
+  const effects: Array<() => void | (() => void)> = [];
+  const record = (field: string) => () => { writes.push(field); };
+  const sandbox = vm.createContext({
+    CHAT_CACHE_PREFIX: "synthetic-chat-cache",
+    window: { sessionStorage: storage }, ...authClient,
+    chatAuthRef: { current: authClient.captureAuthAuthority() }, authRetryInFlightRef: { current: null },
+    retryScopeRef: { current: 0 }, olderRequestRef: { current: null }, isLoadingOlderMessagesRef: { current: false },
+    prependScrollRef: { current: null }, pageGenerationRef: { current: 0 },
+    debugLoginScope: { current: authClient.createAuthRequestScope() }, hydratedFromCacheRef: { current: false },
+    requestedSessionId: null,
+    setSessionId: record("session"), setAuthRevision: record("authRevision"),
+    setIsLoadingOlderMessages: record("loadingOlder"), setTypingMessageIds: record("typing"),
+    sessionId: "session-A", sessionContextKey: "A", greetingStatus: { retryable: true },
+    isGuestMode: false,
+    sessionContextRef: { current: { key: "A", authority: createChatTurnAuthorityState("session-A") } },
+    advanceChatSessionAuthority, canApplyChatSessionResult,
+    useLayoutEffect: (effect: () => void | (() => void)) => { effects.push(effect); },
+    setExecutionStatus: record("execution"), setGreetingStatus: record("greeting"),
+    setErrorMessage: record("error"), setMessages: record("messages"),
+    setHasMoreOlderMessages: record("hasMore"), setOlderMessagesCursor: record("cursor"),
+    toMessages: (items: unknown) => items, apiRequest: () => pending,
+    getErrorMessage: (error: Error) => error.message,
+  });
+  vm.runInContext(greetingHarness, sandbox);
+  let cleanups = effects.map((effect) => effect());
+  if (transition === "strict-mode-current") {
+    cleanups.forEach((cleanup) => cleanup?.());
+    cleanups = effects.map((effect) => effect());
+  }
+  const run = sandbox.retryGreeting() as Promise<void>;
+  const switchSession = (id: string) => {
+    sandbox.sessionId = id;
+    sandbox.sessionContextKey = id;
+    effects[0](); // Actual committed layout effect, including generation advancement.
+  };
+  if (transition === "switch") switchSession("session-B");
+  if (transition === "switch-back") { switchSession("session-B"); switchSession("session-A"); }
+  if (transition === "logout") auth = null;
+  if (transition === "account-switch") auth = { token: "synthetic-token-B", user: { id: "synthetic-user-B" } };
+  if (transition === "new-login-same-user") auth = { token: "synthetic-new-token-A", user: { id: "synthetic-user-A" } };
+  if (["logout", "account-switch", "new-login-same-user"].includes(transition)) publish();
+  if (transition === "unmount") cleanups.forEach((cleanup) => cleanup?.());
+  writes.length = 0;
+  if (outcome === "success") resolve({ items: [{ id: "synthetic-A-reply" }], hasMore: false, nextCursor: null });
+  else reject(new Error("synthetic request error"));
+  await run;
+  const current = transition === "current" || transition === "strict-mode-current";
+  if (current) {
+    assert(writes.includes(outcome === "success" ? "messages" : "error"), `${transition}/${outcome} remains visible`);
+    assert.equal(storage.entries().length, outcome === "success" ? 1 : 0);
+  } else {
+    assert.deepEqual(writes, [], `${transition}/${outcome} must not mutate current UI`);
+    assert.deepEqual(storage.entries(), [], `${transition}/${outcome} must not write any account cache`);
+  }
+};
+
+const checkUnauthorizedResult = async (kind: "old-token" | "current-token" | "guest" | "logged-out") => {
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const originalFetch = globalThis.fetch;
+  const storage = memoryStorage();
+  storage.setItem("xinqingAuthToken", "synthetic-token-A");
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: storage, addEventListener() {} } });
+  try {
+    let resolve!: (response: Response) => void;
+    globalThis.fetch = async () => new Promise<Response>((yes) => { resolve = yes; });
+    const request = apiRequest("/synthetic-only", { auth: kind !== "guest" });
+    const rejected = assert.rejects(request, (error) => error instanceof ClientApiError && error.status === 401);
+    if (kind === "old-token") storage.setItem("xinqingAuthToken", "synthetic-token-B");
+    if (kind === "logged-out") storage.removeItem("xinqingAuthToken");
+    resolve(new Response(JSON.stringify({ ok: false, error: { message: "synthetic unauthorized" } }), { status: 401 }));
+    await rejected;
+    assert.equal(getAuthToken(), kind === "old-token" ? "synthetic-token-B" : kind === "guest" ? "synthetic-token-A" : null,
+      `${kind} 401 must only clear its own authenticated token`);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalWindow) Object.defineProperty(globalThis, "window", originalWindow);
+    else Reflect.deleteProperty(globalThis, "window");
+  }
+};
+
+const checkAsyncIsolation = async () => {
+  const failures: string[] = [];
+  for (const transition of ["current", "strict-mode-current", "switch", "switch-back", "logout", "account-switch", "new-login-same-user", "unmount"]) {
+    for (const outcome of ["success", "failure"] as const) {
+      try { await checkGreetingRetry(transition, outcome); }
+      catch { failures.push(`greeting:${transition}/${outcome}`); }
+    }
+  }
+  for (const kind of ["old-token", "current-token", "guest", "logged-out"] as const) {
+    try { await checkUnauthorizedResult(kind); }
+    catch { failures.push(`api-401:${kind}`); }
+  }
+  assert.deepEqual(failures, [], "actual client branch/API isolation scenarios must pass");
+  console.log("chat turn result authority check passed (actual greeting/layout/cache source + mocked API 401; no network/DB)");
+};
+checkAsyncIsolation().catch((error) => { console.error(error); process.exitCode = 1; });

@@ -424,6 +424,54 @@ assert.deepEqual(
   ]).userMoveRelation?.candidates.map((candidate) => candidate.kind),
   ["opens_or_redirects_thread", "reciprocates_move"]
 );
+const staleAssistantId = "assistant-earlier-reply";
+const staleTargetContext = {
+  ...buildContext({
+    userMessage: reciprocalText,
+    currentTurnId: "user-turn-reciprocal-stale",
+    recentMessages: [
+      { id: staleAssistantId, role: "assistant", content: "上次说到做饭。", status: "saved" },
+      { id: "user-turn-earlier", role: "user", content: "嗯。" },
+      {
+        id: reciprocalEnvelope.assistantMoveId,
+        role: "assistant",
+        content: "嗨，又见面了。",
+        status: "saved",
+        interactionMoveEnvelope: reciprocalEnvelope,
+      },
+    ],
+  }),
+  semanticEvidence: reciprocalContext.semanticEvidence,
+};
+assert.equal(
+  staleTargetContext.interactionMoveHandoffTarget?.sourceAssistantMoveId,
+  reciprocalEnvelope.assistantMoveId
+);
+assert(mergeModelInterpretation(
+  interpretTurnDeterministically(staleTargetContext),
+  { responseRelation: { candidates: [modelCandidate("opens_new_thread", 0.98)], ambiguous: false }, confidence: 0.91 },
+  staleTargetContext
+).responseRelation.candidates.some((candidate) => candidate.relation === "opens_new_thread"));
+const rejectedNewThreadTargets: Array<[string, RelationalInterpretationCandidate[], typeof reciprocalContext]> = [
+  ["missing", [{ relation: "opens_new_thread", confidence: 0.98, evidence: ["model targetless topic"] }], reciprocalContext],
+  ["wrong", [modelCandidate("opens_new_thread", 0.98, "wrong-assistant-target")], reciprocalContext],
+  ["stale", [modelCandidate("opens_new_thread", 0.98, staleAssistantId)], staleTargetContext],
+];
+for (const [label, candidates, targetContext] of rejectedNewThreadTargets) {
+  const merged = mergeModelInterpretation(
+    interpretTurnDeterministically(targetContext),
+    { responseRelation: { candidates, ambiguous: false }, confidence: 0.91 },
+    targetContext
+  );
+  assert(
+    !merged.responseRelation.candidates.some((candidate) => candidate.relation === "opens_new_thread"),
+    `${label} handoff target id must reject opens_new_thread`
+  );
+  assert(
+    !merged.userMoveRelation?.candidates.some((candidate) => candidate.kind === "opens_or_redirects_thread"),
+    `${label} handoff target id must not project a redirect`
+  );
+}
 
 const substantiveContinuesDeterministic = {
   ...reciprocalSufficientDeterministic,

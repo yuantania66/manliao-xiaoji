@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { apiRequest } from "@/lib/client-api";
-import { clearAuth, getStoredAuth } from "@/lib/client-auth";
+import { clearAuth, createAuthRequestScope, getStoredAuth } from "@/lib/client-auth";
 
 const settingItems = [
   { title: "隐私政策", href: "/me/settings/privacy", copy: "查看数据如何被保存与使用" },
@@ -14,6 +14,8 @@ const settingItems = [
 ];
 
 export default function SettingsPage() {
+  const logoutScope = useRef(createAuthRequestScope());
+  useEffect(() => () => logoutScope.current.invalidate(), []);
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -22,13 +24,18 @@ export default function SettingsPage() {
   }, []);
 
   const logout = async () => {
+    const operation = logoutScope.current.begin();
+    if (!operation.isCurrent()) return;
     try {
       await apiRequest<{ loggedOut: boolean }>("/api/auth/logout", {
         method: "POST",
+        authority: operation.authority,
+        clearOnUnauthorized: false,
       });
     } catch {
       // Local auth must be cleared even if the session has already expired.
     } finally {
+      if (!operation.ownsIdentity()) return;
       clearAuth();
       router.push("/me?state=guest");
     }

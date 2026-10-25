@@ -1,0 +1,133 @@
+{
+  "status": "NO_GO_EARLY_STOP",
+  "scope": "Frozen-plan rule selection only",
+  "head_at_run": "9e357cff2760b282b6c034b8a5042364ddcc1c91",
+  "candidate_identity": "HEAD plus frozen source hashes; uncommitted rule-scope implementation",
+  "source_digest": "59430777971e731add99e42953c190d5bde2efe4b250e0f4fbbf725ee834c063",
+  "changed_source_sha256": {
+    "services/ai/plannedFunctionSemanticValidator.ts": "1e0f46f1181dff2c5bb8f9fd8b7c8ee3d61cea19d30725d49d5389f46d17e345",
+    "scripts/planned-function-semantic-validator-check.ts": "331e23a7790635da30a6152726633b110370eaf744fc6b6d79467fd10958c0f7",
+    "scripts/hill-helping-batch1-5-check.ts": "1ef636602d8564ad7705c571a51cab4cc75e5d714dc33fbaeb09c21bdf0f9f9f",
+    "scripts/interaction-move-handoff-surface-validator-check.ts": "fbf26b956fb2ba57796df95741c0e86d60dc8d29f244431e79ea6c2849f66ea6"
+  },
+  "frozen_manifest_sha256": "ec90273dc3df6c8bc73cc2a68730fc8f7da695fa22327a14d0fd50516de2db09",
+  "frozen_source_patch_sha256": "e9ef29742c7bf03202f70f2841df4739c2779fe007bb17df0f97608af0076cf0",
+  "case_sha256": "684b53d43ef5d61d59bac5ed06d9164ad621d34f1aaf635d948a41aa80be3685",
+  "planned_cases": 32,
+  "planned_repetitions": 3,
+  "planned_validations": 96,
+  "completed_validations": 3,
+  "recorded_model_requests": 6,
+  "completed_schema_corrections": 3,
+  "model": "deepseek-v4-pro-0813",
+  "settings": {
+    "thinking": false,
+    "temperature": 0,
+    "response_format": "json_object",
+    "max_tokens": 4096,
+    "timeout_ms": 45000
+  },
+  "rows": [
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "repetition": 1,
+      "expected": "fail",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8382
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "repetition": 2,
+      "expected": "fail",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY",
+        "ES-ACK-NO-SOLICIT",
+        "ES-ACK-NO-FABRICATION"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8101
+    },
+    {
+      "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+      "repetition": 3,
+      "expected": "fail",
+      "outcome": "pass",
+      "ruleIds": [
+        "ES-ACK-BOUNDARY"
+      ],
+      "outOfScopeRuleIds": [],
+      "hardFailureReasons": [],
+      "providerFailure": null,
+      "modelCalls": 2,
+      "validationLatencyMs": 8872
+    }
+  ],
+  "final_observations": [
+    {
+      "affectDrift": "none"
+    },
+    {
+      "affectDrift": "none"
+    },
+    {
+      "affectDrift": "none"
+    }
+  ],
+  "stop_reason": "All three repetitions falsely passed C2-A2-UNSTATED-DISAPPOINTMENT; the original gate cannot pass",
+  "stopped_before_next_request": true,
+  "new_in_flight_request_reserve_cny": 0,
+  "usage": {
+    "prompt_tokens": 11859,
+    "completion_tokens": 1910
+  },
+  "money_cny": {
+    "input_price_per_million_tokens": 9,
+    "output_price_per_million_tokens": 27,
+    "recorded_trial_cost": 0.158301,
+    "previous_upper_accounted_including_prior_reserve": 25.239988,
+    "cumulative_upper_accounted": 25.398289,
+    "remaining_under_60_after_prior_reserve": 34.601711,
+    "prior_reserve_still_included": 0.31,
+    "provider_invoice_reconciled": false
+  },
+  "free_checks_passed": [
+    "planned-function-semantic-validator",
+    "hill-helping-batch1-5",
+    "interaction-move-handoff-surface-validator",
+    "late-contradiction-authority",
+    "hill-helping-batch1-5-preservation-v2",
+    "tsc",
+    "eslint four changed source/test files",
+    "git diff --check",
+    "32 exact old full-message matches and 64 mocked calls",
+    "budget guard and frozen-source dry-run",
+    "stop on false pass, missing citation and out-of-scope citation"
+  ],
+  "local_evidence_directory": "/private/tmp/xinqing-judge-scope-20261009/live-run",
+  "logs_sha256": {
+    "run.log": "f7853c5a2b3f6726e9f4fee1f55c83233117d5d5c207f30944a41d495cda4fc9",
+    "requests.jsonl": "5d51820a01fc90317b3ab0c45e158e0eaaa6e1f93a6f17c4b6a99deece373437",
+    "budget.jsonl": "2833d31998b0cc5efdddbd22da4f5110cae5d7183ed9e13e8b14a7dfa5747e96",
+    "synthetic-verdicts.jsonl": "506bb510901eee942e976a3a720b745188e3ec9ae9902a356d095bc09a44a8e2",
+    "partial-results.json": "69ed64122b6ff7ab16231a56405da45598d5ba47d0c27968f96e0879b2e6c246"
+  },
+  "limits": [
+    "Partial result; not a complete 32-case reliability score",
+    "The 31 remaining cases were not run",
+    "Rule scoping alone did not correct the observed semantic false pass",
+    "No further paid gates, semantic repairs, model changes or deployment",
+    "Source changes remain uncommitted for review; not an accepted release candidate",
+    "Recorded cost is token-based accounting, not a reconciled provider invoice"
+  ]
+}

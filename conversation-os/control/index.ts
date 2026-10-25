@@ -21,7 +21,7 @@ export {
   projectCanonicalResponsePlanPreflightProvenance,
 } from "./responsePlanPreflightAuthority";
 export type { ResponsePlanPreflightAuthoritySnapshot } from "./responsePlanPreflightAuthority";
-export { createResponsePlan } from "./responsePlanner";
+export { createResponsePlan, CONTEXTUAL_ACCEPTANCE_STANCE, ORDINARY_RESPONSE_FUNCTION_INSTRUCTIONS, isOrdinaryResponseFunction } from "./responsePlanner";
 export type { ClinicalAdviceProvider } from "./responsePlanner";
 export { interpretTurnDeterministically, mergeModelInterpretation } from "./turnInterpreter";
 export { detectAssistantCorrection, isAssistantRepairSignal } from "./repairSignal";

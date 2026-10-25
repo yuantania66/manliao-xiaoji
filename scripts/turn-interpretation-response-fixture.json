@@ -1,0 +1,24 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "{\n  \"literalMeaning\": \"The user reports being publicly criticized by their leader today and feeling somewhat unhappy about it.\",\n  \"responseRelation\": {\n    \"candidates\": [\n      {\n        \"relation\": \"opens_new_thread\",\n        \"confidence\": 0.95,\n        \"targetTurnId\": null,\n        \"evidence\": [\n          {\n            \"sourceSpan\": \"今天被领导当众批评了，有点不太高兴。\",\n            \"type\": \"topic_introduction\",\n            \"note\": \"User introduces a specific event (public criticism) and associated affect (unhappiness) as new conversational content.\"\n          }\n        ]\n      },\n      {\n        \"relation\": \"shares_distress\",\n        \"confidence\": 0.9,\n        \"targetTurnId\": null,\n        \"evidence\": [\n          {\n            \"sourceSpan\": \"有点不太高兴\",\n            \"type\": \"affect_disclosure\",\n            \"note\": \"User explicitly names negative self-experience tied to the reported event.\"\n          }\n        ]\n      }\n    ]\n  },\n  \"ordinaryPostureProposal\": {\n    \"mode\": \"accompany\",\n    \"sourceSpans\": [\n      \"今天被领导当众批评了，有点不太高兴。\"\n    ],\n    \"proposedContribution\": \"Acknowledge the reported event and named feeling without interpretation or advice; hold space for the user’s experience as stated.\",\n    \"evidence\": [\n      {\n        \"sourceSpan\": \"有点不太高兴\",\n        \"type\": \"affect_present_but_not_elaborated\",\n        \"note\": \"User discloses low-intensity unhappiness but does not request analysis, meaning-making, or self-understanding; accompany is appropriate.\"\n      }\n    ]\n  },\n  \"confidence\": 0.93,\n  \"notes\": \"User initiates with concrete content (event + affect), satisfying opens_new_thread. Simultaneously shares distress via explicit affect label. No prior assistant turn exists, so no targetTurnId binding required. Explore mode not warranted: no inner material exploration, tension articulation, or self-understanding request present.\"\n}",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1791627076,
+  "id": "chatcmpl-e75aa8a5-00f7-9457-937b-a5be040b1570",
+  "model": "qwen3.7-max",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 480,
+    "prompt_tokens": 1146,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 1626
+  }
+}

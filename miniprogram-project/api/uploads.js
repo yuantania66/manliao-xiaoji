@@ -1,8 +1,8 @@
 const { API_TIMEOUT, getApiBaseUrl } = require("../config/api");
-const { getAuth, clearAuth } = require("../utils/auth");
+const { getAuth, clearAuth, captureAuthAuthority, isCurrentAuthAuthority, captureIdentityAuthority } = require("../utils/auth");
 const { readPendingUploadCleanup, addPendingUploadCleanup, removePendingUploadCleanup } = require("../utils/local-data");
 
-const parseUploadResponse = (res, apiBaseUrl) => {
+const parseUploadResponse = (res, apiBaseUrl, authority) => {
   let body = res.data || {};
   if (typeof body === "string") {
     try {
@@ -13,8 +13,12 @@ const parseUploadResponse = (res, apiBaseUrl) => {
   }
 
   if (res.statusCode === 401) {
-    clearAuth();
-    throw new Error("登录状态已过期，请重新登录");
+    const error = new Error("登录状态已过期，请重新登录");
+    if (isCurrentAuthAuthority(authority)) {
+      clearAuth();
+      error.authClearance = { source: authority, cleared: captureIdentityAuthority() };
+    }
+    throw error;
   }
 
   if (res.statusCode >= 400 || body.ok === false) {
@@ -43,6 +47,7 @@ const uploadNoteImage = (filePath) =>
     }
 
     const storedAuth = getAuth();
+    const authority = captureAuthAuthority();
     if (!storedAuth || !storedAuth.token) {
       reject(new Error("请先登录"));
       return;
@@ -58,7 +63,7 @@ const uploadNoteImage = (filePath) =>
       },
       success: (res) => {
         try {
-          resolve(parseUploadResponse(res, apiBaseUrl));
+          resolve(parseUploadResponse(res, apiBaseUrl, authority));
         } catch (error) {
           reject(error);
         }

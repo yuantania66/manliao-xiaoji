@@ -1,0 +1,124 @@
+{
+  "rawProviderJson": "{\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"message\":{\"content\":\"{\\n  \\\"schemaVersion\\\": 1,\\n  \\\"planId\\\": \\\"cross-scenario:friend-event:friend-event:current:response-plan\\\",\\n  \\\"handoff\\\": null,\\n  \\\"positiveFunction\\\": {\\n    \\\"binding\\\": {\\n      \\\"action\\\": \\\"offer_emotional_support\\\",\\n      \\\"supportFunction\\\": \\\"invite_optional_sharing\\\",\\n      \\\"sourceTurnId\\\": \\\"friend-event:current\\\"\\n    },\\n    \\\"ordinaryUseObservation\\\": {\\n      \\\"contentRelation\\\": \\\"other_response\\\",\\n      \\\"repetitionPurpose\\\": \\\"emotional_acknowledgment\\\",\\n      \\\"useComparison\\\": {\\n        \\\"userMeaning\\\": \\\"User stated discomfort at being teased publicly for a mistake after acknowledging the error.\\\",\\n        \\\"candidateAct\\\": \\\"Validates the specific relational impact of public teasing causing discomfort and offers an optional invitation to elaborate on that event.\\\",\\n        \\\"candidateEvidenceIndices\\\": [0],\\n        \\\"relation\\\": \\\"supported_conversational_act\\\"\\n      },\\n      \\\"purposeEvidence\\\": [\\n        {\\n          \\\"source\\\": \\\"current_user\\\",\\n          \\\"messageIndex\\\": null,\\n          \\\"start\\\": 0,\\n          \\\"end\\\": 19,\\n          \\\"text\\\": \\\"确实说错了，但被拿来逗大家笑让我不舒服。\\\"\\n        }\\n      ]\\n    },\\n    \\\"status\\\": \\\"satisfied\\\",\\n    \\\"realizedAction\\\": \\\"offer_emotional_support\\\",\\n    \\\"targetAddressed\\\": true,\\n    \\\"contractRealized\\\": true,\\n    \\\"containsContradictoryMove\\\": false,\\n    \\\"evidence\\\": [\\n      {\\n        \\\"start\\\": 0,\\n        \\\"end\\\": 38,\\n        \\\"text\\\": \\\"说错话被当众调侃，确实会让人不舒服。要是愿意的话，可以再跟我聊聊当时的情况。\\\",\\n        \\\"reason\\\": \\\"The reply acknowledges the user's stated distress regarding the specific event (being teased publicly) without intensifying it or adding unsupported categories, and provides a single gentle, optional invitation to elaborate on the stated event ('当时的情况'), fulfilling invite_optional_sharing.\\\"\\n      }\\n    ],\\n    \\\"invitationObservation\\\": {\\n      \\\"invitationCount\\\": \\\"one\\\",\\n      \\\"invitationTarget\\\": \\\"more_about_stated_event\\\",\\n      \\\"affectDrift\\\": \\\"none\\\"\\n    }\\n  },\\n  \\\"semanticQuestionCount\\\": 0\\n}\",\"role\":\"assistant\"}}],\"created\":1792721904,\"id\":\"chatcmpl-6505b786-2eae-9b3d-b2ca-3fd3746e9faf\",\"model\":\"qwen3.7-max\",\"object\":\"chat.completion\",\"usage\":{\"completion_tokens\":509,\"prompt_tokens\":3210,\"prompt_tokens_details\":{\"cached_tokens\":0},\"total_tokens\":3719}}",
+  "sha256": "b0b82b63e4515283f2dff00846ff89220b0255e69168cdd1e3e9b95d364b316c",
+  "frozenContext": {
+    "originalPlan": {
+      "planId": "cross-scenario:friend-event:friend-event:current:response-plan",
+      "decisionOwner": "conversation_os.response_planner",
+      "behaviorSource": "ordinary_conversation",
+      "planningDepth": "deep",
+      "answerObligations": [],
+      "disclosureScope": {
+        "conversationId": "cross-scenario:friend-event",
+        "turnId": "friend-event:current"
+      },
+      "correction": null,
+      "responseActions": [
+        "offer_emotional_support"
+      ],
+      "groundingFacts": [],
+      "requiredDisclosure": [],
+      "clinicalStrategy": null,
+      "positiveFunctionContract": {
+        "action": "offer_emotional_support",
+        "supportFunction": "invite_optional_sharing",
+        "sourceTurnId": "friend-event:current",
+        "sourceText": "确实说错了，但被拿来逗大家笑让我不舒服。",
+        "affectEvidenceSpans": [
+          {
+            "source": "current_user_message",
+            "text": "不舒服",
+            "start": 16,
+            "end": 19,
+            "category": "distress",
+            "intensity": "unspecified",
+            "object": "self_experience",
+            "sourceTurnId": "friend-event:current"
+          }
+        ],
+        "explicitAffectOrImpactTerms": [
+          "不舒服"
+        ],
+        "intensityCeiling": "current_user_expression",
+        "evidence": [
+          "supportFunction=invite_optional_sharing",
+          "currentUserMessage=确实说错了，但被拿来逗大家笑让我不舒服。",
+          "affectEvidence=distress:unspecified:self_experience:16-19"
+        ]
+      },
+      "interactionMoveHandoffPlan": null,
+      "ordinaryPosture": null,
+      "questionPolicy": {
+        "mode": "optional_after_answer",
+        "reason": "A follow-up is optional only after the current activity is completed."
+      },
+      "closurePolicy": {
+        "mode": "forbid_closure",
+        "reason": "Interaction State contains no accepted stop transition."
+      },
+      "tone": [
+        "natural Chinese",
+        "direct",
+        "warm without counselling jargon"
+      ],
+      "stance": [
+        "Realize the actions and evidence boundaries of this ResponsePlan. Contextual acceptance already permitted by the plan may respond to the User's expressed situation, feelings and their relationships without being a previously stated proposition; this does not authorize unsupported factual claims or hidden motives or psychological states.",
+        "Do not promote hypotheses into common ground.",
+        "Do not restate propositions rejected by the user.",
+        "Contextual acceptance: For a personal concern in the current User message, respond with an accepting, non-judgmental stance toward the User's expressed experience and relationships, without requiring the feeling to be justified or dismissed. Acceptance is a stance, not required spoken feeling validation or a follow-up question; it cannot replace another selected support function. Bare normalization, generic reassurance or paraphrase alone is insufficient. Accepting a feeling does not approve conduct, assign blame, guarantee outcomes, or establish hidden motives or psychological facts. Follow current corrections, refusals and tasks; do not require an emotion preface, question, advice or regulation exercise."
+      ],
+      "lengthGuidance": "Usually one or two concise sentences.",
+      "prohibitedClaims": [
+        "不得声称助手是真人、人类、心理医生、心理咨询师或治疗师。",
+        "不得声称助手拥有真实身体、物理存在，或真的坐下、睡觉、拥抱、触碰、行走、躺下或身处用户身边。",
+        "不得声称看见、听见或感知用户及其现实环境，除非对应能力和输入已由系统明确提供。",
+        "不得声称能够发送或播放当前产品不支持的语音。",
+        "不得声称自由查看全部历史、未选择的记忆、现实世界信息或未提供的实时信息。",
+        "不得声称一直在等待用户、正在等用户来聊天，或在小程序关闭后仍能主动推送消息。",
+        "不得在没有证据时断言用户的情绪、意图或心理状态。"
+      ],
+      "safetyConstraints": [],
+      "selectedEpisodeMemory": null,
+      "relevanceProvenance": [
+        {
+          "planElement": "responseAction:offer_emotional_support",
+          "source": "interaction_state",
+          "sourceTurnId": "friend-event:current",
+          "evidence": [
+            "currentUserMessage=确实说错了，但被拿来逗大家笑让我不舒服。",
+            "currentActivity=supporting_emotion",
+            "concurrentActivity=developing_thread",
+            "Adjacent assistant turn supplies the active thread."
+          ]
+        }
+      ],
+      "evidence": [
+        "currentActivity=supporting_emotion",
+        "planningDepth=deep",
+        "concurrentActivity=developing_thread",
+        "initiativeOwner=user",
+        "openObligations=0",
+        "clinicalInvoked=false",
+        "ordinaryHandoff=none",
+        "Adjacent assistant turn supplies the active thread."
+      ]
+    },
+    "semanticContext": {
+      "currentUserText": "确实说错了，但被拿来逗大家笑让我不舒服。",
+      "handoffTargetAssistantText": null,
+      "priorAssistantTurnAvailable": true,
+      "ordinaryRecentMessages": [
+        {
+          "role": "user",
+          "content": "活动上被朋友拿我的口误开玩笑，我有点尴尬。"
+        },
+        {
+          "role": "assistant",
+          "content": "想聊的话可以说说。"
+        }
+      ]
+    },
+    "candidateReply": "说错话被当众调侃，确实会让人不舒服。要是愿意的话，可以再跟我聊聊当时的情况。"
+  },
+  "source": "/Users/yuanyuanyuan/.codex/visualizations/2026/10/15/01a14068-8b47-7413-b2f0-0f90e14ec436/contextual-judgment-preparation-20261023/live/friend-event-raw.json"
+}

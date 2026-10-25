@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { apiRequest } from "@/lib/client-api";
-import { clearAuth, getStoredAuth, saveAuth } from "@/lib/client-auth";
+import { createAuthRequestScope, getStoredAuth, saveAuth } from "@/lib/client-auth";
 
 const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
 const GUEST_MODE_KEY = "xinqingGuestMode";
@@ -74,6 +74,8 @@ type AuthUser = {
 };
 
 export default function Home() {
+  const loginScope = useRef(createAuthRequestScope());
+  useEffect(() => () => loginScope.current.invalidate(), []);
   const [todayLabel, setTodayLabel] = useState("");
   const [prompt, setPrompt] = useState(homePrompts[0]);
   const [chatCopy, setChatCopy] = useState(chatCopies[0]);
@@ -95,11 +97,15 @@ export default function Home() {
   }, []);
 
   const enterGuestMode = () => {
+    loginScope.current.invalidate();
+    setIsLoggingIn(false);
     window.sessionStorage.setItem(GUEST_MODE_KEY, "true");
     setNeedsEntryChoice(false);
   };
 
   const loginDirectly = async () => {
+    const operation = loginScope.current.begin();
+    if (!operation.isCurrent()) return;
     setIsLoggingIn(true);
     setLoginError("");
 
@@ -112,16 +118,18 @@ export default function Home() {
           body: { code: `web_home_${Date.now()}` },
         }
       );
+      if (!operation.isCurrent()) return;
       saveAuth(data);
+      operation.acceptPublication();
       window.sessionStorage.removeItem(GUEST_MODE_KEY);
       setNeedsEntryChoice(false);
     } catch (error) {
-      clearAuth();
+      if (!operation.isCurrent()) return;
       window.sessionStorage.setItem(GUEST_MODE_KEY, "true");
       setLoginError(error instanceof Error ? error.message : "登录失败，已进入游客模式");
       setNeedsEntryChoice(false);
     } finally {
-      setIsLoggingIn(false);
+      if (operation.isCurrent()) setIsLoggingIn(false);
     }
   };
 
