@@ -22,9 +22,10 @@ import {
   type RelationalInterpretationCandidate,
 } from "../conversation-os/control";
 import { determineConversationState } from "../conversation-os/state";
+import { buildInterpretationMessages } from "../services/ai/turnInterpretationAdapter";
 import { preflightResponsePlan } from "../services/ai/chatExecutionLifecycle";
 import { validatePlannedFunctionSemanticOutput } from "../services/ai/plannedFunctionSemanticValidator";
-import { formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
+import { buildChatPrompt, formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
 import { validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
 import type { AiConversationMessage } from "../services/ai/types";
 import {
@@ -235,6 +236,192 @@ const strictRejected = mergeModelInterpretation(strictProposalBase.deterministic
 }, strictProposalBase.context);
 assert.equal(strictRejected.ordinaryPostureProposal, null);
 
+// Exact saved synthetic provider response: partial format mismatch is not a whole-turn parse failure.
+const recordedInterpreterResponse = JSON.parse(readFileSync(
+  new URL("./turn-interpretation-response-fixture.json", import.meta.url), "utf8"
+)) as { choices: Array<{ message: { content: string } }> };
+const recordedInterpreterText = recordedInterpreterResponse.choices[0].message.content;
+const recordedInterpreterPayload = JSON.parse(recordedInterpreterText);
+const recordedInterpreterBase = build({ userMessage: "今天被领导当众批评了，有点不太高兴。" });
+const recordedInterpreterMerged = mergeModelInterpretation(
+  recordedInterpreterBase.deterministic, recordedInterpreterPayload, recordedInterpreterBase.context
+);
+assert.equal(recordedInterpreterMerged.literalMeaning, recordedInterpreterPayload.literalMeaning);
+assert.deepEqual(recordedInterpreterMerged.responseRelation.candidates.map((candidate) => candidate.relation), ["opens_new_thread", "shares_distress"]);
+assert(recordedInterpreterMerged.responseRelation.candidates.every((candidate) => candidate.evidence.length === 0), "Object evidence must not be invented into valid strings.");
+assert.equal(recordedInterpreterMerged.ordinaryPostureProposal, null, "Missing span positions and contribution bindings stay rejected.");
+assert.deepEqual(recordedInterpreterMerged.notes, recordedInterpreterBase.deterministic.notes, "Unsupported string notes are not silently converted.");
+assert.equal(typeof recordedInterpreterPayload.notes, "string");
+assert.deepEqual(recordedInterpreterPayload.ordinaryPostureProposal.sourceSpans, [recordedInterpreterBase.context.currentUserMessage]);
+assert.equal(typeof recordedInterpreterPayload.ordinaryPostureProposal.proposedContribution, "string");
+const recordedInterpreterPlan = createResponsePlan({
+  context: recordedInterpreterBase.context,
+  interpretation: recordedInterpreterMerged,
+  dialogueState: buildDialogueState(recordedInterpreterBase.context, recordedInterpreterMerged),
+  clinicalAdviceProvider: () => clinicalAdvice,
+});
+assert.equal(recordedInterpreterPlan.positiveFunctionContract?.action, "offer_emotional_support");
+const clarifiedInterpreterMessages = buildInterpretationMessages(recordedInterpreterBase.context);
+assert.equal(JSON.parse(clarifiedInterpreterMessages[1].content).currentTurnId, recordedInterpreterBase.context.currentTurnId);
+for (const requiredShape of ["notes (string[]", "All evidence arrays contain strings", "sourceTurnId: string", "targetSpanIndexes: integer[]", "instruction: string"])
+  assert(clarifiedInterpreterMessages[0].content.includes(requiredShape), `Interpreter prompt must specify ${requiredShape}`);
+
+
+// Saved three-turn diagnostic: compatible continuation/acknowledgement must retain
+// evidence binding without promoting the accompany suggestion to a required goal.
+const savedPostureCase = JSON.parse(readFileSync(
+  new URL("./ordinary-posture-replay-fixture.json", import.meta.url), "utf8"
+));
+const replayPosture = (payload = savedPostureCase.interpretation, input = savedPostureCase.input) => {
+  const context = assembleConversationControlContext({
+    ...input,
+    conversationState: determineConversationState({ currentUserMessage: input.userMessage, recentMessages: input.recentMessages }),
+  });
+  const interpretation = mergeModelInterpretation(interpretTurnDeterministically(context), payload, context);
+  const dialogueState = buildDialogueState(context, interpretation);
+  const responsePlan = createResponsePlan({ context, interpretation, dialogueState, clinicalAdviceProvider: () => clinicalAdvice });
+  return { context, interpretation, dialogueState, responsePlan };
+};
+const savedPostureReplay = replayPosture();
+const oldModelContribution = savedPostureCase.interpretation.ordinaryPostureProposal.proposedContribution;
+assert.equal(savedPostureReplay.responsePlan.positiveFunctionContract?.action, "acknowledge_without_psychologizing");
+assert(savedPostureReplay.responsePlan.positiveFunctionContract?.action === "acknowledge_without_psychologizing");
+// The 2026-10-22 selection contract supersedes the old natural-only expectation.
+// Establish the source/initiative prerequisites independently of the selected value.
+assert.equal(savedPostureReplay.context.adjacentTurns.at(-1)?.role, "assistant");
+assert.equal(savedPostureReplay.context.adjacentTurns.at(-1)?.content, savedPostureCase.input.recentMessages[1].content);
+assert(savedPostureReplay.interpretation.responseRelation.candidates.some((candidate) =>
+  candidate.relation === "continues_active_thread" &&
+  candidate.targetTurnId === savedPostureReplay.context.adjacentTurns.at(-1)?.id &&
+  candidate.evidence.length > 0
+));
+assert(savedPostureReplay.interpretation.contentMeaning.explicitPropositions.some((proposition) =>
+  proposition.sourceTurnId === savedPostureReplay.context.currentTurnId &&
+  savedPostureReplay.context.currentUserMessage.includes(proposition.text)
+));
+assert.equal(savedPostureReplay.dialogueState.initiativeOwner, "user");
+assert.notEqual(savedPostureReplay.responsePlan.questionPolicy.mode, "none");
+assert.equal(savedPostureReplay.responsePlan.positiveFunctionContract.responseFunction, "invite_optional_sharing");
+const expectedContribution = null;
+assert.equal(savedPostureReplay.interpretation.responseRelation.ambiguous, true);
+assert.deepEqual(savedPostureReplay.responsePlan.ordinaryPosture?.requiredContribution, expectedContribution);
+const savedPosturePrompt = formatResponsePlanForPrompt(savedPostureReplay.responsePlan);
+const postureProjection = JSON.parse(savedPosturePrompt.split("\n").find((line) => line.startsWith("ordinaryPosture: "))!.slice("ordinaryPosture: ".length));
+assert.deepEqual(postureProjection, {
+  mode: "accompany",
+  sourceSpans: savedPostureCase.interpretation.ordinaryPostureProposal.sourceSpans,
+  requiredContribution: expectedContribution,
+});
+assert(savedPosturePrompt.includes("Bare normalization, generic reassurance or paraphrase alone is insufficient."));
+for (const note of savedPostureCase.interpretation.notes) assert(!savedPosturePrompt.includes(note));
+for (const evidence of savedPostureCase.interpretation.ordinaryPostureProposal.evidence) assert(!savedPosturePrompt.includes(evidence));
+// A different human-authored suggestion also stays advisory; no fixed reply is selected.
+const usefulAcceptancePayload = structuredClone(savedPostureCase.interpretation);
+const usefulAcceptanceGoal = "Make room for the User to share how they experienced or responded to that moment, following what they choose to share without prescribing self-analysis.";
+usefulAcceptancePayload.ordinaryPostureProposal.proposedContribution.instruction = usefulAcceptanceGoal;
+const usefulAcceptanceReplay = replayPosture(usefulAcceptancePayload);
+const interpretationPrompt = buildInterpretationMessages(usefulAcceptanceReplay.context)[0].content;
+assert(interpretationPrompt.includes("It is non-authoritative"), "The interpreter proposal has no planning authority");
+assert(interpretationPrompt.includes("never assigns a reply goal or action"), "Legacy contribution text cannot assign a goal");
+assert(interpretationPrompt.includes("do not decide on feeling validation, a follow-up question or any other response strategy"),
+  "Response strategy remains Planner-owned");
+assert(interpretationPrompt.includes("Do not diagnose or infer childhood, personality, causes, or hidden motives"));
+assert(!interpretationPrompt.includes(usefulAcceptanceGoal), "No case-specific goal in production instructions");
+const assembledAcceptance = buildChatPrompt({ ...savedPostureCase.input, responsePlan: usefulAcceptanceReplay.responsePlan }).messages;
+const assembledAcceptanceText = assembledAcceptance.map((message) => message.content).join("\n");
+assert.equal(usefulAcceptanceReplay.responsePlan.ordinaryPosture?.requiredContribution, expectedContribution);
+assert(!assembledAcceptanceText.includes(usefulAcceptanceGoal));
+assert(!assembledAcceptanceText.includes(oldModelContribution.instruction));
+assert(assembledAcceptanceText.includes("Acceptance is a stance, not required spoken feeling validation or a follow-up question"));
+assert(assembledAcceptanceText.includes("不得编造事件、动机或心理状态"));
+assert(assembledAcceptanceText.includes("不得据此推断隐藏动机或心理状态"));
+assert.deepEqual(assembledAcceptance.filter((message) => message.role === "user" || message.role === "assistant"), [
+  ...savedPostureCase.input.recentMessages.map(({ role, content }: AiConversationMessage) => ({ role, content })),
+  { role: "user", content: savedPostureCase.input.userMessage },
+]);
+const oldAssembly = buildChatPrompt({ ...savedPostureCase.input, responsePlan: savedPostureReplay.responsePlan }).messages;
+assert.deepEqual(assembledAcceptance, oldAssembly, "An accompany suggestion does not change the required objective");
+assert.deepEqual(savedPostureCase.interpretation.ordinaryPostureProposal.proposedContribution, oldModelContribution);
+assert.deepEqual(savedPostureReplay.interpretation.ordinaryPostureProposal?.proposedContribution, oldModelContribution);
+assert.equal(preflightResponsePlan(savedPostureReplay.responsePlan, createResponsePlanPreflightAuthoritySnapshot(savedPostureReplay)).passed, true);
+
+// Remove one actual prerequisite, or introduce a User boundary: the old model
+// suggestion must neither authorize an invitation nor be restored as a hard goal.
+for (const [message, priorAssistant] of [
+  [savedPostureCase.input.userMessage, "嗯，听到了。"],
+  ["先不用问，我只是说一下。", savedPostureCase.input.recentMessages[1].content],
+  ["不用分析，先听我说。", savedPostureCase.input.recentMessages[1].content],
+] as const) {
+  const input = structuredClone(savedPostureCase.input);
+  input.userMessage = message;
+  input.recentMessages[1].content = priorAssistant;
+  const result = replayPosture(savedPostureCase.interpretation, input);
+  const contract = result.responsePlan.positiveFunctionContract;
+  assert(contract?.action === "acknowledge_without_psychologizing", "Boundary case retains the ordinary action");
+  assert.notEqual(contract.responseFunction, "invite_optional_sharing");
+  assert.notEqual(result.responsePlan.ordinaryPosture?.requiredContribution?.instruction, oldModelContribution.instruction);
+  if (message === savedPostureCase.input.userMessage) {
+    assert.equal(contract.responseFunction, "respond_naturally");
+    assert.equal(result.responsePlan.ordinaryPosture?.requiredContribution, null);
+  }
+  assert(preflightResponsePlan(result.responsePlan, createResponsePlanPreflightAuthoritySnapshot(result)).passed);
+}
+const unsupportedContinuation = structuredClone(savedPostureCase.interpretation);
+unsupportedContinuation.responseRelation.candidates = [{
+  relation: "continues_active_thread", confidence: 0.68,
+  targetTurnId: savedPostureCase.input.recentMessages[1].id,
+  evidence: ["Current user turn follows an adjacent assistant turn."],
+}];
+const unsupportedPlan = replayPosture(unsupportedContinuation).responsePlan;
+assert(unsupportedPlan.positiveFunctionContract?.action === "acknowledge_without_psychologizing", "Adjacency-only evidence retains an ordinary action");
+assert.notEqual(unsupportedPlan.positiveFunctionContract.responseFunction, "invite_optional_sharing");
+const downgradedInvitation = structuredClone(savedPostureReplay.responsePlan);
+assert(downgradedInvitation.positiveFunctionContract?.action === "acknowledge_without_psychologizing", "Downgrade counterexample uses the selected ordinary action");
+downgradedInvitation.positiveFunctionContract.responseFunction = "respond_naturally";
+assert.equal(preflightResponsePlan(downgradedInvitation, createResponsePlanPreflightAuthoritySnapshot(savedPostureReplay)).passed, false);
+
+// Distinct ambiguity, target, source and instruction-boundary failures stay rejected.
+for (const mutate of [
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => { p.responseRelation.candidates[1].relation = "opens_new_thread"; },
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => { p.responseRelation.candidates[1].targetTurnId = "another-assistant"; },
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => { delete (p.responseRelation.candidates[1] as Partial<typeof p.responseRelation.candidates[number]>).targetTurnId; },
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => { p.responseRelation.candidates[0].confidence = 0.8; },
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => { p.responseRelation.candidates.push({ ...p.responseRelation.candidates[1], relation: "yields_initiative" }); },
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => {
+    const text = savedPostureCase.input.recentMessages[0].content;
+    p.ordinaryPostureProposal.sourceSpans[0] = { source: "adjacent_committed_user_turn", sourceTurnId: savedPostureCase.input.recentMessages[0].id, start: 0, end: text.length, text };
+  },
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => { p.ordinaryPostureProposal.mode = "explore"; },
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => { p.ordinaryPostureProposal.sourceSpans[0].start = 14; },
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => { p.ordinaryPostureProposal.sourceSpans[0].sourceTurnId = "wrong-turn"; },
+  (p: typeof import("./ordinary-posture-replay-fixture.json")["interpretation"]) => { p.ordinaryPostureProposal.proposedContribution.targetSpanIndexes = [3]; },
+]) {
+  const payload = structuredClone(savedPostureCase.interpretation);
+  mutate(payload);
+  const result = replayPosture(payload);
+  assert(result.responsePlan.ordinaryPosture?.evidence.includes("interpreter_proposal_rejected"));
+}
+// Binding guards belong to the Planner's merged-input boundary. Malformed raw
+// bindings are already removed by the existing interpreter, not this change.
+for (const binding of [{ targetProposition: "existing claim" }, { targetOperation: "affirm" as const }]) {
+  const interpretation = structuredClone(savedPostureReplay.interpretation);
+  Object.assign(interpretation.responseRelation.candidates[1], binding);
+  const plan = createResponsePlan({ ...savedPostureReplay, interpretation, clinicalAdviceProvider: () => clinicalAdvice });
+  assert(plan.ordinaryPosture?.evidence.includes("interpreter_proposal_rejected"));
+}
+for (const status of ["blocked", "failed"]) {
+  const input = structuredClone(savedPostureCase.input);
+  input.recentMessages[1].status = status;
+  assert(replayPosture(savedPostureCase.interpretation, input).responsePlan.ordinaryPosture?.evidence.includes("interpreter_proposal_rejected"));
+}
+const changedTopicInput = structuredClone(savedPostureCase.input);
+changedTopicInput.recentMessages.push({ id: "newer-assistant", role: "assistant", content: "换个话题聊聊。" });
+assert(replayPosture(savedPostureCase.interpretation, changedTopicInput).responsePlan.ordinaryPosture?.evidence.includes("interpreter_proposal_rejected"));
+const noAmbiguityPayload = structuredClone(savedPostureCase.interpretation);
+noAmbiguityPayload.responseRelation.candidates = noAmbiguityPayload.responseRelation.candidates.slice(0, 1);
+assert.deepEqual(replayPosture(noAmbiguityPayload).responsePlan.ordinaryPosture?.requiredContribution, expectedContribution);
+
+
 const adjacentCommittedProposal = build({
   userMessage: "还是这个",
   recentMessages: [
@@ -257,7 +444,9 @@ const adjacentCommittedProposal = build({
     evidence: ["The current turn explicitly returns to adjacent committed User material."],
   },
 });
-assert.equal(adjacentCommittedProposal.responsePlan.ordinaryPosture?.mode, "explore");
+assert.equal(adjacentCommittedProposal.responsePlan.ordinaryPosture?.mode, "accompany");
+assert.equal(adjacentCommittedProposal.responsePlan.ordinaryPosture?.requiredContribution, null);
+assert(!formatResponsePlanForPrompt(adjacentCommittedProposal.responsePlan).includes("整理用户已表达的两边拉扯"));
 assert.equal(
   adjacentCommittedProposal.responsePlan.ordinaryPosture?.sourceSpans[0]?.source,
   "adjacent_committed_user_turn"
@@ -1857,16 +2046,24 @@ const unclassifiedContract = unclassifiedMoveFit.responsePlan.positiveFunctionCo
 assert(unclassifiedContract?.action === "repair_previous_wording");
 assert.equal(unclassifiedContract.repairMode, "interaction_move_withdrawal");
 assert.equal(unclassifiedContract.interactionMoveSubtype, null);
-assert(
-  preflightResponsePlan(
-    unclassifiedMoveFit.responsePlan,
-    createResponsePlanPreflightAuthoritySnapshot({
-      context: unclassifiedMoveFit.context,
-      interpretation: unclassifiedMoveFit.interpretation,
-      dialogueState: unclassifiedMoveFit.dialogueState,
-    })
-  ).failureReasons.includes("missing_interaction_move_subtype_in_contract")
-);
+// 2026-10-24 contract change: independent targeted-move authority can support null;
+// the same Plan without that authority remains rejected (original fail-closed boundary).
+const unclassifiedAuthority = createResponsePlanPreflightAuthoritySnapshot({
+  context: unclassifiedMoveFit.context,
+  interpretation: unclassifiedMoveFit.interpretation,
+  dialogueState: unclassifiedMoveFit.dialogueState,
+});
+assert(preflightResponsePlan(unclassifiedMoveFit.responsePlan, unclassifiedAuthority).passed);
+assert(preflightResponsePlan(unclassifiedMoveFit.responsePlan).failureReasons
+  .includes("missing_interaction_move_subtype_in_contract"));
+assert(preflightResponsePlan(unclassifiedMoveFit.responsePlan, {
+  ...unclassifiedAuthority, ordinaryMoveFitRepairAuthority: null,
+}).failureReasons.includes("missing_interaction_move_subtype_in_contract"));
+const wrongUnclassifiedTarget = structuredClone(unclassifiedMoveFit.responsePlan);
+if (wrongUnclassifiedTarget.positiveFunctionContract?.action !== "repair_previous_wording") assert.fail();
+wrongUnclassifiedTarget.positiveFunctionContract.targetText = "a different Assistant move";
+assert(preflightResponsePlan(wrongUnclassifiedTarget, unclassifiedAuthority).failureReasons
+  .includes("missing_interaction_move_subtype_in_contract"));
 
 const factualWithMoveFit = build({
   userMessage: "不是同事，是我姐姐，你把人弄错了",
@@ -1890,7 +2087,8 @@ void Promise.all(moveFitSemanticChecks).then(() => console.log(JSON.stringify({
     adoptedFullChain: moveFitChains,
     rejected: rejectedMoveFit.length,
     activeHandoffUnchanged: 1,
-    unclassifiedFailsClosed: 1,
+    unclassifiedIndependentAuthority: 1,
+    unclassifiedWithoutAuthorityStillFails: 1,
     factualCorrectionUnchanged: 1,
   },
   claimlessRepairCases: 3 + invalidClaimlessRepairs.length,

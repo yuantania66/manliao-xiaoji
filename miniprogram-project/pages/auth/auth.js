@@ -13,6 +13,11 @@ const {
   clearAuth,
   enterGuest,
   getAuth,
+  captureAuthAuthority,
+  isCurrentAuthAuthority,
+  isCurrentAuthFailure,
+  captureIdentityAuthority,
+  isCurrentIdentityAuthority,
   isGuest,
   saveAuth,
   setGuestProfile,
@@ -245,11 +250,13 @@ Page({
       return;
     }
     saveAuth(auth);
+    attempt.identity = captureIdentityAuthority();
     this.visibleUserId = auth.user.id;
     this.openProfile(auth);
   },
 
   openProfile(auth) {
+    const operation = this.beginProfileOperation();
     const userId = auth.user.id;
     const generated = getGeneratedIdentity(userId);
     const nickname = auth.user.nickname || generated.nickname;
@@ -270,12 +277,12 @@ Page({
     if (auth.user.avatarUrl) {
       downloadProfileAvatar(auth.user.avatarUrl)
         .then((filePath) => {
-          if (this.visibleUserId === userId && this.data.stage === "profile" && !this.data.avatarLocalPath) {
+          if (this.isCurrentProfileOperation(operation, userId) && this.data.stage === "profile" && !this.data.avatarLocalPath) {
             this.setData({ avatarPreview: filePath });
           }
         })
         .catch(() => {
-          if (this.visibleUserId === userId && this.data.stage === "profile") {
+          if (this.isCurrentProfileOperation(operation, userId) && this.data.stage === "profile") {
             this.setData({ error: "头像暂时没有加载出来" });
           }
         });
@@ -294,17 +301,18 @@ Page({
   chooseImage(sourceType) {
     const userId = getAuth()?.user?.id;
     if (!userId || this.data.busy) return;
+    const operation = this.beginProfileOperation();
     wx.chooseImage({
       count: 1,
       sizeType: ["compressed"],
       sourceType,
       success: (result) => {
-        if (getAuth()?.user?.id !== userId) return;
+        if (!this.isCurrentProfileOperation(operation, userId)) return;
         const filePath = result.tempFilePaths?.[0];
         if (filePath) this.applyAvatarDraft(filePath);
       },
       fail: (error) => {
-        if (!String(error?.errMsg || "").includes("cancel") && getAuth()?.user?.id === userId) {
+        if (!String(error?.errMsg || "").includes("cancel") && this.isCurrentProfileOperation(operation, userId)) {
           this.setData({ error: "图片没有选好，请再试一次" });
         }
       }
@@ -333,6 +341,7 @@ Page({
     const operation = this.beginProfileOperation();
     let uploadId = "";
     let committed = false;
+    let failure = null;
     this.setData({ busy: true, error: "" });
     const upload = this.data.avatarLocalPath ? uploadProfileAvatar(this.data.avatarLocalPath) : Promise.resolve(null);
     upload
@@ -347,12 +356,13 @@ Page({
       .then(({ user }) => {
         committed = true;
         if (!this.isCurrentProfileOperation(operation, userId)) return;
-        updateCachedUser(userId, user);
+        updateCachedUser(userId, user, operation.authority);
         this.finishAccountLogin();
       })
       .catch((error) => {
+        failure = error;
         if (uploadId && !committed) discardProfileAvatar(uploadId, token).catch(() => undefined);
-        if (this.isCurrentProfileOperation(operation, userId)) {
+        if (this.isCurrentProfileOperation(operation, userId, error)) {
           const serviceMismatch = error?.statusCode === 404 || error?.statusCode === 405;
           this.setData({
             error: serviceMismatch
@@ -362,7 +372,7 @@ Page({
         }
       })
       .finally(() => {
-        if (this.profileOperationId === operation) this.setData({ busy: false });
+        if (this.isCurrentProfileOperation(operation, userId, failure)) this.setData({ busy: false });
       });
   },
 
@@ -428,19 +438,23 @@ Page({
   beginAttempt() {
     const id = (this.loginAttemptId || 0) + 1;
     this.loginAttemptId = id;
-    return { id, userId: getAuth()?.user?.id || "" };
+    return { id, identity: captureIdentityAuthority() };
   },
   isCurrentAttempt(attempt) {
-    return this.loginAttemptId === attempt.id && (getAuth()?.user?.id || "") === attempt.userId;
+    return this.loginAttemptId === attempt.id && isCurrentIdentityAuthority(attempt.identity);
   },
   showAttemptError(attempt, error, fallback) {
-    if (this.loginAttemptId === attempt.id) this.setData({ error: error?.message || fallback });
+    if (this.isCurrentAttempt(attempt)) this.setData({ error: error?.message || fallback });
   },
-  finishAttempt(attempt) { if (this.loginAttemptId === attempt.id) this.setData({ busy: false }); },
+  finishAttempt(attempt) { if (this.isCurrentAttempt(attempt)) this.setData({ busy: false }); },
   invalidateAttempts() { this.loginAttemptId = (this.loginAttemptId || 0) + 1; },
-  beginProfileOperation() { this.profileOperationId = (this.profileOperationId || 0) + 1; return this.profileOperationId; },
-  isCurrentProfileOperation(operation, userId) {
-    return this.profileOperationId === operation && getAuth()?.user?.id === userId;
+  beginProfileOperation() {
+    this.profileOperationId = (this.profileOperationId || 0) + 1;
+    return { id: this.profileOperationId, authority: captureAuthAuthority() };
+  },
+  isCurrentProfileOperation(operation, userId, failure) {
+    return this.profileOperationId === operation.id && operation.authority?.userId === userId &&
+      (isCurrentAuthAuthority(operation.authority) || isCurrentAuthFailure(operation.authority, failure));
   },
   startCodeTimer(seconds) {
     if (this.codeTimer) clearInterval(this.codeTimer);

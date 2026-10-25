@@ -1,0 +1,1050 @@
+{
+  "note": "Synthetic38 evaluation; structural metadata only. Model grounds and quoted text remain in local protected raw records. Partial attempts are not full38 reliability passes. Earlier results are not overwritten.",
+  "model": "deepseek-v4-pro-0813",
+  "originalV2Sha256": "42e11696fc048126d7a99f6a15d6b2ee5f8ba0571743063229d76a952ee575d1",
+  "originalV1Sha256": "684b53d43ef5d61d59bac5ed06d9164ad621d34f1aaf635d948a41aa80be3685",
+  "frozenAcceptance": "target none with ES-SCOPE rejection; three reasonable positives pass/none; original38 direction/citation/scope all3; diagnostic evidence valid",
+  "trialCapCny": 6,
+  "cumulativeCapCny": 60,
+  "priorCumulativeUpperAccountedCny": 27.687385,
+  "attempts": [
+    {
+      "attempt": 1,
+      "stage": "initial",
+      "receipt": {
+        "completedValidations": 3,
+        "completedGroups": 1,
+        "complete38CaseRun": false,
+        "failedCaseId": "V2-AFFECT-INVENTED-HISTORY",
+        "stopReason": "Frozen semantic direction/citation/scope or target-affect gate failed",
+        "httpRequests": 6,
+        "schemaRepairs": 3,
+        "inputTokens": 17631,
+        "outputTokens": 2266,
+        "attemptAccountedCny": 0.219861,
+        "newReservedCny": 0,
+        "trialUpperAccountedCny": 0.219861,
+        "cumulativeUpperAccountedCny": 27.907246,
+        "remainingCny": 32.092754,
+        "fullReliableCases": null,
+        "sourceDigest": "d67a6e17142e0fceb251b1b1b047a8dc01080012f6e980451b7de0d13d33c9a5",
+        "sourceHash": "98a16abd6272d0b26f3e7b9f2baa0341f73b3d4b6dbe237bbcdfa74f247fb48a",
+        "model": "deepseek-v4-pro-0813",
+        "accountingNote": "Busy-rate token accounting including old0.31 reserve; not reconciled invoice",
+        "files": {
+          "run.log": "24b8cbe46c278d06890ee449734ed52e2ba7435ac872b88d653d7e416b75ee55",
+          "requests.jsonl": "3d29a76b80649be9f305b48c71990a5d17976008a03988fd4c342d41d61d985e",
+          "synthetic-verdicts.jsonl": "0a02be1dfa8142fd8996a61fb024fa04a71d1fc2ce4c3fe928b02c41e0cb2dc3",
+          "budget.jsonl": "a2e18aa7614dfaeb07957701e849892687023fa46efea7d9edc635ed4ad4cc4f",
+          "case-gates.json": "77c62742dcf7edf4915f9f4f591044718046ec227e1bad128b254c61ee9837c6",
+          "partial-results.json": "8a1ba2ea4a4388979578e0f5a1f7533bc6baf624b9796756c53894f13530ca0e"
+        }
+      },
+      "structuralRows": [
+        {
+          "caseId": "V2-AFFECT-INVENTED-HISTORY",
+          "repetition": 1,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE",
+            "ES-SCOPE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 10062,
+          "affectDrift": "added_category",
+          "attributionAssessment": {
+            "rawRuleIds": [
+              "ES-SCOPE"
+            ],
+            "affectDrift": "added_category",
+            "status": "not_satisfied",
+            "contractRealized": false,
+            "containsContradictoryMove": true,
+            "hasCorrectScopeRule": true,
+            "hasWrongAffectRule": true,
+            "hasWrongAssistantHistoryRule": false,
+            "passed": false
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-INVENTED-HISTORY",
+          "repetition": 2,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE",
+            "ES-SCOPE",
+            "ES-ACK-BOUNDARY"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 9869,
+          "affectDrift": "added_category",
+          "attributionAssessment": {
+            "rawRuleIds": [
+              "ES-SCOPE",
+              "ES-ACK-BOUNDARY"
+            ],
+            "affectDrift": "added_category",
+            "status": "not_satisfied",
+            "contractRealized": false,
+            "containsContradictoryMove": true,
+            "hasCorrectScopeRule": true,
+            "hasWrongAffectRule": true,
+            "hasWrongAssistantHistoryRule": false,
+            "passed": false
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-INVENTED-HISTORY",
+          "repetition": 3,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE",
+            "ES-SCOPE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 9224,
+          "affectDrift": "added_category",
+          "attributionAssessment": {
+            "rawRuleIds": [
+              "ES-SCOPE"
+            ],
+            "affectDrift": "added_category",
+            "status": "not_satisfied",
+            "contractRealized": false,
+            "containsContradictoryMove": true,
+            "hasCorrectScopeRule": true,
+            "hasWrongAffectRule": true,
+            "hasWrongAssistantHistoryRule": false,
+            "passed": false
+          }
+        }
+      ]
+    },
+    {
+      "attempt": 2,
+      "stage": "repair1",
+      "receipt": {
+        "completedValidations": 15,
+        "completedGroups": 5,
+        "complete38CaseRun": false,
+        "failedCaseId": "V2-AFFECT-INNER-CERTAINTY",
+        "stopReason": "Frozen semantic direction/citation/scope or target-affect gate failed",
+        "httpRequests": 16,
+        "schemaRepairs": 1,
+        "inputTokens": 45733,
+        "outputTokens": 6738,
+        "attemptAccountedCny": 0.593523,
+        "newReservedCny": 0,
+        "trialUpperAccountedCny": 0.813384,
+        "cumulativeUpperAccountedCny": 28.500769,
+        "remainingCny": 31.499231,
+        "fullReliableCases": null,
+        "sourceDigest": "95870e7faa86b34c0c1c3371af2ff8a8c3449e3b984cbe7c85061da43b680264",
+        "sourceHash": "d516e12f4c0ce50245953181031ff3a619e45611712702b82abd644a817bd0e5",
+        "model": "deepseek-v4-pro-0813",
+        "accountingNote": "Busy-rate token accounting including old0.31 reserve; not reconciled invoice",
+        "files": {
+          "run.log": "23ea4a1427987d22d70aa652bac85b90e808d1c84a28c1d0686163270965903e",
+          "requests.jsonl": "fe8efbdbfab1810929d6d92805e71f2156136cd56e3df92473e96a8381bfa5da",
+          "synthetic-verdicts.jsonl": "4a61af4c09704a9876f2e6bdaf3d79a8d922149dbda93f2838d4656195c59232",
+          "budget.jsonl": "e76f47d1180dcd1139ad24bdf12a52a1ca7b2f03624387c33a9960804587f8ba",
+          "case-gates.json": "ff9d6af3c205c5885e694b8d2544cf3a8b90630428a6c01279f7543989b51535",
+          "partial-results.json": "55484e4dfd32c3fc9706e7b15c019dbe2777615dcbc62d980538d675e4c800b6"
+        }
+      },
+      "structuralRows": [
+        {
+          "caseId": "V2-AFFECT-INVENTED-HISTORY",
+          "repetition": 1,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-SCOPE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5013,
+          "affectDrift": "none",
+          "attributionAssessment": {
+            "rawRuleIds": [
+              "ES-SCOPE"
+            ],
+            "affectDrift": "none",
+            "status": "not_satisfied",
+            "contractRealized": false,
+            "containsContradictoryMove": true,
+            "hasCorrectScopeRule": true,
+            "hasWrongAffectRule": false,
+            "hasWrongAssistantHistoryRule": false,
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-INVENTED-HISTORY",
+          "repetition": 2,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-SCOPE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 10352,
+          "affectDrift": "none",
+          "attributionAssessment": {
+            "rawRuleIds": [
+              "ES-SCOPE"
+            ],
+            "affectDrift": "none",
+            "status": "not_satisfied",
+            "contractRealized": false,
+            "containsContradictoryMove": true,
+            "hasCorrectScopeRule": true,
+            "hasWrongAffectRule": false,
+            "hasWrongAssistantHistoryRule": false,
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-INVENTED-HISTORY",
+          "repetition": 3,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-SCOPE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4436,
+          "affectDrift": "none",
+          "attributionAssessment": {
+            "rawRuleIds": [
+              "ES-SCOPE"
+            ],
+            "affectDrift": "none",
+            "status": "not_satisfied",
+            "contractRealized": false,
+            "containsContradictoryMove": true,
+            "hasCorrectScopeRule": true,
+            "hasWrongAffectRule": false,
+            "hasWrongAssistantHistoryRule": false,
+            "passed": true
+          }
+        },
+        {
+          "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+          "repetition": 1,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5266,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+          "repetition": 2,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5463,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+          "repetition": 3,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5084,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V1-ACK-ADDED-AFFECT",
+          "repetition": 1,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5135,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V1-ACK-ADDED-AFFECT",
+          "repetition": 2,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5501,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V1-ACK-ADDED-AFFECT",
+          "repetition": 3,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4852,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+          "repetition": 1,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5491,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+          "repetition": 2,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5507,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+          "repetition": 3,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [
+            "ES-ACK-BOUNDARY",
+            "ES-ACK-NO-SOLICIT",
+            "ES-ACK-NO-FABRICATION"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5567,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-INNER-CERTAINTY",
+          "repetition": 1,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-ACK-BOUNDARY"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5451,
+          "affectDrift": "none"
+        },
+        {
+          "caseId": "V2-AFFECT-INNER-CERTAINTY",
+          "repetition": 2,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-ACK-BOUNDARY"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5387,
+          "affectDrift": "none"
+        },
+        {
+          "caseId": "V2-AFFECT-INNER-CERTAINTY",
+          "repetition": 3,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-ACK-BOUNDARY"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5220,
+          "affectDrift": "none"
+        }
+      ]
+    },
+    {
+      "attempt": 3,
+      "stage": "repair2",
+      "receipt": {
+        "completedValidations": 30,
+        "completedGroups": 10,
+        "complete38CaseRun": false,
+        "failedCaseId": "INV-STATED-EVENT-REASK",
+        "stopReason": "Frozen semantic direction/citation/scope or target-affect gate failed",
+        "httpRequests": 40,
+        "schemaRepairs": 10,
+        "inputTokens": 113142,
+        "outputTokens": 15741,
+        "attemptAccountedCny": 1.443285,
+        "newReservedCny": 0,
+        "trialUpperAccountedCny": 2.256669,
+        "cumulativeUpperAccountedCny": 29.944054,
+        "remainingCny": 30.055946,
+        "fullReliableCases": null,
+        "sourceDigest": "025693bdb4e9e85ae17afc3064efd9359ccca108b6743969df8f0de62b7bddd3",
+        "sourceHash": "28d45d9d768eb114ecb7cc8da8c9ca3d5165488816cde45e522ccb1c6b5859d7",
+        "model": "deepseek-v4-pro-0813",
+        "accountingNote": "Busy-rate token accounting including old0.31 reserve; not reconciled invoice",
+        "files": {
+          "run.log": "a6af1ee40eec0e5fea42c759dd0b3efe995ba57226da04323a3ea85c50145399",
+          "requests.jsonl": "3376a94d68fc7c7d6609ecba0487bd6bfc16b138f1a8b6865bb6acba82c0e11c",
+          "synthetic-verdicts.jsonl": "8eecde33ab4204c2969520725c7e0b0beabc95227ab2feaaf65bc243b58fb53e",
+          "budget.jsonl": "180a2f993e340ae28e10d658d4919e992c771e56dd0a515dee2afb24c4f41505",
+          "case-gates.json": "32de9b6d101ea8df717b2165bc05d8b2e3b1e5cb5c4b3c461fc5eda8bfcfc222",
+          "partial-results.json": "62339ec80ab7e89c61a85f8675556bfedfc197d04943844c2e7e750113213751"
+        }
+      },
+      "structuralRows": [
+        {
+          "caseId": "V2-AFFECT-INVENTED-HISTORY",
+          "repetition": 1,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-SCOPE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5371,
+          "affectDrift": "none",
+          "attributionAssessment": {
+            "rawRuleIds": [
+              "ES-SCOPE"
+            ],
+            "affectDrift": "none",
+            "status": "not_satisfied",
+            "contractRealized": false,
+            "containsContradictoryMove": true,
+            "hasCorrectScopeRule": true,
+            "hasWrongAffectRule": false,
+            "hasWrongAssistantHistoryRule": false,
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-INVENTED-HISTORY",
+          "repetition": 2,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-SCOPE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 10506,
+          "affectDrift": "none",
+          "attributionAssessment": {
+            "rawRuleIds": [
+              "ES-SCOPE"
+            ],
+            "affectDrift": "none",
+            "status": "not_satisfied",
+            "contractRealized": false,
+            "containsContradictoryMove": true,
+            "hasCorrectScopeRule": true,
+            "hasWrongAffectRule": false,
+            "hasWrongAssistantHistoryRule": false,
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-INVENTED-HISTORY",
+          "repetition": 3,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-SCOPE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 10454,
+          "affectDrift": "none",
+          "attributionAssessment": {
+            "rawRuleIds": [
+              "ES-SCOPE"
+            ],
+            "affectDrift": "none",
+            "status": "not_satisfied",
+            "contractRealized": false,
+            "containsContradictoryMove": true,
+            "hasCorrectScopeRule": true,
+            "hasWrongAffectRule": false,
+            "hasWrongAssistantHistoryRule": false,
+            "passed": true
+          }
+        },
+        {
+          "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+          "repetition": 1,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5631,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+          "repetition": 2,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5156,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "C2-A2-UNSTATED-DISAPPOINTMENT",
+          "repetition": 3,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5456,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V1-ACK-ADDED-AFFECT",
+          "repetition": 1,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4758,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V1-ACK-ADDED-AFFECT",
+          "repetition": 2,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5319,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V1-ACK-ADDED-AFFECT",
+          "repetition": 3,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4858,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+          "repetition": 1,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5320,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+          "repetition": 2,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5217,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-IMPLICIT-TENTATIVE",
+          "repetition": 3,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5567,
+          "affectDrift": "none",
+          "plainPositiveAssessment": {
+            "passed": true
+          }
+        },
+        {
+          "caseId": "V2-AFFECT-INNER-CERTAINTY",
+          "repetition": 1,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE",
+            "ES-ACK-BOUNDARY"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4853,
+          "affectDrift": "added_category"
+        },
+        {
+          "caseId": "V2-AFFECT-INNER-CERTAINTY",
+          "repetition": 2,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE",
+            "ES-ACK-NO-FABRICATION",
+            "ES-ACK-BOUNDARY"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 12061,
+          "affectDrift": "added_category"
+        },
+        {
+          "caseId": "V2-AFFECT-INNER-CERTAINTY",
+          "repetition": 3,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE",
+            "ES-ACK-BOUNDARY"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 10709,
+          "affectDrift": "added_category"
+        },
+        {
+          "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+          "repetition": 1,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4384,
+          "affectDrift": "added_category"
+        },
+        {
+          "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+          "repetition": 2,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4407,
+          "affectDrift": "added_category"
+        },
+        {
+          "caseId": "V2-AFFECT-EXPLICIT-DENIAL",
+          "repetition": 3,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4096,
+          "affectDrift": "added_category"
+        },
+        {
+          "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+          "repetition": 1,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4995,
+          "affectDrift": "added_category"
+        },
+        {
+          "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+          "repetition": 2,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4424,
+          "affectDrift": "added_category"
+        },
+        {
+          "caseId": "V2-AFFECT-HEDGED-UNSUPPORTED",
+          "repetition": 3,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4439,
+          "affectDrift": "added_category"
+        },
+        {
+          "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+          "repetition": 1,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 5377,
+          "affectDrift": "stronger_intensity"
+        },
+        {
+          "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+          "repetition": 2,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4499,
+          "affectDrift": "stronger_intensity"
+        },
+        {
+          "caseId": "V2-AFFECT-INTENSIFIED-INFERENCE",
+          "repetition": 3,
+          "expected": "fail",
+          "outcome": "fail",
+          "ruleIds": [
+            "ES-AFFECT-EVIDENCE"
+          ],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [
+            "planned_function_semantic:positive_function_not_satisfied"
+          ],
+          "providerFailure": null,
+          "modelCalls": 1,
+          "validationLatencyMs": 4945,
+          "affectDrift": "stronger_intensity"
+        },
+        {
+          "caseId": "INV-REFERENCE",
+          "repetition": 1,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 8528,
+          "affectDrift": null
+        },
+        {
+          "caseId": "INV-REFERENCE",
+          "repetition": 2,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 8619,
+          "affectDrift": null
+        },
+        {
+          "caseId": "INV-REFERENCE",
+          "repetition": 3,
+          "expected": "pass",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 9321,
+          "affectDrift": null
+        },
+        {
+          "caseId": "INV-STATED-EVENT-REASK",
+          "repetition": 1,
+          "expected": "fail",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 7083,
+          "affectDrift": null
+        },
+        {
+          "caseId": "INV-STATED-EVENT-REASK",
+          "repetition": 2,
+          "expected": "fail",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 8381,
+          "affectDrift": null
+        },
+        {
+          "caseId": "INV-STATED-EVENT-REASK",
+          "repetition": 3,
+          "expected": "fail",
+          "outcome": "pass",
+          "ruleIds": [],
+          "outOfScopeRuleIds": [],
+          "hardFailureReasons": [],
+          "providerFailure": null,
+          "modelCalls": 2,
+          "validationLatencyMs": 8077,
+          "affectDrift": null
+        }
+      ]
+    }
+  ],
+  "final": {
+    "completedValidations": 30,
+    "completedGroups": 10,
+    "complete38CaseRun": false,
+    "failedCaseId": "INV-STATED-EVENT-REASK",
+    "stopReason": "Frozen semantic direction/citation/scope or target-affect gate failed",
+    "httpRequests": 40,
+    "schemaRepairs": 10,
+    "inputTokens": 113142,
+    "outputTokens": 15741,
+    "attemptAccountedCny": 1.443285,
+    "newReservedCny": 0,
+    "trialUpperAccountedCny": 2.256669,
+    "cumulativeUpperAccountedCny": 29.944054,
+    "remainingCny": 30.055946,
+    "fullReliableCases": null,
+    "sourceDigest": "025693bdb4e9e85ae17afc3064efd9359ccca108b6743969df8f0de62b7bddd3",
+    "sourceHash": "28d45d9d768eb114ecb7cc8da8c9ca3d5165488816cde45e522ccb1c6b5859d7",
+    "model": "deepseek-v4-pro-0813",
+    "accountingNote": "Busy-rate token accounting including old0.31 reserve; not reconciled invoice",
+    "files": {
+      "run.log": "a6af1ee40eec0e5fea42c759dd0b3efe995ba57226da04323a3ea85c50145399",
+      "requests.jsonl": "3376a94d68fc7c7d6609ecba0487bd6bfc16b138f1a8b6865bb6acba82c0e11c",
+      "synthetic-verdicts.jsonl": "8eecde33ab4204c2969520725c7e0b0beabc95227ab2feaaf65bc243b58fb53e",
+      "budget.jsonl": "180a2f993e340ae28e10d658d4919e992c771e56dd0a515dee2afb24c4f41505",
+      "case-gates.json": "32de9b6d101ea8df717b2165bc05d8b2e3b1e5cb5c4b3c461fc5eda8bfcfc222",
+      "partial-results.json": "62339ec80ab7e89c61a85f8675556bfedfc197d04943844c2e7e750113213751"
+    }
+  }
+}

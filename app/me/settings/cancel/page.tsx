@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { apiRequest } from "@/lib/client-api";
+import { apiRequest, ClientApiError } from "@/lib/client-api";
 import {
+  captureAuthAuthority,
+  clearAuth,
+  createAuthRequestScope,
+  isAuthAuthorityCurrent,
+  isAuthCleanupCurrent,
   clearCancelledAccount,
   getCancellationUserSnapshot,
   shouldRequestCloudAccountCancellation,
@@ -12,6 +17,17 @@ import {
 import { SettingsShell } from "../settings-shell";
 
 export default function AccountCancelPage() {
+  const [ownerAuthority] = useState(captureAuthAuthority);
+  const cancelScope = useRef(createAuthRequestScope());
+  const codeScope = useRef(createAuthRequestScope());
+  useEffect(() => () => { cancelScope.current.invalidate(); codeScope.current.invalidate(); }, []);
+  const closeConfirmation = () => {
+    cancelScope.current.invalidate();
+    codeScope.current.invalidate();
+    setIsConfirming(false);
+    setIsCancelling(false);
+    setIsSendingCode(false);
+  };
   const [storedUser] = useState(getCancellationUserSnapshot);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmStep, setConfirmStep] = useState<"risk" | "sms">("risk");
@@ -33,7 +49,8 @@ export default function AccountCancelPage() {
     cancelError instanceof Error ? cancelError.message : "服务暂时不可用，请稍后再试";
 
   const sendCancelCode = async () => {
-    if (!phone || isSendingCode) return;
+    if (!phone || isSendingCode || !isAuthAuthorityCurrent(ownerAuthority)) return;
+    const operation = codeScope.current.begin();
     setIsSendingCode(true);
     setError("");
     setDevCodeHint("");
@@ -41,28 +58,42 @@ export default function AccountCancelPage() {
       const data = await apiRequest<{ expiresIn: number; devCode?: string }>("/api/auth/code", {
         method: "POST",
         body: { phone, scene: "cancel_account" },
+        authority: ownerAuthority,
+        clearOnUnauthorized: false,
       });
+      if (!operation.isCurrent()) return;
       setCodeSent(true);
       setVerifyCode("");
       setDevCodeHint(data.devCode ? `开发环境验证码：${data.devCode}` : "验证码已发送");
     } catch (cancelError) {
+      if (!operation.isCurrent() && !(cancelError instanceof ClientApiError &&
+        cancelError.status === 401 && operation.ownsIdentity())) return;
       setError(getErrorMessage(cancelError));
+      if (cancelError instanceof ClientApiError && cancelError.status === 401) {
+        clearAuth();
+        operation.acceptPublication();
+      }
     } finally {
-      setIsSendingCode(false);
+      if (operation.isCurrent()) setIsSendingCode(false);
     }
   };
 
   const cancelAccount = async () => {
     if (isCancelling) return;
+    const ownsAccount = () => ownerAuthority.userId === storedUser?.id &&
+      (cloudCancelled ? isAuthCleanupCurrent(ownerAuthority) : isAuthAuthorityCurrent(ownerAuthority));
+    if (!ownsAccount()) { setError("登录状态已变化，请重新确认当前账号"); return; }
+    const operation = cancelScope.current.begin();
+    const isCurrent = () => operation.isActive() && isAuthCleanupCurrent(ownerAuthority);
     if (!storedUser?.id) {
       setError("当前账号信息不完整，请重新登录后再试");
       return;
     }
-    if (needsCode && !codeSent) {
+    if (!cloudCancelled && needsCode && !codeSent) {
       setError("请先发送验证码");
       return;
     }
-    if (needsCode && verifyCode.length !== 6) {
+    if (!cloudCancelled && needsCode && verifyCode.length !== 6) {
       setError("请输入 6 位验证码");
       return;
     }
@@ -75,19 +106,29 @@ export default function AccountCancelPage() {
         const result = await apiRequest<{ cancelled: boolean; mediaCleanup: "complete" | "pending" }>("/api/auth/cancel", {
           method: "POST",
           body: needsCode ? { code: verifyCode } : {},
+          authority: ownerAuthority,
+        clearOnUnauthorized: false,
         });
+        if (!isCurrent()) return;
         setMediaCleanupPending(result.mediaCleanup === "pending");
         cloudCancellationCompleted = true;
         setCloudCancelled(true);
       }
-      clearCancelledAccount(storedUser.id);
+      if (!isCurrent()) return;
+      clearCancelledAccount(storedUser.id, ownerAuthority);
+      operation.acceptPublication();
       setCleared(true);
       setCloudCancelled(false);
       setIsConfirming(false);
     } catch (cancelError) {
+      if (!isCurrent()) return;
       setError(cloudCancellationCompleted ? "云端账号已注销但本机清理未完成" : getErrorMessage(cancelError));
+      if (cancelError instanceof ClientApiError && cancelError.status === 401) {
+        clearAuth();
+        operation.acceptPublication();
+      }
     } finally {
-      setIsCancelling(false);
+      if (operation.isCurrent() || isCurrent()) setIsCancelling(false);
     }
   };
 
@@ -135,7 +176,7 @@ export default function AccountCancelPage() {
             type="button"
             aria-label="取消注销确认"
             className="absolute inset-0 z-40 bg-[var(--page-bg)]/60"
-            onClick={() => setIsConfirming(false)}
+            onClick={closeConfirmation}
           />
           <section
             className={
@@ -210,7 +251,7 @@ export default function AccountCancelPage() {
             <button
               type="button"
               className="absolute left-6 bottom-6 h-11 w-[130px] rounded-[18px] bg-[var(--page-bg)] text-[13px] font-semibold text-[var(--body)]"
-              onClick={() => setIsConfirming(false)}
+              onClick={closeConfirmation}
             >
               先不注销
             </button>

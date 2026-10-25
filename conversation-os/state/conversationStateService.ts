@@ -286,6 +286,8 @@ const LIGHT_AFFECT_CUE_PATTERN = /(?:耶|呀|啦|哈哈|呵呵|～|~)/;
 const ASSISTANT_SHARING_INVITATION_PATTERN =
   /有什么.{0,12}(?:想|可以).{0,8}(?:说|聊)|想.{0,8}(?:说说|聊聊)|可以.{0,8}(?:说说|聊聊)|(?:想|愿意).{0,8}(?:说|聊)/;
 
+export const isAssistantSharingInvitation = (content: string) => ASSISTANT_SHARING_INVITATION_PATTERN.test(content);
+
 const isAssistantQuestion = (content: string) => /[？?]|吗[。！？!?]?$|呢[。！？!?]?$/.test(normalize(content));
 
 const getLastMessage = (messages: ConversationStateMessage[], role: "user" | "assistant") =>
@@ -309,7 +311,7 @@ const deriveInteractionSignals = ({
   const priorPauseStillActive =
     Boolean(previousUserMessage && closesInteraction(previousUserMessage)) && !explicitReopen;
   const immediateAssistantInvited = Boolean(
-    previousAssistantMessage && ASSISTANT_SHARING_INVITATION_PATTERN.test(previousAssistantMessage)
+    previousAssistantMessage && isAssistantSharingInvitation(previousAssistantMessage)
   );
   const repeatedAssistantQuestions = getRecentAssistantQuestionCount(recentMessages) >= 2;
   const contentAvailability = !text

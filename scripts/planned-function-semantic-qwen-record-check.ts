@@ -45,7 +45,7 @@ const verdictFor = (
   }];
   const positive = input.positiveFunctionBinding;
   const handoff = input.handoffBinding;
-  assert(positive && positive.action !== "repair_previous_wording");
+  assert(positive && positive.action !== "repair_previous_wording" && positive.action !== "acknowledge_without_psychologizing");
   return {
     schemaVersion: 1,
     planId: input.planId,

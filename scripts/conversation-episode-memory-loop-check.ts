@@ -352,7 +352,19 @@ const main = async () => {
       `Recovered episode plan must pass preflight: ${recoveredPreflight.failureReasons.join(",")}`
     );
     assert(!recoveredPlan.responseActions.includes("offer_emotional_support"));
-    assert.equal(recoveredPlan.positiveFunctionContract, null);
+    const recoveredContract = recoveredPlan.positiveFunctionContract;
+    assert(recoveredContract?.action === "acknowledge_without_psychologizing",
+      "Recovery selects the current ordinary contract, not emotional support");
+    assert.equal(recoveredContract.sourceText, "最近不想上班");
+    assert.equal(recoveredContract.sourceTurnId, recoveredPlan.disclosureScope.turnId);
+    assert.equal(recoveredContract.responseFunction, "respond_naturally");
+    assert.equal(recoveredPlan.ordinaryPosture?.requiredContribution, null,
+      "Recovered memory cannot introduce a hard response goal");
+    const missingOrdinaryContract = structuredClone(recoveredPlan);
+    missingOrdinaryContract.positiveFunctionContract = null;
+    assert(preflightFor("最近不想上班", candidates, missingOrdinaryContract, true).failureReasons
+      .includes("missing_or_mismatched_positive_function_contract:acknowledge_without_psychologizing"),
+      "Recovery cannot bypass ordinary semantic validation by dropping its contract");
     assert.equal(recoveredPlan.clinicalStrategy, null);
     assert.equal(recoveredPlan.behaviorSource, "ordinary_conversation");
     assert.equal(recoveredPlan.selectedEpisodeMemory?.semanticMemoryId, firstMemory.id);

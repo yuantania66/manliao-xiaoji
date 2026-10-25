@@ -10,6 +10,7 @@ export type SemanticVerdictAudit = {
   // ES-* ids cited outside an offer_emotional_support positive-function verdict (rule-boundary violation).
   outOfScopeRuleIds: string[];
   evidence: Array<{ start: number; end: number; text: string; reason: string }>;
+  affectEvidence?: NonNullable<PlannedFunctionSemanticVerdict["positiveFunction"]>["affectEvidence"];
 } | null;
 
 export const ruleIdsInReason = (reason: string) => reason.match(RULE_ID) ?? [];
@@ -37,11 +38,25 @@ export const semanticVerdictAuditFor = (
       ...ruleIdsIn(verdict.handoff?.evidence ?? []),
     ])),
     evidence: evidence.map(({ start, end, text, reason }) => ({ start, end, text, reason })),
+    // Diagnostic grounds never contribute rule ids or override the observation's verdict.
+    ...(verdict.positiveFunction?.affectEvidence
+      ? { affectEvidence: verdict.positiveFunction.affectEvidence }
+      : {}),
   };
 };
 
 export const withoutEvidenceText = (audit: SemanticVerdictAudit) => audit && {
-  ...audit,
+  status: audit.status,
+  containsContradictoryMove: audit.containsContradictoryMove,
+  semanticQuestionCount: audit.semanticQuestionCount,
+  ruleIds: audit.ruleIds,
+  outOfScopeRuleIds: audit.outOfScopeRuleIds,
+  ...(audit.affectEvidence ? {
+    affectEvidence: {
+      userSpans: audit.affectEvidence.userSpans.map(({ start, end }) => ({ start, end })),
+      candidateSpans: audit.affectEvidence.candidateSpans.map(({ start, end }) => ({ start, end })),
+    },
+  } : {}),
   evidence: audit.evidence.map(({ start, end, reason }) => ({
     start,
     end,

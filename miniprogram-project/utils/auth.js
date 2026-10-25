@@ -5,6 +5,9 @@ const ACCOUNT_CACHE_KEYS = [
   "xinqingInsightsAnalysisAuthorized",
   "xinqingInsightsAuthorization:v1"
 ];
+// In-flight authority is process-local. A fresh login is a new generation even
+// when the server happens to return the same token/user/expiry again.
+let authGeneration = 0;
 
 // Login contract without the freshness check: token, expiresAt, and user.id must
 // all be well-formed. Only structurally valid sessions may mint a draft owner claim.
@@ -39,6 +42,7 @@ const readRawAuth = () => {
 const removeRawAuthQuietly = () => {
   try {
     wx.removeStorageSync(AUTH_KEY);
+    authGeneration += 1;
   } catch (error) {}
 };
 
@@ -116,13 +120,16 @@ const saveAuth = (auth) => {
   // Persist the authenticated identity before changing the active guest marker.
   // Guest-owned content stays isolated in its own keys and remains recoverable.
   wx.setStorageSync(AUTH_KEY, auth);
+  authGeneration += 1;
+  require("./guest-session").invalidateGuestSession();
   try { wx.removeStorageSync(GUEST_KEY); } catch (error) {}
   const app = getApp();
   app.globalData.user = auth.user || null;
   app.globalData.token = auth.token || "";
 };
 
-const updateCachedUser = (expectedUserId, user) => {
+const updateCachedUser = (expectedUserId, user, authority) => {
+  if (authority && !isCurrentAuthAuthority(authority)) throw new Error("账号已切换，请重试");
   const auth = getAuth();
   if (!auth || !user || auth.user.id !== expectedUserId || user.id !== expectedUserId) {
     throw new Error("账号已切换，请重试");
@@ -137,16 +144,23 @@ const updateCachedUser = (expectedUserId, user) => {
 const clearAuth = () => {
   ensureLegacyDraftSafeBeforeIdentityChange("none");
   wx.removeStorageSync(AUTH_KEY);
+  authGeneration += 1;
   wx.removeStorageSync(GUEST_KEY);
+  require("./guest-session").invalidateGuestSession();
   ACCOUNT_CACHE_KEYS.forEach((key) => wx.removeStorageSync(key));
   const app = getApp();
   app.globalData.user = null;
   app.globalData.token = "";
 };
 
-const clearCancelledAccount = (userId) => {
+const clearCancelledAccount = (userId, authority) => {
   if (!userId) throw new Error("当前账号标识不可用");
+  if (authority && !isCurrentIdentityAuthority(authority)) throw new Error("账号已切换，请重试");
   wx.removeStorageSync(AUTH_KEY);
+  authGeneration += 1;
+  // Transfer only this successful local removal to its cleanup continuation.
+  // A partial cleanup can retry locally, but a later login still invalidates it.
+  if (authority) Object.assign(authority, captureIdentityAuthority());
   ACCOUNT_CACHE_KEYS.forEach((key) => wx.removeStorageSync(key));
   if (userId) {
     [`xinqingMiniChatMessages:${userId}`, `xinqingMiniNotes:${userId}`]
@@ -157,6 +171,7 @@ const clearCancelledAccount = (userId) => {
   if (storedKeys.some((key) => remainingKeys.has(key))) {
     throw new Error("本机账号数据清理失败");
   }
+  require("./guest-session").invalidateGuestSession();
   const app = getApp();
   app.globalData.user = null;
   app.globalData.token = "";
@@ -184,6 +199,8 @@ const enterGuest = () => {
       throw error;
     }
   }
+  authGeneration += 1;
+  require("./guest-session").invalidateGuestSession();
   const app = getApp();
   app.globalData.user = null;
   app.globalData.token = "";
@@ -217,8 +234,52 @@ const getDataMode = () => {
   return "none";
 };
 
+const captureAuthAuthority = () => {
+  const auth = getAuth();
+  return auth ? { generation: authGeneration, token: auth.token, userId: auth.user.id, expiresAt: auth.expiresAt } : null;
+};
+
+const isCurrentAuthAuthority = (authority) => {
+  if (!authority) return false;
+  const auth = getAuth();
+  return Boolean(auth && authority.generation === authGeneration && authority.token === auth.token &&
+    authority.userId === auth.user.id && authority.expiresAt === auth.expiresAt);
+};
+
+const captureIdentityAuthority = () => {
+  try {
+    // An unavailable storage read is not proof that an anonymous identity exists.
+    wx.getStorageSync(AUTH_KEY);
+    const auth = captureAuthAuthority();
+    return { generation: authGeneration, auth, guest: !auth && isGuest() };
+  } catch (error) { return null; }
+};
+
+const isCurrentIdentityAuthority = (authority) => {
+  const current = captureIdentityAuthority();
+  return Boolean(authority && current && authority.generation === current.generation &&
+    authority.guest === current.guest && (authority.auth
+      ? isCurrentAuthAuthority(authority.auth)
+      : !current.auth));
+};
+
+// Error-only continuation: the request itself cleared this exact Auth snapshot.
+// It never makes an old successful result or a follow-up request authoritative.
+const isCurrentAuthFailure = (authority, error) => {
+  const failure = error?.authClearance;
+  const source = failure?.source;
+  return Boolean(authority && source && authority.generation === source.generation &&
+    authority.token === source.token && authority.userId === source.userId &&
+    authority.expiresAt === source.expiresAt && isCurrentIdentityAuthority(failure.cleared));
+};
+
 module.exports = {
   getAuth,
+  captureAuthAuthority,
+  isCurrentAuthAuthority,
+  captureIdentityAuthority,
+  isCurrentIdentityAuthority,
+  isCurrentAuthFailure,
   saveAuth,
   updateCachedUser,
   clearAuth,

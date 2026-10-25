@@ -296,10 +296,13 @@ try {
     structuredPromptText.includes("realizedFunction exactly equal to requiredFunction"),
     "Validator must define fulfilled verdict consistency"
   );
-  assert(
+  assert.equal(
     structuredPromptText.includes("The handoff and positiveFunction branches are independent"),
-    "Validator must independently evaluate both planned-function branches"
+    false,
+    "A handoff-only binding does not carry dual-branch instructions; the semantic-validator check covers dual AND."
   );
+  assert(structuredPromptText.includes('"positiveFunctionBinding":null'));
+  assert(structuredPromptText.includes('"positiveFunction":null'), "The absent positive-function verdict stays null.");
   assert(
     structuredPromptText.includes('"candidateReplyUtf16Length":4'),
     "Validator must receive the caller-computed UTF-16 length"

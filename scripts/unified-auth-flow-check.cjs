@@ -84,8 +84,15 @@ require.cache[require.resolve("../miniprogram-project/api/auth.js")] = { exports
   discardProfileAvatar: () => Promise.resolve(),
   downloadProfileAvatar: () => Promise.resolve("wxfile://downloaded-avatar.jpg")
 } };
+let identityGeneration = 0;
+const captureAuthAuthority = () => storedAuth ? { generation: identityGeneration, token: storedAuth.token, userId: storedAuth.user.id } : null;
+const isCurrentAuthAuthority = (value) => Boolean(value && storedAuth && value.generation === identityGeneration && value.token === storedAuth.token && value.userId === storedAuth.user.id);
 require.cache[require.resolve("../miniprogram-project/utils/auth.js")] = { exports: {
-  clearAuth: () => { storedAuth = null; }, enterGuest: () => { guest = true; }, getAuth: () => storedAuth, saveAuth: (auth) => { storedAuth = auth; },
+  clearAuth: () => { storedAuth = null; identityGeneration += 1; }, enterGuest: () => { guest = true; identityGeneration += 1; }, getAuth: () => storedAuth, saveAuth: (auth) => { storedAuth = auth; identityGeneration += 1; },
+  captureAuthAuthority, isCurrentAuthAuthority,
+  isCurrentAuthFailure: () => false,
+  captureIdentityAuthority: () => ({ generation: identityGeneration, auth: captureAuthAuthority(), guest }),
+  isCurrentIdentityAuthority: (value) => Boolean(value && value.generation === identityGeneration && value.guest === guest && (value.auth ? isCurrentAuthAuthority(value.auth) : !storedAuth)),
   isGuest: () => guest, setGuestProfile: (profile) => { guestProfile = profile; }, updateCachedUser: (_id, user) => { storedAuth = { ...storedAuth, user }; }
 } };
 require.cache[require.resolve("../miniprogram-project/utils/wechat-login.js")] = { exports: { authenticateWithWechat: () => { wechatLoginCalls += 1; return Promise.resolve(nextAuth); } } };

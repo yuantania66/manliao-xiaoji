@@ -9,7 +9,7 @@ import {
 } from "./chatSafety";
 import { createClinicalMemoryContext } from "./clinicalMemoryAdapter";
 import { buildAiDebugTrace } from "./debugTrace";
-import { JUDGE_PROMPT_VERSION } from "./promptBuilder";
+import { JUDGE_PROMPT_VERSION, sanitizeChatHistory, scopeHistoryForResponsePlan } from "./promptBuilder";
 import type { ChatPromptEvaluationAdapter } from "./promptBuilder";
 import {
   AiConversationMessage,
@@ -44,6 +44,7 @@ import {
 } from "./purposeSubjectOwnershipAuthority";
 import { enforceResponsePlan } from "./responsePlanValidator";
 import type { InteractionMoveHandoffSemanticProvider } from "./interactionMoveHandoffOutputValidator";
+import { usesContextualUseObservation } from "./plannedFunctionSemanticValidator";
 import type {
   PlannedFunctionSemanticDiagnostics,
   PlannedFunctionSemanticProvider,
@@ -638,6 +639,12 @@ export const createChatReply = async ({
         currentUserText: userMessage,
         handoffTargetAssistantText: handoffTargetMessage?.content ?? null,
         priorAssistantTurnAvailable: recentMessages.some((message) => message.role === "assistant"),
+        ...(usesContextualUseObservation(responsePlan.positiveFunctionContract)
+          ? { ordinaryRecentMessages: sanitizeChatHistory({
+              userMessage,
+              recentMessages: scopeHistoryForResponsePlan({ userMessage, recentMessages, responsePlan }),
+            }).included }
+          : {}),
       },
       inspectPlannedFunctionExternalPrompt: inspectExternalPrompt
         ? ({ messages }) => inspectExternalPrompt({
@@ -646,7 +653,7 @@ export const createChatReply = async ({
           })
         : undefined,
       handoffSemanticProvider: interactionMoveHandoffSemanticProvider,
-      generate: async (constraint, executionPlan) => {
+      generate: async (constraint, executionPlan, regenerationFeedback) => {
         attemptIds.push(createExecutionIdentity({}).requestId);
         return generateChatReply({
           conversationId,
@@ -657,6 +664,7 @@ export const createChatReply = async ({
           responsePlan: executionPlan,
           evaluationAdapter,
           responsePlanRegenerateConstraint: constraint,
+          regenerationFeedback,
           inspectExternalPrompt: inspectExternalPrompt
             ? ({ messages }) => inspectExternalPrompt({ stage: "surface_realization", messages })
             : undefined,

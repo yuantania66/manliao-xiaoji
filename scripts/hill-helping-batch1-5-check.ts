@@ -16,12 +16,15 @@ import type { CommittedAssistantMove, ConversationMessage } from "../conversatio
 import { createChatReply } from "../services/ai/chatOrchestrationService";
 import type { SafetySemanticProvider } from "../services/ai/chatSafety";
 import {
+  defaultPlannedFunctionSemanticProvider,
+  plannedFunctionSemanticDeveloperContentFor,
   validatePlannedFunctionSemanticOutput,
   type PositiveFunctionVerdictBinding,
 } from "../services/ai/plannedFunctionSemanticValidator";
 import { buildChatPrompt, formatResponsePlanForPrompt } from "../services/ai/promptBuilder";
 import { formatResponsePlanRegenerateConstraint, validateResponsePlanOutput } from "../services/ai/responsePlanValidator";
 import { cleanObservationFor } from "./semantic-observation-fixture";
+import { AFFECT_INTERPRETATION_BOUNDARY, restoreExplicitAffectRules } from "./emotional-affect-rule-fixture";
 
 const uncertainBoundary = (
   userBoundaries: OrdinaryHandoffBoundary["userBoundaries"] = []
@@ -44,6 +47,9 @@ const noRiskSafetyProvider: SafetySemanticProvider = async () => JSON.stringify(
 const positiveBindingFor = (
   contract: NonNullable<ResponsePlan["positiveFunctionContract"]>
 ): PositiveFunctionVerdictBinding => {
+  if (contract.action === "acknowledge_without_psychologizing") {
+    return { action: contract.action, sourceTurnId: contract.sourceTurnId, allowIdle: contract.allowIdle, ...(contract.responseFunction ? {responseFunction: contract.responseFunction} : {}) };
+  }
   if (contract.action === "establish_assistant_identity") {
     return {
       action: contract.action,
@@ -85,6 +91,7 @@ const validatePositiveSemanticFixture = async ({
     semanticContext: {
       currentUserText: "sourceText" in contract ? contract.sourceText : "identity fixture",
       handoffTargetAssistantText: null,
+      ordinaryRecentMessages: [], // This authored transport fixture has no conversation history.
     },
     provider: async (input) => ({
       schemaVersion: 1,
@@ -97,9 +104,8 @@ const validatePositiveSemanticFixture = async ({
         targetAddressed: shouldPass,
         contractRealized: shouldPass,
         containsContradictoryMove: false,
-        evidence: shouldPass
-          ? [{ start: 0, end: reply.length, text: reply, reason: "Frozen contract fixture." }]
-          : [],
+        // A rejecting semantic status still needs valid evidence for referenced indices.
+        evidence: [{ start: 0, end: reply.length, text: reply, reason: "Authored semantic-status transport fixture; not a model quality judgment." }],
         ...cleanObservationFor(input),
       },
       semanticQuestionCount: (reply.match(/[？?]/gu) ?? []).length,
@@ -467,6 +473,8 @@ const run = async () => {
     true
   );
 
+  // Keep the historical texts/labels unchanged. This injected provider checks
+  // semantic-status consumption, not whether a model would assign these labels.
   const emotionalQualityFailures = [
     "听到你今天不太开心，想聊聊是什么事吗？",
     "听到你说不开心，愿意告诉我发生了什么吗？",
@@ -502,7 +510,7 @@ const run = async () => {
     assert.equal(validation.passed, false, `Emotional quality failure must be rejected: ${reply}`);
     assert(
       validation.failureReasons.some((failure) => failure === "planned_function_semantic:positive_function_not_satisfied"),
-      `Emotional failure must use the emotional-support contract: ${reply}`
+      `Emotional failure must use the emotional-support contract: ${reply}; ${JSON.stringify(validation)}`
     );
   }
 
@@ -638,8 +646,10 @@ const run = async () => {
     assert.equal(declinedSharingSourceOf(invitePlan), undefined, `${userMessage} carries no refusal source.`);
     assert.equal(invitePlan.questionPolicy.mode, "optional_after_answer", `${userMessage} allows one optional invitation.`);
     const invitePrompt = formatResponsePlanForPrompt(invitePlan);
-    assert(invitePrompt.includes("if the user already stated the event, refer to that event"));
-    assert(invitePrompt.includes("Do not ask why, for the cause, for specific details"));
+    assert(invitePrompt.includes("An invitation can open space to say more about an already stated event without a preface"));
+    assert(invitePrompt.includes("Do not ask why, for the cause, for a detailed sequence or full account"));
+    assert(invitePrompt.includes("a grounded response, useful confirmation, or a relevant optional invitation may stand alone"));
+    assert(invitePrompt.includes("An open invitation to elaborate or a useful clarification may directly follow"));
     assert.equal(invitePrompt.includes("need not repeat that agreement"), false, `${userMessage} keeps the invitation constraints only.`);
     const inviteRegeneration = formatResponsePlanRegenerateConstraint(invitePlan, [
       "planned_function_semantic:positive_function_not_satisfied",
@@ -647,10 +657,14 @@ const run = async () => {
     ]);
     assert(inviteRegeneration.includes("至多一句容易拒绝的温和邀请"));
     assert(inviteRegeneration.includes("整条回复至多一个邀请或问题"));
+    assert(inviteRegeneration.includes("不需要追问时说完即可"));
+    assert(inviteRegeneration.includes("允许直接邀请展开，不必先复述情绪"));
+    assert(inviteRegeneration.includes("不能无视已知事实、要求用户重新确认已明确回答的内容"));
     assert(inviteRegeneration.includes("不要问为什么或原因"));
     assert.equal(inviteRegeneration.includes("本计划禁止提问"), false);
   }
-  const referenceInviteReply = "听起来，你今天有些不好受。如果你愿意，可以和我说说发生了什么。不用着急，慢慢说就好。";
+  // Human contrast example, not a model result. Semantic quality is checked separately.
+  const referenceInviteReply = "愿意说说发生了什么吗？";
   const ordinaryLowPlan = build({ userMessage: "我今天有点不太高兴" }).responsePlan;
   const referenceDeterministic = validateResponsePlanOutput({ plan: ordinaryLowPlan, reply: referenceInviteReply });
   assert.equal(
@@ -677,9 +691,12 @@ const run = async () => {
     assert(declinedPlan.positiveFunctionContract?.evidence.includes("supportFunction=respect_declined_sharing"));
     assert.equal(declinedSharingSourceOf(declinedPlan), "current_turn", `${userMessage}: the refusal source is the current turn.`);
     const declinedPrompt = formatResponsePlanForPrompt(declinedPlan);
+    assert(declinedPrompt.includes("reasonably implied by the current user's words as a whole"));
+    assert.equal(declinedPrompt.includes("Do not add feelings the user did not state"), false,
+      "A current refusal must not retain the retired explicit-only affect rule.");
     assert.equal(declinedPrompt.includes("already agreed in an earlier turn"), false, "A current refusal carries no prior-pause branch.");
     assert.equal(declinedPrompt.includes("responding to that feeling is required"), false);
-    assert.equal(declinedPrompt.includes("at most one gentle invitation the user can easily decline"), false);
+    assert.equal(declinedPrompt.includes("at most one gentle invitation they can easily decline"), false);
     assert.equal(declinedPrompt.includes("Give the user control over how much to express"), false);
     assert.equal(declinedPrompt.includes("grants that control"), false);
     assert(declinedPrompt.includes("restating the feeling word is not required"));
@@ -789,10 +806,19 @@ const run = async () => {
     delete legacyPausedPlan.positiveFunctionContract.declinedSharingSource;
   }
   const legacyPausedPrompt = formatResponsePlanForPrompt(legacyPausedPlan);
+  for (const prompt of [pausedThenLowPrompt, legacyPausedPrompt]) {
+    assert(prompt.includes("reasonably implied by the current user's words as a whole"));
+    assert.equal(prompt.includes("Do not add feelings the user did not state"), false,
+      "Prior-pause and source-less generation must not retain the retired explicit-only affect rule.");
+    assert(prompt.includes("Do not attribute unsupported feelings, intensify them, invent causes"));
+  }
   assert(legacyPausedPrompt.includes("Respond naturally to the boundary or the feeling the user expressed"), "A plan without the source keeps the combined wording.");
   assert(legacyPausedPrompt.includes("If the user says they do not want to talk about it"));
   assert(legacyPausedPrompt.includes("If the assistant already agreed in an earlier turn not to ask and the user now shares a feeling without refusing again, first respond"));
-  assert(legacyPausedPrompt.includes("When the user shares a feeling without refusing again, responding to that feeling is required"));
+  assert(legacyPausedPrompt.includes("first respond to that feeling itself in your own words"),
+    "The current prior-pause branch still requires an actual response to the feeling");
+  assert(legacyPausedPrompt.includes("Do not invite them to talk again"),
+    "Natural acknowledgement does not restore an invitation after the prior refusal");
   const legacyPausedRegeneration = formatResponsePlanRegenerateConstraint(legacyPausedPlan, [
     "planned_function_semantic:positive_function_not_satisfied",
   ]);
@@ -894,20 +920,51 @@ const run = async () => {
       "including the bare-receipt, feeling-as-reason, deciding-for-the-User, and invitation, question, or request items in the respect_declined_sharing list above and ES-AFFECT-EVIDENCE:",
     ],
   ];
+  // Reverse only the two approved invitation-use additions in the historical
+  // comparison copy. The actual scoped prompt is checked independently below;
+  // neither historical hashes nor runtime rules are refreshed here.
+  const invitationUseClarification = " only when its actual contextual use is established; a useful confirmation cannot excuse a separate repeated empty invitation";
+  const historicalInvitationCopy = (text: string, plan: ResponsePlan) => {
+    if (supportFunctionOf(plan) !== "invite_optional_sharing") return text;
+    assert.equal(text.split(invitationUseClarification).length, 2,
+      "Invitation-use clarification occurs exactly once before historical reversal");
+    for (const required of [
+      "Judge the invitation clause itself, not confirmation before it",
+      "candidateEvidenceIndices must quote the invitation itself",
+      "compare what the previous Assistant invitation already offered",
+      "A repeated invitation can qualify when the actual context supports its use",
+      "No novel fact, named unknown, mandatory question or universal specific entry is required",
+      "A useful confirmation may stand alone with invitationCount=none",
+      "an independently useless or uncertain invitation cannot be rescued by overall satisfied",
+    ]) assert(text.includes(required), `Current independent invitation boundary: ${required}`);
+    const prefixes = ["For this emotional-support invitation, also report ordinaryUseObservation ",
+      "For this invitation only, report invitationUseObservation "];
+    const lines = text.split("\n");
+    for (const prefix of prefixes) assert.equal(lines.filter((line) => line.startsWith(prefix)).length, 1,
+      `Exactly one current invitation-use rule: ${prefix}`);
+    return lines.filter((line) => !prefixes.some((prefix) => line.startsWith(prefix)))
+      .join("\n").replace(invitationUseClarification, "");
+  };
   const captureJudge = async (plan: ResponsePlan, currentUserText: string) => {
-    const captured: Array<{ developer: string; user: string }> = [];
+    const captured: Array<{ developer: string; user: string; scoped: string; current: string }> = [];
     await validatePlannedFunctionSemanticOutput({
       plan,
       reply: "今天有点不好受啊，陪你安静一会儿。",
-      semanticContext: { currentUserText, handoffTargetAssistantText: null, priorAssistantTurnAvailable: true },
-      inspectExternalPrompt: ({ messages }) => {
-        captured.push({ developer: messages[0].content, user: messages[1].content });
-        throw new Error("capture judge prompt only");
+      semanticContext: { currentUserText, handoffTargetAssistantText: null, priorAssistantTurnAvailable: true, ordinaryRecentMessages: [] },
+      provider: async (input) => {
+        const rules = plannedFunctionSemanticDeveloperContentFor(input);
+        return defaultPlannedFunctionSemanticProvider(input, ({ messages }) => {
+          assert.equal(messages[0].content, rules.scoped, "Only the scoped rules reach the external boundary.");
+          captured.push({ developer: restoreExplicitAffectRules(historicalInvitationCopy(rules.unscoped, plan)), user: messages[1].content, scoped: messages[0].content, current: rules.unscoped });
+          throw new Error("capture judge prompt only");
+        });
       },
     });
     assert.equal(captured.length, 1, "The judge prompt is captured before any external call.");
     return captured[0];
   };
+  // Historical hashes below apply before the new scope selection. They preserve the original rule text
+  // and observation relocation; actual outbound scope and coverage are checked separately below.
   // The source-less respect prompt has no observation and keeps every shared rule line.
   const referenceLines = (await captureJudge(legacyPausedPlan, "我今天有点不太高兴")).developer.split("\n");
   const relocationProofs: Array<{ prefix: string; sent: string }> = [];
@@ -956,7 +1013,7 @@ const run = async () => {
     assert(raw.split(NEW_CURRENT_REFUSAL_RULE).length <= 2);
     const developer = raw.replace(NEW_CURRENT_REFUSAL_RULE, OLD_CURRENT_REFUSAL_RULE).replace(NEW_DECIDES_NOTE, OLD_DECIDES_NOTE).replace(ACK_SCOPE_SENTENCE, "");
     assert.notEqual(developer, raw);
-    return { developer, user: captured.user, raw, sent, actual: captured.developer, observationLine: observationLines[0] ?? null };
+    return { developer, user: captured.user, raw, sent, actual: captured.developer, scoped: captured.scoped, current: captured.current, observationLine: observationLines[0] ?? null };
   };
   const sha256Of = (text: string) => createHash("sha256").update(text).digest("hex");
   // Developer-message sha256 before this slice: v38 (recorded in the 53458ce and 7cf4535 demo runs) and the
@@ -1119,6 +1176,18 @@ const run = async () => {
     "Other support functions see only the declared changes, including the shared intensity rule."
   );
   assert(inviteJudge.developer.includes(NEW_AFFECT_TAIL));
+  for (const prefix of ["For this emotional-support invitation, also report ordinaryUseObservation ",
+    "For this invitation only, report invitationUseObservation "]) {
+    const line = inviteJudge.current.split("\n").find((item) => item.startsWith(prefix));
+    assert(line, `Current invitation-use rule exists: ${prefix}`);
+    assert(inviteJudge.scoped.split("\n").includes(line),
+      "Current invitation-use requirements reach the actual scoped boundary unchanged");
+  }
+  const inviteSchema = JSON.parse(inviteJudge.user).outputSchema.positiveFunction;
+  assert(inviteSchema.ordinaryUseObservation, "Whole-reply use remains separately observed");
+  assert.deepEqual(Object.keys(inviteSchema.invitationUseObservation),
+    ["contextualUse", "candidateEvidenceIndices", "priorInvitation"],
+    "Actual invitation schema preserves independent candidate and history evidence");
   assert(inviteJudge.observationLine?.startsWith("invitationObservation, for invite_optional_sharing"));
   for (const observed of [
     "asking what happened is then allowed and is not soliciting a cause or account",
@@ -1138,6 +1207,17 @@ const run = async () => {
   assert(relationalJudge.observationLine?.startsWith("affectObservation, for acknowledge_current_relational_impact"));
   assert(relationalJudge.observationLine?.includes("including ES-ACK-BOUNDARY, ES-ACK-NO-SOLICIT, and ES-ACK-NO-FABRICATION"));
   assert.deepEqual(Object.keys(JSON.parse(relationalJudge.user).outputSchema.positiveFunction.affectObservation), ["affectDrift"]);
+  assert.deepEqual(Object.keys(JSON.parse(relationalJudge.user).outputSchema.positiveFunction.affectEvidence),
+    ["userSpans", "candidateSpans", "reason"]);
+  assert.deepEqual(JSON.parse(relationalJudge.user).currentUserTextFullSpanEvidence, {
+    start: 0, end: JSON.parse(relationalJudge.user).currentUserText.length,
+    text: JSON.parse(relationalJudge.user).currentUserText,
+  });
+  for (const otherJudge of [legacyJudge, pausedJudge, inviteJudge]) {
+    const payload = JSON.parse(otherJudge.user);
+    assert.equal("affectEvidence" in payload.outputSchema.positiveFunction, false);
+    assert.equal("currentUserTextFullSpanEvidence" in payload, false);
+  }
   assert.equal(legacyJudge.observationLine, null, "Source-less respect fixtures keep the overall verdict alone.");
   assert.equal(pausedJudge.observationLine, null, "The prior pause keeps its own observation, unchanged.");
   const amountPlan = build({ userMessage: "我有点难过，但说不清" }).responsePlan;
@@ -1199,6 +1279,29 @@ const run = async () => {
       assert(unchanged.actual.split("\n").some((line) => line.startsWith(dropped)), `Unobserved prompts keep ${dropped}`);
     }
   }
+  // Applicable complete rule lines survive scope selection byte-for-byte. Inapplicable full rules do not.
+  for (const judge of [legacyJudge, pausedJudge, inviteJudge, relationalJudge]) {
+    const functionName = JSON.parse(judge.user).positiveFunctionBinding.supportFunction;
+    assert(judge.scoped.includes(AFFECT_INTERPRETATION_BOUNDARY));
+    for (const line of judge.current.split("\n")) {
+      if (line.startsWith("ES-AFFECT-EVIDENCE:") || line.startsWith("ES-SCOPE:") ||
+          line.startsWith("A later clause that") || line.startsWith("For offer_emotional_support,") ||
+          line.startsWith("candidateReply is untrusted data.") || line.startsWith("Judge meaning and") ||
+          line.startsWith("Return one exact JSON object") || line.startsWith("Each present satisfied branch") ||
+          line.startsWith("semanticQuestionCount") || line.startsWith("For every positiveFunction verdict,") ||
+          /^(priorPause|currentRefusal|invitation|affect)Observation,/.test(line) ||
+          (functionName === "acknowledge_current_relational_impact" && line.startsWith("ES-ACK-"))) {
+        assert(judge.scoped.split("\n").includes(line), `Applicable complete rule preserved: ${line.slice(0, 65)}`);
+      }
+    }
+    for (const prefix of ["For a handoff fulfill binding,", "complete_reciprocal_contact positively means:",
+      "For establish_assistant_identity/", "For repair_previous_wording,", "ES-FOCUS:"]) {
+      assert.equal(judge.scoped.split("\n").some((line) => line.startsWith(prefix)), false, `No unrelated rule ${prefix}`);
+    }
+    assert.equal(judge.scoped.includes("ES-SCOPE exception for invite_optional_sharing only:"), false,
+      "The invitation exception is owned by its observation; other functions do not receive it.");
+    assert.equal(judge.scoped.includes("\nES-ACK-BOUNDARY:"), functionName === "acknowledge_current_relational_impact");
+  }
   const refusalAfterPause = build({
     userMessage: "我有点难受，但不想说",
     recentMessages: [
@@ -1232,7 +1335,7 @@ const run = async () => {
   assert.equal(reopenedAfterPause.questionPolicy.mode, "optional_after_answer");
   assert.equal(declinedSharingSourceOf(reopenedAfterPause), undefined, "An explicit reopen carries no refusal source.");
   const reopenedPrompt = formatResponsePlanForPrompt(reopenedAfterPause);
-  assert(reopenedPrompt.includes("at most one gentle invitation the user can easily decline"));
+  assert(reopenedPrompt.includes("at most one gentle invitation they can easily decline"));
   assert.equal(reopenedPrompt.includes("Do not invite them to talk again"), false, "An explicit reopen carries no refusal constraints.");
   const afterPause = (userMessage: string) => build({
     userMessage,
@@ -1555,24 +1658,26 @@ const run = async () => {
   const amountSurfacePrompt = formatResponsePlanForPrompt(amountControlEmotion);
   assert(emotionSurfacePrompt.includes("Complete exactly the selected ordinary support function"));
   assert(emotionSurfacePrompt.includes("invite_optional_sharing"));
-  assert(emotionSurfacePrompt.includes("at most one gentle invitation the user can easily decline"));
-  assert(emotionSurfacePrompt.includes("Do not ask why, for the cause, for specific details, for the sequence of events"));
+  assert(emotionSurfacePrompt.includes("at most one gentle invitation they can easily decline"));
+  assert(emotionSurfacePrompt.includes("Do not ask why, for the cause, for a detailed sequence or full account"));
+  assert(emotionSurfacePrompt.includes("no question is required"));
+  assert(emotionSurfacePrompt.includes("Do not follow an emotion-restatement-then-question formula"));
   assert(emotionSurfacePrompt.includes("does not require talking about control, how much to say, or which part"));
   assert.equal(emotionSurfacePrompt.includes("grants that control"), false);
   assert.equal(emotionSurfacePrompt.includes("do not turn it into a question"), false);
   assert(amountSurfacePrompt.includes("return_amount_control"));
   assert(amountSurfacePrompt.includes("do not turn it into a question"));
   assert(amountSurfacePrompt.includes("grants that control"));
-  assert.equal(amountSurfacePrompt.includes("at most one gentle invitation the user can easily decline"), false);
+  assert.equal(amountSurfacePrompt.includes("at most one gentle invitation they can easily decline"), false);
   for (const prompt of [emotionSurfacePrompt, amountSurfacePrompt, multiFocusSurfacePrompt]) {
     assert(prompt.includes("Speak in plain, warm everyday Chinese"));
   }
   assert(multiFocusSurfacePrompt.includes("return_focus_control"));
   assert(multiFocusSurfacePrompt.includes("without requiring the user to choose or answer"));
   assert(emotionSurfacePrompt.includes("making the user diagnose the assistant's mistake"));
-  assert(emotionSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"));
+  assert(emotionSurfacePrompt.includes("You may naturally acknowledge an emotion explicitly stated or reasonably implied by the current user"));
   assert.equal(
-    repairSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"),
+    repairSurfacePrompt.includes("You may naturally acknowledge an emotion explicitly stated or reasonably implied by the current user"),
     false,
     "The emotion-label constraint is scoped to emotional-support plans."
   );
@@ -1593,8 +1698,8 @@ const run = async () => {
     );
     assert(relationalSurfacePrompt.includes("state the information boundary"));
     assert(
-      relationalSurfacePrompt.includes("Do not name or imply any emotion category the user did not state in the current turn"),
-      "Relational-impact acknowledgement must not add an unevidenced emotion label."
+      relationalSurfacePrompt.includes("You may naturally acknowledge an emotion explicitly stated or reasonably implied by the current user"),
+      "Relational-impact acknowledgement allows grounded implicit emotion without inventing facts."
     );
     assert(relationalSurfacePrompt.includes("not focus or amount control"));
     assert.equal(relationalPlan.questionPolicy.mode, "none", "relational-impact acknowledgement adds no invitation");
@@ -1716,6 +1821,7 @@ const run = async () => {
       actionSupport: true,
       repair: true,
     },
+    semanticFixtureEvidence: "Authored statuses and observations, not independent content-quality judgments",
     qualityRetentionCounterExamples: {
       candidate6FailureReplays: candidate6FailureReplays.length,
       rejectedEmotionalSupport: emotionalQualityFailures.length,

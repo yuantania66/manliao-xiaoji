@@ -111,6 +111,7 @@ type FrozenPositiveContractSignature =
     };
 
 const frozenPositiveContractSignatureByScenarioId = new Map<string, FrozenPositiveContractSignature>([
+  ["emotion-mild-unhappy", { action: "offer_emotional_support", supportFunction: "return_focus_control", sourceTurnId: "emotion-mild-unhappy-turn", sourceText: "我今天有点不太高兴" }],
   ["emotion-vague-blocked", { action: "offer_emotional_support", supportFunction: "return_focus_control", sourceTurnId: "emotion-vague-blocked-turn", sourceText: "心里有点堵" }],
   ["emotion-sudden-sadness", { action: "offer_emotional_support", supportFunction: "return_focus_control", sourceTurnId: "emotion-sudden-sadness-turn", sourceText: "今天突然有点难过" }],
   ["emotion-future-worry", { action: "offer_emotional_support", supportFunction: "return_focus_control", sourceTurnId: "emotion-future-worry-turn", sourceText: "明天那件事让我有点担心" }],
@@ -126,6 +127,18 @@ const frozenPositiveContractSignatureByScenarioId = new Map<string, FrozenPositi
 ]);
 
 const exactNegativeFixtures = new Map<string, ExactNegativeFixture>([
+  // The category-only hard gate is retired. Frozen replies and labels are unchanged;
+  // the named remaining unsupported-affect/intensity/scope defects are owned by the semantic boundary.
+  // These fixed verdicts prove wiring only, not real-model semantic accuracy.
+  ["PC4-AFF-06", { scenarioId: "emotion-vague-blocked", action: "offer_emotional_support", defect: "anxiety_not_supported_by_current_context" }],
+  ["PC4-AFF-07", { scenarioId: "emotion-embarrassed", action: "offer_emotional_support", defect: "unsupported_affect_intensity" }],
+  ["PC4-AFF-09", { scenarioId: "emotion-irritated", action: "offer_emotional_support", defect: "unsupported_affect_intensity" }],
+  ["PC4-AFF-10", { scenarioId: "emotion-future-worry", action: "offer_emotional_support", defect: "unsupported_affect_intensity" }],
+  ["FRESH-AFF-FEAR-N", { scenarioId: "emotion-lonely", action: "offer_emotional_support", defect: "fear_not_supported_by_current_context" }],
+  ["C4-R15-1", { scenarioId: "emotion-irritated", action: "offer_emotional_support", defect: "out_of_scope_topic_switch" }],
+  ["C4-R16-1", { scenarioId: "emotion-irritated", action: "offer_emotional_support", defect: "out_of_scope_topic_switch" }],
+  ["C4-R17-1", { scenarioId: "emotion-irritated", action: "offer_emotional_support", defect: "out_of_scope_topic_switch" }],
+  ["C5-SF-01", { scenarioId: "emotion-mild-unhappy", action: "offer_emotional_support", defect: "unsupported_cause_and_detail_request" }],
   ["PC4-RAD-03", { scenarioId: "repair-advice-boundary", action: "repair_previous_wording", defect: "wrong_repair_subtype" }],
   ["PC4-RAD-04", { scenarioId: "repair-advice-boundary", action: "repair_previous_wording", defect: "missing_repair_target" }],
   ["PC4-RPQ-03", { scenarioId: "repair-question-pressure", action: "repair_previous_wording", defect: "wrong_repair_subtype" }],
@@ -225,9 +238,7 @@ const deferredCases = new Map([
 ]);
 
 const activeDeterministicCaseIds = new Set([
-  "PC4-AFF-06", "PC4-AFF-07", "PC4-AFF-09", "PC4-AFF-10",
-  "FRESH-AFF-FEAR-N", "FRESH-AFF-INTENSE-N",
-  "C4-R15-1", "C4-R16-1", "C4-R17-1", "C5-SF-01",
+  "FRESH-AFF-INTENSE-N",
 ]);
 
 const seenExactNegativeFixtures = new Set<string>();
@@ -1060,7 +1071,7 @@ const repairRegeneration = formatResponsePlanRegenerateConstraint(
 assert(repairRegeneration.includes("要不要先做个呼吸练习放松一下？"));
 assert(repairRegeneration.includes("不要求复述内部子类型"));
 
-assert.equal(exactNegativeFixtures.size, 80, "Post-candidate4 closure must wire exactly 80 approved A cases.");
+assert.equal(exactNegativeFixtures.size, 89, "Post-candidate4 closure must wire exactly 89 approved A cases.");
 assert.deepEqual(
   [...seenExactNegativeFixtures].sort(),
   [...exactNegativeFixtures.keys()].sort(),

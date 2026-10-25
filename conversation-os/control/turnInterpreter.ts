@@ -444,6 +444,7 @@ export const interpretTurnDeterministically = (context: ConversationControlConte
   return {
     ...relational,
     ordinaryPostureProposal: null,
+    acknowledgmentTreatmentEvidence: null,
     literalMeaning: text,
     primaryDialogueAct,
     secondarySignals,
@@ -557,6 +558,22 @@ const latestAssistantTurnExplicitlyHasNoClaims = (
 const isTargetOperation = (value: unknown): value is TargetPropositionOperation =>
   value === "explain" || value === "answer" || value === "affirm" || value === "repair_or_withdraw";
 
+const modelAcknowledgmentTreatmentEvidence = (
+  model: Partial<TurnInterpretation> | null
+): TurnInterpretation["acknowledgmentTreatmentEvidence"] => {
+  const raw = model?.acknowledgmentTreatmentEvidence;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw) ||
+      Object.keys(raw).sort().join(",") !== "acknowledgment,treatment") return null;
+  for (const span of [raw.acknowledgment, raw.treatment]) {
+    if (!span || typeof span !== "object" || Array.isArray(span) ||
+        Object.keys(span).sort().join(",") !== "end,source,sourceTurnId,start,text" ||
+        span.source !== "current_user_turn" || typeof span.sourceTurnId !== "string" ||
+        !Number.isInteger(span.start) || !Number.isInteger(span.end) || span.start < 0 || span.end <= span.start ||
+        typeof span.text !== "string" || !span.text.trim()) return null;
+  }
+  return structuredClone(raw);
+};
+
 const modelOrdinaryPostureProposal = (
   model: Partial<TurnInterpretation> | null
 ): TurnInterpretation["ordinaryPostureProposal"] => {
@@ -592,7 +609,24 @@ const modelOrdinaryPostureProposal = (
   const contribution = value.proposedContribution;
   if (!contribution || typeof contribution !== "object") return null;
   const proposed = contribution as Record<string, unknown>;
-  if (!hasExactKeys(proposed, ["targetSpanIndexes", "instruction"])) return null;
+  if (!hasExactKeys(proposed, ["targetSpanIndexes", "instruction", ...(Object.hasOwn(proposed, "purposeEvidence") ? ["purposeEvidence"] : []),
+      ...(Object.hasOwn(proposed, "acknowledgmentTreatmentEvidence") ? ["acknowledgmentTreatmentEvidence"] : [])])) return null;
+  const purpose = proposed.purposeEvidence;
+  if (purpose !== undefined && purpose !== null) {
+    if (typeof purpose !== "object" || Array.isArray(purpose)) return null;
+    const item = purpose as Record<string, unknown>;
+    if (!hasExactKeys(item, ["kind", "support", "acknowledgmentSpanIndex", "treatmentSpanIndex"]) ||
+        item.kind !== "limit_scope_of_acknowledgment" ||
+        !["supported", "only_repeats", "uncertain"].includes(item.support as string) ||
+        !Number.isInteger(item.acknowledgmentSpanIndex) || !Number.isInteger(item.treatmentSpanIndex)) return null;
+  }
+  const acknowledgmentTreatment = proposed.acknowledgmentTreatmentEvidence;
+  if (acknowledgmentTreatment !== undefined && acknowledgmentTreatment !== null) {
+    if (typeof acknowledgmentTreatment !== "object" || Array.isArray(acknowledgmentTreatment)) return null;
+    const item = acknowledgmentTreatment as Record<string, unknown>;
+    if (!hasExactKeys(item, ["acknowledgmentSpanIndex", "treatmentSpanIndex"]) ||
+        !Number.isInteger(item.acknowledgmentSpanIndex) || !Number.isInteger(item.treatmentSpanIndex)) return null;
+  }
   if (
     !Array.isArray(proposed.targetSpanIndexes) ||
     proposed.targetSpanIndexes.length === 0 ||
@@ -606,6 +640,10 @@ const modelOrdinaryPostureProposal = (
     proposedContribution: {
       targetSpanIndexes: proposed.targetSpanIndexes as number[],
       instruction: proposed.instruction,
+      ...(purpose !== undefined ? { purposeEvidence: purpose as NonNullable<TurnInterpretation["ordinaryPostureProposal"]>["proposedContribution"]["purposeEvidence"] } : {}),
+      ...(acknowledgmentTreatment !== undefined ? {
+        acknowledgmentTreatmentEvidence: acknowledgmentTreatment as NonNullable<TurnInterpretation["ordinaryPostureProposal"]>["proposedContribution"]["acknowledgmentTreatmentEvidence"],
+      } : {}),
     },
     evidence: value.evidence as string[],
   };
@@ -984,6 +1022,7 @@ export const mergeModelInterpretation = (
       evidence: candidate.evidence,
     })),
     ordinaryPostureProposal,
+    acknowledgmentTreatmentEvidence: modelAcknowledgmentTreatmentEvidence(model),
     confidence: modelConfidence,
     evidenceSources: model
       ? Array.from(new Set([...deterministic.evidenceSources, "model_interpretation"]))

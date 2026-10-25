@@ -3,6 +3,7 @@ export {
   determineConversationState,
   extractAffectEvidence,
   isNoTopicMessage,
+  isAssistantSharingInvitation,
   projectAffectEvidenceTerms,
   reopensInteraction,
 } from "./conversationStateService";

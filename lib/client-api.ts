@@ -1,6 +1,6 @@
 "use client";
 
-import { clearAuth, getAuthToken } from "./client-auth";
+import { captureAuthAuthority, clearAuth, isAuthAuthorityCurrent, isAuthIdentityCurrent, type AuthAuthority } from "./client-auth";
 
 type ApiSuccess<T> = {
   ok: true;
@@ -33,17 +33,22 @@ export class ClientApiError extends Error {
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   auth?: boolean;
+  authority?: AuthAuthority;
+  clearOnUnauthorized?: boolean;
 };
 
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}) => {
-  const { body, auth = true, headers, ...rest } = options;
+  const { body, auth = true, headers, authority = captureAuthAuthority(), clearOnUnauthorized = true, ...rest } = options;
+  if (auth && !isAuthAuthorityCurrent(authority)) {
+    throw new ClientApiError("登录状态已变化", 0, "STALE_AUTHORITY");
+  }
   const requestHeaders = new Headers(headers);
 
   if (body !== undefined && !requestHeaders.has("Content-Type")) {
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  const token = auth ? getAuthToken() : null;
+  const token = auth ? authority.token : null;
   if (token) {
     requestHeaders.set("Authorization", `Bearer ${token}`);
   }
@@ -66,7 +71,7 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}) 
     payload = null;
   }
 
-  if (response.status === 401) {
+  if (response.status === 401 && auth && clearOnUnauthorized && token && isAuthIdentityCurrent(authority)) {
     clearAuth();
   }
 

@@ -1,0 +1,563 @@
+{
+  "context": {
+    "conversationId": "purpose-live-core",
+    "currentTurnId": "purpose-live:t3",
+    "currentUserMessage": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+    "adjacentTurns": [
+      {
+        "id": "synthetic-carryover:t1",
+        "role": "user",
+        "content": "今天被领导当众批评了，有点不太高兴。"
+      },
+      {
+        "id": "synthetic-carryover:t2",
+        "role": "assistant",
+        "content": "被当众说确实容易让人不舒服，想聊聊的话随时可以说说。"
+      }
+    ],
+    "interactionMoveHandoffEnvelopePresent": false,
+    "interactionMoveHandoffTarget": null,
+    "semanticEvidence": {
+      "status": "sufficient",
+      "source": "current_user_message",
+      "reason": "The current user message contains self-contained semantic content."
+    },
+    "activeAnswerFrame": {
+      "type": null,
+      "question": null,
+      "compatible": false
+    },
+    "interaction": {
+      "contentAvailability": "has_topic",
+      "engagement": "engaged",
+      "initiativeDirection": "user_leads",
+      "affect": "unknown",
+      "affectEvidence": [],
+      "stopIntent": false,
+      "evidence": [
+        "contentAvailability=has_topic",
+        "current turn responds to the immediately preceding assistant turn",
+        "immediately preceding assistant turn invited sharing",
+        "affect=unknown"
+      ]
+    },
+    "evidenceSignals": {
+      "explicitAdviceRequest": false
+    },
+    "repairSignal": false,
+    "correction": null,
+    "grounding": {
+      "source": "assistant_grounding_v3",
+      "availableFacts": {
+        "product": {
+          "name": "慢聊小记"
+        },
+        "assistant": {
+          "displayName": "小慢",
+          "kind": "AI聊天助手",
+          "isAi": true,
+          "isClinician": false,
+          "roleBoundary": "提供文字聊天与一般情绪支持，不是心理医生、心理咨询师或治疗师。"
+        },
+        "modalities": {
+          "textInput": true,
+          "textOutput": true,
+          "voiceInput": false,
+          "voiceOutput": false,
+          "vision": false,
+          "hearing": false
+        },
+        "embodiment": {
+          "hasBody": false,
+          "canSit": false,
+          "canSleep": false,
+          "canHug": false,
+          "canTouch": false,
+          "boundary": "没有真实身体，不能字面执行身体动作或身处用户身边。"
+        },
+        "capabilities": {
+          "currentTimeWithoutContext": false,
+          "memory": "只能使用本轮明确提供的相邻对话和经过系统选择的记忆上下文；不能声称自由查看全部历史或现实世界信息。",
+          "proactiveMessaging": {
+            "openOrReturnGreeting": true,
+            "backgroundPush": false,
+            "boundary": "用户打开聊天页面时，助手可以先发起一条问候；小程序关闭后不能像微信好友一样主动推送消息。"
+          }
+        }
+      },
+      "prohibitedClaims": [
+        "不得声称助手是真人、人类、心理医生、心理咨询师或治疗师。",
+        "不得声称助手拥有真实身体、物理存在，或真的坐下、睡觉、拥抱、触碰、行走、躺下或身处用户身边。",
+        "不得声称看见、听见或感知用户及其现实环境，除非对应能力和输入已由系统明确提供。",
+        "不得声称能够发送或播放当前产品不支持的语音。",
+        "不得声称自由查看全部历史、未选择的记忆、现实世界信息或未提供的实时信息。",
+        "不得声称一直在等待用户、正在等用户来聊天，或在小程序关闭后仍能主动推送消息。"
+      ]
+    },
+    "episodeMemoryCandidates": [],
+    "confirmedFacts": [
+      "Current user message: 他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。"
+    ],
+    "unconfirmedHypotheses": [],
+    "safety": {
+      "level": "low",
+      "triggered": false
+    }
+  },
+  "interpretation": {
+    "contentMeaning": {
+      "literalText": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+      "semanticEvidence": {
+        "status": "sufficient",
+        "source": "current_user_message",
+        "reason": "The current user message contains self-contained semantic content."
+      },
+      "explicitPropositions": [
+        {
+          "id": "purpose-live:t3:proposition-1",
+          "text": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+          "sourceTurnId": "purpose-live:t3",
+          "confidence": 1,
+          "evidence": [
+            "Current user utterance; no inferred affect, motive, or world fact added."
+          ]
+        }
+      ],
+      "directQuestions": [],
+      "contentAvailabilityEvidence": [
+        "contentAvailability=has_topic"
+      ],
+      "affectEvidence": []
+    },
+    "responseRelation": {
+      "candidates": [
+        {
+          "relation": "continues_active_thread",
+          "confidence": 0.95,
+          "targetTurnId": "synthetic-carryover:t2",
+          "evidence": [
+            "User provides specific details about the incident mentioned in t1 and invited in t2",
+            "User elaborates on the emotional reaction ('hard to bear/humiliated') to being criticized publicly",
+            "Content directly extends the topic of being criticized by the leader established in adjacent turns"
+          ]
+        },
+        {
+          "relation": "acknowledges_previous_move",
+          "confidence": 0.8,
+          "targetTurnId": "synthetic-carryover:t2",
+          "evidence": [
+            "User responds to the assistant's invitation to share by providing the requested narrative detail",
+            "User validates the assistant's premise that public criticism is uncomfortable by confirming their own feeling of humiliation"
+          ]
+        }
+      ],
+      "ambiguous": true
+    },
+    "userMoveRelation": null,
+    "stateUpdate": {
+      "commonGround": [
+        {
+          "propositionId": "purpose-live:t3:proposition-1",
+          "proposition": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+          "operation": "confirm",
+          "subject": "user",
+          "speaker": "user",
+          "epistemicStatus": "asserted_by_user",
+          "sourceTurnId": "purpose-live:t3",
+          "confidence": 1,
+          "evidence": [
+            "Current user utterance; no inferred affect, motive, or world fact added."
+          ]
+        }
+      ],
+      "obligationChanges": [],
+      "initiativeProposal": "user",
+      "activeThreadProposal": {
+        "sourceTurnId": "synthetic-carryover:t2",
+        "relation": "continue",
+        "evidence": [
+          "Adjacent assistant turn supplies the active thread."
+        ]
+      },
+      "repairProposal": null
+    },
+    "interpretations": [
+      {
+        "id": "purpose-live:t3:interpretation-1",
+        "contentMeaning": {
+          "literalText": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+          "semanticEvidence": {
+            "status": "sufficient",
+            "source": "current_user_message",
+            "reason": "The current user message contains self-contained semantic content."
+          },
+          "explicitPropositions": [
+            {
+              "id": "purpose-live:t3:proposition-1",
+              "text": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+              "sourceTurnId": "purpose-live:t3",
+              "confidence": 1,
+              "evidence": [
+                "Current user utterance; no inferred affect, motive, or world fact added."
+              ]
+            }
+          ],
+          "directQuestions": [],
+          "contentAvailabilityEvidence": [
+            "contentAvailability=has_topic"
+          ],
+          "affectEvidence": []
+        },
+        "responseRelation": {
+          "relation": "continues_active_thread",
+          "confidence": 0.95,
+          "targetTurnId": "synthetic-carryover:t2",
+          "evidence": [
+            "User provides specific details about the incident mentioned in t1 and invited in t2",
+            "User elaborates on the emotional reaction ('hard to bear/humiliated') to being criticized publicly",
+            "Content directly extends the topic of being criticized by the leader established in adjacent turns"
+          ]
+        },
+        "stateUpdate": {
+          "commonGround": [
+            {
+              "propositionId": "purpose-live:t3:proposition-1",
+              "proposition": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+              "operation": "confirm",
+              "subject": "user",
+              "speaker": "user",
+              "epistemicStatus": "asserted_by_user",
+              "sourceTurnId": "purpose-live:t3",
+              "confidence": 1,
+              "evidence": [
+                "Current user utterance; no inferred affect, motive, or world fact added."
+              ]
+            }
+          ],
+          "obligationChanges": [],
+          "initiativeProposal": "user",
+          "activeThreadProposal": {
+            "sourceTurnId": "synthetic-carryover:t2",
+            "relation": "continue",
+            "evidence": [
+              "Adjacent assistant turn supplies the active thread."
+            ]
+          },
+          "repairProposal": null
+        },
+        "confidence": 0.95,
+        "evidence": [
+          "User provides specific details about the incident mentioned in t1 and invited in t2",
+          "User elaborates on the emotional reaction ('hard to bear/humiliated') to being criticized publicly",
+          "Content directly extends the topic of being criticized by the leader established in adjacent turns"
+        ]
+      },
+      {
+        "id": "purpose-live:t3:interpretation-2",
+        "contentMeaning": {
+          "literalText": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+          "semanticEvidence": {
+            "status": "sufficient",
+            "source": "current_user_message",
+            "reason": "The current user message contains self-contained semantic content."
+          },
+          "explicitPropositions": [
+            {
+              "id": "purpose-live:t3:proposition-1",
+              "text": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+              "sourceTurnId": "purpose-live:t3",
+              "confidence": 1,
+              "evidence": [
+                "Current user utterance; no inferred affect, motive, or world fact added."
+              ]
+            }
+          ],
+          "directQuestions": [],
+          "contentAvailabilityEvidence": [
+            "contentAvailability=has_topic"
+          ],
+          "affectEvidence": []
+        },
+        "responseRelation": {
+          "relation": "acknowledges_previous_move",
+          "confidence": 0.8,
+          "targetTurnId": "synthetic-carryover:t2",
+          "evidence": [
+            "User responds to the assistant's invitation to share by providing the requested narrative detail",
+            "User validates the assistant's premise that public criticism is uncomfortable by confirming their own feeling of humiliation"
+          ]
+        },
+        "stateUpdate": {
+          "commonGround": [
+            {
+              "propositionId": "purpose-live:t3:proposition-1",
+              "proposition": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+              "operation": "confirm",
+              "subject": "user",
+              "speaker": "user",
+              "epistemicStatus": "asserted_by_user",
+              "sourceTurnId": "purpose-live:t3",
+              "confidence": 1,
+              "evidence": [
+                "Current user utterance; no inferred affect, motive, or world fact added."
+              ]
+            }
+          ],
+          "obligationChanges": [],
+          "initiativeProposal": "user",
+          "activeThreadProposal": {
+            "sourceTurnId": "synthetic-carryover:t2",
+            "relation": "continue",
+            "evidence": [
+              "Adjacent assistant turn supplies the active thread."
+            ]
+          },
+          "repairProposal": null
+        },
+        "confidence": 0.8,
+        "evidence": [
+          "User responds to the assistant's invitation to share by providing the requested narrative detail",
+          "User validates the assistant's premise that public criticism is uncomfortable by confirming their own feeling of humiliation"
+        ]
+      }
+    ],
+    "ordinaryPostureProposal": {
+      "mode": "accompany",
+      "sourceSpans": [
+        {
+          "source": "current_user_turn",
+          "sourceTurnId": "purpose-live:t3",
+          "start": 0,
+          "end": 33,
+          "text": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。"
+        }
+      ],
+      "proposedContribution": {
+        "targetSpanIndexes": [
+          0
+        ],
+        "instruction": "User admits fault regarding the specific issue but expresses distress over the public nature of the criticism causing humiliation."
+      },
+      "evidence": [
+        "User articulates a tension between accepting factual responsibility and feeling emotionally hurt by the public delivery",
+        "User expresses vulnerability regarding social shame ('humiliated') without explicitly asking for analysis or solutions",
+        "Content reflects inner experience and feelings about an interpersonal event suitable for accompaniment"
+      ]
+    },
+    "acknowledgmentTreatmentEvidence": {
+      "acknowledgment": {
+        "source": "current_user_turn",
+        "sourceTurnId": "purpose-live:t3",
+        "text": "他说的那个问题确实是我疏忽了",
+        "start": 0,
+        "end": 14
+      },
+      "treatment": {
+        "source": "current_user_turn",
+        "sourceTurnId": "purpose-live:t3",
+        "text": "当着那么多人说，我还是觉得很难堪",
+        "start": 16,
+        "end": 32
+      }
+    },
+    "literalMeaning": "The user acknowledges that the issue raised by the leader was indeed due to their own oversight, but expresses feeling humiliated or embarrassed because it was pointed out in front of many people.",
+    "primaryDialogueAct": "share",
+    "secondarySignals": [],
+    "directQuestions": [],
+    "interaction": {
+      "contentAvailability": "has_topic",
+      "engagement": "engaged",
+      "initiativeDirection": "user_leads",
+      "affect": "unknown",
+      "affectEvidence": [],
+      "stopIntent": false,
+      "evidence": [
+        "contentAvailability=has_topic",
+        "current turn responds to the immediately preceding assistant turn",
+        "immediately preceding assistant turn invited sharing",
+        "affect=unknown"
+      ]
+    },
+    "repairSignal": false,
+    "correction": null,
+    "groundingReference": "none",
+    "confidence": 0.9,
+    "evidenceSources": [
+      "current_user_message",
+      "adjacent_turn",
+      "model_interpretation"
+    ],
+    "notes": [
+      "Deterministic interpretation covers explicit questions, capability boundaries, pause/stop, and existing interaction evidence.",
+      "User distinguishes between the validity of the criticism (admitted negligence) and the painful manner of its delivery (public humiliation).",
+      "AcknowledgmentTreatmentEvidence captures the user's admission of the leader's factual point alongside the expressed discomfort with the leader's public treatment."
+    ]
+  },
+  "savedPlan": {
+    "planId": "purpose-live-core:purpose-live:t3:response-plan",
+    "decisionOwner": "conversation_os.response_planner",
+    "behaviorSource": "ordinary_conversation",
+    "planningDepth": "deep",
+    "answerObligations": [],
+    "disclosureScope": {
+      "conversationId": "purpose-live-core",
+      "turnId": "purpose-live:t3"
+    },
+    "correction": null,
+    "responseActions": [
+      "acknowledge_without_psychologizing"
+    ],
+    "groundingFacts": [],
+    "requiredDisclosure": [],
+    "clinicalStrategy": null,
+    "positiveFunctionContract": {
+      "action": "acknowledge_without_psychologizing",
+      "sourceTurnId": "purpose-live:t3",
+      "sourceText": "他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+      "allowIdle": false,
+      "responseFunction": "respond_naturally",
+      "evidence": [
+        "currentUserMessage=他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。"
+      ]
+    },
+    "interactionMoveHandoffPlan": null,
+    "ordinaryPosture": {
+      "mode": "accompany",
+      "sourceSpans": [
+        {
+          "source": "current_user_turn",
+          "sourceTurnId": "purpose-live:t3",
+          "text": "他说的那个问题确实是我疏忽了",
+          "start": 0,
+          "end": 14
+        },
+        {
+          "source": "current_user_turn",
+          "sourceTurnId": "purpose-live:t3",
+          "text": "当着那么多人说，我还是觉得很难堪",
+          "start": 16,
+          "end": 32
+        }
+      ],
+      "requiredContribution": {
+        "targetSpanIndexes": [
+          0,
+          1
+        ],
+        "instruction": "回应用户明确承认的一点与其对相关对待方式的不适，澄清承认前者不等于必须接受后者；不只复述两者并存，不替用户推断隐藏心理、需要或动机，不强制追问、建议或推进。",
+        "purposeEvidence": {
+          "kind": "limit_scope_of_acknowledgment",
+          "support": "supported",
+          "acknowledgmentSpanIndex": 0,
+          "treatmentSpanIndex": 1
+        }
+      },
+      "evidence": [
+        "owner=conversation_os.response_planner",
+        "purposeFrom=independent_current_user_acknowledgment_treatment_roles"
+      ]
+    },
+    "questionPolicy": {
+      "mode": "optional_after_answer",
+      "reason": "A follow-up is optional only after the current activity is completed."
+    },
+    "closurePolicy": {
+      "mode": "forbid_closure",
+      "reason": "Interaction State contains no accepted stop transition."
+    },
+    "tone": [
+      "natural colloquial Chinese",
+      "direct",
+      "neutral-friendly without generic reassurance"
+    ],
+    "stance": [
+      "Realize the actions and evidence boundaries of this ResponsePlan. Contextual acceptance already permitted by the plan may respond to the User's expressed situation, feelings and their relationships without being a previously stated proposition; this does not authorize unsupported factual claims or hidden motives or psychological states.",
+      "Do not promote hypotheses into common ground.",
+      "Do not restate propositions rejected by the user.",
+      "Contextual acceptance: For a personal concern in the current User message, respond with an accepting, non-judgmental stance toward the User's expressed experience and relationships, without requiring the feeling to be justified or dismissed. Acceptance is a stance, not required spoken feeling validation or a follow-up question; it cannot replace another selected support function. Bare normalization, generic reassurance or paraphrase alone is insufficient. Accepting a feeling does not approve conduct, assign blame, guarantee outcomes, or establish hidden motives or psychological facts. Follow current corrections, refusals and tasks; do not require an emotion preface, question, advice or regulation exercise."
+    ],
+    "lengthGuidance": "Usually one or two concise sentences.",
+    "prohibitedClaims": [
+      "不得声称助手是真人、人类、心理医生、心理咨询师或治疗师。",
+      "不得声称助手拥有真实身体、物理存在，或真的坐下、睡觉、拥抱、触碰、行走、躺下或身处用户身边。",
+      "不得声称看见、听见或感知用户及其现实环境，除非对应能力和输入已由系统明确提供。",
+      "不得声称能够发送或播放当前产品不支持的语音。",
+      "不得声称自由查看全部历史、未选择的记忆、现实世界信息或未提供的实时信息。",
+      "不得声称一直在等待用户、正在等用户来聊天，或在小程序关闭后仍能主动推送消息。",
+      "不得在没有证据时断言用户的情绪、意图或心理状态。"
+    ],
+    "safetyConstraints": [],
+    "selectedEpisodeMemory": null,
+    "relevanceProvenance": [
+      {
+        "planElement": "responseAction:acknowledge_without_psychologizing",
+        "source": "interaction_state",
+        "sourceTurnId": "purpose-live:t3",
+        "evidence": [
+          "currentUserMessage=他说的那个问题确实是我疏忽了，但当着那么多人说，我还是觉得很难堪。",
+          "currentActivity=developing_thread",
+          "Adjacent assistant turn supplies the active thread."
+        ]
+      },
+      {
+        "planElement": "ordinaryPosture:binding",
+        "source": "current_turn",
+        "sourceTurnId": "purpose-live:t3",
+        "evidence": [
+          "mode=accompany",
+          "sourceSpan[0]=current_user_turn:purpose-live:t3:0:14:\"他说的那个问题确实是我疏忽了\"",
+          "sourceSpan[1]=current_user_turn:purpose-live:t3:16:32:\"当着那么多人说，我还是觉得很难堪\"",
+          "targetSpanIndexes=[0,1]",
+          "instruction=\"回应用户明确承认的一点与其对相关对待方式的不适，澄清承认前者不等于必须接受后者；不只复述两者并存，不替用户推断隐藏心理、需要或动机，不强制追问、建议或推进。\"",
+          "purposeEvidence={\"kind\":\"limit_scope_of_acknowledgment\",\"support\":\"supported\",\"acknowledgmentSpanIndex\":0,\"treatmentSpanIndex\":1}",
+          "postureEvidence[0]=\"owner=conversation_os.response_planner\"",
+          "postureEvidence[1]=\"purposeFrom=independent_current_user_acknowledgment_treatment_roles\""
+        ]
+      }
+    ],
+    "evidence": [
+      "currentActivity=developing_thread",
+      "planningDepth=deep",
+      "initiativeOwner=user",
+      "openObligations=0",
+      "clinicalInvoked=false",
+      "ordinaryHandoff=none",
+      "Adjacent assistant turn supplies the active thread."
+    ]
+  },
+  "rawReplies": [
+    {
+      "arm": "keep",
+      "round": 1,
+      "rawProviderJson": "{\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"message\":{\"content\":\"承认疏忽是一回事，但被当众指出来感到难堪也很正常，这两者并不矛盾。\",\"role\":\"assistant\"}}],\"created\":1792556052,\"id\":\"chatcmpl-11678521-7174-90e9-84f4-e7e621d24d11\",\"model\":\"qwen3.7-max\",\"object\":\"chat.completion\",\"usage\":{\"completion_tokens\":21,\"prompt_tokens\":1880,\"prompt_tokens_details\":{\"cached_tokens\":0},\"total_tokens\":1901}}",
+      "sha256": "51f9a96abe9ef8ef57ad5012e0a63f7d263eb8379a32cc229dc23c70d1c46067",
+      "expectedUserOverallAcceptance": "REJECTED_BY_USER",
+      "priorNarrowBlindAssessmentKeptInOriginalArtifact": true
+    },
+    {
+      "arm": "remove",
+      "round": 1,
+      "rawProviderJson": "{\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"message\":{\"content\":\"承认疏忽是一回事，但不代表就得接受被当众指出来。这种难堪很正常，不是你的问题。\",\"role\":\"assistant\"}}],\"created\":1792556054,\"id\":\"chatcmpl-c913520f-41ac-9bac-87d0-49c60ea194f9\",\"model\":\"qwen3.7-max\",\"object\":\"chat.completion\",\"usage\":{\"completion_tokens\":23,\"prompt_tokens\":1827,\"prompt_tokens_details\":{\"cached_tokens\":1152},\"total_tokens\":1850}}",
+      "sha256": "314a0eebfc41b0ffbfa74428eb03125de19891d82a19ae8e5f128cdee782777e",
+      "expectedUserOverallAcceptance": "REJECTED_BY_USER",
+      "priorNarrowBlindAssessmentKeptInOriginalArtifact": true
+    },
+    {
+      "arm": "remove",
+      "round": 2,
+      "rawProviderJson": "{\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"message\":{\"content\":\"承认疏忽是一回事，但不代表就得接受当众被说的方式，觉得难堪很正常。\",\"role\":\"assistant\"}}],\"created\":1792556056,\"id\":\"chatcmpl-117503c6-438d-9592-a281-3fe76d83cd12\",\"model\":\"qwen3.7-max\",\"object\":\"chat.completion\",\"usage\":{\"completion_tokens\":19,\"prompt_tokens\":1827,\"prompt_tokens_details\":{\"cached_tokens\":1152},\"total_tokens\":1846}}",
+      "sha256": "20277af0a986cba09239434a2a2769d3f844cd7f969fa7fe6843e0bc8f893d94",
+      "expectedUserOverallAcceptance": "REJECTED_BY_USER",
+      "priorNarrowBlindAssessmentKeptInOriginalArtifact": true
+    },
+    {
+      "arm": "keep",
+      "round": 2,
+      "rawProviderJson": "{\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"message\":{\"content\":\"承认疏忽是一回事，但不代表就得接受被当众指出来。这种难堪本来就和认不认错没关系。\",\"role\":\"assistant\"}}],\"created\":1792556057,\"id\":\"chatcmpl-b2f370d8-332e-9775-9aa5-d8888e77d71b\",\"model\":\"qwen3.7-max\",\"object\":\"chat.completion\",\"usage\":{\"completion_tokens\":24,\"prompt_tokens\":1880,\"prompt_tokens_details\":{\"cached_tokens\":1152},\"total_tokens\":1904}}",
+      "sha256": "6193df4a52dd82c06bb0d359f60a0a358127ebbaf63a9b7d284a92d8dbf470ef",
+      "expectedUserOverallAcceptance": "REJECTED_BY_USER",
+      "priorNarrowBlindAssessmentKeptInOriginalArtifact": true
+    }
+  ],
+  "note": "Real provider bytes retained. User rejected all four complete replies after the narrow review. Do not rewrite old observations or count purpose realization as whole-reply acceptance."
+}

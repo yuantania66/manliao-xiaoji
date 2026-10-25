@@ -1,6 +1,7 @@
 const { readChatMessages, writeChatMessages, nowIso, dateKey } = require("../../utils/local-data");
 const { getSafeLayout } = require("../../utils/layout");
-const { getDataMode } = require("../../utils/auth");
+const { getDataMode, captureAuthAuthority, isCurrentAuthAuthority } = require("../../utils/auth");
+const { captureGuestAuthority, isCurrentGuestAuthority, createGuestTurnId } = require("../../utils/guest-session");
 const {
   listSessions,
   createSession,
@@ -124,6 +125,8 @@ const safeReplyFailureText = (data) => {
     : "这次回复没能生成，请稍后再试。";
 };
 
+const staleChatAuthority = () => new Error("聊天身份或会话已变化");
+
 Page({
   data: {
     pageTop: 92,
@@ -161,7 +164,13 @@ Page({
   bottomSafe: 23,
   guestGreetingPending: false,
   guestGreetingRequestId: 0,
+  guestPageEpoch: 0,
+  authPageEpoch: 0,
+  authSessionEpoch: 0,
+  authSessionIdentity: null,
+  authSessionTarget: "",
   sessionBootstrapPromise: null,
+  sessionBootstrapAuthority: null,
 
   onLoad(options = {}) {
     this.setData({
@@ -173,14 +182,72 @@ Page({
   },
 
   onShow() {
+    this.authPageEpoch += 1;
+    this.sessionBootstrapPromise = null;
+    this.sessionBootstrapAuthority = null;
+    this.guestPageEpoch += 1;
+    this.guestGreetingRequestId += 1;
+    this.guestGreetingPending = false;
+    this.clearAssistantTypingTimers();
+    this.setData({ isSending: false, isTyping: false });
     this.updateSafeLayout();
     this.loadMessages();
   },
 
   onUnload() {
+    this.authPageEpoch += 1;
+    this.sessionBootstrapPromise = null;
+    this.sessionBootstrapAuthority = null;
+    this.guestPageEpoch += 1;
     this.clearAssistantTypingTimers();
     this.guestGreetingRequestId += 1;
     this.guestGreetingPending = false;
+  },
+
+  captureGuestPageAuthority() {
+    return { pageEpoch: this.guestPageEpoch, session: captureGuestAuthority() };
+  },
+
+  isCurrentGuestPageAuthority(authority) {
+    return authority.pageEpoch === this.guestPageEpoch && getDataMode() === "guest" &&
+      isCurrentGuestAuthority(authority.session);
+  },
+
+  captureViewGuard() {
+    if (getDataMode() === "authenticated") {
+      const authority = this.captureAuthenticatedPageAuthority();
+      return () => this.isCurrentAuthenticatedPageAuthority(authority);
+    }
+    const authority = this.captureGuestPageAuthority();
+    return getDataMode() === "guest" ? () => this.isCurrentGuestPageAuthority(authority) : () => true;
+  },
+
+  captureAuthenticatedPageAuthority() {
+    const identity = captureAuthAuthority();
+    if (!identity) return null;
+    if (this.authSessionIdentity && !isCurrentAuthAuthority(this.authSessionIdentity)) {
+      this.authSessionEpoch += 1;
+      this.sessionBootstrapPromise = null;
+      this.sessionBootstrapAuthority = null;
+      this.setData({ sessionId: "", targetSessionId: "" });
+    }
+    this.authSessionIdentity = identity;
+    return { identity, pageEpoch: this.authPageEpoch, sessionEpoch: this.authSessionEpoch, sessionId: this.data.sessionId };
+  },
+
+  isCurrentAuthenticatedPageAuthority(authority, sessionId = authority && authority.sessionId) {
+    return Boolean(authority && authority.pageEpoch === this.authPageEpoch &&
+      authority.sessionEpoch === this.authSessionEpoch && isCurrentAuthAuthority(authority.identity) &&
+      sessionId === this.data.sessionId);
+  },
+
+  bindAuthenticatedSession(authority, session) {
+    if (!session || !session.id || (!this.isCurrentAuthenticatedPageAuthority(authority) &&
+      !this.isCurrentAuthenticatedPageAuthority(authority, session.id))) throw staleChatAuthority();
+    // Concurrent consumers of the same bootstrap adopt its result in one authority round.
+    authority.sessionId = session.id;
+    if (this.data.sessionId !== session.id) this.setData({ sessionId: session.id });
+    return session;
   },
 
   updateSafeLayout() {
@@ -199,35 +266,56 @@ Page({
     });
   },
 
-  ensureAuthenticatedSession() {
+  ensureAuthenticatedSession(authority = this.captureAuthenticatedPageAuthority()) {
+    if (!this.isCurrentAuthenticatedPageAuthority(authority)) return Promise.reject(staleChatAuthority());
     if (this.data.sessionId) return Promise.resolve({ id: this.data.sessionId });
-    if (!this.sessionBootstrapPromise) {
-      this.sessionBootstrapPromise = listSessions()
-        .then((data) => (data.items || [])[0] || createSession())
-        .then((session) => {
-          this.setData({ sessionId: session.id });
-          return session;
-        })
-        .finally(() => {
-          this.sessionBootstrapPromise = null;
-        });
+    if (this.sessionBootstrapPromise && !this.isCurrentAuthenticatedPageAuthority(this.sessionBootstrapAuthority)) {
+      this.sessionBootstrapPromise = null;
+      this.sessionBootstrapAuthority = null;
     }
-    return this.sessionBootstrapPromise;
+    if (!this.sessionBootstrapPromise) {
+      const flight = listSessions()
+        .then((data) => {
+          if (!this.isCurrentAuthenticatedPageAuthority(authority)) throw staleChatAuthority();
+          return (data.items || [])[0] || createSession();
+        })
+        .then((session) => this.bindAuthenticatedSession(authority, session))
+        .finally(() => {
+          if (this.sessionBootstrapPromise === flight) {
+            this.sessionBootstrapPromise = null;
+            this.sessionBootstrapAuthority = null;
+          }
+        });
+      this.sessionBootstrapAuthority = authority;
+      this.sessionBootstrapPromise = flight;
+    }
+    return this.sessionBootstrapPromise.then((session) => this.bindAuthenticatedSession(authority, session));
   },
 
   onKeyboardHeightChange(event) {
+    const isCurrent = this.captureViewGuard();
     const height = Math.max(0, Number(event.detail && event.detail.height) || 0);
     const inputBottom = height > 0 ? height + 8 : this.bottomSafe;
     this.setData({
       inputBottom,
       messagesBottom: inputBottom + 66
     }, () => {
-      this.scrollTo("chat-bottom");
+      if (isCurrent()) this.scrollTo("chat-bottom");
     });
   },
 
   loadMessages() {
     const dataMode = getDataMode();
+    let authority = dataMode === "authenticated" ? this.captureAuthenticatedPageAuthority() : null;
+    if (authority && this.authSessionTarget !== this.data.targetSessionId) {
+      this.authSessionTarget = this.data.targetSessionId;
+      this.authSessionEpoch += 1;
+      this.sessionBootstrapPromise = null;
+      this.sessionBootstrapAuthority = null;
+      this.setData({ sessionId: "" });
+      authority = this.captureAuthenticatedPageAuthority();
+    }
+    const isCurrent = () => this.isCurrentAuthenticatedPageAuthority(authority);
     this.setData({
       dataMode,
       statusText: "",
@@ -242,15 +330,15 @@ Page({
     if (dataMode === "authenticated") {
       const loadSession = this.data.targetSessionId
         ? Promise.resolve({ id: this.data.targetSessionId })
-        : this.ensureAuthenticatedSession();
+        : this.ensureAuthenticatedSession(authority);
 
       loadSession
         .then((session) => {
-          this.setData({ sessionId: session.id });
+          this.bindAuthenticatedSession(authority, session);
           return listMessages(session.id);
         })
         .then((data) => {
-          if (!data) return;
+          if (!data || !isCurrent()) return;
           const messages = sortByTime(
             (data.items || []).map((item) =>
               withTimeLabel({
@@ -272,10 +360,11 @@ Page({
             isGreetingLoading: false,
             scrollTarget: ""
           }, () => {
-            this.scrollToInitialTarget(scrollTarget);
+            if (isCurrent()) this.scrollToInitialTarget(scrollTarget);
           });
         })
         .catch(() => {
+          if (!isCurrent()) return;
           this.setData({
             messages: [],
             isEmpty: true,
@@ -302,6 +391,7 @@ Page({
   },
 
   loadLocalMessages() {
+    const isCurrent = this.captureViewGuard();
     const messages = sortByTime(readChatMessages().map(withTimeLabel));
     const scrollTarget = this.getInitialScrollTarget(messages);
     this.setData({
@@ -311,25 +401,29 @@ Page({
       scrollTarget: "",
       statusText: "游客模式，本地聊天不会同步。"
     }, () => {
-      this.scrollToInitialTarget(scrollTarget);
+      if (isCurrent()) this.scrollToInitialTarget(scrollTarget);
     });
     if (messages.length === 0) this.loadInitialGuestGreeting();
   },
 
   loadInitialGuestGreeting() {
     if (this.guestGreetingPending || readChatMessages().length > 0) return;
+    const authority = this.captureGuestPageAuthority();
+    const isCurrent = () => this.isCurrentGuestPageAuthority(authority);
     const requestId = this.guestGreetingRequestId + 1;
     this.guestGreetingRequestId = requestId;
     this.guestGreetingPending = true;
     getGuestGreeting({
       kind: "initial",
       recentMessages: [],
-      recentGreetings: []
+      recentGreetings: [],
+      authority: authority.session,
+      isCurrent
     })
       .then((data) => {
         if (
           requestId !== this.guestGreetingRequestId ||
-          getDataMode() !== "guest" ||
+          !isCurrent() ||
           readChatMessages().length > 0
         ) return;
         const assistant = data && data.assistantMessage;
@@ -351,17 +445,17 @@ Page({
           isGreetingLoading: false,
           statusText: "游客模式，本地聊天不会同步。",
           scrollTarget: ""
-        }, () => this.scrollToInitialTarget("chat-bottom"));
+        }, () => { if (isCurrent()) this.scrollToInitialTarget("chat-bottom"); });
       })
       .catch(() => {
-        if (requestId !== this.guestGreetingRequestId) return;
+        if (requestId !== this.guestGreetingRequestId || !isCurrent()) return;
         this.setData({
           isGreetingLoading: false,
           replyStatusText: "欢迎语暂时没能生成，你可以直接发消息。"
         });
       })
       .finally(() => {
-        if (requestId === this.guestGreetingRequestId) {
+        if (requestId === this.guestGreetingRequestId && isCurrent()) {
           this.guestGreetingPending = false;
         }
       });
@@ -392,7 +486,8 @@ Page({
     this.typingTimers = [];
   },
 
-  pushAssistantTypingFrame(message, text, done = false) {
+  pushAssistantTypingFrame(message, text, done = false, isCurrent = () => true) {
+    if (!isCurrent()) return;
     const nextMessages = this.data.messages.map((item) => {
       if (item.id !== message.id) return item;
       return withTimeLabel({
@@ -407,26 +502,28 @@ Page({
       isSending: !done,
       scrollTarget: ""
     }, () => {
-      this.scrollTo("chat-bottom");
+      if (isCurrent()) this.scrollTo("chat-bottom");
     });
   },
 
-  animateAssistantMessage(message, onComplete) {
+  animateAssistantMessage(message, onComplete, isCurrent = this.captureViewGuard()) {
+    if (!isCurrent()) return;
     this.clearAssistantTypingTimers();
     const chunks = splitTypingChunks(message.text);
     let text = "";
 
     if (!chunks.length) {
-      this.pushAssistantTypingFrame(message, "", true);
+      this.pushAssistantTypingFrame(message, "", true, isCurrent);
       if (onComplete) onComplete();
       return;
     }
 
     chunks.forEach((chunk, index) => {
       const timer = setTimeout(() => {
+        if (!isCurrent()) return;
         text += chunk;
         const done = index === chunks.length - 1;
-        this.pushAssistantTypingFrame(message, text, done);
+        this.pushAssistantTypingFrame(message, text, done, isCurrent);
         if (done && onComplete) onComplete();
       }, 360 + index * 115);
       this.typingTimers.push(timer);
@@ -454,9 +551,11 @@ Page({
 
   scrollTo(target) {
     if (!target || this.data.messages.length === 0) return;
+    const isCurrent = this.captureViewGuard();
     if (target === "chat-bottom") {
       [80, 260, 650, 1100].forEach((delay, index) => {
         setTimeout(() => {
+          if (!isCurrent()) return;
           this.setData({
             scrollTarget: "",
             scrollTop: 1000000 + index
@@ -467,44 +566,53 @@ Page({
     }
 
     wx.nextTick(() => {
+      if (!isCurrent()) return;
       setTimeout(() => {
+        if (!isCurrent()) return;
         this.setData({
           scrollTop: 0,
           scrollTarget: target
         });
       }, 80);
       setTimeout(() => {
+        if (!isCurrent()) return;
         this.setData({
           scrollTop: 0,
           scrollTarget: ""
         }, () => {
-          this.setData({ scrollTarget: target });
+          if (isCurrent()) this.setData({ scrollTarget: target });
         });
       }, 260);
       setTimeout(() => {
+        if (!isCurrent()) return;
         this.setData({
           scrollTop: 0,
           scrollTarget: ""
         }, () => {
-          this.setData({ scrollTarget: target });
+          if (isCurrent()) this.setData({ scrollTarget: target });
         });
       }, 650);
     });
   },
 
   scrollTargetToPosition(target) {
+    const isCurrent = this.captureViewGuard();
     wx.nextTick(() => {
+      if (!isCurrent()) return;
       setTimeout(() => {
+        if (!isCurrent()) return;
         this.setData({ scrollTarget: "", scrollTop: 0 });
       }, 80);
 
       [260, 560, 980].forEach((delay) => {
         setTimeout(() => {
+          if (!isCurrent()) return;
           const query = wx.createSelectorQuery().in(this);
           query.select(".messages").boundingClientRect();
           query.select(".messages-content").boundingClientRect();
           query.select(`#${target}`).boundingClientRect();
           query.exec((rects) => {
+            if (!isCurrent()) return;
             const containerRect = rects && rects[0];
             const contentRect = rects && rects[1];
             const messageRect = rects && rects[2];
@@ -557,9 +665,10 @@ Page({
   },
 
   refocusInput() {
+    const isCurrent = this.captureViewGuard();
     this.setData({ inputFocus: false }, () => {
       setTimeout(() => {
-        this.setData({ inputFocus: true });
+        if (isCurrent()) this.setData({ inputFocus: true });
       }, 40);
     });
   },
@@ -590,7 +699,10 @@ Page({
   },
 
   sendRemoteMessage(text) {
-    if (this.data.isSending) return;
+    if (this.data.isSending || getDataMode() !== "authenticated") return;
+    const authority = this.captureAuthenticatedPageAuthority();
+    const isCurrent = () => this.isCurrentAuthenticatedPageAuthority(authority);
+    if (!isCurrent()) return;
     const turnId = createClientTurnId();
     const optimisticId = `local-${turnId}`;
     const optimisticUserMessage = withTimeLabel({
@@ -599,7 +711,7 @@ Page({
       text,
       createdAt: nowIso()
     });
-    const ensureSession = this.ensureAuthenticatedSession();
+    const ensureSession = this.ensureAuthenticatedSession(authority);
 
     this.setData({
       input: "",
@@ -610,11 +722,15 @@ Page({
       messages: this.prepareMessagesForView(this.data.messages.concat(optimisticUserMessage)),
       isEmpty: false,
       scrollTarget: ""
-    }, () => this.scrollTo("chat-bottom"));
+    }, () => { if (isCurrent()) this.scrollTo("chat-bottom"); });
     this.refocusInput();
     ensureSession
-      .then((session) => postMessage(session.id, text, turnId))
+      .then((session) => {
+        if (!isCurrent()) throw staleChatAuthority();
+        return postMessage(session.id, text, turnId);
+      })
       .then((data) => {
+        if (!isCurrent()) return;
         if (!data || !data.userMessage) {
           throw new Error("invalid_chat_response");
         }
@@ -645,7 +761,7 @@ Page({
             isTyping: false,
             replyStatusText: persistedStatus ? "" : safeReplyFailureText(data),
             scrollTarget: ""
-          }, () => this.scrollTo("chat-bottom"));
+          }, () => { if (isCurrent()) this.scrollTo("chat-bottom"); });
           return;
         }
         if (data.status !== "committed" || !data.assistantMessage || !data.assistantMessage.id || !data.assistantMessage.content) {
@@ -668,11 +784,13 @@ Page({
           replyStatusText: "",
           scrollTarget: ""
         }, () => {
+          if (!isCurrent()) return;
           this.scrollTo("chat-bottom");
-          this.animateAssistantMessage(assistantMessage);
+          this.animateAssistantMessage(assistantMessage, null, isCurrent);
         });
       })
       .catch(() => {
+        if (!isCurrent()) return;
         const message = "发送状态暂时无法确认，请稍后重进页面查看。";
         this.setData({ isSending: false, isTyping: false, replyStatusText: message });
         this.refocusInput();
@@ -681,8 +799,12 @@ Page({
   },
 
   sendLocalMessage(text) {
+    if (this.data.isSending || getDataMode() !== "guest") return;
+    const authority = this.captureGuestPageAuthority();
+    const isCurrent = () => this.isCurrentGuestPageAuthority(authority);
+    const turnId = createGuestTurnId();
     const userMessage = {
-      id: `u_${Date.now()}`,
+      id: `u_${turnId}`,
       role: "user",
       text,
       createdAt: nowIso()
@@ -699,13 +821,16 @@ Page({
       isEmpty: false,
       scrollTarget: ""
     }, () => {
+      if (!isCurrent()) return;
       this.scrollTo("chat-bottom");
       this.refocusInput();
     });
 
     postGuestMessage({
       content: text,
-      turnId: `mini-${userMessage.id}`,
+      turnId,
+      authority: authority.session,
+      isCurrent,
       recentMessages: nextMessages.slice(0, -1).slice(-24).map((message) => ({
         id: message.id,
         role: message.role,
@@ -716,6 +841,7 @@ Page({
       })).filter((message) => message.role !== "system")
     })
       .then((data) => {
+        if (!isCurrent()) return;
         if (data.status === "failed") {
           const systemMessage = {
             id: `system-status:${userMessage.id}`,
@@ -735,7 +861,7 @@ Page({
             isTyping: false,
             replyStatusText: "",
             scrollTarget: ""
-          }, () => this.scrollTo("chat-bottom"));
+          }, () => { if (isCurrent()) this.scrollTo("chat-bottom"); });
           return;
         }
         if (!data.assistantMessage || !data.assistantMessage.content) {
@@ -763,11 +889,13 @@ Page({
           replyStatusText: "",
           scrollTarget: ""
         }, () => {
+          if (!isCurrent()) return;
           this.scrollTo("chat-bottom");
-          this.animateAssistantMessage(reply);
+          this.animateAssistantMessage(reply, null, isCurrent);
         });
       })
       .catch(() => {
+        if (!isCurrent()) return;
         const systemMessage = {
           id: `system-status:${userMessage.id}`,
           role: "system",

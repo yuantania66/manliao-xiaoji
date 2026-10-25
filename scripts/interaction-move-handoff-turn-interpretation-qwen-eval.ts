@@ -21,8 +21,10 @@ const INFRA_RETRY_BACKOFF_MS = 2_500;
 type GreetingMove = "simple_greeting" | "open_statement" | "light_question";
 type ExpectedTuple = Pick<
   InteractionMoveHandoffPlan,
-  "selectedRelation" | "requiredFunction" | "completionIntent" | "questionPolicy"
->;
+  "requiredFunction" | "completionIntent" | "questionPolicy"
+> & {
+  selectedRelation: InteractionMoveHandoffPlan["selectedRelation"] | "highest_confidence";
+};
 
 type Fixture = {
   id: string;
@@ -100,7 +102,7 @@ const fixtures: Fixture[] = [
     requiredRelations: ["acknowledges_previous_move", "continues_active_thread"],
     forbiddenRelations: ["opens_new_thread"],
     expectedTuple: {
-      selectedRelation: "continues_from_move",
+      selectedRelation: "highest_confidence",
       requiredFunction: "defer_handoff_completion",
       completionIntent: "defer",
       questionPolicy: "none",
@@ -127,7 +129,7 @@ const fixtures: Fixture[] = [
     requiredRelations: ["acknowledges_previous_move"],
     forbiddenRelations: ["opens_new_thread", "continues_active_thread"],
     expectedTuple: {
-      selectedRelation: "reciprocates_move",
+      selectedRelation: "highest_confidence",
       requiredFunction: "defer_handoff_completion",
       completionIntent: "defer",
       questionPolicy: "none",
@@ -307,7 +309,27 @@ const runFixture = async (fixture: Fixture) => {
     clinicalAdviceProvider: () => null,
   });
   const actualTuple = planTuple(responsePlan.interactionMoveHandoffPlan);
-  assert.deepEqual(actualTuple, fixture.expectedTuple, `${fixture.id}: Planner tuple mismatch`);
+  let expectedTuple = fixture.expectedTuple;
+  if (expectedTuple.selectedRelation === "highest_confidence") {
+    assert.equal(expectedTuple.requiredFunction, "defer_handoff_completion");
+    assert.equal(expectedTuple.completionIntent, "defer");
+    assert.equal(expectedTuple.questionPolicy, "none");
+    const candidates = enriched.interpretation.userMoveRelation?.candidates;
+    assert(candidates?.length, `${fixture.id}: deferred trace requires surviving candidates`);
+    assert(candidates.every((candidate) =>
+      Number.isFinite(candidate.confidence) && candidate.confidence >= 0 && candidate.confidence <= 1
+    ), `${fixture.id}: trace confidence must be valid`);
+    const selected = candidates.reduce((best, candidate) =>
+      candidate.confidence > best.confidence ? candidate : best
+    );
+    expectedTuple = { ...expectedTuple, selectedRelation: selected.kind };
+    assert.deepEqual(
+      responsePlan.interactionMoveHandoffPlan?.evidence,
+      selected.evidence,
+      `${fixture.id}: deferred trace must retain selected candidate evidence`
+    );
+  }
+  assert.deepEqual(actualTuple, expectedTuple, `${fixture.id}: Planner tuple mismatch`);
   if (fixture.expectedAnswerTarget) {
     assert.equal(responsePlan.answerObligations.length, 1, `${fixture.id}: one answer obligation is required`);
     assert.equal(

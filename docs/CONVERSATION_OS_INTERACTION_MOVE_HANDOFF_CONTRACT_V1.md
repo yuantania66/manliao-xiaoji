@@ -369,8 +369,16 @@ lifecycle record.
   its original relation; the adoption is recorded as
   `repairProposal.sourceRelation = "challenges_move_fit"` plus adoption evidence,
   never as a `repairs_previous_move` candidate. The Planner then selects the
-  existing interaction-move subtype from adjacent evidence; when none applies,
-  preflight fails closed with `missing_interaction_move_subtype_in_contract`. The
+  existing interaction-move subtype from adjacent evidence. When none applies,
+  the same `interaction_move_withdrawal` may repair the complete targeted move
+  only when the independent preflight snapshot revalidates the current User
+  source, accepted model relation at the existing 0.93 threshold, latest saved
+  Assistant target and its valid explicit empty-claim metadata. Every present
+  metadata source must be valid and claimless. Snapshot source/text and target/text
+  must exactly match the contract; Plan labels or evidence strings alone confer
+  no authority. Missing, stale, mismatched or invalid authority still fails closed
+  with `missing_interaction_move_subtype_in_contract`. No subtype is invented,
+  no handoff is fabricated and no proposition/factual fallback is selected. The
   path never applies to a missing, unknown, User or stale target, to unavailable
   or non-empty claims, below threshold, or when the current User turn gives a
   concrete replacement fact; factual and claim corrections keep their
@@ -774,6 +782,13 @@ intent claim. Ties retain PHM-A candidate order. Planner evidence remains the
 unchanged source spans of the recorded candidate; scoped answer-obligation
 evidence stays in the existing `ResponsePlan.answerObligations` contract and is
 not copied into or invented as relation evidence.
+
+The real Turn Interpretation eval checks a deferred trace focus against the
+highest-confidence surviving candidate, retaining candidate order on ties and
+its exact evidence. Its fixture does not hard-code a relation label for defer;
+required and forbidden relations, target binding, deferred function and question
+policy remain independently asserted. Saved responses can be replayed locally
+without replacing the original failed run or issuing another model request.
 
 ### 14.5 Positive reciprocal-contact postcondition
 

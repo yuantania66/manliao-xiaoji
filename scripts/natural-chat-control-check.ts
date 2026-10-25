@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 
 import { buildProactiveGreetingAssistantMoveEnvelope } from "../conversation-os";
 import {
@@ -197,7 +198,12 @@ const prompt = buildChatPrompt({
 const productInstruction = prompt.messages[0]?.content ?? "";
 const planInstruction = prompt.messages[1]?.content ?? "";
 assert(productInstruction.includes("ResponsePlan 是本轮唯一的非安全回复决策"));
-assert(productInstruction.includes("不得增添计划中没有、且无 relevanceProvenance 的命题"));
+// Natural acceptance is permitted; unsupported factual/psychological claims are not.
+assert(productInstruction.includes("不得新增无依据的事实性断言"));
+assert(productInstruction.includes("不得据此推断隐藏动机或心理状态"));
+assert(productInstruction.includes("当前用户消息中明确表达且可对应到本轮 relevanceProvenance 证据"));
+assert(productInstruction.includes("不得将其他历史、检索内容或模型推断自动视为已确认事实"));
+assert(planInstruction.includes(`groundingFacts: ${turn4.responsePlan.groundingFacts.join(" / ") || "none"}`));
 assert(productInstruction.includes("hypothesis 或被用户否定的命题不得作为事实表达"));
 assert(!productInstruction.includes("温度刚好的茶"));
 assert(!productInstruction.includes("晚霞"));
@@ -378,7 +384,9 @@ for (const [plan, reply, label] of [
   [screenshotNoTopic.responsePlan, screenshotNoTopicReply.content, "topic initiative"],
   [screenshotFestival.responsePlan, screenshotFestivalReply.content, "ordinary interview"],
   [screenshotFestival.responsePlan, "现场感觉怎么样？听起来你去看了音乐节。", "question punctuation"],
-  [screenshotHyped.responsePlan, "那挺棒的，现场氛围好确实容易让人投入。", "unsupported evaluation"],
+  // Retain this fixed negative in the legacy heuristic layer; the current bound
+  // plan delegates meaning to its mandatory same-plan semantic gate below.
+  [{ ...screenshotHyped.responsePlan, positiveFunctionContract: null }, "那挺棒的，现场氛围好确实容易让人投入。", "unsupported evaluation (legacy heuristic)"],
 ] as const) {
   const validation = validateResponsePlanOutput({ plan, reply });
   assert.equal(validation.passed, false, label);
@@ -434,16 +442,23 @@ const unsupportedIdleEvaluationCounterexamples = [
   "发呆的时间很珍贵。",
   "能发呆挺难得的。",
 ];
+// Original samples and current plans remain intact. Record current preliminary
+// outcomes separately: they are not final semantic acceptance or rejection.
+const boundEvaluationPrechecks = [
+  { reply: "那挺棒的，现场氛围好确实容易让人投入。", plan: screenshotHyped.responsePlan },
+  ...unsupportedIdleEvaluationCounterexamples.map((reply) => ({ reply, plan: screenshotIdle.responsePlan })),
+].map(({ reply, plan }) => ({ reply, originalQualityLabel: "unsupported_evaluation",
+  preliminary: validateResponsePlanOutput({ plan, reply }) }));
 for (const reply of unsupportedIdleEvaluationCounterexamples) {
   const validation = validateResponsePlanOutput({
-    plan: screenshotIdle.responsePlan,
+    plan: { ...screenshotIdle.responsePlan, positiveFunctionContract: null },
     reply,
   });
   assert.equal(validation.passed, false, reply);
   assert.equal(validation.rewriteRequired, false, reply);
   assert((validation.hardFailureReasons?.length ?? 0) > 0, reply);
   const constraint = formatResponsePlanRegenerateConstraint(
-    screenshotIdle.responsePlan,
+    { ...screenshotIdle.responsePlan, positiveFunctionContract: null },
     validation.failureReasons
   );
   assert(constraint.includes("删掉助手自行添加的评价词"), reply);
@@ -516,7 +531,14 @@ const screenshotPrompt = buildChatPrompt({
 const screenshotPlanInstruction = screenshotPrompt.messages[1]?.content ?? "";
 assert(screenshotPlanInstruction.includes("relevanceProvenance:"));
 assert(screenshotPlanInstruction.includes("surfaceConstraints:"));
-assert(screenshotPlanInstruction.includes("Do not add generic causal mechanisms"));
+assert.equal(screenshotHyped.responsePlan.positiveFunctionContract?.action, "acknowledge_without_psychologizing");
+assert.equal(screenshotIdle.responsePlan.positiveFunctionContract?.action, "acknowledge_without_psychologizing");
+assert(screenshotPlanInstruction.includes("Do not invent causes, infer benefits the user has not expressed"), "Current prompt retains unsupported meaning boundary");
+// Run actual enforcement/semantic fixtures, not only the legacy word matcher.
+// Fixed local observations test rejection wiring, not real-model quality.
+execFileSync(process.execPath, ["--import", "tsx", "scripts/ordinary-acknowledgement-gate-check.ts"], {
+  cwd: process.cwd(), env: process.env, stdio: "pipe", timeout: 60_000,
+});
 
 const interviewTopics = [
   "去看了展览",
@@ -569,9 +591,14 @@ for (const [index, userMessage] of shortPositiveAnswers.entries()) {
     modelPrimary: "answer",
   });
   assert.equal(result.responsePlan.questionPolicy.mode, "none", userMessage);
+  boundEvaluationPrechecks.push({ reply: "那挺好的，这种氛围确实容易让人投入。",
+    originalQualityLabel: `generic-evaluation-counterexample-${index + 1}`,
+    preliminary: validateResponsePlanOutput({ plan: result.responsePlan,
+      reply: "那挺好的，这种氛围确实容易让人投入。" }) });
+  assert.equal(result.responsePlan.positiveFunctionContract?.action, "acknowledge_without_psychologizing", userMessage);
   assert.equal(
     validateResponsePlanOutput({
-      plan: result.responsePlan,
+      plan: { ...result.responsePlan, positiveFunctionContract: null },
       reply: "那挺好的，这种氛围确实容易让人投入。",
     }).passed,
     false,
@@ -1035,6 +1062,8 @@ void advisoryRewriteRegression.catch((error) => {
 });
 
 console.log(JSON.stringify({
+  boundEvaluationPrechecks,
+  semanticGateCompanion: "ordinary-acknowledgement-gate-check.ts (local fixed verdicts; not model quality)",
   fixedTrajectoryTurns: 8,
     counterexamples: 1 +
     correctionCounterexamples.length +

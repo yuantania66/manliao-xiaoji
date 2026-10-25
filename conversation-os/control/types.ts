@@ -211,17 +211,30 @@ export type OrdinaryPostureSourceSpan = {
   text: string;
 };
 
+export type OrdinaryContributionPurposeEvidence = {
+  kind: "limit_scope_of_acknowledgment";
+  support: "supported" | "only_repeats" | "uncertain";
+  acknowledgmentSpanIndex: number;
+  treatmentSpanIndex: number;
+};
+
+export type AcknowledgmentTreatmentEvidence = {
+  acknowledgmentSpanIndex: number;
+  treatmentSpanIndex: number;
+};
+
 export type OrdinaryPostureProposal = {
   mode: "accompany" | "explore";
   sourceSpans: OrdinaryPostureSourceSpan[];
-  proposedContribution: { targetSpanIndexes: number[]; instruction: string };
+  proposedContribution: { targetSpanIndexes: number[]; instruction: string; purposeEvidence?: OrdinaryContributionPurposeEvidence | null;
+    acknowledgmentTreatmentEvidence?: AcknowledgmentTreatmentEvidence | null };
   evidence: string[];
 };
 
 export type OrdinaryPosturePlan = {
   mode: "accompany" | "explore";
   sourceSpans: OrdinaryPostureSourceSpan[];
-  requiredContribution: { targetSpanIndexes: number[]; instruction: string };
+  requiredContribution: { targetSpanIndexes: number[]; instruction: string; purposeEvidence?: OrdinaryContributionPurposeEvidence } | null;
   evidence: string[];
 };
 
@@ -246,6 +259,11 @@ export type TurnInterpretation = {
   stateUpdate: TurnStateUpdate;
   interpretations: RelationalTurnInterpretation[];
   ordinaryPostureProposal: OrdinaryPostureProposal | null;
+  /** Current User factual roles, independent of any proposed posture or task. */
+  acknowledgmentTreatmentEvidence?: {
+    acknowledgment: OrdinaryPostureSourceSpan;
+    treatment: OrdinaryPostureSourceSpan;
+  } | null;
   purposeSubjectOwnershipAuthority?: PurposeSubjectOwnershipAuthorityTrace;
   /**
    * Compatibility evidence only. Dialogue State and Response Planner must not
@@ -450,6 +468,9 @@ export type EmotionalSupportFunction =
   | "invite_optional_sharing"
   | "respect_declined_sharing";
 
+export type OrdinaryResponseFunction = "respond_naturally" | Extract<EmotionalSupportFunction,
+  "invite_optional_sharing" | "respect_declined_sharing" | "reduce_expression_burden">;
+
 export type DeclinedSharingSource = "current_turn" | "previous_user_turn";
 
 export type RepairCompletionMode =
@@ -469,6 +490,16 @@ export type TurnAffectEvidenceSpan = AffectEvidenceSpan & {
 };
 
 export type PositiveFunctionContract =
+  | {
+      action: "acknowledge_without_psychologizing";
+      sourceTurnId: string;
+      sourceText: string;
+      /** Only the Planner's existing allow_idle decision permits a brief closing receipt. */
+      allowIdle: boolean;
+      /** Interaction manner; only an independently supported requiredContribution is a task. */
+      responseFunction?: OrdinaryResponseFunction;
+      evidence: string[];
+    }
   | {
       action: "establish_assistant_identity";
       mode: "first_contact" | "identity_continuation" | "identity_repair";

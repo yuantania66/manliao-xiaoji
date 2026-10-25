@@ -1,0 +1,104 @@
+{
+  "head": "9e357cff2760b282b6c034b8a5042364ddcc1c91",
+  "sourceDigest": "105128e87ca2a42c4691bf9cac6de82418a845ed47a14693a5ce7e79645864ef",
+  "status": "BLOCKED_EXTERNAL_ACCOUNT_ARREARAGE_NOT_ACCEPTED",
+  "original38CasesSha256": "42e11696fc048126d7a99f6a15d6b2ee5f8ba0571743063229d76a952ee575d1",
+  "finalAcceptance": {
+    "full38": {
+      "groups": 38,
+      "plannedVerdicts": 114,
+      "validVerdicts": 0,
+      "directionPassed": 0,
+      "directionFailed": 0,
+      "providerFailureDispatched": 2,
+      "notDispatched": 112,
+      "reasonsQualified": 0,
+      "reasonsFailed": 0,
+      "reasonsUnavailable": 114
+    },
+    "original8Subset": {
+      "groups": 8,
+      "plannedVerdicts": 24,
+      "validVerdicts": 0,
+      "directionPassed": 0,
+      "directionFailed": 0,
+      "providerFailureDispatched": 1,
+      "notDispatched": 23,
+      "reasonsQualified": 0,
+      "reasonsFailed": 0,
+      "reasonsUnavailable": 24
+    },
+    "supplement4": {
+      "groups": 4,
+      "plannedVerdicts": 12,
+      "validVerdicts": 0,
+      "providerFailureDispatched": 1,
+      "notDispatched": 11,
+      "reasonsQualified": 0,
+      "reasonsFailed": 0,
+      "reasonsUnavailable": 12
+    }
+  },
+  "chainFinal": {
+    "historicalCandidateReplayPlanned": 1,
+    "safetyHttp400": 1,
+    "generationAttempts": 0,
+    "judgeVerdicts": 0,
+    "committed": 0,
+    "naturalRunsPlanned": 3,
+    "naturalRunsNotStarted": 3
+  },
+  "providerDiagnostic": {
+    "purpose": "account_diagnostic_only_not_acceptance",
+    "model": "qwen3.7-max",
+    "capCny": 0.02,
+    "reservedCny": 0.012732,
+    "httpStatus": 400,
+    "errorCode": "Arrearage",
+    "errorMessage": "Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment",
+    "usage": null
+  },
+  "priorVersionOnly": {
+    "sourceDigest": "0346a5b22260a62e8ce72b89fc773427e1ac5e4df0f5b26cda8fdac30c0b7057",
+    "full38": {
+      "directionsCorrect": 109,
+      "directionsIncorrect": 5,
+      "reasonQualified": 84,
+      "reasonFailed": 30,
+      "notRun": 0
+    },
+    "original8Subset": {
+      "directionsCorrect": 24,
+      "directionsIncorrect": 0,
+      "reasonQualified": 17,
+      "reasonFailed": 7,
+      "notRun": 0
+    },
+    "supplement": {
+      "directionsCorrect": 12,
+      "reasonQualified": 12
+    },
+    "chainReplayCommitted": 1,
+    "naturalCommitted": 3
+  },
+  "budgetUpperCny": 48.011995,
+  "authorizedCny": 60,
+  "remainingCny": 11.988005,
+  "releaseAuthorized": false,
+  "warning": "Runner outcomeMatches counts provider fail as matching expected fail; all final verdicts are unavailable and those booleans are excluded from acceptance.",
+  "localChecks": {
+    "direct": 0,
+    "hill": 0,
+    "handoff": 0,
+    "preservation-v2": 0,
+    "late": 0,
+    "stage2": 0,
+    "post4": 0,
+    "tsc": 0,
+    "lint": 0,
+    "diff-check": 0,
+    "release-required": 0
+  },
+  "sourceFilesMatchedAfterBuild": 481,
+  "requiredScriptSteps": 66
+}

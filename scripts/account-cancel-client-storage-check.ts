@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  captureAuthAuthority,
   clearCancelledAccount,
   getCancellationUserSnapshot,
   shouldRequestCloudAccountCancellation,
@@ -27,7 +28,7 @@ class StorageDouble {
 const localStorage = new StorageDouble();
 const sessionStorage = new StorageDouble();
 Object.assign(globalThis, {
-  window: { localStorage, sessionStorage },
+  window: { localStorage, sessionStorage, addEventListener() {} },
   document: { cookie: "" },
 });
 
@@ -35,7 +36,7 @@ const currentUserId = "current-user";
 for (const [key, value] of [
   ["xinqingAuthToken", "token"],
   ["xinqingAuthExpiresAt", "expiry"],
-  ["xinqingAuthUser", "user"],
+  ["xinqingAuthUser", JSON.stringify({ id: currentUserId })],
   ["xinqingLoggedIn", "true"],
   [`xinqingInsightsAnalysisAuthorized:${currentUserId}`, "true"],
   ["xinqingInsightsAnalysisAuthorized:other-user", "true"],
@@ -62,14 +63,15 @@ localStorage.setItem("xinqingAuthToken", "retry-token");
 localStorage.setItem("xinqingAuthUser", JSON.stringify({ id: currentUserId }));
 sessionStorage.setItem(`xinqingChatCache:${currentUserId}`, "retry-chat");
 const capturedUser = getCancellationUserSnapshot();
+const capturedAuthority = captureAuthAuthority();
 assert.equal(capturedUser?.id, currentUserId);
 sessionStorage.failOnRemove = `xinqingChatCache:${currentUserId}`;
-assert.throws(() => clearCancelledAccount(currentUserId), /injected storage failure/u);
+assert.throws(() => clearCancelledAccount(currentUserId, capturedAuthority), /injected storage failure/u);
 assert.equal(getCancellationUserSnapshot(), null, "auth removal must reproduce the rerender counterexample");
 assert.equal(capturedUser?.id, currentUserId, "first-render user snapshot must survive partial cleanup");
 sessionStorage.failOnRemove = null;
 assert.equal(shouldRequestCloudAccountCancellation(true), false, "local retry must not repeat cloud deletion");
-clearCancelledAccount(capturedUser!.id);
+clearCancelledAccount(capturedUser!.id, capturedAuthority);
 assert.equal(localStorage.getItem("xinqingAuthToken"), null, "local cleanup must be retryable without another API call");
 
 console.log("Account cancellation client storage checks passed.");

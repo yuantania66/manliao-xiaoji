@@ -1,5 +1,8 @@
+import { ORDINARY_RESPONSE_FUNCTION_INSTRUCTIONS } from "@/conversation-os/control/responsePlanner";
+import { projectAcknowledgmentScopeContract, formatAcknowledgmentScopeContract } from "@/conversation-os/control/ordinaryPurpose";
 import {
   ASSISTANT_GROUNDING,
+  CONTEXTUAL_ACCEPTANCE_STANCE,
   type DeclinedSharingSource,
   type ResponsePlan,
   type ResponseValidationResult,
@@ -20,6 +23,10 @@ import {
   type PlannedFunctionSemanticProvider,
   type PlannedFunctionSemanticValidationPromptInspector,
   type PlannedFunctionSemanticVerdict,
+  type OrdinaryUseObservation,
+  type OrdinaryUseAssessment,
+  type AcknowledgmentScopeObservation,
+  type AcknowledgmentScopeAssessment,
 } from "./plannedFunctionSemanticValidator";
 import {
   adaptInteractionMoveHandoffPromptInspector,
@@ -120,6 +127,10 @@ const collectOrdinaryAcknowledgementFailures = ({
   reply: string;
 }) => {
   if (!plan.responseActions.includes("acknowledge_without_psychologizing")) return [];
+  // Bound ordinary replies must pass the existing same-plan semantic gate in enforceResponsePlan.
+  // Word inclusion cannot distinguish unsupported evaluation from contextual affect (e.g. 舒服 / 不舒服).
+  // Keep the legacy heuristic only for callers without that mandatory contract.
+  if (plan.positiveFunctionContract?.action === "acknowledge_without_psychologizing") return [];
   const userMessage = currentUserMessageFromPlan(plan);
   const failures: string[] = [];
   if (
@@ -449,10 +460,9 @@ const collectUnsupportedAffectClaimFailures = ({
     const matchingEvidence = contract.affectEvidenceSpans.filter((span) =>
       span.category === claim.category
     );
-    if (matchingEvidence.length === 0) {
-      failures.push(`emotional_support:unsupported_affect_category:${claim.category}:${claim.text}`);
-      continue;
-    }
+    // A different extracted category can be reasonably implied. The existing semantic gate judges
+    // contextual support and unwarranted certainty; a category mismatch alone is not a rejection.
+    if (matchingEvidence.length === 0) continue;
     const maximumEvidenceIntensity = Math.max(
       ...matchingEvidence.map((span) => intensityRank(span.intensity))
     );
@@ -977,7 +987,7 @@ const EMOTIONAL_SUPPORT_FUNCTION_REGENERATION: Record<
   acknowledge_current_relational_impact: () =>
     "承认用户现在感到没被助手理解这一关系影响，并如实说明信息边界：助手还不知道具体哪里没接住，也不把自己说成已经理解；不宣称已经修复。对话里没有之前的助手回复时，不要编造助手之前说了什么或错在哪里。说完即完成：不要用提问或陈述的方式让用户解释、举例、选择先说哪部分或说多少，或指出助手哪里没懂；用户本轮有明确问题或请求时仍要回答。",
   invite_optional_sharing: () =>
-    "先自然地接住用户说出的感受，再给至多一句容易拒绝的温和邀请，让用户愿意的话再多说一些；用户没说发生了什么时可以邀请说说发生了什么，已经说了事件时就围绕那件事，不要当作不知道再问，也不要问细节。不需要谈控制权、说多少或先说哪部分。",
+    "围绕用户此刻自己的体验、在意或明确表达的需要作有依据的回应，或给至多一句容易拒绝的温和邀请；不替用户决定未表达的感受、在意点或需要。允许直接邀请展开，不必先复述情绪，已说事件梗概不等于已经说完。追问的用途须服务当前关切，不能只为了继续聊而调查场合、经过或他人反应；用户的实际问题或指代歧义确需这些事实时可以澄清。跟随用户当前的请求、纠正和边界，不把客观话题强行改为情绪探索。确需确认理解或整理复杂叙述时可以复述，但重排事实、换情绪近义词或套共情句不能补足实际作用。不要求新事实、解释或建议，不猜测内心；不按“听起来”或问句词汇判断。不需要追问时说完即可，不必谈控制权、说多少或先说哪部分。",
   respect_declined_sharing: () =>
     "自然回应用户表达的边界或感受，不要求逐字复述情绪词；只说“嗯、收到、听到了”而既没回应感受也没回应边界不算完成。用户说不想说时，尊重先不说，不要把感受说成不该说的理由；用户说不想被问时，停止追问，但不要替用户决定不再表达，可以加一句不要求回应的倾听表态。之前已经答应过不问、用户本轮只是说感受时，先用自己的话回应这份感受本身，像是对用户此刻状态的自然反应；只说“嗯、听到了”再接陪伴或倾听，不管怎么措辞，都不算回应这份感受。之后可以简短陪伴，不必再答应一次，也不要重新邀请；说完即完成。",
 };
@@ -996,14 +1006,14 @@ const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, fai
   const terms = contract.explicitAffectOrImpactTerms.map((term) => `“${term}”`).join("、") || "当前轮证据";
   const invitesSharing = contract.supportFunction === "invite_optional_sharing";
   const contentBoundary = invitesSharing
-    ? "不要问为什么或原因，不要问具体细节、先后经过或完整经过，不要猜测或暗示原因和事件，也不要提供“别的/其他”或另一个话题。"
+    ? "不要问为什么或原因，不要索取详细经过、完整叙述或无关细节；可自然邀请展开或澄清有用的未知点，但不能无视已知事实、要求用户重新确认已明确回答的内容。不要猜测或暗示原因和事件，也不要提供“别的/其他”或另一个话题。"
     : contract.supportFunction === "respect_declined_sharing"
-      ? "不要邀请、提问或提出请求（包括让用户以后再告诉你），也不要给“想说多少、说哪部分”这类表达许可；倾听或陪伴表态不能代替回应；不要新增情绪、推断原因或声称线下陪伴，也不要结束对话。"
+      ? "不要邀请、提问或提出请求（包括让用户以后再告诉你），也不要给“想说多少、说哪部分”这类表达许可；倾听或陪伴表态不能代替回应；不要夸大情绪、编造原因或声称线下陪伴，也不要结束对话。"
       : "选项、邀请或许可只能指向用户本轮已说出的内容：不要询问或提供原因、触发事件、当时情形、具体经过作为选项，也不要提供“别的/其他”这类未知选项。";
   const invitationBoundary = plan.questionPolicy.mode === "none"
     ? "本计划禁止提问：不要提出任何需要用户回应的请求，包括没有问号的“你想……/要不要……”。"
     : invitesSharing
-      ? "整条回复至多一个邀请或问题，而且要容易拒绝。"
+      ? "整条回复至多一个邀请或问题，而且要容易拒绝；自然回应已经足够时，不提问也完成本轮。"
       : "支持功能完成后可以保留至多一个低负担邀请，只能围绕“先表达哪一部分或表达多少”；不提问也能完成本轮。";
   if (
     failure === "planned_function_semantic:positive_function_not_satisfied" ||
@@ -1013,7 +1023,7 @@ const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, fai
       contract.supportFunction === "respect_declined_sharing" && contract.declinedSharingSource
         ? RESPECT_DECLINED_SHARING_REGENERATION_BY_SOURCE[contract.declinedSharingSource]
         : EMOTIONAL_SUPPORT_FUNCTION_REGENERATION[contract.supportFunction](terms);
-    return `候选没有完成情绪支持功能“${contract.supportFunction}”。只使用用户本轮已表达的${terms}，保持原有情绪类别和强度。${functionInstruction}${contentBoundary}${invitationBoundary}`;
+    return `候选没有完成情绪支持功能“${contract.supportFunction}”。以用户本轮已表达的${terms}为证据锚点；允许合理理解当前话语暗含的情绪，不要求相同情绪词，但不夸大、不编造原因、事件、历史或动机，不把猜测当作确定内心。理解应能随用户纠正而撤回，不变成新事实或计划证据；不要求每句加“可能”，按整句语义判断。${functionInstruction}${contentBoundary}${invitationBoundary}${CONTEXTUAL_ACCEPTANCE_STANCE}`;
   }
   if (failure === "planned_function_semantic:question_count_quality") {
     return `情绪支持功能“${contract.supportFunction}”的语义请求超出计划。${invitationBoundary}${contentBoundary}`;
@@ -1021,7 +1031,41 @@ const emotionalSupportSemanticRegenerationInstruction = (plan: ResponsePlan, fai
   return null;
 };
 
-const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
+const regenerationInstructionFor = (
+  plan: ResponsePlan,
+  failure: string,
+  regenerationFeedback?: OrdinaryRegenerationFeedback | null
+) => {
+  if (plan.positiveFunctionContract?.action === "acknowledge_without_psychologizing" &&
+      failure.startsWith("planned_function_semantic:")) {
+    if (plan.positiveFunctionContract.responseFunction === "invite_optional_sharing") {
+      return ORDINARY_RESPONSE_FUNCTION_INSTRUCTIONS.invite_optional_sharing + "按同一已选功能重新完成回应，不改变计划或证据；不要用确认感受就结束，也不要把用户可不回答误解成可省略表达入口。不输出内部校验信息。";
+    }
+    const scopeContract = projectAcknowledgmentScopeContract(plan.ordinaryPosture,
+      {turnId:plan.disclosureScope.turnId,text:plan.positiveFunctionContract.sourceText});
+    if (scopeContract && regenerationFeedback?.kind === "ordinary_response_validation_feedback" &&
+        regenerationFeedback.planId === plan.planId &&
+        typeof regenerationFeedback.candidateReply === "string" && regenerationFeedback.candidateReply.trim() &&
+        Array.isArray(regenerationFeedback.acknowledgmentScopeAssessment?.failedFields) &&
+        Array.isArray(regenerationFeedback.acknowledgmentScopeAssessment.uncertainFields) &&
+        (failure === "planned_function_semantic:positive_function_not_satisfied" || failure === "planned_function_semantic:positive_function_uncertain") &&
+        (regenerationFeedback.acknowledgmentScopeAssessment.failedFields.length > 0 || regenerationFeedback.acknowledgmentScopeAssessment.uncertainFields.length > 0)) {
+      return formatAcknowledgmentScopeContract(scopeContract) + "只纠正本次已报告的用途对象或关系偏差；不要把感受合理性或两者并存当作完成，不输出内部校验信息。";
+    }
+    if (failure === "planned_function_semantic:positive_function_not_satisfied" &&
+        regenerationFeedback?.kind === "ordinary_response_validation_feedback" &&
+        regenerationFeedback.planId === plan.planId &&
+        typeof regenerationFeedback.candidateReply === "string" && regenerationFeedback.candidateReply.trim() &&
+        regenerationFeedback.ordinaryUseObservation?.contentRelation === "repeats_or_normalizes_only" &&
+        regenerationFeedback.ordinaryUseObservation.repetitionPurpose === "none" &&
+        Array.isArray(regenerationFeedback.ordinaryUseAssessment?.failedFields) &&
+        regenerationFeedback.ordinaryUseAssessment.failedFields.includes("repetitionPurpose") &&
+        Array.isArray(regenerationFeedback.ordinaryUseAssessment.uncertainFields) &&
+        regenerationFeedback.ordinaryUseAssessment.uncertainFields.length === 0) {
+      return `${plan.ordinaryPosture?.requiredContribution?.instruction ?? ""}${CONTEXTUAL_ACCEPTANCE_STANCE}本次校验未确认失败稿在当前语境中的回应作用；不要只换近义词或给摘要加通用安慰。在同一计划内重新回应当前用户。允许贴近原话的自然情绪确认，本身可以完成回应；权限允许时也可以接一个贴近当前经历、不给定答案的可选问题，但不能把确认加追问变成固定步骤。无需制造新任务或证明用户需要被允许难过，不输出内部分析。自然回应可以没有追问、新事实、建议或推进。保持原事实来源和心理推断边界，不编造事件、原因、动机、心理状态或需要；跟随当前纠正、拒绝和任务。${plan.positiveFunctionContract.allowIdle ? "计划允许自然收尾，简短承接即可，不要强行起题。" : "纯回执或在场表态不能代替有效回应。"}${plan.questionPolicy.mode === "none" ? "禁止提问、邀请或索取用户回应。" : "至多一个容易拒绝的自然邀请或问题。"}`;
+    }
+    return `${plan.ordinaryPosture?.requiredContribution?.instruction ?? ""}${CONTEXTUAL_ACCEPTANCE_STANCE}按同一普通承接合同重新回应当前用户，不改动作或证据。围绕用户当前体验、在意或已表达的需要；自然情绪确认、可选的经历延续、有用途的理解确认、必要事实澄清或不追问都可以。贴近原话不是失败理由；确认后接问题也不是固定要求。按整条回复判断，不把摘要加通用安慰、重复邀请或无用途的外围调查当作完成，不猜测心理、动机、原因或需要；跟随当前纠正和客观任务。${plan.positiveFunctionContract.allowIdle ? "计划允许自然收尾，简短承接即可，不要强行起题。" : "纯回执或在场表态不能代替有效回应。"}${plan.questionPolicy.mode === "none" ? "禁止提问、邀请或索取用户回应。" : "至多一个容易拒绝的自然邀请或问题。"}`;
+  }
   const emotionalSupportInstruction = emotionalSupportSemanticRegenerationInstruction(plan, failure);
   if (emotionalSupportInstruction) return emotionalSupportInstruction;
   if (failure === "assistant_voice:mechanical_receipt_or_presence") {
@@ -1055,7 +1099,7 @@ const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
     return "当前 ResponsePlan 缺少情绪支持正向功能合同；不得自行选择支持方式。";
   }
   if (failure === "emotional_support:missing_grounded_affect_or_impact") {
-    return "先贴住用户当前明确表达的感受或关系影响；不要换成新的情绪标签或事件评价。";
+    return "先贴住用户当前表达的感受或关系影响；可以合理承接话语暗含的情绪，但不要夸大、编造事件或把猜测当确定内心。";
   }
   const missingSupportFunction = failure.match(/^emotional_support:missing_selected_function:(.+)$/u);
   if (missingSupportFunction) {
@@ -1074,7 +1118,7 @@ const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
     return "删除“我在、我陪着你、抱抱你”等公式化在场或模拟接触；改为贴合用户已明确表达内容、并保留其表达选择权的支持动作。";
   }
   if (failure === "emotional_support:generic_normalization_or_reassurance") {
-    return "删除对情绪本身的“正常、没关系、自然、是可以的、可接受”等评价；不要评价用户该如何看待或管理自己的感受。若计划需要表达量控制，只能把许可明确附着于少说、未说完整或其他表达数量选择。";
+    return `删除代替实际支持的空泛安慰，不按“正常、没关系”等词一律否定有依据的情境性接纳。${CONTEXTUAL_ACCEPTANCE_STANCE}`;
   }
   if (failure === "emotional_support:unsolicited_regulation_advice") {
     return "删除未经请求的呼吸、缓一缓、休息或调整建议；本轮只承接用户已经表达的体验和表达边界。";
@@ -1099,7 +1143,7 @@ const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
   }
   const unsupportedAffectCategory = failure.match(/^emotional_support:unsupported_affect_category:[^:]+:(.+)$/u);
   if (unsupportedAffectCategory) {
-    return `删除用户本轮没有表达的情绪类别“${unsupportedAffectCategory[1]}”；只使用正向功能合同中的情绪证据。`;
+    return `重新核对情绪归属“${unsupportedAffectCategory[1]}”是否有当前话语的合理依据；允许合理隐含理解，不因词语不同而删除，但要纠正无依据猜测或未经支持的内心定论。`;
   }
   const emotionalIntensification = failure.match(/^emotional_support:unsupported_intensification:(.+)$/u);
   if (emotionalIntensification) {
@@ -1163,13 +1207,14 @@ const regenerationInstructionFor = (plan: ResponsePlan, failure: string) => {
 
 export const formatResponsePlanRegenerateConstraint = (
   plan: ResponsePlan,
-  failures: string[]
+  failures: string[],
+  regenerationFeedback?: OrdinaryRegenerationFeedback | null
 ) => [
   "上一次候选回复未通过同一 ResponsePlan 的输出校验。",
   `必须保持完全相同的 ResponsePlan planId=${plan.planId}；不得重新解释用户，不得另选目标或策略。`,
   "本次只按以下要求改写：",
   ...failures.map((failure) =>
-    `- failureCode=${failure}\n  修复方式：${regenerationInstructionFor(plan, failure)}`
+    `- failureCode=${failure}\n  修复方式：${regenerationInstructionFor(plan, failure, regenerationFeedback)}`
   ),
   ...(plan.questionPolicy.mode === "none"
     ? ["- 本计划禁止提问：不要添加问号，不要换一个话题继续采访用户。"]
@@ -1203,6 +1248,16 @@ const constraintFailureGeneration = (
   ],
 });
 
+export type OrdinaryRegenerationFeedback = {
+  kind: "ordinary_response_validation_feedback";
+  planId: string;
+  candidateReply: string;
+  ordinaryUseObservation: Pick<OrdinaryUseObservation, "contentRelation" | "repetitionPurpose">;
+  ordinaryUseAssessment: OrdinaryUseAssessment;
+  acknowledgmentScopeObservation?: AcknowledgmentScopeObservation;
+  acknowledgmentScopeAssessment?: AcknowledgmentScopeAssessment;
+};
+
 export const enforceResponsePlan = async ({
   plan,
   generate,
@@ -1214,7 +1269,11 @@ export const enforceResponsePlan = async ({
   inspectHandoffExternalPrompt,
 }: {
   plan: ResponsePlan;
-  generate: (constraint: string | null, executionPlan: ResponsePlan) => Promise<AiGenerationResult>;
+  generate: (
+    constraint: string | null,
+    executionPlan: ResponsePlan,
+    regenerationFeedback?: OrdinaryRegenerationFeedback | null
+  ) => Promise<AiGenerationResult>;
   plannedFunctionSemanticContext?: PlannedFunctionSemanticContext;
   plannedFunctionSemanticProvider?: PlannedFunctionSemanticProvider;
   inspectPlannedFunctionExternalPrompt?: PlannedFunctionSemanticValidationPromptInspector;
@@ -1246,6 +1305,7 @@ export const enforceResponsePlan = async ({
   );
   const semanticVerdicts: Array<PlannedFunctionSemanticVerdict | null> = [];
   const semanticDiagnostics: PlannedFunctionSemanticDiagnostics[] = [];
+  let regenerationFeedback: OrdinaryRegenerationFeedback | undefined;
   const validateCandidate = async (reply: string): Promise<ResponseValidationResult> => {
     const deterministic = validateResponsePlanOutput({ plan: executionPlan, reply });
     const semantic = await validatePlannedFunctionSemanticOutput({
@@ -1257,6 +1317,32 @@ export const enforceResponsePlan = async ({
     });
     semanticVerdicts.push(semantic.verdict);
     semanticDiagnostics.push({ providerFailure: semantic.providerFailure ?? null });
+    regenerationFeedback = undefined;
+    const ordinaryObservation = semantic.verdict?.positiveFunction?.ordinaryUseObservation;
+    if (executionPlan.positiveFunctionContract?.action === "acknowledge_without_psychologizing" &&
+        semantic.ordinaryUseAssessment && ordinaryObservation &&
+        semantic.hardFailureReasons.some((reason) =>
+          reason === "planned_function_semantic:positive_function_not_satisfied" ||
+          reason === "planned_function_semantic:positive_function_uncertain"
+        )) {
+      const feedback: OrdinaryRegenerationFeedback = {
+        kind: "ordinary_response_validation_feedback",
+        planId: executionPlan.planId,
+        candidateReply: reply,
+        ordinaryUseObservation: {
+          contentRelation: ordinaryObservation.contentRelation,
+          repetitionPurpose: ordinaryObservation.repetitionPurpose,
+        },
+        ordinaryUseAssessment: semantic.ordinaryUseAssessment,
+        ...(semantic.acknowledgmentScopeAssessment ? {
+          acknowledgmentScopeAssessment: semantic.acknowledgmentScopeAssessment,
+          ...(semantic.verdict?.positiveFunction?.acknowledgmentScopeObservation ? {
+            acknowledgmentScopeObservation: semantic.verdict.positiveFunction.acknowledgmentScopeObservation,
+          } : {}),
+        } : {}),
+      };
+      regenerationFeedback = recursivelyFreeze(structuredClone(feedback));
+    }
     const hardFailureReasons = Array.from(new Set([
       ...(deterministic.hardFailureReasons ?? deterministic.failureReasons),
       ...semantic.hardFailureReasons,
@@ -1291,8 +1377,9 @@ export const enforceResponsePlan = async ({
     };
   }
   const second = await generate(
-    formatResponsePlanRegenerateConstraint(executionPlan, firstValidation.failureReasons),
-    executionPlan
+    formatResponsePlanRegenerateConstraint(executionPlan, firstValidation.failureReasons, regenerationFeedback),
+    executionPlan,
+    regenerationFeedback
   );
   const secondValidation = await validateCandidate(second.text);
   if (secondValidation.passed) {

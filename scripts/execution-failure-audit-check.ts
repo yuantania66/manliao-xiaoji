@@ -272,6 +272,36 @@ const handoffCitation = semanticVerdictAuditFor(verdictWith(null, {
 assert.deepEqual(handoffCitation?.outOfScopeRuleIds, ["ES-ACK-NO-SOLICIT"]);
 assert.equal(JSON.stringify(withoutEvidenceText(repairVerdict)).includes("候选"), false);
 
+
+// Full local audit retains affect grounds; every structural consumer receives offsets only.
+const affectEvidence = {
+  userSpans: [{ start: 0, end: 7, text: "用户原句哨兵甲" }],
+  candidateSpans: [{ start: 0, end: 7, text: "回复原句哨兵乙" }],
+  reason: "诊断理由哨兵丙 ES-AFFECT-EVIDENCE must not alter scored citations",
+};
+const affectAudit = semanticVerdictAuditFor(verdictWith({
+  binding: { action: "offer_emotional_support", supportFunction: "acknowledge_current_relational_impact", sourceTurnId: "u" },
+  status: "not_satisfied",
+  realizedAction: "offer_emotional_support",
+  targetAddressed: true,
+  contractRealized: false,
+  containsContradictoryMove: true,
+  evidence: [span("ES-SCOPE: unsupported personal history")],
+  affectObservation: { affectDrift: "none" },
+  affectEvidence,
+}), ["ES-SCOPE"]);
+assert.deepEqual(affectAudit?.affectEvidence, affectEvidence);
+assert.deepEqual(affectAudit?.ruleIds, ["ES-SCOPE"]);
+const structuralAffect = withoutEvidenceText(affectAudit);
+assert.deepEqual(structuralAffect?.affectEvidence, {
+  userSpans: [{ start: 0, end: 7 }], candidateSpans: [{ start: 0, end: 7 }],
+});
+for (const sentinel of ["用户原句哨兵甲", "回复原句哨兵乙", "诊断理由哨兵丙"]) {
+  assert(JSON.stringify(affectAudit).includes(sentinel), "local audit preserves diagnostic grounds");
+  assert(!JSON.stringify(structuralAffect).includes(sentinel), "structural audit strips all diagnostic text");
+}
+assert(!Object.hasOwn(withoutEvidenceText(repairVerdict)!, "affectEvidence"));
+
 runEndToEnd()
   .then(() => console.log("execution failure audit checks passed"))
   .catch((error) => {

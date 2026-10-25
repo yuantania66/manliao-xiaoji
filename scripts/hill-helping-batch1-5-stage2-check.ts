@@ -306,6 +306,7 @@ const exactNegativeWiringByCaseId = new Map<string, Stage2NegativeWiring>([
 ]);
 
 const deferredBothReasonByCaseId = new Map<string, string>([
+  ["S2-EF-10", "Semantic-pending under the approved implicit-affect standard: the original reply and negative label stay historical; differing categories or the word 痛苦 alone do not prove an intensity defect."],
   ["S2-EF-09", "D-deferred: valid focus control and a true topic switch must be checked separately."],
   ["S2-EF-12", "D-deferred: function completion and an invented event require separate owners."],
   ["S2-EF-13", "D-deferred: focus completion and an unbounded alternative must be separated."],
@@ -324,7 +325,7 @@ const deferredBothReasonByCaseId = new Map<string, string>([
 ]);
 
 const activeDeterministicGuardCaseIds = new Set([
-  "S2-EF-10", "S2-EF-11", "S2-EA-09", "S2-RPQ-10",
+  "S2-EF-11", "S2-EA-09", "S2-RPQ-10",
 ]);
 const activeExpectedFailureByCaseId = new Map<string, string>([
   ["S2-RPQ-10", "question_not_allowed_by_plan"],
@@ -335,7 +336,9 @@ const staleExpectationAcceptedCaseIds = new Set([
 ]);
 
 const positiveVerdictBinding = (contract: NonNullable<ResponsePlan["positiveFunctionContract"]>) =>
-  contract.action === "offer_emotional_support"
+  contract.action === "acknowledge_without_psychologizing"
+    ? { action: contract.action, sourceTurnId: contract.sourceTurnId, allowIdle: contract.allowIdle, ...(contract.responseFunction ? {responseFunction: contract.responseFunction} : {}) }
+    : contract.action === "offer_emotional_support"
     ? { action: contract.action, supportFunction: contract.supportFunction, sourceTurnId: contract.sourceTurnId }
     : contract.action === "repair_previous_wording"
       ? { action: contract.action, repairMode: contract.repairMode, sourceTurnId: contract.sourceTurnId, targetTurnId: contract.targetTurnId }
@@ -398,6 +401,7 @@ const validateExactNegativeThroughCanonicalSemanticBoundary = async (
   return result;
 };
 
+const semanticPendingFocusPlanBefore = structuredClone(focusPlan);
 for (const testCase of independentCases) {
   const deterministicValidation = validateResponsePlanOutput({
     plan: testCase.plan,
@@ -419,6 +423,12 @@ for (const testCase of independentCases) {
   const deferredReason = deferredBothReasonByCaseId.get(testCase.id);
   if (deferredReason) {
     assert.equal(semanticValidation, null, `${testCase.id} must not receive a whole-case negative fixture.`);
+    if (testCase.id === "S2-EF-10") {
+      assert.equal(testCase.shouldPass, false, "The historical label is preserved, not relabeled as a proved pass.");
+      assert.equal(deterministicValidation.passed, true, "A category mismatch alone no longer rejects this reply.");
+      assert.equal(exactNegativeWiringByCaseId.has(testCase.id), false, "A pending semantic judgment must not gain a fixed negative verdict.");
+      assert.deepEqual(testCase.plan, semanticPendingFocusPlanBefore, "The original selected plan and explicit evidence remain unchanged.");
+    }
     assert(!validation.failureReasons.some((reason) =>
       reason.includes("missing_selected_function") ||
       reason.includes("generic_normalization_or_reassurance") ||
@@ -447,8 +457,8 @@ for (const testCase of independentCases) {
 
 assert.equal(exactNegativeWiringByCaseId.size, 27);
 assert.equal(staleExpectationAcceptedCaseIds.size, 7);
-assert.equal(deferredBothReasonByCaseId.size, 15);
-assert.equal(activeDeterministicGuardCaseIds.size, 4);
+assert.equal(deferredBothReasonByCaseId.size, 16);
+assert.equal(activeDeterministicGuardCaseIds.size, 3);
 
 type Candidate3ExactNegativeWiring = {
   scenarioId: string;
@@ -620,8 +630,15 @@ const recordCandidate3Deferred = ({
 
 const amountPrompt = formatResponsePlanForPrompt(amountPlan);
 assert(amountPrompt.includes("Amount control governs expression quantity only"));
-assert(amountPrompt.includes("Permission language must modify the user's expression choice"));
-assert(amountPrompt.includes("Keep the feeling acknowledgement descriptive"));
+// Quantity permission is the selected function; natural acceptance is allowed but
+// neither acceptance nor a focus/question alternative can substitute for it.
+assert(amountPrompt.includes(`positiveFunctionContract: ${JSON.stringify(amountPlan.positiveFunctionContract)}`), "Actual amount contract must enter prompt unchanged");
+assert(amountPrompt.includes("explicitly allow a partial or unfinished account"));
+assert(amountPrompt.includes("Contextual acceptance of the feeling is allowed"));
+assert(amountPrompt.includes("does not by itself return control over expression quantity"));
+assert(amountPrompt.includes("do not turn it into a question"));
+assert(amountPrompt.includes("add a content or focus choice"));
+assert(amountPrompt.includes("offer another subject as an alternative"));
 const burdenPrompt = formatResponsePlanForPrompt(reducePlan);
 assert(burdenPrompt.includes("Releasing an expression burden is not a pause or closure"));
 const pauseRegeneration = formatResponsePlanRegenerateConstraint(
@@ -853,8 +870,11 @@ console.log(JSON.stringify({
     total: independentCases.length,
     emotional: emotionalCases.length,
     repair: repairCases.length,
-    accepted: independentCases.filter((item) => item.shouldPass).length,
-    rejected: independentCases.filter((item) => !item.shouldPass).length,
+    fixtureExpectedAccepted: independentCases.filter((item) => item.shouldPass).length,
+    fixtureExpectedRejected: independentCases.filter((item) => !item.shouldPass).length,
+    deferred: deferredBothReasonByCaseId.size,
+    semanticPending: ["S2-EF-10"],
+    adjudicatedRejected: independentCases.filter((item) => !item.shouldPass && !deferredBothReasonByCaseId.has(item.id)).length,
   },
   candidate3FrozenRegenerationReplay: {
     audits: audit.regenerationAudits.length,
