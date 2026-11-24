@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { PrismaClient } from "@prisma/client";
@@ -7,6 +8,7 @@ const port = Number(process.env.LOCAL_API_PORT || 3400);
 const externalBaseUrl = process.env.LOCAL_API_BASE_URL?.replace(/\/$/, "");
 const baseUrl = externalBaseUrl || `http://127.0.0.1:${port}`;
 const timeoutMs = Number(process.env.LOCAL_API_TIMEOUT_MS || 30000);
+const localModelProvider = process.env.AI_PROVIDER || "mock";
 const prisma = new PrismaClient();
 
 let serverProcess = null;
@@ -25,11 +27,11 @@ const nextBin = () =>
 const startServer = () => {
   if (externalBaseUrl) return;
 
-  serverProcess = spawn(nextBin(), ["start", "-p", String(port)], {
+  serverProcess = spawn(nextBin(), ["start", "-H", "127.0.0.1", "-p", String(port)], {
     cwd: process.cwd(),
     env: {
       ...process.env,
-      AI_PROVIDER: process.env.AI_PROVIDER || "mock",
+      AI_PROVIDER: localModelProvider,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -237,6 +239,7 @@ addCheck("notes and insights isolate users and drafts", async () => {
     await request("/api/notes", {
       method: "POST",
       body: JSON.stringify({
+        clientRequestId: randomUUID(),
         content: "owneralpha ".repeat(12),
         recordDate: today,
         moodName: "晴朗",
@@ -249,6 +252,7 @@ addCheck("notes and insights isolate users and drafts", async () => {
     await request("/api/notes", {
       method: "POST",
       body: JSON.stringify({
+        clientRequestId: randomUUID(),
         content: "draftonlyalpha ".repeat(20),
         recordDate: today,
         isDraft: true,
@@ -259,6 +263,7 @@ addCheck("notes and insights isolate users and drafts", async () => {
   await request("/api/notes", {
     method: "POST",
     body: JSON.stringify({
+      clientRequestId: randomUUID(),
       content: "futureonlyalpha ".repeat(20),
       recordDate: "2099-01-01",
     }),
@@ -295,6 +300,7 @@ addCheck("notes and insights isolate users and drafts", async () => {
     await request("/api/notes", {
       method: "POST",
       body: JSON.stringify({
+        clientRequestId: randomUUID(),
         content: "ownerbeta ".repeat(20),
         recordDate: today,
         moodName: "小雨",
@@ -330,8 +336,14 @@ addCheck("notes and insights isolate users and drafts", async () => {
 
   expectStatus(await request(`/api/notes/${foreignNote.id}`), 404, "foreign note detail");
 
-  const insights = expectOk(await request("/api/insights?range=90d"), "primary insights");
-  if (insights.words.length > 6) throw new Error("primary insights: more than six words returned");
+  expectStatus(await request("/api/insights?range=90d"), 403, "insights without consent");
+  const consent = expectOk(await request("/api/insights", { method: "POST" }), "authorize insights");
+  const insightsHeaders = { "x-insights-consent": consent.consentToken };
+  const insights = expectOk(await request("/api/insights?range=90d", { headers: insightsHeaders }), "primary insights");
+  if (insights.rangeDays !== 90 || insights.sourceCounts.notes !== 1 || insights.sourceCounts.userMessages !== 0) {
+    throw new Error("primary insights: counts included excluded sources");
+  }
+  if (insights.words.length > 8) throw new Error("primary insights: more than eight words returned");
   if (!insights.words.some((item) => item.word === "owneralpha")) {
     throw new Error("primary insights: own word missing");
   }
@@ -353,8 +365,8 @@ addCheck("notes and insights isolate users and drafts", async () => {
   token = "";
   expectStatus(await request("/api/insights?range=90d"), 401, "anonymous insights after login");
   token = primaryToken;
-  expectStatus(await request("/api/insights?range=365d"), 400, "invalid insights range");
-  expectStatus(await request("/api/insights?range=constructor"), 400, "prototype insights range");
+  expectStatus(await request("/api/insights?range=365d", { headers: insightsHeaders }), 400, "invalid insights range");
+  expectStatus(await request("/api/insights?range=constructor", { headers: insightsHeaders }), 400, "prototype insights range");
   expectStatus(await request("/api/notes/calendar?month=2026-13"), 400, "invalid note calendar month");
 });
 
@@ -411,15 +423,41 @@ if (process.env.LOCAL_API_SMOKE_NOTES_ONLY !== "1") addCheck("chat create/send/h
     }),
     "send chat message"
   );
-  if (!messageData.userMessage?.id || !messageData.assistantMessage?.id) {
-    throw new Error("send chat message: missing user or assistant message");
+  if (!messageData.userMessage?.id) throw new Error("send chat message: missing user message");
+  const localWithoutModel = !externalBaseUrl && localModelProvider === "mock";
+  let feedbackTarget = messageData.assistantMessage?.id;
+  if (!feedbackTarget) {
+    if (!localWithoutModel || messageData.status !== "failed" || messageData.systemStatus?.type !== "system_status") {
+      throw new Error("send chat message: missing assistant message");
+    }
+    const syntheticReply = await prisma.chatMessage.create({
+      data: {
+        userId,
+        sessionId: session.id,
+        role: "ASSISTANT",
+        status: "SAVED",
+        content: "Synthetic reply for the feedback API check.",
+        replyToMessageId: messageData.userMessage.id,
+      },
+    });
+    feedbackTarget = syntheticReply.id;
+    console.log("Checked the local no-model response and seeded a synthetic reply for the feedback API.");
   }
+
+  const feedback = expectOk(await request(`/api/chat/messages/${feedbackTarget}/feedback`, {
+    method: "POST",
+    body: JSON.stringify({ signal: "helpful" }),
+  }), "submit reply feedback");
+  if (feedback.signal !== "helpful" || !feedback.updatedAt) throw new Error("reply feedback: invalid response");
 
   const history = expectOk(
     await request(`/api/chat/sessions/${session.id}/messages?pageSize=20`),
     "chat history"
   );
-  if (history.total < 2) throw new Error(`chat history: expected at least 2 messages, got ${history.total}`);
+  const historyIds = new Set(history.items.map((item) => item.id));
+  if (!historyIds.has(messageData.userMessage.id) || !historyIds.has(feedbackTarget)) {
+    throw new Error("chat history: missing the original user message or feedback target");
+  }
 
   const search = expectOk(await request("/api/chat/search?q=local-smoke-chat"), "chat search");
   if (!search.items.some((item) => item.sessionId === session.id)) {

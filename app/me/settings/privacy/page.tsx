@@ -1,4 +1,5 @@
 import { SettingsShell } from "../settings-shell";
+import { TrainingConsent } from "./training-consent";
 
 export default function PrivacyPolicyPage() {
   return (
@@ -20,6 +21,8 @@ export default function PrivacyPolicyPage() {
         <p className="mt-4">
           在使用慢聊小记前，请你仔细阅读并理解本政策。你使用或继续使用慢聊小记服务，即表示你理解并同意我们按照本政策处理相关信息。
         </p>
+
+        <TrainingConsent />
 
         <h3 className="mt-6 font-semibold text-[var(--ink)]">一、我们如何收集和使用信息</h3>
         <p className="mt-3">

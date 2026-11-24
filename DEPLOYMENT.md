@@ -94,6 +94,68 @@ npm run smoke:prod
 
 `smoke:prod` 会检查生产健康检查、匿名鉴权和微信登录参数校验。2026-08-27 已在 `5625262` 上通过；另以纯合成数据验证了游客主动问候和真实 Qwen “你好”聊天链路，检查输出不含回复正文、密钥或 Base URL。
 
+## 2026-11-25 数据库升级候选
+
+### 正式线上只读核对
+
+2026-11-25 通过正式域名的反代端口、应用进程目录和公开首页构建文件的 SHA-256 确认实际发布为 `9750adc`。运行目录的包清单、Prisma 模型和小记接口源文件均与本地 `9750adc` 对应文件的 SHA-256 一致。端口 `3100` 另有进程运行 `5625262`，这是上面隔离演练采用的历史版本。
+
+由 `9750adc` 的数据库配置进入只读事务，查询 Prisma 迁移元数据。**21 条均成功，无未完成或已回滚记录**。21 个名称和 SQL 文件的 SHA-256 与本地 `9750adc` 完全一致。与当前候选 `aab536f` 对照，有 13 条一致，候选缺 8 条线上历史迁移，另有 5 条候选新迁移尚未执行。线上应用和数据库的升级起点均确定为 `9750adc` 对应的 21 条迁移。
+
+此次核对只读取版本和迁移元数据。以核对结果创建本地分支 `codex/production-upgrade-9750adc`。
+
+<details>
+<summary>线上已成功执行的 21 条迁移</summary>
+
+```text
+20260608154611_init_backend
+20260623061000_add_feedback
+20260705090000_add_experience_layers
+20260706000100_add_understanding_layers
+20260706000200_add_ai_message_feedback
+20260708000100_add_memory_v2_phase1_raw
+20260708000200_add_memory_v2_refinement_raw_captured
+20260708000300_add_memory_v2_raw_worker_nullable_raw
+20260708000400_add_memory_v2_raw_to_segmentation_step
+20260708000500_add_memory_v2_evidence_type_and_targets
+20260708000600_add_memory_v2_semantic_raw_segment_projection
+20260724000100_chat_execution_commit_boundary
+20260810000100_add_episode_summary_memory_kind
+20260825000100_add_assistant_publication_p2
+20260825000200_add_p4_minimum_memory
+20260825000300_add_p6_relationship_growth_cache
+20260825000400_add_p5_governance_deletion
+20260826000100_add_note_upload_integrity
+20260826000200_add_account_cancellation_file_deletion
+20260828190000_add_profile_avatar_upload_purpose
+20260831000100_add_profile_completion_gate
+```
+
+</details>
+
+### 隔离升级演练
+
+升级分支保留了线上 21 条迁移及其内容，追加五条回复反馈、评价队列、复核和训练候选迁移，保留线上原有小记、媒体、账号注销及聊天发布入口。用锁定依赖、两个阶段的 Prisma Client 和仅监听本机的 PostgreSQL 做演练。旧库升到 26 条，21 条原有迁移名称与校验值未变，全新空库也能执行相同的 26 条迁移。Prisma 差异报告与升级前一致，仍含小记默认值和索引、外键别名的历史差异。
+
+隔离回归使用 [小记升级检查](scripts/production-upgrade-note-check.ts)。给 `NOTE_UPGRADE_TEST_DATABASE_URL` 指定本机测试库，给 `NOTE_UPGRADE_FIXTURE_DIR` 指定本次独立测试目录。以原 21 条及原 Prisma Client 运行 `node --import tsx scripts/production-upgrade-note-check.ts seed` 写入虚构记录。追加五条后用 `read` 检查原 Client 读取和重试，生成新 Client 后用 `verify` 检查新建、编辑、隔离和删除。用 `pg_dump`／`pg_restore` 和单独复制的虚构图片目录，验证隔离库恢复后可读取原小记及原图。
+
+完整本地发布检查 `npm run check:release:required` 通过，含生产构建。另通过回复反馈、评分、复核权限、后台队列和训练候选等六项专项，以及小程序小记、观察和聊天专项。账号注销与删除治理在本机 PostgreSQL 复验通过。 构建后的本机应用通过 8 项 HTTP 检查。聊天检查覆盖无模型时保留用户消息及返回失败状态，另用虚构已发布回复验证反馈入口。
+
+该候选接入反馈、凌晨评价、内部复核、独立训练候选授权及观察页撤回，保留正式发布的观察授权校验。实时双线督导与人工审核建议输入 Qwen 还需适配新版对话上下文和线上发布流程。当前线上应用、数据和定时器均未随本地演练变动。
+
+## 凌晨回复评价
+
+发布候选包含独立的 [systemd 定时单元](ops/systemd/manliaoxiaoji-reply-evaluation.timer)
+和 [后台进程单元](ops/systemd/manliaoxiaoji-reply-evaluation.service)。定时器按
+`Asia/Shanghai` 每天 04:00 启动，关机错过的触发在恢复后补跑。队列在新增已发布回复和反馈实际变化时跟进，迁移不会主动加入旧对话。
+
+启用前在目标环境核对 Node 路径及 `tsx` 依赖、应用目录、运行账户、实际环境配置和配套迁移。进程读取已配置的 Qwen，使用 `CHAT_REPLY_EVALUATION_ENABLED=true` 启用，单次上限由 `CHAT_REPLY_EVALUATION_BATCH_LIMIT` 配置，示例为 100。中断和暂时失败的任务保留在队列，后续批次继续处理。日志只含结果计数。
+
+发布候选的无模型检查可运行 `CHAT_REPLY_EVALUATION_ENABLED=false node --import tsx scripts/chat-reply-evaluation-nightly.ts`。线上启用和真实审核员配置仍属发布操作。
+
+指定审核员在 `/internal/chat-reply-reviews` 处理待审评价，名单由
+`CHAT_REPLY_REVIEWER_USER_IDS` 配置。现有评价使用原始回复和关联反馈，上线前需确认真实对话用于后台评分的授权范围。
+
 ## HTTPS 证书命令
 
 已执行：

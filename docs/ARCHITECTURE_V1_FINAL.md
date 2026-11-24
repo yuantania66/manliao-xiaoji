@@ -681,6 +681,10 @@ edge. The compatibility handoff Validator delegates to this canonical boundary
 and performs no second provider call. No Chinese completion phrase list or
 persistent lifecycle state is introduced.
 
+### 发布后的回复评价
+
+已发布回复及显式关联的用户反馈由数据库触发器更新评价队列，任务和证据版本用于识别过期评价。北京时间 04:00 的工作进程默认关闭。指定审核员按当前证据复核，用户单独授权后才可筛选只含评分和有限标签的训练候选。撤回授权、注销或更新相关证据会清除受影响的候选，并沿用已有删除治理。线上原有聊天发布流程继续负责当前回复。将审核建议加入后续 Qwen 输入，以及实时双线督导的正式接入，分别依赖新版对话上下文和现有发布边界的适配。
+
 ## 6. Legacy migration
 
 | Previous component | Current authority |

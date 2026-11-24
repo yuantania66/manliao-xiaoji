@@ -1,10 +1,10 @@
-import { AiMessageFeedbackSignal, Prisma } from "@prisma/client";
+import { AiMessageFeedbackSignal } from "@prisma/client";
 import { NextRequest } from "next/server";
 
 import { failFromError, ok } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
-import { prisma } from "@/lib/prisma";
+import { recordChatReplyFeedback } from "@/services/ai/chatReplyFeedback";
 
 const readJson = async (request: Request) => {
   try {
@@ -56,6 +56,16 @@ const parseComment = (value: unknown) => {
   return comment || null;
 };
 
+const parseSourceMessageId = (value: unknown) => {
+  if (value === undefined || value === null) return value;
+  if (typeof value !== "string" || !value.trim() || value.trim().length > 160) {
+    throw new AppError("VALIDATION_ERROR", "sourceMessageId 必须是有效的消息 ID", 400, {
+      field: "sourceMessageId",
+    });
+  }
+  return value.trim();
+};
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ messageId: string }> }
@@ -64,51 +74,20 @@ export async function POST(
     const user = await requireUser(request);
     const { messageId } = await context.params;
     const body = await readJson(request);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw new AppError("VALIDATION_ERROR", "请求体必须是对象", 400);
+    }
     const signal = parseSignal(body.signal);
     const tags = parseTags(body.tags);
     const comment = parseComment(body.comment);
 
-    const message = await prisma.chatMessage.findFirst({
-      where: {
-        id: messageId,
-        userId: user.id,
-        role: "ASSISTANT",
-      },
-      select: {
-        id: true,
-        aiGenerationId: true,
-      },
-    });
-
-    if (!message) {
-      throw new AppError("NOT_FOUND", "AI 消息不存在", 404);
-    }
-
-    const feedback = await prisma.aiMessageFeedback.upsert({
-      where: {
-        userId_messageId_signal: {
-          userId: user.id,
-          messageId: message.id,
-          signal,
-        },
-      },
-      update: {
-        tags: tags ?? Prisma.JsonNull,
-        comment,
-      },
-      create: {
-        userId: user.id,
-        messageId: message.id,
-        aiGenerationId: message.aiGenerationId,
-        signal,
-        tags: tags ?? Prisma.JsonNull,
-        comment,
-      },
-      select: {
-        id: true,
-        signal: true,
-        createdAt: true,
-      },
+    const feedback = await recordChatReplyFeedback({
+      userId: user.id,
+      assistantMessageId: messageId,
+      signal,
+      tags,
+      comment,
+      sourceMessageId: parseSourceMessageId(body.sourceMessageId),
     });
 
     return ok(
@@ -116,6 +95,7 @@ export async function POST(
         id: feedback.id,
         signal: feedback.signal.toLowerCase(),
         createdAt: feedback.createdAt.toISOString(),
+        updatedAt: feedback.updatedAt.toISOString(),
       },
       201
     );

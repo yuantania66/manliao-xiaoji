@@ -1,0 +1,10 @@
+[Unit]
+Description=Manliaoxiaoji nightly reply evaluation
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/var/www/manliaoxiaoji/app
+Environment=NODE_ENV=production
+EnvironmentFile=/var/www/manliaoxiaoji/shared/.env
+ExecStart=/usr/bin/env node --import tsx scripts/chat-reply-evaluation-nightly.ts

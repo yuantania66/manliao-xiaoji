@@ -21,6 +21,11 @@ const AUTH_EXPIRES_AT_KEY = "xinqingAuthExpiresAt";
 const AUTH_USER_KEY = "xinqingAuthUser";
 const LEGACY_LOGGED_IN_KEY = "xinqingLoggedIn";
 const COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+export const AUTH_CHANGED_EVENT = "xinqing:auth-changed";
+
+const notifyAuthChanged = () => {
+  if (typeof window !== "undefined") window.dispatchEvent?.(new Event(AUTH_CHANGED_EVENT));
+};
 
 const safeStorage = () => {
   if (typeof window === "undefined") return null;
@@ -95,6 +100,7 @@ export const saveAuth = ({ token, expiresAt, user }: StoredAuth) => {
 
   setCookieValue(AUTH_TOKEN_KEY, token);
   if (expiresAt) setCookieValue(AUTH_EXPIRES_AT_KEY, expiresAt);
+  notifyAuthChanged();
 };
 
 export const clearAuth = () => {
@@ -107,6 +113,7 @@ export const clearAuth = () => {
 
   removeCookieValue(AUTH_TOKEN_KEY);
   removeCookieValue(AUTH_EXPIRES_AT_KEY);
+  notifyAuthChanged();
 };
 
 export const clearCancelledAccount = (userId: string) => {
@@ -131,6 +138,7 @@ export const clearCancelledAccount = (userId: string) => {
   }
   removeCookieValue(AUTH_TOKEN_KEY);
   removeCookieValue(AUTH_EXPIRES_AT_KEY);
+  notifyAuthChanged();
   if (localKeys.some((key) => local.getItem(key) !== null)) throw new Error("本机账号数据清理失败");
   if (Object.keys(session).some((key) => sessionPrefixes.some((prefix) => key === prefix || key.startsWith(prefix)))) {
     throw new Error("本机会话缓存清理失败");

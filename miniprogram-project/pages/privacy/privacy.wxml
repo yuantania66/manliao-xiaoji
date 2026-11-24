@@ -35,4 +35,21 @@
     <view class="policy-heading">八、联系我们及政策更新</view>
     <view class="policy-paragraph">如有个人信息查询、删除、投诉或其他问题，可通过“设置 - 意见反馈”联系我们。功能或规则发生重要变化时，我们会更新本政策并以适当方式提示。</view>
   </view>
+  <view class="training-consent card">
+    <view class="training-heading">训练候选材料授权</view>
+    <view class="body training-copy">单独同意后，审核员可筛选去标识后的回复评价评分和标签，收录为训练候选。聊天正文、反馈原话和身份信息不在授权范围内。</view>
+    <view class="body training-copy">你可以随时撤回。撤回后会清除关联候选，聊天和其他功能可以照常使用。</view>
+    <view wx:if="{{trainingStatus === 'guest'}}" class="body training-copy">登录后可以管理这项授权。</view>
+    <view wx:elif="{{trainingStatus === 'loading'}}" class="body training-copy">正在读取授权状态…</view>
+    <view wx:elif="{{trainingStatus === 'saving'}}" class="body training-copy">正在保存授权…</view>
+    <block wx:elif="{{trainingStatus === 'error'}}">
+      <view class="body training-copy">暂时无法确认授权状态。</view>
+      <button class="secondary-button training-button" bindtap="loadTrainingConsent">重新读取</button>
+    </block>
+    <block wx:else>
+      <view class="body training-copy">{{trainingMessage || (trainingEnabled ? '已开启授权。' : '未开启授权。')}}</view>
+      <view wx:if="{{!trainingNoticeCurrent}}" class="body training-copy">授权说明已有更新。请使用最新版本开启授权。</view>
+      <button wx:if="{{trainingEnabled || trainingNoticeCurrent}}" class="secondary-button training-button" bindtap="toggleTrainingConsent">{{trainingEnabled ? '撤回授权' : '同意收录训练候选'}}</button>
+    </block>
+  </view>
 </view>

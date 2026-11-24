@@ -4,6 +4,13 @@ import { AiModelMessage, AiProviderReasoningMeta, AiProviderResponse } from "./t
 
 type AiProvider = "openai" | "deepseek" | "qwen" | "zhipu" | "mock";
 
+export class ModelCallCancelledError extends Error {
+  constructor() {
+    super("AI model call cancelled by its caller.");
+    this.name = "ModelCallCancelledError";
+  }
+}
+
 const getTimeoutMs = () => {
   const value = Number(process.env.AI_TIMEOUT_MS ?? "45000");
   return Number.isFinite(value) && value > 0 ? value : 45000;
@@ -247,12 +254,15 @@ export const callModel = async ({
   model,
   temperature = 0.7,
   responseFormat,
+  signal: externalSignal,
 }: {
   messages: AiModelMessage[];
   model: string;
   temperature?: number;
   responseFormat?: "json_object";
+  signal?: AbortSignal;
 }): Promise<AiProviderResponse> => {
+  if (externalSignal?.aborted) throw new ModelCallCancelledError();
   const provider = getAiProvider();
   if (provider === "mock") return mockResponse({ messages, model });
 
@@ -277,6 +287,14 @@ export const callModel = async ({
   const startedAt = Date.now();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), getTimeoutMs());
+  let externallyCancelled = false;
+  const cancelFromCaller = () => {
+    if (controller.signal.aborted) return;
+    externallyCancelled = true;
+    controller.abort();
+  };
+  externalSignal?.addEventListener("abort", cancelFromCaller, { once: true });
+  if (externalSignal?.aborted) cancelFromCaller();
 
   try {
     const result =
@@ -324,6 +342,7 @@ export const callModel = async ({
               signal: controller.signal,
             });
 
+    if (externallyCancelled) throw new ModelCallCancelledError();
     if (!result.ok) {
       throw new AppError("AI_GENERATION_FAILED", "AI 服务调用失败", 502, {
         provider,
@@ -345,11 +364,15 @@ export const callModel = async ({
     };
   } catch (error) {
     if (error instanceof AppError) throw error;
+    if (externallyCancelled) {
+      throw error instanceof ModelCallCancelledError ? error : new ModelCallCancelledError();
+    }
     if (controller.signal.aborted) {
       throw new AppError("AI_GENERATION_FAILED", "AI 服务调用超时", 504);
     }
     throw new AppError("AI_GENERATION_FAILED", "AI 服务暂时不可用", 502);
   } finally {
     clearTimeout(timer);
+    externalSignal?.removeEventListener("abort", cancelFromCaller);
   }
 };

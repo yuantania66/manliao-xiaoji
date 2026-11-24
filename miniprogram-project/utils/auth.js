@@ -1,6 +1,7 @@
 const AUTH_KEY = "xinqingAuth";
 const GUEST_KEY = "xinqingGuestMode";
 const GUEST_PROFILE_KEY = "xinqingGuestProfile";
+let authRevision = 0;
 const ACCOUNT_CACHE_KEYS = [
   "xinqingInsightsAnalysisAuthorized",
   "xinqingInsightsAuthorization:v1"
@@ -72,6 +73,20 @@ const getAuth = () => {
   return null;
 };
 
+const getAuthSession = () => {
+  const auth = getAuth();
+  return {
+    revision: authRevision,
+    token: auth?.token || "",
+    userId: auth?.user.id || null
+  };
+};
+
+const isCurrentAuthSession = (session) => {
+  const current = getAuthSession();
+  return current.revision === session.revision && current.token === session.token && current.userId === session.userId;
+};
+
 const getDataOwner = () => {
   const auth = getAuth();
   if (auth) return `authenticated:${auth.user.id}`;
@@ -116,6 +131,7 @@ const saveAuth = (auth) => {
   // Persist the authenticated identity before changing the active guest marker.
   // Guest-owned content stays isolated in its own keys and remains recoverable.
   wx.setStorageSync(AUTH_KEY, auth);
+  authRevision += 1;
   try { wx.removeStorageSync(GUEST_KEY); } catch (error) {}
   const app = getApp();
   app.globalData.user = auth.user || null;
@@ -137,6 +153,7 @@ const updateCachedUser = (expectedUserId, user) => {
 const clearAuth = () => {
   ensureLegacyDraftSafeBeforeIdentityChange("none");
   wx.removeStorageSync(AUTH_KEY);
+  authRevision += 1;
   wx.removeStorageSync(GUEST_KEY);
   ACCOUNT_CACHE_KEYS.forEach((key) => wx.removeStorageSync(key));
   const app = getApp();
@@ -147,6 +164,7 @@ const clearAuth = () => {
 const clearCancelledAccount = (userId) => {
   if (!userId) throw new Error("当前账号标识不可用");
   wx.removeStorageSync(AUTH_KEY);
+  authRevision += 1;
   ACCOUNT_CACHE_KEYS.forEach((key) => wx.removeStorageSync(key));
   if (userId) {
     [`xinqingMiniChatMessages:${userId}`, `xinqingMiniNotes:${userId}`]
@@ -184,6 +202,7 @@ const enterGuest = () => {
       throw error;
     }
   }
+  authRevision += 1;
   const app = getApp();
   app.globalData.user = null;
   app.globalData.token = "";
@@ -219,6 +238,8 @@ const getDataMode = () => {
 
 module.exports = {
   getAuth,
+  getAuthSession,
+  isCurrentAuthSession,
   saveAuth,
   updateCachedUser,
   clearAuth,

@@ -1,5 +1,5 @@
 const { API_TIMEOUT, getApiBaseUrl } = require("../config/api");
-const { getAuth, clearAuth } = require("./auth");
+const { getAuthSession, isCurrentAuthSession, clearAuth } = require("./auth");
 
 const request = ({ url, method = "GET", data, auth = true, headers = {} }) =>
   new Promise((resolve, reject) => {
@@ -9,14 +9,14 @@ const request = ({ url, method = "GET", data, auth = true, headers = {} }) =>
       return;
     }
 
-    const storedAuth = getAuth();
+    const session = auth ? getAuthSession() : null;
     const header = {
       "content-type": "application/json",
       ...headers
     };
 
-    if (auth && storedAuth && storedAuth.token) {
-      header.Authorization = `Bearer ${storedAuth.token}`;
+    if (session?.token) {
+      header.Authorization = `Bearer ${session.token}`;
     }
 
     wx.request({
@@ -27,8 +27,12 @@ const request = ({ url, method = "GET", data, auth = true, headers = {} }) =>
       timeout: API_TIMEOUT,
       success(res) {
         if (res.statusCode === 401) {
-          const currentAuth = getAuth();
-          if (auth && storedAuth?.token && currentAuth?.token === storedAuth.token) clearAuth();
+          if (session?.token && isCurrentAuthSession(session)) {
+            try { clearAuth(); } catch (error) {
+              reject(error);
+              return;
+            }
+          }
           const error = new Error("登录状态已过期，请重新登录");
           error.statusCode = 401;
           reject(error);

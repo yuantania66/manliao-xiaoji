@@ -9,7 +9,7 @@
       <view class="body">不会调用 AI 猜测含义，也不会把这些内容作为心理诊断依据。你可以先不同意。</view>
     </view>
     <view wx:if="{{errorText}}" class="error-card" aria-live="assertive">{{errorText}}</view>
-    <button class="primary-button auth-button" bindtap="authorize">{{isAuthenticated ? "同意并查看真实观察" : "登录后查看真实观察"}}</button>
+    <button class="primary-button auth-button" bindtap="authorize" disabled="{{isAuthorizing}}" loading="{{isAuthorizing}}">{{isAuthenticated ? "同意并查看真实观察" : "登录后查看真实观察"}}</button>
     <navigator url="/pages/me/me" class="secondary-button auth-secondary" hover-class="none">暂时不授权</navigator>
   </block>
   <block wx:else>
@@ -18,7 +18,7 @@
     <view class="muted tone-help">只展示实际出现次数，不给词贴情绪标签。</view>
     <view class="eyebrow range-title">观察范围</view>
     <view class="range-row">
-      <button wx:for="{{ranges}}" wx:key="key" disabled="{{isLoading}}" class="{{range === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="changeRange">{{item.label}}</button>
+      <button wx:for="{{ranges}}" wx:key="key" class="{{range === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="changeRange">{{item.label}}</button>
     </view>
     <view wx:if="{{isLoading}}" class="observation-state" aria-live="polite">正在整理你的记录…</view>
     <view wx:elif="{{errorText}}" class="observation-state error-card" aria-live="assertive">{{errorText}}<button bindtap="changeRange" data-key="{{range}}">重新加载</button></view>
@@ -35,5 +35,6 @@
       <view>这不是判断，只是出现次数。</view>
       <text>本范围统计了 {{sourceCounts.notes}} 条小记和 {{sourceCounts.userMessages}} 条你发出的聊天消息。</text>
     </view>
+    <button class="secondary-button observation-withdraw" bindtap="withdraw">撤回本次授权</button>
   </block>
 </view>
