@@ -32,6 +32,7 @@ async function run() {
   const { createSession } = await import("../lib/auth");
   const notes = await import("../app/api/notes/route");
   const note = await import("../app/api/notes/[noteId]/route");
+  const chat = await import("../app/api/chat/sessions/[sessionId]/messages/route");
   const uploads = await import("../app/api/uploads/notes/route");
   const media = await import("../app/api/uploads/notes/[uploadId]/route");
 
@@ -63,6 +64,10 @@ async function run() {
     ownerToken: string;
     foreignToken: string;
     foreignNoteId: string;
+    chatSessionId: string;
+    chatUserMessageId: string;
+    chatAssistantMessageId: string;
+    feedbackId: string;
     noteId: string;
     legacyNoteId: string;
     clientRequestId: string;
@@ -87,6 +92,18 @@ async function run() {
       const { token: ownerToken } = await createSession(owner.id);
       const { token: foreignToken } = await createSession(other.id);
       const recordDate = new Date("2026-07-02T00:00:00Z");
+      const { id: chatSessionId } = await prisma.chatSession.create({ data: { userId: owner.id } });
+      const { id: chatUserMessageId } = await prisma.chatMessage.create({
+        data: { userId: owner.id, sessionId: chatSessionId, role: "USER",
+          content: "Synthetic conversation before migration", createdAt: recordDate },
+      });
+      const { id: chatAssistantMessageId } = await prisma.chatMessage.create({
+        data: { userId: owner.id, sessionId: chatSessionId, role: "ASSISTANT", replyToMessageId: chatUserMessageId,
+          content: "Synthetic historical reply", createdAt: new Date(recordDate.getTime() + 1000) },
+      });
+      const { id: feedbackId } = await prisma.aiMessageFeedback.create({
+        data: { userId: owner.id, messageId: chatAssistantMessageId, signal: "HELPFUL" }, select: { id: true },
+      });
       const legacy = await prisma.note.create({ data: { userId: owner.id, content: legacyContent, recordDate } });
       const foreign = await prisma.note.create({ data: { userId: other.id, content: "synthetic foreign note", recordDate } });
       const form = new FormData();
@@ -100,14 +117,39 @@ async function run() {
       const upload = await prisma.noteUpload.findUniqueOrThrow({ where: { id: uploadId } });
       assert.equal(upload.noteId, created.id);
       assert.equal(await prisma.rawMemory.count({ where: { userId: owner.id, sourceType: "NOTE", sourceId: created.id } }), 1);
-      const fixture: Fixture = { ownerId: owner.id, ownerToken, foreignToken, foreignNoteId: foreign.id, noteId: created.id, legacyNoteId: legacy.id, clientRequestId, mediaUrl, uploadId, storageKey: upload.storageKey };
+      const fixture: Fixture = {
+        chatSessionId, chatUserMessageId, chatAssistantMessageId, feedbackId,
+        ownerId: owner.id, ownerToken, foreignToken, foreignNoteId: foreign.id,
+        noteId: created.id, legacyNoteId: legacy.id, clientRequestId, mediaUrl, uploadId, storageKey: upload.storageKey,
+      };
       await writeFile(statePath, JSON.stringify(fixture), { mode: 0o600, flag: "wx" });
-      console.log("Seeded authenticated note, signed image, NOTE RawMemory and legacy note before upgrade.");
+      console.log("Seeded authenticated notes, an image and existing chat with feedback before upgrade.");
       return;
     }
 
     const fixture = JSON.parse(await readFile(statePath, "utf8")) as Fixture;
     const { ownerId, ownerToken, foreignToken, noteId, legacyNoteId, clientRequestId, mediaUrl, uploadId, storageKey } = fixture;
+    const chatPath = `/api/chat/sessions/${fixture.chatSessionId}/messages`;
+    const chatContext = { params: Promise.resolve({ sessionId: fixture.chatSessionId }) };
+    const history = await readData<{ items: Array<{ id: string; content: string }> }>(
+      await chat.GET(request(chatPath, "GET", ownerToken), chatContext), 200,
+    );
+    assert.deepEqual(history.items.map(({ id, content }) => [id, content]), [
+      [fixture.chatUserMessageId, "Synthetic conversation before migration"],
+      [fixture.chatAssistantMessageId, "Synthetic historical reply"],
+    ]);
+    assert.equal((await chat.GET(request(chatPath, "GET", foreignToken), chatContext)).status, 404);
+    const [historicalFeedback] = await prisma.$queryRaw<{ preserved: boolean }[]>`
+      SELECT ("updatedAt" = "createdAt" AND "sourceMessageId" IS NULL) AS preserved
+      FROM "AiMessageFeedback" WHERE "id" = ${fixture.feedbackId} AND "messageId" = ${fixture.chatAssistantMessageId}
+    `;
+    assert.equal(historicalFeedback?.preserved, true, "historical feedback must retain its original timestamp");
+    assert.deepEqual(await prisma.$queryRaw<{ queued: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1 FROM "ChatReplyEvaluationJob" WHERE "assistantMessageId" = ${fixture.chatAssistantMessageId}
+      ) AS queued
+    `, [{ queued: false }]);
+
     const ownPath = `/api/notes/${noteId}`;
     const legacyPath = `/api/notes/${legacyNoteId}`;
     const listed = await readData<{ items: NoteResult[] }>(await notes.GET(request("/api/notes?date=2026-07-02", "GET", ownerToken)), 200);
@@ -129,7 +171,7 @@ async function run() {
     assert.equal((await notes.POST(request("/api/notes", "POST", ownerToken, { ...payload, content: "changed payload" }))).status, 409);
     assert.equal(await prisma.rawMemory.count({ where: { userId: ownerId, sourceType: "NOTE", sourceId: noteId } }), 1);
     if (phase === "read") {
-      console.log("Read and replayed old note, legacy note and original image after upgrade.");
+      console.log("Read old chat and feedback, and replayed old notes and the original image after upgrade.");
       return;
     }
 

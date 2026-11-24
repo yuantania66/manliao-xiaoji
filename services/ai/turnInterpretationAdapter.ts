@@ -63,7 +63,8 @@ export const buildInterpretationMessages = (context: ConversationControlContext)
 export const enrichTurnInterpretation = async (
   context: ConversationControlContext,
   deterministic: TurnInterpretation,
-  inspectExternalPrompt?: (input: { stage: "turn_interpretation"; messages: AiModelMessage[] }) => void | Promise<void>
+  inspectExternalPrompt?: (input: { stage: "turn_interpretation"; messages: AiModelMessage[] }) => void | Promise<void>,
+  signal?: AbortSignal,
 ): Promise<{
   interpretation: TurnInterpretation;
   modelUsed: boolean;
@@ -124,6 +125,7 @@ export const enrichTurnInterpretation = async (
       model: process.env.AI_MAIN_MODEL?.trim() || getDefaultAiModel(),
       messages,
       temperature: 0.1,
+      signal,
     });
     return {
       interpretation: mergeModelInterpretation(deterministic, extractJsonObject(response.text), context),
@@ -142,6 +144,7 @@ export const enrichTurnInterpretation = async (
       },
     };
   } catch (error) {
+    signal?.throwIfAborted();
     return {
       interpretation: { ...deterministic, notes: [...deterministic.notes, "Model interpretation unavailable; deterministic evidence preserved."] },
       modelUsed: false,

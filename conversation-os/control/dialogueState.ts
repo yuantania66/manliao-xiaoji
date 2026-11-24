@@ -258,7 +258,7 @@ export const buildDialogueState = (
     commonGround,
     openObligations: answerObligations,
     initiativeOwner,
-    lastCommittedAssistantMove: lastAssistantTurn
+    lastCommittedAssistantMove: lastAssistantTurn && lastAssistantTurn.committedAssistantMove !== null
       ? committedAssistantMove ?? {
           purpose: [],
           claims: [],

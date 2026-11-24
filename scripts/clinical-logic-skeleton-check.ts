@@ -19,7 +19,7 @@ const responseGoalSelectorSource = readFileSync("services/clinical/responseGoalS
 const rogersStrategySource = readFileSync("services/clinical/rogersStrategy.ts", "utf8");
 const legacyAiServiceSource = readFileSync("services/ai/aiService.ts", "utf8");
 
-const safetyBranchIndex = orchestration.indexOf("const safetyTriage = await triageSafety({");
+const safetyBranchIndex = orchestration.indexOf("const safetyTriage = supervised ? null : await triageSafety({");
 const clinicalContextIndex = orchestration.indexOf("const clinicalContext = buildClinicalContext");
 const responsePlanIndex = orchestration.indexOf("const plan = createResponsePlan");
 const generateIndex = orchestration.indexOf("generateChatReply({");

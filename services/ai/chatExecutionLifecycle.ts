@@ -12,6 +12,8 @@ import {
 import { projectAffectEvidenceTerms } from "@/conversation-os/state";
 
 import type { AiGenerationResult } from "./types";
+import { findUnverifiedSafetyResource } from "./chatSafetyResourceCheck";
+import type { ChatPublicationTrace } from "./chatSupervisedPublication";
 
 export type ChatExecutionPhase =
   | "PLANNED"
@@ -61,6 +63,7 @@ export type ChatExecutionTrace = {
   }>;
   transitions: ChatExecutionTransition[];
   attempts: ChatExecutionAttempt[];
+  publication?: ChatPublicationTrace & { winnerAttemptId?: string };
   failure?: {
     code: ChatExecutionFailureCode;
     reason: string;
@@ -68,6 +71,37 @@ export type ChatExecutionTrace = {
   };
   committedMessageId?: string;
   interactionMoveEnvelope?: CommittedAssistantMoveEnvelopeV1;
+};
+
+export const isExecutionPublishable = (execution: ChatExecutionTrace, selectedText?: string): boolean => {
+  if (!execution.publication) return execution.phase === "VALIDATED";
+  const { publication } = execution;
+  const winner = execution.attempts.at(-1);
+  if (execution.phase !== "GENERATED" || execution.committedMessageId || execution.interactionMoveEnvelope ||
+      !execution.planPreflight.passed || publication.version !== 1 || publication.failure ||
+      !publication.risk || !publication.winnerAttemptId || winner?.attemptId !== publication.winnerAttemptId ||
+      winner.phase !== "GENERATED" || winner.generation?.finalReplySource !== "llm" || !winner.generation.text.trim() ||
+      (selectedText !== undefined && selectedText !== winner.generation.text)) return false;
+  if (publication.outcome === "ordinary") {
+    return publication.risk.route === "ordinary" && publication.reviews.length === 0 && execution.attempts.length === 1;
+  }
+  const rejectedDraft = execution.attempts[0];
+  return publication.outcome === "safety_checked" &&
+    (publication.risk.route === "needs_safety_check" || publication.risk.route === "uncertain") &&
+    !findUnverifiedSafetyResource(winner.generation.text) &&
+    publication.reviews.length === execution.attempts.length && publication.reviews.length <= 2 &&
+    publication.reviews.every((review, index) => review.attempt === index + 1) &&
+    publication.reviews.at(-1)?.verdict.approved === true &&
+    (publication.reviews.length === 1 || (rejectedDraft?.phase === "REJECTED" &&
+      (publication.reviews[0]?.verdict.approved === false || Boolean(rejectedDraft.generation?.text && findUnverifiedSafetyResource(rejectedDraft.generation.text)))));
+};
+
+/** Read server-persisted traces only. Publication alone cannot confirm an interaction move. */
+export const isCommittedPublicationOnly = (trace: unknown): boolean => {
+  if (!trace || typeof trace !== "object" || !("phase" in trace) || trace.phase !== "COMMITTED" || !("publication" in trace)) return false;
+  const publication = trace.publication;
+  return Boolean(publication && typeof publication === "object" && "version" in publication && publication.version === 1 &&
+    "outcome" in publication && (publication.outcome === "ordinary" || publication.outcome === "safety_checked"));
 };
 
 export type UserSafeExecutionStatus = {

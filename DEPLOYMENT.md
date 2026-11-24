@@ -137,11 +137,19 @@ npm run smoke:prod
 
 升级分支保留了线上 21 条迁移及其内容，追加五条回复反馈、评价队列、复核和训练候选迁移，保留线上原有小记、媒体、账号注销及聊天发布入口。用锁定依赖、两个阶段的 Prisma Client 和仅监听本机的 PostgreSQL 做演练。旧库升到 26 条，21 条原有迁移名称与校验值未变，全新空库也能执行相同的 26 条迁移。Prisma 差异报告与升级前一致，仍含小记默认值和索引、外键别名的历史差异。
 
-隔离回归使用 [小记升级检查](scripts/production-upgrade-note-check.ts)。给 `NOTE_UPGRADE_TEST_DATABASE_URL` 指定本机测试库，给 `NOTE_UPGRADE_FIXTURE_DIR` 指定本次独立测试目录。以原 21 条及原 Prisma Client 运行 `node --import tsx scripts/production-upgrade-note-check.ts seed` 写入虚构记录。追加五条后用 `read` 检查原 Client 读取和重试，生成新 Client 后用 `verify` 检查新建、编辑、隔离和删除。用 `pg_dump`／`pg_restore` 和单独复制的虚构图片目录，验证隔离库恢复后可读取原小记及原图。
+隔离回归使用 [小记升级检查](scripts/production-upgrade-note-check.ts)。给 `NOTE_UPGRADE_TEST_DATABASE_URL` 指定本机测试库，给 `NOTE_UPGRADE_FIXTURE_DIR` 指定本次独立测试目录。以原 21 条及原 Prisma Client 运行 `node --import tsx scripts/production-upgrade-note-check.ts seed` 写入虚构记录。追加五条后用 `read` 检查原 Client 读取和重试，生成新 Client 后用 `verify` 检查新建、编辑、隔离和删除。用 `pg_dump`／`pg_restore` 和单独复制的虚构图片目录，验证隔离库恢复后可读取原小记、原图及原聊天。旧反馈的时间戳保留，迁移未把旧聊天追加到凌晨评价队列。
 
 完整本地发布检查 `npm run check:release:required` 通过，含生产构建。另通过回复反馈、评分、复核权限、后台队列和训练候选等六项专项，以及小程序小记、观察和聊天专项。账号注销与删除治理在本机 PostgreSQL 复验通过。 构建后的本机应用通过 8 项 HTTP 检查。聊天检查覆盖无模型时保留用户消息及返回失败状态，另用虚构已发布回复验证反馈入口。
 
-该候选接入反馈、凌晨评价、内部复核、独立训练候选授权及观察页撤回，保留正式发布的观察授权校验。实时双线督导与人工审核建议输入 Qwen 还需适配新版对话上下文和线上发布流程。当前线上应用、数据和定时器均未随本地演练变动。
+该候选接入反馈、凌晨评价、内部复核、独立训练候选授权及观察页撤回，保留正式发布的观察授权校验。实时双线督导已接到本地候选的生成与提交边界，可以用隔离参数验收。实际聊天入口尚未启用。人工审核建议输入 Qwen 仍需要新版对话事实和来源字段。当前线上应用、数据和定时器均未随本地演练变动。
+
+### 实时督导的本地验证
+
+在原有理解、ResponsePlan 和预检上接入可单独开启的双线。模型生成与输入风险分类并行。普通结果跳过正文检查，危险或不确定结果检查完整正文，最多修正一次。分类异常、超时、二审不通过和未核实的具体联系方式都会扣留正文。提交再次检查候选、轮次、账号、来源和实际正文，普通放行不写入未经验证的互动承诺。并发删除时，提交需要在同一事务内锁定仍有效的来源。
+
+`npm run check:chat-supervision-protocol` 和 `npm run check:chat-supervised-publication` 分别覆盖 13 类协议和 24 项发布流程，使用可控模型替身。并发删除可在隔离 PostgreSQL 设置 `CHAT_SUPERVISED_PUBLICATION_TEST_DATABASE_URL` 后运行 `npm run check:chat-supervised-publication-pg`。
+
+正式入口仍走原流程。启用前需确认失败时显示和保存的内容、超时和重试参数，并完成朋友风险真实回复、已选历史数据的输入接线及 Web、小程序的发布回读验收。
 
 ## 凌晨回复评价
 

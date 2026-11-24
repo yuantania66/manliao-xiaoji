@@ -8,6 +8,7 @@ import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { parsePagination, requireNonEmptyString } from "@/lib/validation";
 import { createReviewedChatReply } from "@/services/ai/chatReplyService";
+import { isCommittedPublicationOnly } from "@/services/ai/chatExecutionLifecycle";
 import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
 import { extractExperienceFromChatMessage } from "@/services/experience/experienceExtractorService";
 import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
@@ -232,8 +233,11 @@ export async function POST(
           where: { replyToMessageId: sourceMessageForHistory.id },
           select: {
             id: true,
+            userId: true,
+            sessionId: true,
             role: true,
             content: true,
+            contentDeletedAt: true,
             status: true,
             createdAt: true,
             aiGeneration: { select: { promptVersion: true, executionTrace: true } },
@@ -241,6 +245,13 @@ export async function POST(
         })
       : null;
     if (existingCommittedReply) {
+      const publicationOnly = isCommittedPublicationOnly(existingCommittedReply.aiGeneration?.executionTrace);
+      if (publicationOnly && (existingCommittedReply.userId !== user.id || existingCommittedReply.sessionId !== sessionId ||
+          existingCommittedReply.role !== MessageRole.ASSISTANT || existingCommittedReply.contentDeletedAt !== null ||
+          !existingCommittedReply.content.trim() ||
+          !COMMITTED_MESSAGE_STATUSES.some((status) => status === existingCommittedReply.status))) {
+        throw new AppError("NOT_FOUND", "可用的回复不存在", 404);
+      }
       return ok({
         status: "committed",
         userMessage: {
@@ -257,7 +268,7 @@ export async function POST(
           status: existingCommittedReply.status.toLowerCase(),
           createdAt: existingCommittedReply.createdAt.toISOString(),
           promptVersion: existingCommittedReply.aiGeneration?.promptVersion ?? null,
-          interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+          interactionMoveEnvelope: publicationOnly ? null : extractCommittedAssistantMoveEnvelope(
             existingCommittedReply.aiGeneration?.executionTrace
           ),
         },
@@ -306,6 +317,7 @@ export async function POST(
       .reverse()
       .map((item) => {
         const parsedMetadata = parseCommittedAssistantMoveMetadata(item.interactionMetadata);
+        const publicationOnly = isCommittedPublicationOnly(item.aiGeneration?.executionTrace);
         return {
           id: item.id,
           role: item.role.toLowerCase() as "user" | "assistant" | "system",
@@ -315,9 +327,9 @@ export async function POST(
           aiGenerationId: item.aiGenerationId,
           status: item.status.toLowerCase() as "saved" | "rewritten" | "fallback",
           replyToMessageId: item.replyToMessageId,
-          committedAssistantMove:
+          committedAssistantMove: publicationOnly ? null :
             parsedMetadata.status === "valid" ? parsedMetadata.assistantMove : undefined,
-          interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+          interactionMoveEnvelope: publicationOnly ? null : extractCommittedAssistantMoveEnvelope(
             item.aiGeneration?.executionTrace
           ),
         };

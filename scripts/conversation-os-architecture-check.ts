@@ -9,6 +9,7 @@ const ALLOWED_LLM_CALL_FILES = new Set([
   "services/helping/hillHelpingDecisionService.ts",
   "services/ai/proactiveGreeting.ts",
   "services/ai/chatSafety.ts",
+  "services/ai/chatSupervision.ts",
   "services/ai/interactionMoveHandoffOutputValidator.ts",
   "services/ai/plannedFunctionSemanticValidator.ts",
   "services/ai/purposeSubjectOwnershipAuthority.ts",
@@ -34,6 +35,20 @@ for (const file of llmCallFiles) {
     `Unexpected direct LLM call in ${file}. Every model call requires an explicit architecture owner and bounded role.`
   );
 }
+
+const chatSupervision = readFileSync("services/ai/chatSupervision.ts", "utf8");
+assert.equal((chatSupervision.match(/\bcallModel\s*\(/g) ?? []).length, 1,
+  "Real-time supervision may use one structured provider call site for classification and safety review.");
+assert(
+  chatSupervision.includes('getAiProvider() !== "qwen" || !isAiProviderConfigured()') &&
+    chatSupervision.includes('responseFormat: "json_object"') &&
+    (chatSupervision.match(/\binvoke\s*\(/g) ?? []).length === 2 &&
+    chatSupervision.includes('parseRisk(await invoke("classify", { contextPack }, signal)') &&
+    chatSupervision.includes('if (checkedRisk.route === "ordinary" || !nonempty(reply))') &&
+    chatSupervision.includes('parseReview(await invoke("review", { contextPack, reply }, signal)') &&
+    !/\b(?:createResponsePlan|generateChatReply|prisma)\b/u.test(chatSupervision),
+  "Supervision classifies the input and reviews a nonordinary draft through Qwen without taking over Planning, Surface or persistence."
+);
 
 const chatSafetyRepeatedCheck = readFileSync("services/ai/chatSafety.ts", "utf8");
 assert.equal(
@@ -65,6 +80,8 @@ assert(
 for (const file of files.filter((file) => file.startsWith("app/api/chat/"))) {
   const content = readFileSync(file, "utf8");
   assert(!content.includes("callModel("), `${file} must not call LLM directly.`);
+  assert(!/\b(?:createChatSupervisor|runChatReplyEvaluationBatch)\b/u.test(content),
+    `${file} must keep supervised activation and nightly evaluation outside the current chat routes.`);
 }
 
 const chatSafety = readFileSync("services/ai/chatSafety.ts", "utf8");

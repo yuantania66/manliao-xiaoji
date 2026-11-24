@@ -11,6 +11,7 @@ import {
   parseCommittedAssistantMoveEnvelope,
 } from "@/conversation-os";
 import { createChatReply } from "@/services/ai/chatOrchestrationService";
+import { isExecutionPublishable, toUserSafeExecutionStatus } from "@/services/ai/chatExecutionLifecycle";
 import { AiConversationMessage, AiJudgeResult } from "@/services/ai/types";
 
 type GuestRateLimitRecord = {
@@ -109,6 +110,7 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
       const aiGenerationId = record.aiGenerationId;
       const createdAt = record.createdAt;
       const status = record.status;
+      const unverifiedInteraction = role === "assistant" && record.unverifiedInteraction === true;
       const parsedEnvelope = parseCommittedAssistantMoveEnvelope(
         record.interactionMoveEnvelope
       );
@@ -127,7 +129,8 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
             ? status
             : undefined,
           interactionMoveEnvelope:
-            parsedEnvelope.status === "valid" ? parsedEnvelope.envelope : undefined,
+            !unverifiedInteraction && parsedEnvelope.status === "valid" ? parsedEnvelope.envelope : undefined,
+          ...(unverifiedInteraction ? { committedAssistantMove: null } : {}),
         },
       ];
     });
@@ -176,8 +179,11 @@ export async function POST(request: NextRequest) {
         includeDebugTrace,
       });
       if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
-      if (reply.execution.phase !== "VALIDATED") {
-        if (includeDebugTrace) {
+      const publicationOnly = Boolean(reply.execution.publication);
+      const debugTrace = publicationOnly ? undefined : reply.debugTrace;
+      if (!isExecutionPublishable(reply.execution, reply.generation.text) ||
+          (publicationOnly && (reply.execution.conversationId !== "guest-session" || reply.execution.turnId !== turnId))) {
+        if (includeDebugTrace && !publicationOnly) {
           console.error("guest chat execution failed", {
             phase: reply.execution.phase,
             failure: reply.execution.failure,
@@ -186,15 +192,14 @@ export async function POST(request: NextRequest) {
             ),
           });
         }
-        const { toUserSafeExecutionStatus } = await import("@/services/ai/chatExecutionLifecycle");
         return {
           status: "failed",
           systemStatus: toUserSafeExecutionStatus(reply.execution),
-          debugTrace: reply.debugTrace,
+          debugTrace,
         };
       }
       const assistantMoveId = `guest-ai-${turnId}`;
-      const committedMove = buildCommittedResponseMove({
+      const committedMove = publicationOnly ? null : buildCommittedResponseMove({
         plan: reply.controlTrace?.responsePlan,
         replyText: reply.generation.text,
         sourceUserTurnId: turnId,
@@ -202,7 +207,7 @@ export async function POST(request: NextRequest) {
         requestId: reply.execution.requestId,
       });
       const adjacentAssistantId = recentMessages.at(-1)?.id;
-      const interactionMoveEnvelope = reply.finalSource === "safety"
+      const interactionMoveEnvelope = !committedMove ? null : reply.finalSource === "safety"
         ? adjacentAssistantId && activeHandoff(
             adjacentAssistantId,
             turnId,
@@ -239,13 +244,14 @@ export async function POST(request: NextRequest) {
           ...reply.execution.transitions,
           {
             phase: "COMMITTED" as const,
-            reason: "Validated guest reply committed to the client-scoped conversation event stream.",
+            reason: publicationOnly ? "Authorized guest reply committed without interaction claims." :
+              "Validated guest reply committed to the client-scoped conversation event stream.",
           },
         ],
         committedMessageId: assistantMoveId,
         ...(interactionMoveEnvelope ? { interactionMoveEnvelope } : {}),
       };
-      if (reply.debugTrace) reply.debugTrace.execution = committedExecution;
+      if (debugTrace) debugTrace.execution = committedExecution;
       return {
         status: "committed",
         assistantMessage: {
@@ -255,11 +261,12 @@ export async function POST(request: NextRequest) {
           createdAt,
           promptVersion: reply.generation.promptVersion,
           interactionMoveEnvelope,
+          ...(publicationOnly ? { unverifiedInteraction: true } : {}),
         },
         judge: serializeJudge(reply.judge),
         fallbackUsed: reply.fallbackUsed,
         rewriteAttempted: reply.rewriteAttempted,
-        debugTrace: reply.debugTrace,
+        debugTrace,
       };
     })();
     if (!existing) store.set(turnId, execution);

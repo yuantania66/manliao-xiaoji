@@ -32,6 +32,7 @@ export const generateChatReply = async ({
   evaluationAdapter,
   responsePlanRegenerateConstraint = null,
   inspectExternalPrompt,
+  signal,
 }: {
   conversationId?: string;
   userMessage: string;
@@ -42,6 +43,7 @@ export const generateChatReply = async ({
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
   responsePlanRegenerateConstraint?: string | null;
   inspectExternalPrompt?: (input: { stage: "surface_realization"; messages: import("./types").AiModelMessage[] }) => void | Promise<void>;
+  signal?: AbortSignal;
 }): Promise<AiGenerationResult> => {
   void conversationId;
   const prompt = buildChatPrompt({
@@ -61,6 +63,7 @@ export const generateChatReply = async ({
     model: getMainModel(),
     messages: prompt.messages,
     temperature: 0.75,
+    signal,
   });
   if (!response.text) throw new AppError("AI_GENERATION_FAILED", "Surface realization did not produce a reply", 502);
   const promptMeta = prompt.meta;

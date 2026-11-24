@@ -449,9 +449,10 @@ assert(!plannerSource.includes("persistentHandoffLifecycleState"));
 for (const source of [authReplySource, authGreetingSource, guestReplySource, guestGreetingSource]) {
   assert(source.includes("interactionMoveEnvelope"));
 }
-assert(authReplySource.includes('execution.phase !== "VALIDATED"'));
-assert(guestReplySource.indexOf('reply.execution.phase !== "VALIDATED"') <
-  guestReplySource.indexOf("const interactionMoveEnvelope = reply.finalSource"));
+const authPublicationGate = authReplySource.indexOf("if (!isExecutionPublishable(execution, content))");
+const guestPublicationGate = guestReplySource.indexOf("if (!isExecutionPublishable(reply.execution, reply.generation.text)");
+assert(authPublicationGate >= 0 && authPublicationGate < authReplySource.indexOf("tx.chatMessage.createMany("));
+assert(guestPublicationGate >= 0 && guestPublicationGate < guestReplySource.indexOf("const interactionMoveEnvelope ="));
 assert(authReplySource.includes('reply.finalSource === "safety" ? "safety_override" : "response_plan"'));
 assert(authReplySource.includes("activeHandoff("));
 assert(guestReplySource.includes('reply.finalSource === "safety"'));

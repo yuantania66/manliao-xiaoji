@@ -451,7 +451,7 @@ const run = async () => {
   const planner = readFileSync("conversation-os/control/responsePlanner.ts", "utf8");
   const surface = readFileSync("services/ai/promptBuilder.ts", "utf8");
   const validator = readFileSync("services/ai/responsePlanValidator.ts", "utf8");
-  const safetyIndex = orchestration.indexOf("const safetyTriage = await triageSafety({");
+  const safetyIndex = orchestration.indexOf("const safetyTriage = supervised ? null : await triageSafety({");
   const helpingIndex = orchestration.indexOf("await runHillHelpingShadow({");
   const plannerIndex = orchestration.indexOf("const plan = createResponsePlan({");
   assert(safetyIndex >= 0 && safetyIndex < helpingIndex && helpingIndex < plannerIndex);
