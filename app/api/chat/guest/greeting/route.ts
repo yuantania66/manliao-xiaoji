@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 
 import { ok, failFromError } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
+import { getGuestSessionManager, guestNoStore, readGuestJson, usesGuestSession } from "@/lib/guest-session";
+import { assertStagingPublicAccessAllowed } from "@/lib/staging-owner-access";
 import {
   buildProactiveGreetingAssistantMoveEnvelope,
   parseCommittedAssistantMoveEnvelope,
@@ -58,32 +60,47 @@ const readJson = async (request: Request) => {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await readJson(request)) as Record<string, unknown>;
+    assertStagingPublicAccessAllowed();
+    const body = (await (usesGuestSession(request) ? readGuestJson(request) : readJson(request)) ?? {}) as Record<string, unknown>;
     const kind = body.kind === "return" ? "return" : "initial";
-    const generation = await generateProactiveGreeting({
-      kind,
-      recentMessages: normalizeRecentMessages(body.recentMessages),
-      recentGreetings: normalizeRecentGreetings(body.recentGreetings),
-    });
-    const now = new Date().toISOString();
-    const eventId = crypto.randomUUID();
-    const assistantMoveId = `guest-proactive-greeting-${eventId}`;
-    const interactionMoveEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
-      assistantMoveId,
-      generationId: `guest-proactive-generation-${eventId}`,
-      intent: generation.proactiveIntent,
-    });
+    const recentMessages = normalizeRecentMessages(body.recentMessages);
+    const recentGreetings = normalizeRecentGreetings(body.recentGreetings);
+    const executeGreeting = async (eventId: string) => {
+      const generation = await generateProactiveGreeting({ kind, recentMessages, recentGreetings });
+      const now = new Date().toISOString();
+      const assistantMoveId = `guest-proactive-greeting-${eventId}`;
+      const interactionMoveEnvelope = buildProactiveGreetingAssistantMoveEnvelope({
+        assistantMoveId,
+        generationId: `guest-proactive-generation-${eventId}`,
+        intent: generation.proactiveIntent,
+      });
+      return {
+        assistantMessage: {
+          id: assistantMoveId,
+          role: "assistant",
+          content: generation.text,
+          createdAt: now,
+          promptVersion: generation.promptVersion,
+          interactionMoveEnvelope,
+        },
+      };
+    };
 
-    return ok({
-      assistantMessage: {
-        id: assistantMoveId,
-        role: "assistant",
-        content: generation.text,
-        createdAt: now,
-        promptVersion: generation.promptVersion,
-        interactionMoveEnvelope,
-      },
-    });
+    if (usesGuestSession(request, body)) {
+      const sessions = getGuestSessionManager();
+      const authority = sessions.authorize(request, body.conversationId);
+      if (body.retry === true) {
+        throw new AppError("CONFLICT", "重试需要明确的尝试编号", 409, { reason: "GUEST_REQUEST_CONFLICT" });
+      }
+      const turnId = typeof body.turnId === "string" ? body.turnId.trim() : "";
+      const payload = await sessions.execute({
+        request, authority, endpoint: "greeting", turnId, retryOfAttempt: body.retryOfAttempt,
+        inputs: { kind, recentMessages, recentGreetings },
+      }, () => executeGreeting(`${authority.conversationId}-${turnId}`));
+      return guestNoStore(ok(payload));
+    }
+
+    return guestNoStore(ok(await executeGreeting(crypto.randomUUID())));
   } catch (error) {
     const diagnostic = error instanceof AppError
       ? {
@@ -96,6 +113,6 @@ export async function POST(request: NextRequest) {
           message: error instanceof Error ? error.message : "unknown error",
         };
     console.error("guest proactive greeting generation failed", diagnostic);
-    return failFromError(error);
+    return guestNoStore(failFromError(error));
   }
 }

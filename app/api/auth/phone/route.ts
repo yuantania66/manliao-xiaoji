@@ -4,6 +4,7 @@ import { failFromError, ok } from "@/lib/api-response";
 import { createSession, hashVerificationCode, serializeUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { assertStagingPublicAccessAllowed } from "@/lib/staging-owner-access";
 import { isValidPhone } from "@/lib/validation";
 
 const readJson = async (request: Request) => {
@@ -16,6 +17,7 @@ const readJson = async (request: Request) => {
 
 export async function POST(request: Request) {
   try {
+    assertStagingPublicAccessAllowed();
     const body = await readJson(request);
     const phone = typeof body.phone === "string" ? body.phone.trim() : "";
     const code = typeof body.code === "string" ? body.code.trim() : "";

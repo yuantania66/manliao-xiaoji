@@ -4,6 +4,7 @@ import { failFromError, ok } from "@/lib/api-response";
 import { createSession, serializeUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { assertStagingOwnerConfiguration, assertStagingOwnerIdentity } from "@/lib/staging-owner-access";
 import { requireNonEmptyString } from "@/lib/validation";
 import { getWechatOpenId } from "@/lib/wechat-auth";
 
@@ -17,9 +18,11 @@ const readJson = async (request: Request) => {
 
 export async function POST(request: Request) {
   try {
+    assertStagingOwnerConfiguration();
     const body = await readJson(request);
     const code = requireNonEmptyString(body.code, "code", 200);
     const wechatOpenid = await getWechatOpenId(code);
+    assertStagingOwnerIdentity(wechatOpenid);
 
     const user = await prisma.user.upsert({
       where: { wechatOpenid },

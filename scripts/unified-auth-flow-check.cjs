@@ -7,27 +7,31 @@ const wxss = readFileSync(require.resolve("../miniprogram-project/pages/auth/aut
 const meWxml = readFileSync(require.resolve("../miniprogram-project/pages/me/me.wxml"), "utf8");
 const settingsWxml = readFileSync(require.resolve("../miniprogram-project/pages/settings/settings.wxml"), "utf8");
 const { getAvatarStyle, getGeneratedIdentity, getIdentityAt } = require("../miniprogram-project/utils/generated-identity.js");
-for (const label of ["微信登录", "微信绑定手机号码登录", "游客模式", "微信绑定号码", "返回登录方式"]) assert.ok(wxml.includes(label));
+for (const label of ["微信登录", "游客模式", "微信绑定号码", "返回登录方式"]) assert.ok(wxml.includes(label));
+// Phone binding is intentionally hidden from the entry screen; retained handlers
+// are exercised below without implying that users can enter them from this UI.
+const choiceMarkup = wxml.split('class="sheet choice-sheet"')[1]?.split('class="sheet wechat-phone-sheet"')[0];
+assert.ok(choiceMarkup);
+assert.doesNotMatch(choiceMarkup, /微信绑定手机号码登录|bindtap="showWechatPhone"/u);
 assert.doesNotMatch(wxml, /bindtap="showPhoneMethods"/u);
 assert.doesNotMatch(wxml, /bindtap="showSms"/u);
 assert.match(wxml, /open-type="getPhoneNumber"[^>]*bindgetphonenumber="handleWechatPhone"/u);
 assert.match(wxml, /open-type="chooseAvatar"[^>]*bindchooseavatar="chooseWechatAvatar"/u);
-assert.match(wxml, /<view class="profile-row"><text>头像<\/text><button class="profile-avatar-choice"[^>]*bindtap="showAvatarSources"/u);
-assert.match(wxml, /<view class="profile-row nickname-row"><text>昵称<\/text><input/u);
+assert.match(wxml, /<view class="profile-row"><text>头像 <text class="profile-required">\*<\/text><\/text><button class="profile-avatar-choice"[^>]*open-type="chooseAvatar"[^>]*bindchooseavatar="chooseWechatAvatar"/u);
+assert.match(wxml, /<view class="profile-row nickname-row"><text>昵称 <text class="profile-required">\*<\/text><\/text><input/u);
 assert.match(wxss, /\.profile-row\{[^}]*align-items:center[^}]*justify-content:space-between[^}]*width:100%/u);
-assert.match(wxss, /\.profile-avatar-choice\{[^}]*width:54px[^}]*height:54px[^}]*margin:0[^}]*padding:0/u);
+assert.match(wxss, /\.profile-avatar-choice\{[^}]*width:48px[^}]*height:48px[^}]*margin:0[^}]*padding:0/u);
 assert.match(wxml, /type="nickname"[^>]*maxlength="12"/u);
-assert.match(wxml, /bindtap="chooseAlbum"/u);
-assert.match(wxml, /bindtap="takePhoto"/u);
+assert.doesNotMatch(wxml, /avatarSource|showAvatarSources|chooseAlbum|takePhoto/u);
 assert.match(wxml, /《隐私政策》/u);
 assert.doesNotMatch(wxml, /用户协议/u);
 assert.match(wxml, /class="auth-background"[^>]*mode="widthFix"[^>]*backgroundInsetTop/u);
 assert.match(wxml, /class="auth-screen"[^>]*backgroundTopColor/u);
 assert.match(wxml, /class="auth-background-blend"[^>]*backgroundInsetTop[^>]*backgroundBlend/u);
-assert.match(wxml, /稍后再说不影响登录/u);
-assert.match(wxml, /bindtap="cancelProfileEdit"[^>]*>稍后再说<\/button>/u);
+assert.match(wxml, /设置你的头像和昵称/u);
+assert.doesNotMatch(wxml, /稍后再说|bindtap="cancelProfileEdit"/u);
 assert.doesNotMatch(wxml, /放弃登录/u);
-assert.doesNotMatch(wxml, /头像 \*|昵称 \*/u);
+assert.match(wxml, /profile-required/u);
 assert.match(wxss, /\.auth-mask\s*\{\s*background:\s*transparent\s*;?\s*\}/u);
 assert.match(wxss, /\.auth-background\s*\{[^}]*width:\s*100%[^}]*height:\s*auto/u);
 assert.match(wxss, /\.auth-background-blend\s*\{[^}]*height:\s*28px[^}]*pointer-events:\s*none/u);
@@ -36,7 +40,7 @@ assert.match(wxss, /\.wechat-phone-sheet>\.bound-phone,\.guest-warn-sheet>\.acti
 assert.match(wxml, /consentInvalid[^\n]*consentShake/u);
 assert.match(wxss, /\.consent-invalid[^}]*#a95f55/u);
 assert.match(wxss, /@keyframes consent-shake/u);
-assert.match(wxss, /\.guest\{[^}]*align-self:stretch[^}]*width:auto[^}]*margin:-2px 0 0[^}]*text-align:center/u);
+assert.match(wxss, /\.choice-sheet \.guest\{[^}]*display:flex[^}]*align-items:center[^}]*justify-content:center[^}]*align-self:stretch[^}]*width:100%[^}]*margin:0[^}]*text-align:center/u);
 assert.match(wxml, /名字和头像已随机生成。[^\n]*bindtap="randomizeGuest"[^>]*>重新生成/u);
 assert.match(wxml, /class="guest-avatar-choice"[^>]*bindtap="cycleGuestAvatar"/u);
 assert.match(wxml, /class="guest-profile-row guest-nickname-row"[^\n]*bindinput="inputGuestNickname"/u);
@@ -84,8 +88,15 @@ require.cache[require.resolve("../miniprogram-project/api/auth.js")] = { exports
   discardProfileAvatar: () => Promise.resolve(),
   downloadProfileAvatar: () => Promise.resolve("wxfile://downloaded-avatar.jpg")
 } };
+let identityGeneration = 0;
+const captureAuthAuthority = () => storedAuth ? { generation: identityGeneration, token: storedAuth.token, userId: storedAuth.user.id } : null;
+const isCurrentAuthAuthority = (value) => Boolean(value && storedAuth && value.generation === identityGeneration && value.token === storedAuth.token && value.userId === storedAuth.user.id);
 require.cache[require.resolve("../miniprogram-project/utils/auth.js")] = { exports: {
-  clearAuth: () => { storedAuth = null; }, enterGuest: () => { guest = true; }, getAuth: () => storedAuth, saveAuth: (auth) => { storedAuth = auth; },
+  clearAuth: () => { storedAuth = null; identityGeneration += 1; }, enterGuest: () => { guest = true; identityGeneration += 1; }, getAuth: () => storedAuth, saveAuth: (auth) => { storedAuth = auth; identityGeneration += 1; },
+  captureAuthAuthority, isCurrentAuthAuthority,
+  isCurrentAuthFailure: () => false,
+  captureIdentityAuthority: () => ({ generation: identityGeneration, auth: captureAuthAuthority(), guest }),
+  isCurrentIdentityAuthority: (value) => Boolean(value && value.generation === identityGeneration && value.guest === guest && (value.auth ? isCurrentAuthAuthority(value.auth) : !storedAuth)),
   isGuest: () => guest, setGuestProfile: (profile) => { guestProfile = profile; }, updateCachedUser: (_id, user) => { storedAuth = { ...storedAuth, user }; }
 } };
 require.cache[require.resolve("../miniprogram-project/utils/wechat-login.js")] = { exports: { authenticateWithWechat: () => { wechatLoginCalls += 1; return Promise.resolve(nextAuth); } } };
@@ -105,23 +116,23 @@ const settle = async () => { for (let index = 0; index < 5; index += 1) await ne
   page.showGuestWarning(); assert.equal(page.data.stage, "choice"); assert.equal(page.data.consentInvalid, true); assert.equal(wechatLoginCalls, 0); assert.equal(wechatPhoneCalls, 0);
   page.togglePrivacy({ detail: { value: ["confirmed"] } }); assert.equal(page.data.consentInvalid, false); page.showWechatPhone(); await settle(); assert.equal(page.data.stage, "wechatPhone");
   nextAuth = { token: "new", expiresAt: future, user: { id: "new", nickname: null, avatarUrl: null } };
-  page.handleWechatPhone({ detail: { code: "phone-code" } }); await settle(); assert.equal(wechatPhoneCalls, 1); assert.equal(page.data.stage, "profile"); assert.equal(redirected, ""); assert.ok(page.data.profileNickname.length >= 2); assert.match(page.data.profileAvatarStyle, /linear-gradient/u);
-  page.cancelProfileEdit(); assert.equal(redirected, "/pages/me/me", "optional profile may be skipped after registration");
+  page.handleWechatPhone({ detail: { code: "phone-code" } }); await settle(); assert.equal(wechatPhoneCalls, 1); assert.equal(page.data.stage, "profile"); assert.equal(redirected, ""); assert.equal(page.data.profileNickname, ""); assert.equal(page.data.profileAvatarSelected, false);
+  page.cancelProfileEdit(); assert.equal(redirected, "/pages/me/me", "return leaves the registered account intact");
   redirected = "";
   const optionalProfile = makePage(); optionalProfile.onLoad({ mode: "edit" }); assert.equal(optionalProfile.data.stage, "profile");
-  optionalProfile.inputNickname({ detail: { value: "" } }); optionalProfile.saveProfile(); assert.equal(updateCalls, 0); assert.match(optionalProfile.data.error, /昵称/u);
-  optionalProfile.inputNickname({ detail: { value: "小满" } }); optionalProfile.saveProfile(); await settle(); assert.equal(uploadCalls, 0); assert.deepEqual(updateBody, { nickname: "小满" }); assert.equal(redirected, "/pages/me/me");
+  optionalProfile.inputNickname({ detail: { value: "" } }); optionalProfile.saveProfile(); assert.equal(updateCalls, 0); assert.match(optionalProfile.data.profileNicknameError, /昵称/u);
+  optionalProfile.inputNickname({ detail: { value: "小满" } }); optionalProfile.saveProfile(); assert.equal(updateCalls, 0); assert(optionalProfile.data.profileAvatarError); optionalProfile.chooseWechatAvatar({ detail: { avatarUrl: "wxfile://avatar.jpg" } }); optionalProfile.saveProfile(); await settle(); assert.equal(uploadCalls, 1); assert.deepEqual(updateBody, { nickname: "小满", avatarUploadId: "00000000-0000-4000-8000-000000000001" }); assert.equal(redirected, "/pages/me/me");
 
   redirected = "";
   const avatarProfile = makePage(); avatarProfile.onLoad({ mode: "edit" }); avatarProfile.chooseWechatAvatar({ detail: { avatarUrl: "wxfile://avatar.jpg" } }); avatarProfile.inputNickname({ detail: { value: "小满" } }); avatarProfile.saveProfile(); await settle();
-  assert.equal(uploadCalls, 1); assert.deepEqual(updateBody, { avatarUploadId: "00000000-0000-4000-8000-000000000001" }); assert.equal(redirected, "/pages/me/me");
+  assert.equal(uploadCalls, 2); assert.deepEqual(updateBody, { avatarUploadId: "00000000-0000-4000-8000-000000000001" }); assert.equal(redirected, "/pages/me/me");
 
   storedAuth = { token: "legacy", expiresAt: future, user: { id: "legacy", nickname: null, avatarUrl: null, profileCompletedAt: null } };
   redirected = ""; uploadImpl = () => Promise.reject(Object.assign(new Error("not found"), { statusCode: 404 }));
   const legacyProfile = makePage(); legacyProfile.onLoad({}); assert.equal(redirected, "/pages/me/me", "legacy incomplete sessions must no longer be trapped by profile completion");
   redirected = "";
   const unavailableOptionalProfile = makePage(); unavailableOptionalProfile.onLoad({ mode: "edit" }); unavailableOptionalProfile.chooseWechatAvatar({ detail: { avatarUrl: "wxfile://avatar.jpg" } }); unavailableOptionalProfile.inputNickname({ detail: { value: "小满" } });
-  unavailableOptionalProfile.saveProfile(); await settle(); assert.match(unavailableOptionalProfile.data.error, /稍后再说/u); assert.doesNotMatch(unavailableOptionalProfile.data.error, /放弃登录/u);
+  unavailableOptionalProfile.saveProfile(); await settle(); assert.match(unavailableOptionalProfile.data.error, /请稍后重试/u); assert.doesNotMatch(unavailableOptionalProfile.data.error, /放弃登录/u);
   uploadImpl = () => Promise.resolve({ uploadId: "00000000-0000-4000-8000-000000000001" });
 
   const dormantSms = makePage(); dormantSms.togglePrivacy({ detail: { value: ["confirmed"] } }); dormantSms.showSms(); assert.equal(dormantSms.data.stage, "sms");
@@ -147,5 +158,20 @@ const settle = async () => { for (let index = 0; index < 5; index += 1) await ne
   assert.equal(redirected, "/pages/me/me", "ordinary guest entry must still return to the product");
   assert.equal(guest, true); assert.equal(guestProfile.nickname, "慢慢来"); assert.equal(redirected, "/pages/me/me");
   redirected = ""; const returningGuest = makePage(); returningGuest.onLoad({}); assert.equal(redirected, "/pages/me/me");
+
+  storedAuth = null;
+  guest = false;
+  redirected = "";
+  nextAuth = { token: "saved-profile", expiresAt: future, user: { id: "saved", nickname: "小满", avatarUrl: "/avatar/saved", profileCompletedAt: future } };
+  const savedProfileLogin = makePage();
+  savedProfileLogin.onLoad({ mode: "login" });
+  savedProfileLogin.togglePrivacy({ detail: { value: ["confirmed"] } });
+  const updatesBeforeRelogin = updateCalls;
+  savedProfileLogin.loginWechat();
+  await settle();
+  assert.equal(wechatLoginCalls, 1);
+  assert.equal(storedAuth.user.id, "saved");
+  assert.equal(redirected, "/pages/me/me", "A successful login with a saved complete profile skips the setup page");
+  assert.equal(updateCalls, updatesBeforeRelogin, "Re-login must not overwrite saved profile data");
   console.log("Unified auth-flow checks passed.");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

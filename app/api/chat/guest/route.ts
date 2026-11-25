@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 
 import { failFromError, ok } from "@/lib/api-response";
 import { AppError } from "@/lib/errors";
+import { getGuestSessionManager, guestNoStore, readGuestJson, usesGuestSession } from "@/lib/guest-session";
+import { assertStagingPublicAccessAllowed } from "@/lib/staging-owner-access";
 import { requireNonEmptyString } from "@/lib/validation";
 import {
   activeHandoff,
@@ -11,6 +13,7 @@ import {
   parseCommittedAssistantMoveEnvelope,
 } from "@/conversation-os";
 import { createChatReply } from "@/services/ai/chatOrchestrationService";
+import { isExecutionPublishable, toUserSafeExecutionStatus } from "@/services/ai/chatExecutionLifecycle";
 import { AiConversationMessage, AiJudgeResult } from "@/services/ai/types";
 
 type GuestRateLimitRecord = {
@@ -86,14 +89,6 @@ const incrementGuestIpUsage = (ip: string) => {
   store.set(ip, record);
 };
 
-const readJson = async (request: Request) => {
-  try {
-    return await request.json();
-  } catch {
-    throw new AppError("VALIDATION_ERROR", "请求体必须是 JSON", 400);
-  }
-};
-
 const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
   if (!Array.isArray(value)) return [];
 
@@ -109,6 +104,7 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
       const aiGenerationId = record.aiGenerationId;
       const createdAt = record.createdAt;
       const status = record.status;
+      const unverifiedInteraction = role === "assistant" && record.unverifiedInteraction === true;
       const parsedEnvelope = parseCommittedAssistantMoveEnvelope(
         record.interactionMoveEnvelope
       );
@@ -127,7 +123,8 @@ const normalizeRecentMessages = (value: unknown): AiConversationMessage[] => {
             ? status
             : undefined,
           interactionMoveEnvelope:
-            parsedEnvelope.status === "valid" ? parsedEnvelope.envelope : undefined,
+            !unverifiedInteraction && parsedEnvelope.status === "valid" ? parsedEnvelope.envelope : undefined,
+          ...(unverifiedInteraction ? { committedAssistantMove: null } : {}),
         },
       ];
     });
@@ -152,32 +149,33 @@ const shouldIncludeDebugTrace = (request: NextRequest, body: Record<string, unkn
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await readJson(request);
+    assertStagingPublicAccessAllowed();
+    const body = await readGuestJson(request);
+    const managed = usesGuestSession(request, body);
     const content = requireNonEmptyString(body.content, "content", 2000);
     const suppliedTurnId = typeof body.turnId === "string" ? body.turnId.trim() : "";
-    const turnId = /^[a-zA-Z0-9:_-]{8,160}$/.test(suppliedTurnId)
+    const turnId = managed || /^[a-zA-Z0-9:_-]{8,160}$/.test(suppliedTurnId)
       ? suppliedTurnId
       : `guest-turn-${crypto.randomUUID()}`;
     const recentMessages = normalizeRecentMessages(body.recentMessages);
-    const retrying = body.retry === true;
     const includeDebugTrace = shouldIncludeDebugTrace(request, body);
-    const rateLimit = includeDebugTrace ? null : assertGuestIpLimit(request);
-    const store = getGuestTurnExecutionStore();
-    if (store.size > 1000) store.delete(store.keys().next().value ?? "");
-    const existing = store.get(turnId);
-    const execution = existing ?? (async () => {
+
+    const executeReply = async (conversationId: string, retrying: boolean, legacyIp?: string) => {
       const createdAt = new Date().toISOString();
       const reply = await createChatReply({
-        conversationId: "guest-session",
+        conversationId,
         currentTurnId: turnId,
         retrying,
         userMessage: content,
         recentMessages,
         includeDebugTrace,
       });
-      if (rateLimit) incrementGuestIpUsage(rateLimit.ip);
-      if (reply.execution.phase !== "VALIDATED") {
-        if (includeDebugTrace) {
+      if (legacyIp !== undefined) incrementGuestIpUsage(legacyIp);
+      const publicationOnly = Boolean(reply.execution.publication);
+      const debugTrace = publicationOnly ? undefined : reply.debugTrace;
+      if (!isExecutionPublishable(reply.execution, reply.generation.text) ||
+          (publicationOnly && (reply.execution.conversationId !== conversationId || reply.execution.turnId !== turnId))) {
+        if (includeDebugTrace && !publicationOnly) {
           console.error("guest chat execution failed", {
             phase: reply.execution.phase,
             failure: reply.execution.failure,
@@ -186,15 +184,14 @@ export async function POST(request: NextRequest) {
             ),
           });
         }
-        const { toUserSafeExecutionStatus } = await import("@/services/ai/chatExecutionLifecycle");
         return {
           status: "failed",
           systemStatus: toUserSafeExecutionStatus(reply.execution),
-          debugTrace: reply.debugTrace,
+          debugTrace,
         };
       }
       const assistantMoveId = `guest-ai-${turnId}`;
-      const committedMove = buildCommittedResponseMove({
+      const committedMove = publicationOnly ? null : buildCommittedResponseMove({
         plan: reply.controlTrace?.responsePlan,
         replyText: reply.generation.text,
         sourceUserTurnId: turnId,
@@ -202,7 +199,7 @@ export async function POST(request: NextRequest) {
         requestId: reply.execution.requestId,
       });
       const adjacentAssistantId = recentMessages.at(-1)?.id;
-      const interactionMoveEnvelope = reply.finalSource === "safety"
+      const interactionMoveEnvelope = !committedMove ? null : reply.finalSource === "safety"
         ? adjacentAssistantId && activeHandoff(
             adjacentAssistantId,
             turnId,
@@ -239,13 +236,14 @@ export async function POST(request: NextRequest) {
           ...reply.execution.transitions,
           {
             phase: "COMMITTED" as const,
-            reason: "Validated guest reply committed to the client-scoped conversation event stream.",
+            reason: publicationOnly ? "Authorized guest reply committed without interaction claims." :
+              "Validated guest reply committed to the client-scoped conversation event stream.",
           },
         ],
         committedMessageId: assistantMoveId,
         ...(interactionMoveEnvelope ? { interactionMoveEnvelope } : {}),
       };
-      if (reply.debugTrace) reply.debugTrace.execution = committedExecution;
+      if (debugTrace) debugTrace.execution = committedExecution;
       return {
         status: "committed",
         assistantMessage: {
@@ -255,18 +253,38 @@ export async function POST(request: NextRequest) {
           createdAt,
           promptVersion: reply.generation.promptVersion,
           interactionMoveEnvelope,
+          ...(publicationOnly ? { unverifiedInteraction: true } : {}),
         },
         judge: serializeJudge(reply.judge),
         fallbackUsed: reply.fallbackUsed,
         rewriteAttempted: reply.rewriteAttempted,
-        debugTrace: reply.debugTrace,
+        debugTrace,
       };
-    })();
+    };
+
+    if (managed) {
+      const sessions = getGuestSessionManager();
+      const authority = sessions.authorize(request, body.conversationId);
+      if (body.retry === true) {
+        throw new AppError("CONFLICT", "重试需要明确的尝试编号", 409, { reason: "GUEST_REQUEST_CONFLICT" });
+      }
+      const payload = await sessions.execute({
+        request, authority, endpoint: "reply", turnId, retryOfAttempt: body.retryOfAttempt,
+        inputs: { content, recentMessages, includeDebugTrace },
+      }, (attempt) => executeReply(authority.conversationId, attempt > 1));
+      return guestNoStore(ok(payload));
+    }
+
+    const rateLimit = includeDebugTrace ? null : assertGuestIpLimit(request);
+    const store = getGuestTurnExecutionStore();
+    if (store.size > 1000) store.delete(store.keys().next().value ?? "");
+    const existing = store.get(turnId);
+    const execution = existing ?? executeReply("guest-session", body.retry === true, rateLimit?.ip);
     if (!existing) store.set(turnId, execution);
     const payload = await execution;
     if (payload.status === "failed") store.delete(turnId);
-    return ok(payload);
+    return guestNoStore(ok(payload));
   } catch (error) {
-    return failFromError(error);
+    return guestNoStore(failFromError(error));
   }
 }

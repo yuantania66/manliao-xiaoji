@@ -128,13 +128,261 @@ assert.equal(local.writeNoteDraft(restartDraft, "guest"), true);
 assert.deepEqual(local.readNoteDraft("guest"), withOwner(restartDraft, "guest"));
 
 const requestModule = require("../miniprogram-project/utils/request.js");
+const originalWx = global.wx;
+const searchRequests = [];
+const searchNavigations = [];
+const searchToasts = [];
+const thumbnailRequests = [];
+const deletedThumbnails = [];
+let noteFixtureEnv = "develop";
+global.wx = {
+  ...originalWx,
+  getAccountInfoSync: () => ({ miniProgram: { envVersion: noteFixtureEnv } }),
+  getSystemInfoSync: () => ({ windowWidth: 375, screenHeight: 812 }),
+  getMenuButtonBoundingClientRect: () => ({ top: 28, bottom: 60, left: 280 }),
+  request(options) {
+    assert.match(options.url, /^https:\/\/staging\.manliaoxiaoji\.com\/api\/notes/);
+    searchRequests.push(options);
+  },
+  downloadFile: (options) => thumbnailRequests.push(options),
+  getFileSystemManager: () => ({ ...originalWx.getFileSystemManager(), unlink: ({ filePath }) => deletedThumbnails.push(filePath) }),
+  navigateTo: ({ url }) => searchNavigations.push(url),
+  showToast: ({ title }) => searchToasts.push(title)
+};
+let searchPageDefinition;
+global.Page = (page) => { searchPageDefinition = page; };
+require("../miniprogram-project/pages/note-search/note-search.js");
+const searchPage = {
+  ...searchPageDefinition,
+  data: { ...searchPageDefinition.data },
+  setData(values) { Object.assign(this.data, values); }
+};
+const signInForSearch = (id, token = id) => auth.saveAuth({ token, user: { id }, expiresAt: "2999-01-01T00:00:00.000Z" });
+const inputSearch = (value) => searchPage.onInput({ detail: { value } });
+const searchHit = { id: "fixture-note", content: "合成小记", recordDate: "2026-11-25" };
+const respondToSearch = (pending, items = [searchHit], total = items.length) => pending.success({ statusCode: 200, data: { ok: true, data: { items, total } } });
+const settleSearch = () => new Promise((resolve) => setImmediate(resolve));
+const tapSearchResult = (generation) => searchPage.openResult({ currentTarget: { dataset: { id: searchHit.id, generation } } });
+
+signInForSearch("search-a");
+searchPage.onLoad();
+searchPage.onShow?.();
+inputSearch("合成小记");
+const searchBeforeExpiry = searchRequests.shift();
+const expiredSearchSession = requestModule.request({ url: "/api/notes" });
+searchRequests.shift().success({ statusCode: 401, data: {} });
+await assert.rejects(expiredSearchSession, { statusCode: 401 });
+respondToSearch(searchBeforeExpiry);
+await settleSearch();
+assert.equal(auth.getAuth(), null);
+assert.deepEqual(searchPage.data.results, [], "A late search must not reveal old notes after another request logs the user out");
+assert.match(searchPage.data.statusText, /请先登录/);
+
+signInForSearch("search-a");
+searchPage.onShow();
+inputSearch("合成小记");
+assert.equal(searchPage.data.isSearching, true);
+const firstSearchPage = searchRequests.shift();
+assert.match(firstSearchPage.url, /page=1&pageSize=100/);
+const fullSearchPage = Array.from({ length: 100 }, (_, i) => ({ ...searchHit, id: `earlier-${i}`, content: "其他小记" }));
+respondToSearch(firstSearchPage, fullSearchPage, 101);
+await settleSearch();
+const secondSearchPage = searchRequests.shift();
+assert.match(secondSearchPage.url, /page=2&pageSize=100/);
+respondToSearch(secondSearchPage, [searchHit], 101);
+await settleSearch();
+assert.equal(searchPage.data.isSearching, false);
+assert.equal(searchPage.data.results[0].id, searchHit.id);
+const initialRender = searchPage.data.resultGeneration;
+tapSearchResult(initialRender);
+assert.deepEqual(searchNavigations, ["/pages/note-detail/note-detail?id=fixture-note&date=2026-11-25"]);
+
+inputSearch("离开前的搜索");
+const delayedHiddenSearch = searchRequests.shift();
+searchPage.onHide();
+assert.deepEqual(searchPage.data.results, []);
+searchPage.onShow();
+assert.equal(searchPage.data.query, "离开前的搜索");
+const delayedAccountSearch = searchRequests.shift();
+signInForSearch("search-a", "new-session-same-user");
+respondToSearch(delayedAccountSearch);
+await settleSearch();
+assert.deepEqual(searchPage.data.results, [], "Signing in again as the same account invalidates its older request");
+
+inputSearch("合成小记");
+const beforeSwitch = searchRequests.shift();
+const secondExpiry = requestModule.request({ url: "/api/notes" });
+searchRequests.shift().success({ statusCode: 401, data: {} });
+await assert.rejects(secondExpiry, { statusCode: 401 });
+signInForSearch("search-b");
+searchPage.onShow();
+inputSearch("合成小记");
+respondToSearch(searchRequests.shift());
+await settleSearch();
+assert.equal(searchPage.data.results[0].id, searchHit.id);
+respondToSearch(delayedHiddenSearch);
+respondToSearch(beforeSwitch, fullSearchPage, 101);
+await settleSearch();
+assert.equal(searchRequests.length, 0, "An older full page must not dispatch the next page under the new account");
+assert.equal(auth.getAuth().user.id, "search-b");
+assert.equal(searchPage.data.results.length, 1, "Older responses must not clear a fresh search on another account");
+tapSearchResult(initialRender);
+assert.equal(searchNavigations.length, 1, "An old tap cannot be retargeted to an identical ID in a new render");
+
+const currentRender = searchPage.data.resultGeneration;
+signInForSearch("search-c");
+tapSearchResult(currentRender);
+assert.deepEqual(searchPage.data.results, [], "Tapping after the account changes must clear the old rows");
+assert.equal(searchNavigations.length, 1);
+inputSearch("找不到");
+respondToSearch(searchRequests.shift(), []);
+await settleSearch();
+assert.equal(searchPage.data.showEmpty, true);
+inputSearch("网络失败");
+searchRequests.shift().fail();
+await settleSearch();
+assert.match(searchPage.data.statusText, /网络/);
+assert.equal(searchToasts.length, 1);
+
+auth.clearAuth();
+assert.throws(() => auth.enterGuest(), /暂不开放游客模式/);
+noteFixtureEnv = "release";
+auth.enterGuest();
+const previousGuestNotes = local.readNotes();
+const guestSearchFixture = local.createNote({ content: "仅本机的合成小记" });
+assert(guestSearchFixture);
+searchPage.onShow();
+inputSearch("仅本机");
+assert.equal(searchPage.data.results[0].id, guestSearchFixture.id);
+assert.equal(searchRequests.length, 0, "Guest search stays on the device");
+
+let historyPageDefinition;
+global.Page = (page) => { historyPageDefinition = page; };
+require("../miniprogram-project/pages/note-history/note-history.js");
+const createHistoryPage = (date) => {
+  const page = {
+    ...historyPageDefinition,
+    data: { ...historyPageDefinition.data },
+    setData(values, done) {
+      for (const [key, value] of Object.entries(values)) {
+        const thumbnail = /^notes\[(\d+)\]\.thumbUrl$/.exec(key);
+        if (thumbnail) this.data.notes[Number(thumbnail[1])].thumbUrl = value;
+        else this.data[key] = value;
+      }
+      done?.();
+    }
+  };
+  page.onLoad({ date });
+  page.onShow();
+  return page;
+};
+const takeHistoryRequest = (pageNumber) => {
+  const pending = searchRequests.shift();
+  const params = new URL(pending.url).searchParams;
+  assert.equal(params.get("date"), searchHit.recordDate);
+  assert.equal(params.get("page"), String(pageNumber));
+  return pending;
+};
+const tapHistoryResult = (page, generation) => page.openNote({ currentTarget: { dataset: { id: searchHit.id, generation } } });
+
+noteFixtureEnv = "develop";
+signInForSearch("history-a");
+const historyPage = createHistoryPage(searchHit.recordDate);
+const historyBeforeExpiry = takeHistoryRequest(1);
+const expiredHistorySession = requestModule.request({ url: "/api/notes" });
+searchRequests.shift().success({ statusCode: 401, data: {} });
+await assert.rejects(expiredHistorySession, { statusCode: 401 });
+respondToSearch(historyBeforeExpiry);
+await settleSearch();
+assert.equal(auth.getAuth(), null);
+assert.deepEqual(historyPage.data.notes, [], "An expired account's late history result must stay hidden");
+assert.match(historyPage.data.statusText, /请先登录/);
+
+signInForSearch("history-a");
+historyPage.onShow();
+const historyImageNote = { ...searchHit, mediaUrls: ["https://staging.manliaoxiaoji.com/api/uploads/notes/fixture-image"] };
+respondToSearch(takeHistoryRequest(1), [historyImageNote]);
+await settleSearch();
+assert.deepEqual(historyPage.data.notes.map(({ id }) => id), [searchHit.id]);
+const lateThumbnailA = thumbnailRequests.shift();
+assert.equal(lateThumbnailA.header.Authorization, "Bearer history-a");
+const initialHistoryRender = historyPage.data.resultGeneration;
+const initialHistoryNavigationCount = searchNavigations.length;
+tapHistoryResult(historyPage, initialHistoryRender);
+assert.equal(searchNavigations.at(-1), "/pages/note-detail/note-detail?id=fixture-note&date=2026-11-25");
+historyPage.onInput({ detail: { value: "仅 A 的筛选" } });
+const fullHistoryBeforeSwitch = takeHistoryRequest(1);
+
+signInForSearch("history-b");
+historyPage.onShow();
+assert.equal(historyPage.data.query, "");
+assert.deepEqual(historyPage.data.notes, [], "The new account must start loading without the old account's rows");
+assert.equal(historyPage.data.isLoading, true);
+respondToSearch(takeHistoryRequest(1), fullSearchPage, 101);
+await settleSearch();
+respondToSearch(takeHistoryRequest(2), [historyImageNote], 101);
+await settleSearch();
+assert.equal(historyPage.data.notes.length, 101, "The current account retains full, date-filtered pagination");
+const currentThumbnailB = thumbnailRequests.shift();
+assert.equal(currentThumbnailB.header.Authorization, "Bearer history-b");
+currentThumbnailB.success({ statusCode: 200, tempFilePath: "/tmp/ui326-thumb-new" });
+lateThumbnailA.success({ statusCode: 200, tempFilePath: "/tmp/ui326-thumb-old" });
+respondToSearch(fullHistoryBeforeSwitch, fullSearchPage, 101);
+await settleSearch();
+assert.equal(searchRequests.length, 0, "An outdated history page must not fetch its next page as the new account");
+assert.equal(auth.getAuth().user.id, "history-b");
+assert.equal(historyPage.data.notes.length, 101);
+assert.equal(historyPage.data.notes.at(-1).thumbUrl, "/tmp/ui326-thumb-new");
+assert(deletedThumbnails.includes("/tmp/ui326-thumb-old"));
+historyPage.onThumbError({ currentTarget: { dataset: { id: searchHit.id, generation: initialHistoryRender } } });
+assert.equal(historyPage.data.notes.at(-1).thumbUrl, "/tmp/ui326-thumb-new", "Old image errors must not remove the current account's thumbnail");
+tapHistoryResult(historyPage, initialHistoryRender);
+assert.equal(searchNavigations.length, initialHistoryNavigationCount + 1, "A queued tap must not retarget to the same ID rendered by the new account");
+tapHistoryResult(historyPage, historyPage.data.resultGeneration);
+assert.equal(searchNavigations.length, initialHistoryNavigationCount + 2);
+
+historyPage.onInput({ detail: { value: "返回后继续筛选" } });
+const historyBeforeHide = takeHistoryRequest(1);
+historyPage.onHide();
+respondToSearch(historyBeforeHide, fullSearchPage, 101);
+await settleSearch();
+assert.deepEqual(historyPage.data.notes, []);
+assert.equal(searchRequests.length, 0);
+historyPage.onShow();
+assert.equal(historyPage.data.query, "返回后继续筛选");
+takeHistoryRequest(1).fail();
+await settleSearch();
+assert.match(historyPage.data.statusText, /网络/);
+assert.equal(historyPage.data.isLoading, false);
+assert(deletedThumbnails.includes("/tmp/ui326-thumb-new"));
+
+historyPage.onShow();
+takeHistoryRequest(1).success({ statusCode: 401, data: {} });
+await settleSearch();
+assert.match(historyPage.data.statusText, /登录状态已过期/);
+assert.equal(historyPage.data.isLoading, false);
+assert.equal(auth.getAuth(), null);
+
+auth.clearAuth();
+noteFixtureEnv = "release";
+auth.enterGuest();
+const guestHistoryPage = createHistoryPage(guestSearchFixture.dateKey);
+assert(guestHistoryPage.data.notes.some(({ id }) => id === guestSearchFixture.id));
+assert.match(guestHistoryPage.data.statusText, /游客/);
+assert.equal(searchRequests.length, 0, "Guest history stays on the device");
+
+assert(local.writeNotes(previousGuestNotes));
+global.wx = originalWx;
+
 const uploads = require("../miniprogram-project/api/uploads.js");
 const cleanupUrls = ["https://manliaoxiaoji.com/api/uploads/notes/orphan-1"];
+auth.saveAuth({ token: "cleanup-user-1", expiresAt: "2999-01-01T00:00:00.000Z", user: { id: "user-1" } });
 requestModule.request = async () => { throw new Error("401"); };
 await assert.rejects(uploads.cleanupOrQueueNoteUploads(cleanupUrls));
 assert.deepEqual(local.readPendingUploadCleanup(), cleanupUrls);
 auth.clearAuth();
 auth.enterGuest();
+assert.deepEqual(local.readPendingUploadCleanup(), [], "Guest cannot read the signed-in account's upload cleanup queue");
 assert.deepEqual(local.readNoteDraft("guest"), withOwner(restartDraft, "guest"));
 auth.saveAuth({ token: "real-token", expiresAt: "2999-01-01T00:00:00.000Z", user: { id: "user-1" } });
 assert.equal(auth.getDataOwner(), "authenticated:user-1");
@@ -179,7 +427,6 @@ assert.deepEqual(local.readPendingUploadCleanup(), []);
 
 const note = readFileSync("miniprogram-project/pages/note/note.js", "utf8");
 const detail = readFileSync("miniprogram-project/pages/note-detail/note-detail.js", "utf8");
-const history = readFileSync("miniprogram-project/pages/note-history/note-history.js", "utf8");
 const search = readFileSync("miniprogram-project/pages/note-search/note-search.js", "utf8");
 const notesApi = readFileSync("miniprogram-project/api/notes.js", "utf8");
 const uploadsApi = readFileSync("miniprogram-project/api/uploads.js", "utf8");
@@ -191,20 +438,18 @@ assert.match(note, /clientRequestId:\s*this\.data\.clientRequestId/);
 assert.match(note, /clientRequestId:\s*draft \? draft\.clientRequestId : createRequestId\(\)/);
 assert.match(note, /clientRequestId:\s*createRequestId\(\)/);
 assert.match(note, /persistNoteDraftImages\(selected\.map/);
-assert.match(note, /cleanupOrQueueNoteUploads\(cleanupUrls\)/);
+assert.match(note, /cleanupOrQueueNoteUploads\(cleanupUrls, authority\)/);
 assert.match(note, /retryPendingNoteUploadCleanup\(\)/);
 assert.match(note, /草稿已保存在本机，请重新登录/);
 assert.match(note, /小记无法保存在本机/);
 assert.match(detail, /updateNote\(this\.data\.note\.id, content\)/);
 assert.match(detail, /isUpdating/);
-assert.match(history, /generation !== this\.refreshGeneration/);
-assert.match(search, /generation !== this\.searchGeneration/);
 assert.match(search, /dateKey:\s*note\.recordDate/);
 assert.match(notesApi, /listAllNotes/);
 assert.match(notesApi, /pageSize = 100/);
 assert.match(uploadsApi, /method:\s*"DELETE"/);
 assert.match(uploadsApi, /error\.uploadedUrls/);
-assert.match(uploadsApi, /addPendingUploadCleanup\(urls\)/);
+assert.match(uploadsApi, /addPendingUploadCleanup\(urls, cleanupOwner\(authority\)\)/);
 
 const layout = require("../miniprogram-project/utils/layout.js");
 layout.getSafeLayout = () => ({
@@ -228,15 +473,15 @@ auth.clearAuth();
 auth.enterGuest();
 local.clearNoteDraft("guest");
 const firstNewPage = createNotePage();
-firstNewPage.onLoad();
+firstNewPage.onLoad({});
 const secondNewPage = createNotePage();
-secondNewPage.onLoad();
+secondNewPage.onLoad({});
 assert.notEqual(firstNewPage.data.clientRequestId, secondNewPage.data.clientRequestId);
 assert.match(firstNewPage.data.clientRequestId, /^mini-note-/);
 const stableDraft = { content: "继续写", mediaItems: [], selectedMood: null, clientRequestId: "stable-retry-id" };
 assert.equal(local.writeNoteDraft(stableDraft, "guest"), true);
 const resumedPage = createNotePage();
-resumedPage.onLoad();
+resumedPage.onLoad({});
 assert.equal(resumedPage.data.clientRequestId, "stable-retry-id");
 
 let chooseMediaSuccess;
@@ -248,7 +493,7 @@ wx.getFileSystemManager = () => ({
   unlink: ({ filePath }) => removedFiles.push(filePath)
 });
 const delayedImagePage = createNotePage();
-delayedImagePage.onLoad();
+delayedImagePage.onLoad({});
 delayedImagePage.chooseMedia();
 chooseMediaSuccess({ tempFiles: [{ tempFilePath: "/tmp/late-a.jpg" }] });
 assert.equal(typeof delayedSaveSuccess, "function");
@@ -265,10 +510,10 @@ auth.enterGuest();
 assert.deepEqual(local.readNoteDraft("guest"), withOwner(stableDraft, "guest"), "guest draft must survive A to B and return");
 wx.getFileSystemManager = immediateFileSystemManager;
 
-const { createNoteSlip } = require("../miniprogram-project/utils/note-slip.js");
-const derived = createNoteSlip("我不知道为什么不想继续这样", 0);
-assert.equal(derived.quote, "先不用急着找到答案。");
-assert.equal(derived.quote.includes("我不知道"), false);
-assert.match(createNoteSlip("", 2).quote, /细节/);
+const { getShareableSlip } = require("../miniprogram-project/utils/note-slip.js");
+const { WALLPAPER_COPIES } = require("../miniprogram-project/utils/note-wallpaper-state.js");
+const approvedCopy = WALLPAPER_COPIES[0];
+assert.deepEqual(getShareableSlip(approvedCopy), { quote: approvedCopy.quote, caption: approvedCopy.caption });
+assert.equal(getShareableSlip({ ...approvedCopy, quote: "合成原始小记" }), null);
 
 console.log("Miniapp note release check passed.");

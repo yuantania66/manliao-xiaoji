@@ -278,10 +278,12 @@ assert(
   interpretationAdapter.indexOf("await inspectPromptBeforeExternalCall(") < interpretationAdapter.indexOf("const response = await callModel("),
   "Turn Interpretation must inspect the exact external prompt before the model call."
 );
-assert(
-  generation.indexOf("await inspectPromptBeforeExternalCall(") < generation.indexOf("const response = await callModel("),
-  "Surface Realization must inspect the exact external prompt before the model call."
-);
+const inspectedSurfaceCall = generation.indexOf("let response = await generate(messages)");
+const baseSurfaceInspection = generation.indexOf("if (!sentAdvice) await inspectBasePrompt()");
+assert(baseSurfaceInspection >= 0 && inspectedSurfaceCall > baseSurfaceInspection,
+  "Surface Realization must inspect the base prompt before its first model call.");
+assert(generation.includes("await inspectBasePrompt();\n    response = await generate(prompt.messages);"),
+  "Surface Realization must inspect the base prompt again before a plain retry.");
 assert(
   baselineRunner.includes('--authorized-post') && baselineRunner.includes('restricted to Qwen/DashScope qwen3.7-max'),
   "Post-refactor real-model baseline must remain explicitly locked and provider-scoped."

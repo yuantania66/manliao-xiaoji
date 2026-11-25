@@ -4,6 +4,7 @@ import { failFromError, ok } from "@/lib/api-response";
 import { createSession, serializeUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { assertStagingOwnerConfiguration, assertStagingOwnerIdentity, stagingOwnerAccessEnabled } from "@/lib/staging-owner-access";
 import { requireNonEmptyString } from "@/lib/validation";
 import { getWechatOpenId, getWechatPhoneNumber } from "@/lib/wechat-auth";
 
@@ -58,6 +59,7 @@ const bindWechatPhone = async (wechatOpenid: string, phone: string) => {
 
 export async function POST(request: Request) {
   try {
+    assertStagingOwnerConfiguration();
     const value = await readJson(request);
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       throw new AppError("VALIDATION_ERROR", "请求体无效", 400);
@@ -65,10 +67,9 @@ export async function POST(request: Request) {
     const body = value as Record<string, unknown>;
     const wechatCode = requireNonEmptyString(body.wechatCode, "wechatCode", 200);
     const phoneCode = requireNonEmptyString(body.phoneCode, "phoneCode", 500);
-    const [wechatOpenid, phone] = await Promise.all([
-      getWechatOpenId(wechatCode),
-      getWechatPhoneNumber(phoneCode),
-    ]);
+    const openid = getWechatOpenId(wechatCode);
+    if (stagingOwnerAccessEnabled()) assertStagingOwnerIdentity(await openid);
+    const [wechatOpenid, phone] = await Promise.all([openid, getWechatPhoneNumber(phoneCode)]);
     const user = await bindWechatPhone(wechatOpenid, phone);
     const session = await createSession(user.id);
 

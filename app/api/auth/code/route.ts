@@ -5,6 +5,7 @@ import { failFromError, ok } from "@/lib/api-response";
 import { hashVerificationCode, requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { assertStagingPublicAccessAllowed } from "@/lib/staging-owner-access";
 import { isValidPhone } from "@/lib/validation";
 import { sendVerificationSms } from "@/services/sms/smsService";
 
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
     const body = await readJson(request);
     const phone = typeof body.phone === "string" ? body.phone.trim() : "";
     const scene = parseScene(body.scene);
+    if (scene === VerificationScene.LOGIN) assertStagingPublicAccessAllowed();
 
     if (!isValidPhone(phone)) {
       throw new AppError("VALIDATION_ERROR", "请输入 11 位手机号码", 400, { field: "phone" });

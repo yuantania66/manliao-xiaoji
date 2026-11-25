@@ -9,8 +9,8 @@
     <view class="result-title">没有搜索结果</view>
     <view class="body">换一句更短的话试试。</view>
   </view>
-  <navigator wx:for="{{results}}" wx:key="id" class="result-card card" url="/pages/note-detail/note-detail?id={{item.id}}&date={{item.dateKey}}" hover-class="none">
+  <view wx:for="{{results}}" wx:key="id" class="result-card card" data-id="{{item.id}}" data-generation="{{resultGeneration}}" bindtap="openResult">
     <view class="result-title">{{item.content}}</view>
     <view class="body">{{item.dateLabel}}</view>
-  </navigator>
+  </view>
 </view>

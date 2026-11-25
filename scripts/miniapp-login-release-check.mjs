@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 const require = createRequire(import.meta.url);
 const storage = new Map();
 const app = { globalData: { user: null, token: "" } };
-let runtimeEnvVersion = "develop";
+let runtimeEnvVersion = "release";
 global.getApp = () => app;
 global.wx = {
   getStorageSync: (key) => storage.get(key),
@@ -38,6 +38,12 @@ const homeWxss = readFileSync(new URL("../miniprogram-project/pages/home/home.wx
 const meWxml = readFileSync(new URL("../miniprogram-project/pages/me/me.wxml", import.meta.url), "utf8");
 const settingsWxml = readFileSync(new URL("../miniprogram-project/pages/settings/settings.wxml", import.meta.url), "utf8");
 const privacyWxml = readFileSync(new URL("../miniprogram-project/pages/privacy/privacy.wxml", import.meta.url), "utf8");
+const authWxml = readFileSync(new URL("../miniprogram-project/pages/auth/auth.wxml", import.meta.url), "utf8");
+const choiceMarkup = authWxml.split('class="sheet choice-sheet"')[1]?.split('class="sheet wechat-phone-sheet"')[0];
+assert.ok(choiceMarkup);
+assert.match(choiceMarkup, /bindtap="loginWechat"[^>]*>微信登录/u);
+assert.doesNotMatch(choiceMarkup, /微信绑定手机号码登录|bindtap="showWechatPhone"/u);
+assert.match(choiceMarkup, /wx:if="\{\{!ownerPreview\}\}"[^>]*bindtap="showGuestWarning"/u);
 for (const label of ["微信登录", "手机号登录"]) {
   assert.match(homeWxml, new RegExp(label));
   assert.match(meWxml, new RegExp(label));
@@ -53,7 +59,7 @@ for (const markup of [homeWxml, meWxml]) {
 }
 assert.match(privacyWxml, /选择微信登录.*登录凭证和对应的账号标识/);
 assert.match(privacyWxml, /微信登录不会自动获取你的手机号、头像或昵称/);
-assert.match(privacyWxml, /选择微信绑定手机号码登录.*微信界面中确认的绑定号码.*当前版本暂不开放其他手机号短信验证码登录/);
+assert.match(privacyWxml, /当前版本不提供手机号登录或手机号绑定入口，也不会通过登录流程收集你的手机号/);
 assert.doesNotMatch(meWxml, /profile-editor-mask/);
 assert.match(meWxml, /头像和昵称是可选资料，可以随时修改/);
 assert.doesNotMatch(meWxml, /bindtap="exitRequiredProfile"/);
@@ -392,21 +398,27 @@ const apiConfig = require("../miniprogram-project/config/api.js");
 runtimeEnvVersion = "develop";
 assert.equal(
   apiConfig.getApiBaseUrl(),
-  "https://manliaoxiaoji.com",
-  "a fresh preview must use the production HTTPS API by default",
+  "https://staging.manliaoxiaoji.com",
+  "the isolated preview must use the pinned staging HTTPS API",
 );
+assert.throws(() => auth.enterGuest(), /暂不开放游客模式/u);
 
 storage.set("xinqing_api_env", "local");
 storage.set("xinqing_api_base_url", "http://attacker.invalid");
-for (const envVersion of ["release", "trial", "unknown"]) {
+for (const envVersion of ["develop", "trial"]) {
   runtimeEnvVersion = envVersion;
-  assert.equal(apiConfig.getApiBaseUrl(), "https://manliaoxiaoji.com");
+  assert.equal(apiConfig.getApiBaseUrl(), "https://staging.manliaoxiaoji.com");
+  assert.throws(() => auth.enterGuest(), /暂不开放游客模式/u);
+}
+for (const envVersion of ["release", "unknown"]) {
+  runtimeEnvVersion = envVersion;
+  assert.equal(apiConfig.getApiBaseUrl(), "");
 }
 wx.getAccountInfoSync = () => { throw new Error("unavailable"); };
-assert.equal(apiConfig.getApiBaseUrl(), "https://manliaoxiaoji.com");
+assert.equal(apiConfig.getApiBaseUrl(), "");
 wx.getAccountInfoSync = () => ({ miniProgram: { envVersion: runtimeEnvVersion } });
 runtimeEnvVersion = "develop";
-assert.equal(apiConfig.getApiBaseUrl(), "http://attacker.invalid");
+assert.equal(apiConfig.getApiBaseUrl(), "https://staging.manliaoxiaoji.com", "device storage cannot choose an API origin");
 
 const { request } = require("../miniprogram-project/utils/request.js");
 let pendingRequest;
@@ -424,11 +436,13 @@ assert.equal(auth.getAuth().token, "user-b-token", "late 401 from user A must no
 storage.clear();
 auth.saveAuth(validAuth);
 const guest401 = request({ url: "/test" }).catch((error) => error);
+runtimeEnvVersion = "release";
 auth.enterGuest();
 pendingRequest.success({ statusCode: 401 });
 await guest401;
 assert.equal(auth.getAuth(), null);
 assert.equal(auth.isGuest(), true, "late 401 must not clear guest mode");
+runtimeEnvVersion = "develop";
 
 storage.clear();
 auth.saveAuth(validAuth);
@@ -449,7 +463,6 @@ let phoneLoginImpl = () => Promise.resolve(validAuth);
 let wechatLoginImpl = () => Promise.resolve(validAuth);
 let phoneApiCalls = 0;
 const api = require(apiPath);
-runtimeEnvVersion = "release";
 let sessionRequestUrls = [];
 wx.request = (options) => {
   sessionRequestUrls.push(options.url);
@@ -478,6 +491,7 @@ wx.request = (options) => {
 };
 await assert.rejects(api.abandonProfileSession("candidate-profile-token"), /cleanup failed/);
 assert.equal(sessionRequestUrls.length, 1, "server failures must not be hidden by logout fallback");
+runtimeEnvVersion = "release";
 api.getMe = () => getMeImpl();
 api.loginWithWechatPhone = (codes) => {
   phoneApiCalls += 1;

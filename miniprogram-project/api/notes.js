@@ -5,10 +5,11 @@ const listNotes = (params = "") =>
     url: `/api/notes${params}`
   });
 
-const listAllNotes = async (params = {}) => {
+const listAllNotes = async (params = {}, canContinue) => {
   const pageSize = 100;
   const items = [];
   for (let page = 1; page <= 100; page += 1) {
+    if (canContinue && !canContinue()) return [];
     const query = Object.entries({ ...params, page, pageSize })
       .filter(([, value]) => value !== undefined && value !== null && value !== "")
       .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)

@@ -295,6 +295,35 @@ export type EpisodeMemoryCandidate = {
   matchedDimensions: Array<"people" | "topics" | "emotions" | "text">;
 };
 
+export type RecalledEvidence = {
+  sourceTurnId: string;
+  sourceConversationId: string;
+  role: "user" | "assistant";
+  text: string;
+  createdAt: string;
+  matchedTerms: string[];
+};
+
+export type RecalledContext = {
+  referenceText: string;
+  currentTurnCreatedAt?: string;
+  candidates: RecalledEvidence[];
+  /** Only source-bound user wording; never a confirmed identity or proposition. */
+  personCandidates: string[];
+  confirmationAfterDays: number;
+};
+
+export type RecalledSourceReference = {
+  sourceTurnId: string;
+  currentQuote: string;
+  sourceQuote: string;
+};
+
+export type ReplyRecallEvidence = {
+  history: RecalledContext;
+  reference: RecalledSourceReference;
+};
+
 export type ConversationControlContext = {
   conversationId: string;
   currentTurnId: string;
@@ -517,6 +546,8 @@ export type ResponsePlan = {
   prohibitedClaims: string[];
   safetyConstraints: string[];
   selectedEpisodeMemory?: EpisodeMemoryCandidate | null;
+  /** One grounded source can authorize an optional writing suggestion without adding a historical fact. */
+  recalledSourceRef?: string;
   relevanceProvenance: Array<{
     planElement: string;
     source: "current_turn" | "adjacent_turn" | "interaction_state" | "system_truth" | "safety";

@@ -66,7 +66,7 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}) 
     payload = null;
   }
 
-  if (response.status === 401) {
+  if (response.status === 401 && token && getAuthToken() === token) {
     clearAuth();
   }
 

@@ -1,8 +1,23 @@
 import { AppError } from "@/lib/errors";
 
+import { createEgressProjection } from "./egressProjection";
+import {
+  settleStagingModelCall,
+  stagingModelBudgetEnabled,
+  STAGING_OUTPUT_TOKEN_LIMIT,
+  STAGING_VERIFIED_PRICE,
+  withStagingModelCall,
+} from "./stagingModelBudget";
 import { AiModelMessage, AiProviderReasoningMeta, AiProviderResponse } from "./types";
 
 type AiProvider = "openai" | "deepseek" | "qwen" | "zhipu" | "mock";
+
+export class ModelCallCancelledError extends Error {
+  constructor() {
+    super("AI model call cancelled by its caller.");
+    this.name = "ModelCallCancelledError";
+  }
+}
 
 const getTimeoutMs = () => {
   const value = Number(process.env.AI_TIMEOUT_MS ?? "45000");
@@ -199,10 +214,12 @@ const callChatCompletions = async ({
   model,
   temperature,
   signal,
+  blockRedirects,
 }: {
   apiKey: string;
   baseUrl: string;
   extraBody?: Record<string, unknown>;
+  blockRedirects?: boolean;
   messages: AiModelMessage[];
   model: string;
   temperature: number;
@@ -210,6 +227,7 @@ const callChatCompletions = async ({
 }) => {
   const response = await fetch(`${trimTrailingSlash(baseUrl)}/chat/completions`, {
     method: "POST",
+    ...(blockRedirects ? { redirect: "error" as const } : {}),
     signal,
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -247,14 +265,23 @@ export const callModel = async ({
   model,
   temperature = 0.7,
   responseFormat,
+  signal: externalSignal,
 }: {
   messages: AiModelMessage[];
   model: string;
   temperature?: number;
   responseFormat?: "json_object";
+  signal?: AbortSignal;
 }): Promise<AiProviderResponse> => {
+  if (externalSignal?.aborted) throw new ModelCallCancelledError();
   const provider = getAiProvider();
-  if (provider === "mock") return mockResponse({ messages, model });
+  const budgetEnabled = stagingModelBudgetEnabled();
+  if (budgetEnabled && (!Array.isArray(messages) || messages.some(message =>
+    !message || typeof message.content !== "string" ||
+    !["system", "developer", "user", "assistant"].includes(message.role)))) {
+    throw new AppError("AI_GENERATION_FAILED", "测试模型费用保护不支持此输入类型。", 403);
+  }
+  if (provider === "mock" && !budgetEnabled) return mockResponse({ messages, model });
 
   if (responseFormat === "json_object" && provider !== "qwen") {
     throw new AppError("AI_GENERATION_FAILED", "AI provider 不支持请求的响应格式", 502, {
@@ -272,84 +299,134 @@ export const callModel = async ({
         ? process.env.ZHIPU_API_KEY?.trim()
         : process.env.OPENAI_API_KEY?.trim();
 
+  if (!apiKey && budgetEnabled) {
+    throw new AppError("AI_GENERATION_FAILED", "测试模型尚未配置，费用保护保持关闭发送。", 403);
+  }
   if (!apiKey) return mockResponse({ messages, model });
 
-  const startedAt = Date.now();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), getTimeoutMs());
-
-  try {
-    const result =
-      provider === "deepseek"
-        ? await callChatCompletions({
-            apiKey,
-            baseUrl: process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com",
-            messages,
-            model,
-            temperature,
-            signal: controller.signal,
-          })
-        : provider === "qwen"
-          ? await callChatCompletions({
-              apiKey,
-              baseUrl:
-                process.env.QWEN_BASE_URL?.trim() ||
-                process.env.DASHSCOPE_BASE_URL?.trim() ||
-                "https://dashscope.aliyuncs.com/compatible-mode/v1",
-              extraBody: {
-                enable_thinking: false,
-                ...(responseFormat === "json_object" && !model.startsWith("qwen3.7-")
-                  ? { response_format: { type: "json_object" } }
-                  : {}),
-              },
-              messages,
-              model,
-              temperature,
-              signal: controller.signal,
-            })
-        : provider === "zhipu"
-          ? await callChatCompletions({
-              apiKey,
-              baseUrl: process.env.ZHIPU_BASE_URL?.trim() || "https://open.bigmodel.cn/api/paas/v4",
-              messages,
-              model,
-              temperature,
-              signal: controller.signal,
-            })
-          : await callOpenAiResponses({
-              apiKey,
-              messages,
-              model,
-              temperature,
-              signal: controller.signal,
-            });
-
-    if (!result.ok) {
-      throw new AppError("AI_GENERATION_FAILED", "AI 服务调用失败", 502, {
-        provider,
-        status: result.status,
-      });
+  const qwenBaseUrl = process.env.QWEN_BASE_URL?.trim() ||
+    process.env.DASHSCOPE_BASE_URL?.trim() || "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  let projection: ReturnType<typeof createEgressProjection> | undefined;
+  if (budgetEnabled) {
+    try {
+      projection = createEgressProjection(messages);
+    } catch {
+      throw new AppError("AI_GENERATION_FAILED", "AI 请求隐私处理失败，已停止发送。", 502);
     }
+  }
+  const outboundMessages = projection?.messages ?? messages;
 
-    const text = result.text;
-    if (!text) throw new AppError("AI_GENERATION_FAILED", "AI 回复为空", 502);
-
-    return {
-      text,
-      model: `${provider}:${model}`,
-      latencyMs: Date.now() - startedAt,
-      tokenInput: result.tokenInput,
-      tokenOutput: result.tokenOutput,
-      providerReasoning: result.providerReasoning,
-      raw: result.data,
+  const execute = async (budgetReservationId?: string): Promise<AiProviderResponse> => {
+    if (externalSignal?.aborted) {
+      // A cancellation here precedes transport, so this reservation has zero cost.
+      if (budgetReservationId) await settleStagingModelCall(budgetReservationId, 0, 0, 0);
+      throw new ModelCallCancelledError();
+    }
+    const startedAt = Date.now();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), getTimeoutMs());
+    let externallyCancelled = false;
+    const cancelFromCaller = () => {
+      if (controller.signal.aborted) return;
+      externallyCancelled = true;
+      controller.abort();
     };
-  } catch (error) {
-    if (error instanceof AppError) throw error;
-    if (controller.signal.aborted) {
-      throw new AppError("AI_GENERATION_FAILED", "AI 服务调用超时", 504);
+    externalSignal?.addEventListener("abort", cancelFromCaller, { once: true });
+    if (externalSignal?.aborted) cancelFromCaller();
+
+    try {
+      const result =
+        provider === "deepseek"
+          ? await callChatCompletions({
+              apiKey,
+              baseUrl: process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com",
+              messages: outboundMessages,
+              model,
+              temperature,
+              signal: controller.signal,
+            })
+          : provider === "qwen"
+            ? await callChatCompletions({
+                apiKey,
+                baseUrl: qwenBaseUrl,
+                blockRedirects: budgetEnabled,
+                extraBody: {
+                  enable_thinking: false,
+                  ...(budgetEnabled ? { max_completion_tokens: STAGING_OUTPUT_TOKEN_LIMIT } : {}),
+                  ...(responseFormat === "json_object" && !model.startsWith("qwen3.7-")
+                    ? { response_format: { type: "json_object" } }
+                    : {}),
+                },
+                messages: outboundMessages,
+                model,
+                temperature,
+                signal: controller.signal,
+              })
+          : provider === "zhipu"
+            ? await callChatCompletions({
+                apiKey,
+                baseUrl: process.env.ZHIPU_BASE_URL?.trim() || "https://open.bigmodel.cn/api/paas/v4",
+                messages: outboundMessages,
+                model,
+                temperature,
+                signal: controller.signal,
+              })
+            : await callOpenAiResponses({
+                apiKey,
+                messages: outboundMessages,
+                model,
+                temperature,
+                signal: controller.signal,
+              });
+
+      if (externallyCancelled && !budgetReservationId) throw new ModelCallCancelledError();
+      if (!result.ok) {
+        throw new AppError("AI_GENERATION_FAILED", "AI 服务调用失败", 502, {
+          provider,
+          status: result.status,
+        });
+      }
+
+      if (budgetReservationId) {
+        const raw = result.data as { model?: unknown; usage?: { total_tokens?: unknown } } | null;
+        if (!raw || typeof raw.model !== "string" || !STAGING_VERIFIED_PRICE.models.includes(raw.model)) {
+          throw new AppError("AI_GENERATION_FAILED", "模型计费身份未确认，测试预留保持占用。", 403);
+        }
+        await settleStagingModelCall(budgetReservationId, result.tokenInput, result.tokenOutput, raw.usage?.total_tokens);
+      }
+      if (externallyCancelled) throw new ModelCallCancelledError();
+      const text = projection ? projection.responseText(result.text) : result.text;
+      if (!text) throw new AppError("AI_GENERATION_FAILED", "AI 回复为空", 502);
+
+      return {
+        text,
+        model: `${provider}:${model}`,
+        latencyMs: Date.now() - startedAt,
+        tokenInput: result.tokenInput,
+        tokenOutput: result.tokenOutput,
+        providerReasoning: result.providerReasoning,
+        raw: result.data,
+      };
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      if (externallyCancelled) {
+        throw error instanceof ModelCallCancelledError ? error : new ModelCallCancelledError();
+      }
+      if (controller.signal.aborted) {
+        throw new AppError("AI_GENERATION_FAILED", "AI 服务调用超时", 504);
+      }
+      throw new AppError("AI_GENERATION_FAILED", "AI 服务暂时不可用", 502);
+    } finally {
+      clearTimeout(timer);
+      externalSignal?.removeEventListener("abort", cancelFromCaller);
     }
-    throw new AppError("AI_GENERATION_FAILED", "AI 服务暂时不可用", 502);
-  } finally {
-    clearTimeout(timer);
+  };
+
+  if (!budgetEnabled) return execute();
+  try {
+    return await withStagingModelCall({ provider, model, baseUrl: qwenBaseUrl }, execute, externalSignal);
+  } catch (error) {
+    if (externalSignal?.aborted) throw new ModelCallCancelledError();
+    throw error;
   }
 };

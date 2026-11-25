@@ -37,10 +37,21 @@ export const getUserObservation = async ({
   days: 7 | 30 | 90;
   now?: Date;
 }) => {
-  const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(now);
+  const dayMs = 24 * 60 * 60 * 1000;
+  const recordDay = Date.parse(`${today}T00:00:00.000Z`);
+  const rangeMs = (days - 1) * dayMs;
+  const since = new Date(Date.parse(`${today}T00:00:00+08:00`) - rangeMs);
   const [notes, messages] = await Promise.all([
     prisma.note.findMany({
-      where: { userId, createdAt: { gte: since }, content: { not: "" } },
+      where: {
+        userId,
+        isDraft: false,
+        recordDate: { gte: new Date(recordDay - rangeMs), lt: new Date(recordDay + dayMs) },
+        content: { not: "" },
+      },
       select: { content: true },
       orderBy: { createdAt: "desc" },
       take: 2000,
@@ -51,7 +62,7 @@ export const getUserObservation = async ({
         role: "USER",
         status: "SAVED",
         contentDeletedAt: null,
-        createdAt: { gte: since },
+        createdAt: { gte: since, lte: now },
       },
       select: { content: true },
       orderBy: { createdAt: "desc" },

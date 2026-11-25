@@ -36,6 +36,13 @@ export type UnderstandingExtraction = {
   occurredAt?: string | null;
 };
 
+export type RetrievalCues = {
+  people: string[];
+  topics: string[];
+  emotions: string[];
+  text: string;
+};
+
 export type StructuredMemoryItem = {
   id: string;
   kind: "fact" | "experience" | "interpretation" | "note" | "event" | "hypothesis";

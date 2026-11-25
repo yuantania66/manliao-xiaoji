@@ -19,6 +19,8 @@ import {
 } from "@/conversation-os";
 
 import { createChatReply } from "./chatOrchestrationService";
+import { readApprovedChatReplyAdviceForSource } from "./chatReplyReviewPacket";
+import { buildConversationRetrievalContext, needsChatSourceLookup } from "@/services/understanding/retrievalContextService";
 import { createChatMemoryContext, createNoteMemoryContext } from "./dataLayers";
 import {
   AiConversationMessage,
@@ -31,10 +33,13 @@ import {
 import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
 import {
+  isCommittedPublicationOnly,
+  isExecutionPublishable,
   toUserSafeExecutionStatus,
   type ChatExecutionTrace,
   type UserSafeExecutionStatus,
 } from "./chatExecutionLifecycle";
+import type { ChatSupervisionOptions } from "./chatSupervisedPublication";
 import type { InteractionState, ResponsePlan } from "@/conversation-os/control";
 import type { EpisodeMemoryCandidate } from "@/conversation-os/control";
 
@@ -257,21 +262,34 @@ export const commitValidatedAssistantMessage = async ({
   status: MessageStatus;
   aiGenerationId: string;
   replyToMessageId: string;
-  interactionMetadata: NonNullable<InteractionState["lastCommittedAssistantMove"]>;
+  interactionMetadata: InteractionState["lastCommittedAssistantMove"];
   execution: ChatExecutionTrace;
   responsePlan?: ResponsePlan | null;
   envelopeOrigin?: "response_plan" | "safety_override" | null;
 }) => {
-  if (execution.phase !== "VALIDATED") {
-    throw new Error("Only a validated execution may enter the Assistant commit boundary.");
+  const publication = execution.publication;
+  if (!isExecutionPublishable(execution, content)) {
+    throw new Error(publication
+      ? "Only an eligible execution may enter the Assistant commit boundary."
+      : "Only a validated execution may enter the Assistant commit boundary.");
+  }
+  if (publication && (interactionMetadata != null || envelopeOrigin != null || execution.conversationId !== sessionId)) {
+    throw new Error("Supervised execution scope or interaction metadata is invalid.");
+  }
+  if (!publication && !interactionMetadata) {
+    throw new Error("Validated reply requires interaction metadata.");
   }
   if (execution.turnId !== replyToMessageId) {
     throw new Error("Validated execution turn does not match the Assistant reply target.");
   }
   const select = {
     id: true,
+    userId: true,
+    sessionId: true,
+    replyToMessageId: true,
     role: true,
     content: true,
+    contentDeletedAt: true,
     status: true,
     aiGenerationId: true,
     aiGeneration: {
@@ -285,6 +303,41 @@ export const commitValidatedAssistantMessage = async ({
   } satisfies Prisma.ChatMessageSelect;
   let created = false;
   const savedMessage = await prisma.$transaction(async (tx) => {
+    if (publication) {
+      // Hold the owned, undeleted source through commit so a governance tombstone cannot race the write.
+      const userTurns = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "source"."id"
+        FROM "ChatMessage" AS "source"
+        WHERE "source"."id" = ${replyToMessageId}
+          AND "source"."userId" = ${userId}
+          AND "source"."sessionId" = ${sessionId}
+          AND "source"."role" = 'USER'
+          AND "source"."status" IN ('SAVED', 'REWRITTEN', 'FALLBACK')
+          AND "source"."contentDeletedAt" IS NULL
+        FOR SHARE OF "source"
+      `;
+      if (!userTurns.length) {
+        throw new Error("Supervised reply target does not match the execution.");
+      }
+      const savedGeneration = await tx.aiGeneration.findFirst({
+        where: {
+          id: aiGenerationId,
+          userId,
+          sessionId,
+          sourceType: AiSourceType.CHAT,
+          sourceId: replyToMessageId,
+          turnId: replyToMessageId,
+          requestId: execution.requestId,
+          attemptId: publication.winnerAttemptId!,
+          outputText: content,
+          status: AiGenerationStatus.GENERATED,
+        },
+        select: { id: true },
+      });
+      if (!savedGeneration) {
+        throw new Error("Supervised generation does not match the execution.");
+      }
+    }
     const inserted = await tx.chatMessage.createMany({
       data: [{
         sessionId,
@@ -294,7 +347,7 @@ export const commitValidatedAssistantMessage = async ({
         status,
         aiGenerationId,
         replyToMessageId,
-        interactionMetadata: interactionMetadata as unknown as Prisma.InputJsonValue,
+        ...(interactionMetadata ? { interactionMetadata: interactionMetadata as unknown as Prisma.InputJsonValue } : {}),
       }],
       skipDuplicates: true,
     });
@@ -303,6 +356,13 @@ export const commitValidatedAssistantMessage = async ({
       where: { replyToMessageId },
       select,
     });
+    if (publication && (message.sessionId !== sessionId || message.userId !== userId ||
+        message.replyToMessageId !== replyToMessageId || message.role !== MessageRole.ASSISTANT ||
+        message.contentDeletedAt !== null || !message.content.trim() ||
+        (message.status !== MessageStatus.SAVED && message.status !== MessageStatus.REWRITTEN &&
+          message.status !== MessageStatus.FALLBACK))) {
+      throw new Error("Supervised Assistant reply does not match its conversation.");
+    }
 
     if (created) {
       await tx.chatSession.update({
@@ -315,7 +375,7 @@ export const commitValidatedAssistantMessage = async ({
     }
     let interactionMoveEnvelope: CommittedAssistantMoveEnvelopeV1 | null = null;
     if (created) {
-      if (envelopeOrigin === "response_plan") {
+      if (envelopeOrigin === "response_plan" && interactionMetadata) {
         interactionMoveEnvelope = buildResponsePlanAssistantMoveEnvelope({
           assistantMoveId: message.id,
           planId: execution.planId,
@@ -332,7 +392,7 @@ export const commitValidatedAssistantMessage = async ({
               }
             : null,
         });
-      } else if (envelopeOrigin === "safety_override") {
+      } else if (envelopeOrigin === "safety_override" && interactionMetadata) {
         const history = await tx.chatMessage.findMany({
           where: { sessionId },
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -375,7 +435,7 @@ export const commitValidatedAssistantMessage = async ({
           ...execution.transitions,
           {
             phase: "COMMITTED" as const,
-            reason: interactionMoveEnvelope
+            reason: publication ? "Authorized Assistant Message committed without interaction claims." : interactionMoveEnvelope
               ? "Assistant Message, interaction metadata, and move envelope committed atomically."
               : "Assistant Message and interaction metadata committed atomically; handoff envelope intentionally deferred for this origin.",
           },
@@ -437,7 +497,8 @@ const markCommitted = (
     ...execution.transitions,
     {
       phase: "COMMITTED",
-      reason: "Assistant Message and interaction metadata committed atomically.",
+      reason: execution.publication ? "Authorized Assistant Message committed without interaction claims." :
+        "Assistant Message and interaction metadata committed atomically.",
     },
   ],
   committedMessageId: messageId,
@@ -448,22 +509,26 @@ export const createReviewedChatReply = async ({
   userId,
   sessionId,
   currentTurnId,
+  currentTurnCreatedAt,
   retrying = false,
   userMessage,
   recentMessages,
   understandingContext,
   episodeMemoryCandidates = [],
   includeDebugTrace = false,
+  supervision,
 }: {
   userId: string;
   sessionId: string;
   currentTurnId?: string;
+  currentTurnCreatedAt?: Date;
   retrying?: boolean;
   userMessage: string;
   recentMessages: AiConversationMessage[];
   understandingContext?: StructuredRagContext | null;
   episodeMemoryCandidates?: EpisodeMemoryCandidate[];
   includeDebugTrace?: boolean;
+  supervision?: ChatSupervisionOptions;
 }): Promise<
   | {
       outcome: "committed";
@@ -490,10 +555,22 @@ export const createReviewedChatReply = async ({
     userMessage,
     recentMessages,
     loadMemoryContext: () => loadMemoryContext({ userId, sessionId }),
+    ...(currentTurnId && currentTurnCreatedAt && needsChatSourceLookup(userMessage, recentMessages) ? {
+      loadReplyRecall: async () => (await buildConversationRetrievalContext({
+        userId, sessionId,
+        currentMessage: { id: currentTurnId, content: userMessage, createdAt: currentTurnCreatedAt },
+        recentMessages,
+      })).recalledContext,
+      loadApprovedReplyAdvice: (source) => readApprovedChatReplyAdviceForSource({ userId, ...source }),
+    } : {}),
     understandingContext,
     episodeMemoryCandidates,
-    includeDebugTrace,
+    includeDebugTrace: !supervision && includeDebugTrace,
+    supervision,
   });
+  const publicationOnly = Boolean(reply.execution.publication);
+  const debugTrace = publicationOnly || supervision ? undefined : reply.debugTrace;
+  const publishable = (!supervision || publicationOnly) && isExecutionPublishable(reply.execution, reply.generation.text);
   try {
     const attemptedGenerations = reply.generationAttempts.length
       ? reply.generationAttempts
@@ -501,8 +578,7 @@ export const createReviewedChatReply = async ({
     let previousGenerationId: string | undefined;
     const savedGenerations: Array<{ id: string }> = [];
     for (const [index, generation] of attemptedGenerations.entries()) {
-      const accepted = reply.execution.phase === "VALIDATED" &&
-        index === attemptedGenerations.length - 1;
+      const accepted = publishable && index === attemptedGenerations.length - 1;
       const saved = await saveGeneration({
         userId,
         sessionId,
@@ -522,9 +598,9 @@ export const createReviewedChatReply = async ({
       savedGenerations.push(saved);
     }
 
-    if (reply.execution.phase !== "VALIDATED") {
+    if (!publishable) {
       const systemStatus = toUserSafeExecutionStatus(reply.execution);
-      const systemMessage = await persistExecutionSystemMessage({
+      const systemMessage = supervision ? undefined : await persistExecutionSystemMessage({
         userId,
         sessionId,
         systemStatus,
@@ -533,7 +609,7 @@ export const createReviewedChatReply = async ({
         outcome: "failed",
         systemStatus,
         systemMessage,
-        debugTrace: reply.debugTrace,
+        debugTrace,
         execution: reply.execution,
       };
     }
@@ -541,7 +617,7 @@ export const createReviewedChatReply = async ({
     const messageStatus = reply.finalSource === "fallback" ? MessageStatus.FALLBACK : MessageStatus.SAVED;
     const savedGeneration = savedGenerations.at(-1);
     if (!savedGeneration) throw new Error("Validated reply has no saved generation.");
-    await saveJudgeResult({
+    if (!publicationOnly) await saveJudgeResult({
       userId,
       generationId: savedGeneration.id,
       judgeResult: reply.judge,
@@ -553,12 +629,13 @@ export const createReviewedChatReply = async ({
       status: messageStatus,
       aiGenerationId: savedGeneration.id,
       replyToMessageId: reply.execution.turnId,
-      interactionMetadata: buildCommittedAssistantMove(reply),
+      interactionMetadata: publicationOnly ? null : buildCommittedAssistantMove(reply),
       execution: reply.execution,
       responsePlan: reply.controlTrace?.responsePlan ?? null,
-      envelopeOrigin: reply.finalSource === "safety" ? "safety_override" : "response_plan",
+      envelopeOrigin: publicationOnly ? null : reply.finalSource === "safety" ? "safety_override" : "response_plan",
     });
-    if (reply.finalSource !== "safety" && !assistantMessage.interactionMoveEnvelope) {
+    const savedPublicationOnly = isCommittedPublicationOnly(assistantMessage.aiGeneration?.executionTrace);
+    if (!publicationOnly && !savedPublicationOnly && reply.finalSource !== "safety" && !assistantMessage.interactionMoveEnvelope) {
       throw new Error("Committed Assistant Message is missing its move envelope.");
     }
     const execution = markCommitted(
@@ -566,7 +643,7 @@ export const createReviewedChatReply = async ({
       assistantMessage.id,
       assistantMessage.interactionMoveEnvelope ?? null
     );
-    if (reply.controlTrace) {
+    if (reply.controlTrace && !publicationOnly && !savedPublicationOnly) {
       const answeredObligations = reply.controlTrace.responsePlan.answerObligations.map((item) => item.id);
       reply.controlTrace.stateUpdate = {
         answeredObligations,
@@ -581,9 +658,9 @@ export const createReviewedChatReply = async ({
         })),
         notes: ["Validated Assistant Message committed; obligation transitions are now official."],
       };
-      if (reply.debugTrace) reply.debugTrace.conversationControl = reply.controlTrace;
+      if (debugTrace) debugTrace.conversationControl = reply.controlTrace;
     }
-    if (reply.debugTrace) reply.debugTrace.execution = execution;
+    if (debugTrace) debugTrace.execution = execution;
 
     return {
       outcome: "committed",
@@ -591,7 +668,7 @@ export const createReviewedChatReply = async ({
       judge: reply.judge,
       rewriteAttempted: reply.rewriteAttempted,
       fallbackUsed: reply.fallbackUsed,
-      debugTrace: reply.debugTrace,
+      debugTrace,
       execution,
     };
   } catch (error) {
@@ -612,11 +689,11 @@ export const createReviewedChatReply = async ({
       },
       committedMessageId: undefined,
     };
-    if (reply.debugTrace) reply.debugTrace.execution = execution;
+    if (debugTrace) debugTrace.execution = execution;
     return {
       outcome: "failed",
       systemStatus: toUserSafeExecutionStatus(execution),
-      debugTrace: reply.debugTrace,
+      debugTrace,
       execution,
     };
   }

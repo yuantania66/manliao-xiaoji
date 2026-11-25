@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
 
 import { failFromError, ok } from "@/lib/api-response";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, requireUser } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { stagingOwnerAccessEnabled } from "@/lib/staging-owner-access";
 
 const FEEDBACK_TYPES = new Set(["使用问题", "功能建议", "其他"]);
 
@@ -56,7 +57,7 @@ const parseContent = (value: unknown) => {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request);
+    const user = stagingOwnerAccessEnabled() ? await requireUser(request) : await getCurrentUser(request);
     const body = await readJson(request);
     const type = parseFeedbackType(body.type);
     const content = parseContent(body.content);

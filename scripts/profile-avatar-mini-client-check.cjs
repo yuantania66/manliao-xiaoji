@@ -54,6 +54,9 @@ const authPath = require.resolve("../miniprogram-project/utils/auth");
 require.cache[authPath] = { exports: {
   clearAuth: () => { auth = null; },
   getAuth: () => auth,
+  captureAuthAuthority: () => auth ? { token: auth.token, userId: auth.user.id, expiresAt: auth.expiresAt } : null,
+  isCurrentAuthAuthority: (value) => Boolean(value && auth && value.token === auth.token && value.userId === auth.user.id && value.expiresAt === auth.expiresAt),
+  isCurrentAuthFailure: () => false,
   getGuestProfile: () => null,
   isGuest: () => false,
   saveAuth: () => undefined,
@@ -63,6 +66,13 @@ require.cache[authPath] = { exports: {
     if (cacheShouldFail) throw new Error("injected storage failure");
     auth = { ...auth, user: { ...auth.user, ...user } };
   }
+} };
+
+// Growth is independently exercised against actual source in visit-growth-regression-check.
+const growthPath = require.resolve("../miniprogram-project/utils/visit-growth");
+require.cache[growthPath] = { exports: {
+  recordVisit: () => Promise.resolve(null), currentState: () => null,
+  subscribe: () => () => {}, cancelAnimation() {}
 } };
 
 const apiPath = require.resolve("../miniprogram-project/api/auth");
@@ -83,7 +93,8 @@ require.cache[apiPath] = { exports: {
     discardTokens.push(capturedToken);
     return Promise.resolve();
   },
-  downloadProfileAvatar: (avatarUrl) => Promise.resolve(`downloaded:${avatarUrl}`)
+  downloadProfileAvatar: (avatarUrl) => Promise.resolve(`downloaded:${avatarUrl}`),
+  getCachedProfileAvatar: () => ""
 } };
 
 const layoutPath = require.resolve("../miniprogram-project/utils/layout");

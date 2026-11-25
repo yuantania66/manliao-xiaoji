@@ -182,6 +182,11 @@ enum AiMessageFeedbackSignal {
   UNSAFE
 }
 
+enum ChatReplyReviewDecision {
+  APPROVED
+  REJECTED
+}
+
 enum RawMemoryKind {
   CONVERSATION_MESSAGE
   NOTE
@@ -438,6 +443,7 @@ model User {
   graphNodes             UnderstandingGraphNode[]
   graphEdges             UnderstandingGraphEdge[]
   aiMessageFeedbacks     AiMessageFeedback[]
+  chatReplyTrainingConsent ChatReplyTrainingConsent?
   rawMemories            RawMemory[]
   rawMemoryEvents        RawMemoryEvent[]
   evidenceRecords        Evidence[]
@@ -462,6 +468,16 @@ model User {
   p4ProfileCache         P4ProfileCache?
   p4PromotionArtifacts   P4PromotionEligibilityArtifact[]
   noteUploads            NoteUpload[]
+  visitDays              UserVisitDay[]
+}
+
+/// Actual authenticated visits only; no historical backfill or content-derived growth.
+model UserVisitDay {
+  userId String
+  day    DateTime @db.Date
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
 }
 
 model Session {
@@ -530,7 +546,10 @@ model ChatMessage {
   governanceDeletionRequests GovernanceDeletionRequest[]
   governanceSourceEdges GovernanceSourceEdge[]
   emotionSlices       EmotionSlice[]
-  feedbacks           AiMessageFeedback[]
+  feedbacks           AiMessageFeedback[] @relation("AiMessageFeedbackTarget")
+  sourceFeedbacks     AiMessageFeedback[] @relation("AiMessageFeedbackSource")
+  evaluationReviews   ChatReplyEvaluationReview[] @relation("ChatReplyEvaluationReviewTarget")
+  evaluationJob       ChatReplyEvaluationJob?
 
   @@index([sessionId, createdAt])
   @@index([userId, createdAt])
@@ -642,6 +661,7 @@ model Note {
   moodIcon             String?
   mediaUrls            Json?
   recordDate           DateTime @db.Date
+  wallpaperState       Json?
   coreEventIds         Json?
   emotionSliceIds      Json?
   generatedFromChatIds Json?
@@ -884,18 +904,73 @@ model AiMessageFeedback {
   id             String                  @id @default(cuid())
   userId         String
   messageId      String
+  sourceMessageId String?
   aiGenerationId String?
   signal         AiMessageFeedbackSignal
   tags           Json?
   comment        String?
   createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @default(now()) @updatedAt
   user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message        ChatMessage             @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message        ChatMessage             @relation("AiMessageFeedbackTarget", fields: [messageId], references: [id], onDelete: Cascade)
+  sourceMessage  ChatMessage?            @relation("AiMessageFeedbackSource", fields: [sourceMessageId], references: [id], onDelete: Cascade)
 
   @@unique([userId, messageId, signal])
   @@index([userId, createdAt])
+  @@index([updatedAt, id])
   @@index([messageId])
+  @@index([sourceMessageId])
   @@index([aiGenerationId])
+}
+
+model ChatReplyEvaluationReview {
+  id                 String                  @id @default(cuid())
+  assistantMessageId String
+  evidenceVersion    String
+  evaluationVersion  String
+  reviewerId         String
+  decision           ChatReplyReviewDecision
+  reviewedAt         DateTime                @default(now()) @updatedAt
+  assistantMessage   ChatMessage             @relation("ChatReplyEvaluationReviewTarget", fields: [assistantMessageId], references: [id], onDelete: Cascade)
+
+  @@unique([assistantMessageId, evaluationVersion], map: "ChatReplyEvaluationReview_message_evaluation_key")
+}
+
+model ChatReplyEvaluationJob {
+  assistantMessageId String      @id
+  revision           Int         @default(1)
+  availableAt        DateTime    @default(now())
+  leaseToken         String?
+  leaseUntil         DateTime?
+  evidenceVersion    String?
+  evaluationVersion  String?
+  packet             String?     @db.Text
+  completedAt        DateTime?
+  assistantMessage   ChatMessage @relation(fields: [assistantMessageId], references: [id], onDelete: Cascade)
+  trainingCandidate  ChatReplyTrainingCandidate?
+
+  // Migrations index pending jobs and completed reviews separately.
+}
+
+model ChatReplyTrainingConsent {
+  userId        String                       @id
+  noticeVersion String
+  grantedAt     DateTime                     @default(now())
+  user          User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  candidates    ChatReplyTrainingCandidate[]
+}
+
+model ChatReplyTrainingCandidate {
+  assistantMessageId String                   @id
+  userId             String
+  evidenceVersion    String
+  evaluationVersion  String
+  material           Json
+  createdAt          DateTime                 @default(now())
+  job                ChatReplyEvaluationJob   @relation(fields: [assistantMessageId], references: [assistantMessageId], onDelete: Cascade)
+  consent            ChatReplyTrainingConsent @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model AiGeneration {

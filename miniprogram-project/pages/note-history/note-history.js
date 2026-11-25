@@ -1,10 +1,12 @@
 const { readNotes } = require("../../utils/local-data");
-const { captureAuthAuthority, isCurrentAuthAuthority, isCurrentAuthFailure, getDataMode } = require("../../utils/auth");
+const { captureIdentityAuthority, isCurrentIdentityAuthority, isCurrentAuthFailure } = require("../../utils/auth");
 const { listAllNotes } = require("../../api/notes");
 const { getSafeLayout } = require("../../utils/layout");
 
 const { downloadNoteMedia, discardTempMedia } = require("../../utils/note-media");
 const { isOwnerPreview } = require("../../utils/owner-preview");
+
+const signInText = () => isOwnerPreview() ? "请先登录。" : "请先登录，或在首页选择游客模式。";
 
 const titleOf = (content, note = {}) => {
   const trimmed = (content || "").trim();
@@ -33,6 +35,7 @@ Page({
     isEmpty: true,
     loadError: false,
     notes: [],
+    resultGeneration: 0,
     backTop: 54,
     pageTop: 92,
     statusText: "",
@@ -57,12 +60,14 @@ Page({
   },
 
   onHide() {
-    this.refreshGeneration = (this.refreshGeneration || 0) + 1;
-    this.releaseMedia();
-    this.setData({ notes: [] });
+    this.historyVisible = false;
+    this.resetHistory(this.data.query);
   },
 
-  onUnload() { this.onHide(); },
+  onUnload() {
+    this.onHide();
+    this.historyIdentity = null;
+  },
 
   releaseMedia() {
     (this.mediaPaths || []).forEach(discardTempMedia);
@@ -70,29 +75,34 @@ Page({
   },
 
   clearDate() {
+    if (!this.historyVisible || !this.syncHistorySession()) return;
     this.setData({ date: "", introText: "按时间回看文字和图片，不用一次看完。" });
     this.refresh();
   },
 
   onThumbError(event) {
-    this.setData({ notes: this.data.notes.map(note => note.id === event.currentTarget.dataset.id ? { ...note, thumbUrl: "" } : note) });
+    const note = this.noteForResult(event.currentTarget.dataset);
+    if (!note) return;
+    this.setData({ notes: this.data.notes.map((item) => item === note ? { ...item, thumbUrl: "" } : item) });
   },
 
-  prepareThumbnails(notes, authority, generation) {
+  prepareThumbnails(notes, authority, isLoadCurrent) {
+    const ownsTempMedia = isOwnerPreview();
     notes.forEach((note, index) => {
-      if (!note.images.length) return;
+      if (!note.images.length || !isLoadCurrent()) return;
       downloadNoteMedia(note.images[0].url, authority).then(path => {
-        if (generation !== this.refreshGeneration || !isCurrentAuthAuthority(authority)) {
-          if (isOwnerPreview()) discardTempMedia(path);
+        if (!isLoadCurrent()) {
+          if (ownsTempMedia) discardTempMedia(path);
           return;
         }
-        if (isOwnerPreview()) this.mediaPaths.push(path);
+        if (ownsTempMedia) this.mediaPaths.push(path);
         this.setData({ [`notes[${index}].thumbUrl`]: path });
       }).catch(() => undefined);
     });
   },
 
   onShow() {
+    this.historyVisible = true;
     this.refresh();
   },
 
@@ -113,31 +123,47 @@ Page({
   },
 
   onInput(event) {
-    this.setData({ query: event.detail.value }, () => this.refresh());
+    if (!this.historyVisible || !this.syncHistorySession()) return;
+    this.setData({ query: event.detail.value });
+    this.refresh();
+  },
+
+  resetHistory(query, statusText = "") {
+    this.refreshGeneration = (this.refreshGeneration || 0) + 1;
+    this.releaseMedia();
+    this.setData({ query, notes: [], isEmpty: true, isLoading: false, loadError: Boolean(statusText), statusText });
+  },
+
+  syncHistorySession() {
+    if (isCurrentIdentityAuthority(this.historyIdentity)) return true;
+    this.historyIdentity = captureIdentityAuthority();
+    this.resetHistory("", this.historyIdentity?.auth || this.historyIdentity?.guest ? "" : signInText());
+    return false;
   },
 
   refresh() {
+    if (!this.historyVisible) return;
+    this.syncHistorySession();
     const generation = (this.refreshGeneration || 0) + 1;
     this.refreshGeneration = generation;
     this.releaseMedia();
-    const dataMode = getDataMode();
-    const authority = captureAuthAuthority();
-    const current = () => generation === this.refreshGeneration && isCurrentAuthAuthority(authority);
-    if (dataMode === "authenticated") {
+    const { auth: authority, guest } = this.historyIdentity || {};
+    if (authority) {
       this.setData({ notes: [], isEmpty: false, loadError: false, isLoading: true, statusText: "正在加载小记…" });
-      listAllNotes(this.data.date ? { date: this.data.date } : {})
+      const isLoadCurrent = () => this.historyVisible && generation === this.refreshGeneration && this.syncHistorySession();
+      listAllNotes(this.data.date ? { date: this.data.date } : {}, isLoadCurrent)
         .then((items) => {
-          if (!current()) return;
+          if (!isLoadCurrent()) return;
           const keyword = this.data.query.trim();
           const notes = items
             .map(normalizeRemoteNote)
             .filter((note) => !keyword || note.content.includes(keyword) || (note.mood && `${note.mood.name}${note.mood.desc}`.includes(keyword)));
-          this.setData({ notes, isEmpty: notes.length === 0, loadError: false, statusText: "", isLoading: false });
-          this.prepareThumbnails(notes, authority, generation);
+          this.setData({ notes, resultGeneration: generation, isEmpty: notes.length === 0, loadError: false, statusText: "", isLoading: false });
+          this.prepareThumbnails(notes, authority, isLoadCurrent);
         })
         .catch((error) => {
-          if (generation !== this.refreshGeneration ||
-              !(isCurrentAuthAuthority(authority) || isCurrentAuthFailure(authority, error))) return;
+          if (!this.historyVisible || generation !== this.refreshGeneration) return;
+          if (!this.syncHistorySession() && !isCurrentAuthFailure(authority, error)) return;
           const message = error.message || "小记加载失败，请稍后再试";
           this.setData({ notes: [], isEmpty: false, loadError: true, statusText: message, isLoading: false });
           wx.showToast({ title: message, icon: "none" });
@@ -145,8 +171,8 @@ Page({
       return;
     }
 
-    if (dataMode === "guest") {
-      this.refreshLocal();
+    if (guest) {
+      this.refreshLocal(generation);
       return;
     }
 
@@ -155,12 +181,11 @@ Page({
       isEmpty: true,
       isLoading: false,
       loadError: true,
-      statusText: "请先登录，或在首页选择游客模式。"
+      statusText: signInText()
     });
   },
 
-  refreshLocal() {
-    this.refreshGeneration = (this.refreshGeneration || 0) + 1;
+  refreshLocal(generation) {
     const keyword = this.data.query.trim();
     const notes = readNotes()
       .filter((note) => !this.data.date || note.dateKey === this.data.date)
@@ -169,9 +194,22 @@ Page({
     this.setData({
       notes,
       loadError: false,
+      resultGeneration: generation,
       isEmpty: notes.length === 0,
       isLoading: false,
       statusText: "游客模式，只显示本机小记。"
     });
+  },
+
+  noteForResult({ id, generation }) {
+    if (!this.historyVisible || !this.syncHistorySession() || Number(generation) !== this.refreshGeneration) return null;
+    return this.data.notes.find((item) => item.id === id);
+  },
+
+  openNote(event) {
+    const note = this.noteForResult(event.currentTarget.dataset);
+    if (!note) return;
+    const date = encodeURIComponent(note.dateKey || "");
+    wx.navigateTo({ url: `/pages/note-detail/note-detail?id=${encodeURIComponent(note.id)}&date=${date}` });
   }
 });

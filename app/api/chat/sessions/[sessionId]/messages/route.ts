@@ -8,6 +8,7 @@ import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { parsePagination, requireNonEmptyString } from "@/lib/validation";
 import { createReviewedChatReply } from "@/services/ai/chatReplyService";
+import { isCommittedPublicationOnly } from "@/services/ai/chatExecutionLifecycle";
 import { ensureProactiveChatGreeting } from "@/services/chat/proactiveGreetingService";
 import { extractExperienceFromChatMessage } from "@/services/experience/experienceExtractorService";
 import { createRawMemoryFromChatMessage } from "@/services/memory/rawMemoryService";
@@ -59,6 +60,52 @@ const shouldIncludeDebugTrace = (request: NextRequest, body: Record<string, unkn
     request.headers.get("x-ai-debug-trace") === "1" ||
     request.nextUrl.searchParams.get("debugAi") === "1");
 
+const readStoredTurnResult = async (sessionId: string, userId: string, turnId: string) => {
+  // Read the whole turn from one snapshot. A committed reply supersedes its older failure marker.
+  const messages = await prisma.chatMessage.findMany({
+    where: {
+      sessionId,
+      userId,
+      contentDeletedAt: null,
+      status: { in: COMMITTED_MESSAGE_STATUSES },
+      OR: [
+        { id: turnId, role: MessageRole.USER },
+        { replyToMessageId: turnId, role: MessageRole.ASSISTANT },
+        { id: `system-status:${turnId}`, role: MessageRole.SYSTEM, status: MessageStatus.FALLBACK },
+      ],
+    },
+    select: { id: true, role: true, content: true, status: true, createdAt: true, interactionMetadata: true },
+  });
+  const userMessage = messages.find((message) => message.role === MessageRole.USER && message.content.trim());
+  const assistantMessage = userMessage
+    ? messages.find((message) => message.role === MessageRole.ASSISTANT && message.content.trim())
+    : undefined;
+  const systemMessage = userMessage && !assistantMessage
+    ? messages.find((message) => {
+        const metadata = message.interactionMetadata;
+        return message.role === MessageRole.SYSTEM && message.content.trim() &&
+          metadata && typeof metadata === "object" && !Array.isArray(metadata) &&
+          metadata.schemaVersion === 1 && metadata.kind === "execution_system_status" && metadata.turnId === turnId;
+      })
+    : undefined;
+  const serialize = (message: typeof messages[number] | undefined) => message ? {
+    id: message.id,
+    role: message.role.toLowerCase(),
+    content: message.content,
+    status: message.status.toLowerCase(),
+    createdAt: message.createdAt.toISOString(),
+  } : null;
+  return {
+    status: userMessage
+      ? assistantMessage ? "committed" : systemMessage ? "failed" : "unresolved"
+      : "not_found",
+    turnId,
+    userMessage: serialize(userMessage),
+    assistantMessage: serialize(assistantMessage),
+    systemMessage: serialize(systemMessage),
+  };
+};
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ sessionId: string }> }
@@ -67,22 +114,31 @@ export async function GET(
     const user = await requireUser(request);
     const { sessionId } = await context.params;
     await assertSessionOwner(sessionId, user.id);
-    const greetingResult = await ensureProactiveChatGreeting({
-      sessionId,
-      userId: user.id,
-      force: request.nextUrl.searchParams.get("retryGreeting") === "1",
-    });
+    const { searchParams } = request.nextUrl;
+    const historyOnly = searchParams.get("historyOnly") === "1";
+    const turnId = searchParams.get("turnId")?.trim() || "";
+    if (turnId && !/^[a-zA-Z0-9:_-]{8,160}$/.test(turnId)) {
+      throw new AppError("VALIDATION_ERROR", "turnId 格式无效", 400, { field: "turnId" });
+    }
+    const greetingResult = historyOnly || turnId
+      ? null
+      : await ensureProactiveChatGreeting({
+          sessionId,
+          userId: user.id,
+          force: searchParams.get("retryGreeting") === "1",
+        });
 
-    const { searchParams } = new URL(request.url);
     const pagination = parsePagination(searchParams);
     const before = searchParams.get("before")?.trim() || null;
+    const visibleMessages = {
+      sessionId,
+      userId: user.id,
+      contentDeletedAt: null,
+      status: { in: COMMITTED_MESSAGE_STATUSES },
+    };
     const beforeMessage = before
       ? await prisma.chatMessage.findFirst({
-          where: {
-            id: before,
-            sessionId,
-            userId: user.id,
-          },
+          where: { id: before, sessionId, userId: user.id },
           select: { id: true, createdAt: true },
         })
       : null;
@@ -93,9 +149,7 @@ export async function GET(
     const [newestItems, total] = await prisma.$transaction([
       prisma.chatMessage.findMany({
         where: {
-          sessionId,
-          userId: user.id,
-          status: { in: COMMITTED_MESSAGE_STATUSES },
+          ...visibleMessages,
           ...(beforeMessage
             ? {
                 OR: [
@@ -125,16 +179,11 @@ export async function GET(
           },
         },
       }),
-      prisma.chatMessage.count({
-        where: {
-          sessionId,
-          userId: user.id,
-          status: { in: COMMITTED_MESSAGE_STATUSES },
-        },
-      }),
+      prisma.chatMessage.count({ where: visibleMessages }),
     ]);
     const hasMore = newestItems.length > pagination.pageSize;
     const items = newestItems.slice(0, pagination.pageSize).reverse();
+    const turnResult = turnId ? await readStoredTurnResult(sessionId, user.id, turnId) : null;
 
     return ok({
       items: items.map((item) => ({
@@ -153,9 +202,10 @@ export async function GET(
       total,
       hasMore,
       nextCursor: hasMore ? items[0]?.id ?? null : null,
-      greetingStatus: greetingResult.status === "retryable_failure"
+      greetingStatus: greetingResult?.status === "retryable_failure"
         ? greetingResult.systemStatus
         : null,
+      turnResult,
     });
   } catch (error) {
     return failFromError(error);
@@ -232,8 +282,11 @@ export async function POST(
           where: { replyToMessageId: sourceMessageForHistory.id },
           select: {
             id: true,
+            userId: true,
+            sessionId: true,
             role: true,
             content: true,
+            contentDeletedAt: true,
             status: true,
             createdAt: true,
             aiGeneration: { select: { promptVersion: true, executionTrace: true } },
@@ -241,6 +294,13 @@ export async function POST(
         })
       : null;
     if (existingCommittedReply) {
+      const publicationOnly = isCommittedPublicationOnly(existingCommittedReply.aiGeneration?.executionTrace);
+      if (publicationOnly && (existingCommittedReply.userId !== user.id || existingCommittedReply.sessionId !== sessionId ||
+          existingCommittedReply.role !== MessageRole.ASSISTANT || existingCommittedReply.contentDeletedAt !== null ||
+          !existingCommittedReply.content.trim() ||
+          !COMMITTED_MESSAGE_STATUSES.some((status) => status === existingCommittedReply.status))) {
+        throw new AppError("NOT_FOUND", "可用的回复不存在", 404);
+      }
       return ok({
         status: "committed",
         userMessage: {
@@ -257,7 +317,7 @@ export async function POST(
           status: existingCommittedReply.status.toLowerCase(),
           createdAt: existingCommittedReply.createdAt.toISOString(),
           promptVersion: existingCommittedReply.aiGeneration?.promptVersion ?? null,
-          interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+          interactionMoveEnvelope: publicationOnly ? null : extractCommittedAssistantMoveEnvelope(
             existingCommittedReply.aiGeneration?.executionTrace
           ),
         },
@@ -306,6 +366,7 @@ export async function POST(
       .reverse()
       .map((item) => {
         const parsedMetadata = parseCommittedAssistantMoveMetadata(item.interactionMetadata);
+        const publicationOnly = isCommittedPublicationOnly(item.aiGeneration?.executionTrace);
         return {
           id: item.id,
           role: item.role.toLowerCase() as "user" | "assistant" | "system",
@@ -315,9 +376,9 @@ export async function POST(
           aiGenerationId: item.aiGenerationId,
           status: item.status.toLowerCase() as "saved" | "rewritten" | "fallback",
           replyToMessageId: item.replyToMessageId,
-          committedAssistantMove:
+          committedAssistantMove: publicationOnly ? null :
             parsedMetadata.status === "valid" ? parsedMetadata.assistantMove : undefined,
-          interactionMoveEnvelope: extractCommittedAssistantMoveEnvelope(
+          interactionMoveEnvelope: publicationOnly ? null : extractCommittedAssistantMoveEnvelope(
             item.aiGeneration?.executionTrace
           ),
         };
@@ -408,6 +469,7 @@ export async function POST(
       userId: user.id,
       sessionId,
       currentTurnId: message.id,
+      currentTurnCreatedAt: message.createdAt,
       retrying: Boolean(retryTurnId || existingCurrentMessage),
       userMessage: content,
       recentMessages: serializedRecentMessages,

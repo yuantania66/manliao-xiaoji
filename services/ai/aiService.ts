@@ -6,11 +6,12 @@ import {
   FALLBACK_PROMPT_VERSION,
   type ChatPromptEvaluationAdapter,
 } from "./promptBuilder";
-import { callModel, getDefaultAiModel } from "./modelProvider";
+import { callModel, getAiProvider, getDefaultAiModel, isAiProviderConfigured } from "./modelProvider";
 import {
   AiConversationMessage,
   AiGenerationResult,
   AiMemoryContext,
+  AiModelMessage,
   AiRiskLevel,
 } from "./types";
 import { StructuredRagContext } from "@/services/understanding/understandingTypes";
@@ -22,6 +23,8 @@ export const getMainModel = () => process.env.AI_MAIN_MODEL?.trim() || getDefaul
 const getFinalReplySource = (model: string): AiGenerationResult["finalReplySource"] =>
   model.startsWith("mock:") ? "mock" : "llm";
 
+const normalizeAdviceCopy = (text: string) => text.normalize("NFKC").replace(/[\s\p{P}\p{Cf}]/gu, "");
+
 export const generateChatReply = async ({
   conversationId = "unknown-conversation",
   userMessage,
@@ -31,7 +34,9 @@ export const generateChatReply = async ({
   responsePlan,
   evaluationAdapter,
   responsePlanRegenerateConstraint = null,
+  loadApprovedReplyAdvice,
   inspectExternalPrompt,
+  signal,
 }: {
   conversationId?: string;
   userMessage: string;
@@ -41,7 +46,9 @@ export const generateChatReply = async ({
   responsePlan: ResponsePlan;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
   responsePlanRegenerateConstraint?: string | null;
-  inspectExternalPrompt?: (input: { stage: "surface_realization"; messages: import("./types").AiModelMessage[] }) => void | Promise<void>;
+  loadApprovedReplyAdvice?: () => Promise<string | null>;
+  inspectExternalPrompt?: (input: { stage: "surface_realization"; messages: AiModelMessage[] }) => void | Promise<void>;
+  signal?: AbortSignal;
 }): Promise<AiGenerationResult> => {
   void conversationId;
   const prompt = buildChatPrompt({
@@ -53,26 +60,86 @@ export const generateChatReply = async ({
     evaluationAdapter,
     semanticEvidenceRegenerateConstraint: responsePlanRegenerateConstraint,
   });
-  await inspectPromptBeforeExternalCall(inspectExternalPrompt, {
+  let messages = prompt.messages;
+  let sentAdvice: string | null = null;
+  const lastMessage = prompt.messages.at(-1);
+  if (loadApprovedReplyAdvice && !evaluationAdapter && responsePlanRegenerateConstraint === null && lastMessage?.role === "user") {
+    const canLoadAdvice = () => !signal?.aborted && getAiProvider() === "qwen" && isAiProviderConfigured();
+    const readAdvice = async () => {
+      if (!canLoadAdvice()) return null;
+      try {
+        const advice = await loadApprovedReplyAdvice();
+        return advice?.trim() && canLoadAdvice() ? advice : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const advice = await readAdvice();
+    if (advice) {
+      const guidedMessages: AiModelMessage[] = [
+        ...prompt.messages.slice(0, -1),
+        {
+          role: "developer",
+          content: [
+            "以下是同一用户相关历史回复经人工复核的可选改法。只在当前语境适用时参考。",
+            "当前用户的明确要求、回复计划和安全规则优先。把改法当编辑建议，自然回应当前消息，不复述或提及建议本身。",
+            JSON.stringify({ advice }),
+          ].join("\n"),
+        },
+        lastMessage,
+      ];
+
+      if (inspectExternalPrompt) {
+        await inspectPromptBeforeExternalCall(inspectExternalPrompt, {
+          stage: "surface_realization" as const,
+          messages: structuredClone(guidedMessages),
+        });
+        // An awaited inspector can outlive an approval. Only send the exact inspected advice.
+        if (await readAdvice() === advice) {
+          messages = guidedMessages;
+          sentAdvice = advice;
+        }
+      } else {
+        messages = guidedMessages;
+        sentAdvice = advice;
+      }
+    }
+  }
+
+  const inspectBasePrompt = () => inspectPromptBeforeExternalCall(inspectExternalPrompt, {
     stage: "surface_realization" as const,
-    messages: prompt.messages,
+    messages: loadApprovedReplyAdvice && inspectExternalPrompt ? structuredClone(prompt.messages) : prompt.messages,
   });
-  const response = await callModel({
+  if (!sentAdvice) await inspectBasePrompt();
+  const generate = (requestMessages: AiModelMessage[]) => callModel({
     model: getMainModel(),
-    messages: prompt.messages,
+    messages: requestMessages,
     temperature: 0.75,
+    signal,
   });
+  const normalizedAdvice = sentAdvice ? normalizeAdviceCopy(sentAdvice) : "";
+  const copiesAdvice = (text: string) => Boolean(normalizedAdvice && normalizeAdviceCopy(text).includes(normalizedAdvice));
+  let response = await generate(messages);
+  if (copiesAdvice(response.text)) {
+    await inspectBasePrompt();
+    response = await generate(prompt.messages);
+    if (copiesAdvice(response.text)) throw new AppError("AI_GENERATION_FAILED", "Surface realization copied internal guidance", 502);
+  }
   if (!response.text) throw new AppError("AI_GENERATION_FAILED", "Surface realization did not produce a reply", 502);
   const promptMeta = prompt.meta;
 
   return {
     ...response,
+    // Guided responses do not retain provider metadata that could echo the request.
+    ...(sentAdvice ? { raw: undefined } : {}),
     text: response.text,
     promptVersion: CHAT_PROMPT_VERSION,
     rawLLMOutput: response.text,
     postProcessSteps: [],
     finalReplySource: getFinalReplySource(response.model),
     promptMeta,
+    // Reviewed advice is ephemeral and excluded from execution traces.
     promptMessages: prompt.messages,
     generationParameters: {
       temperature: 0.75,

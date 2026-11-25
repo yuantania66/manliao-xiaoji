@@ -4,6 +4,7 @@ import { VerificationScene } from "@prisma/client";
 
 import { prisma } from "./prisma";
 import { AppError } from "./errors";
+import { assertStagingOwnerIdentity, stagingOwnerAccessEnabled } from "./staging-owner-access";
 
 const getSessionSecret = () => {
   const secret = process.env.SESSION_SECRET;
@@ -47,6 +48,14 @@ export const hashVerificationCode = ({
 export const createSessionToken = () => randomBytes(32).toString("base64url");
 
 export const createSession = async (userId: string) => {
+  if (stagingOwnerAccessEnabled()) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { wechatOpenid: true, status: true },
+    });
+    assertStagingOwnerIdentity(user?.wechatOpenid);
+    if (user?.status !== "ACTIVE") throw new AppError("UNAUTHORIZED", "请先登录", 401);
+  }
   const token = createSessionToken();
   const expiresAt = getSessionExpiresAt();
 
@@ -78,6 +87,7 @@ export const getCurrentUser = async (request: NextRequest) => {
 
   if (!session || session.expiresAt <= new Date()) return null;
   if (session.user.status !== "ACTIVE") return null;
+  assertStagingOwnerIdentity(session.user.wechatOpenid);
   return session.user;
 };
 

@@ -1,5 +1,15 @@
 import { generateChatReply } from "./aiService";
+import { getAiProvider, isAiProviderConfigured } from "./modelProvider";
+import { resolveRecalledReplySource } from "@/conversation-os/control/recalledReplyAdvice";
+import type { RecalledContext, RecalledEvidence } from "@/conversation-os/control/types";
 import { ExternalPromptRejectedError } from "./externalPromptInspection";
+import {
+  beginChatSupervisedPublication,
+  formatSafetyRewrite,
+  type ChatPublicationTrace,
+  type ChatSupervisionOptions,
+} from "./chatSupervisedPublication";
+import type { ChatSupervisionInput } from "./chatSupervision";
 import {
   createSafetyGeneration,
   isCrisisInput,
@@ -73,8 +83,12 @@ type CreateChatReplyInput = {
   recentMessages: AiConversationMessage[];
   memoryContext?: AiMemoryContext | null;
   loadMemoryContext?: () => Promise<AiMemoryContext | null>;
+  loadReplyRecall?: () => Promise<RecalledContext | null>;
+  loadApprovedReplyAdvice?: (source: Pick<RecalledEvidence, "sourceTurnId" | "text">) => Promise<string | null>;
   understandingContext?: StructuredRagContext | null;
   episodeMemoryCandidates?: EpisodeMemoryCandidate[];
+  recalledContext?: ChatSupervisionInput["recalledContext"];
+  supervision?: ChatSupervisionOptions;
   includeDebugTrace?: boolean;
   evaluationAdapter?: ChatPromptEvaluationAdapter | null;
   helpingShadowEnabled?: boolean;
@@ -182,7 +196,7 @@ const buildMaybeDebugTrace = ({
       })
     : undefined;
 
-export const createChatReply = async ({
+const executeChatReply = async ({
   conversationId,
   currentTurnId,
   requestId,
@@ -192,6 +206,8 @@ export const createChatReply = async ({
   recentMessages,
   memoryContext,
   loadMemoryContext,
+  loadReplyRecall,
+  loadApprovedReplyAdvice,
   understandingContext,
   episodeMemoryCandidates = [],
   includeDebugTrace = false,
@@ -206,7 +222,7 @@ export const createChatReply = async ({
   inspectHelpingPrompt,
   inspectPurposeSubjectOwnershipPrompt,
   inspectExternalPrompt,
-}: CreateChatReplyInput): Promise<ChatReplyResult> => {
+}: CreateChatReplyInput, supervised?: ReturnType<typeof beginChatSupervisedPublication>): Promise<ChatReplyResult> => {
   const executionIdentity = createExecutionIdentity({ requestId, turnId: currentTurnId });
   const resolvedTurnId = executionIdentity.turnId;
   const requestStartTransitions: ChatExecutionTrace["transitions"] = retrying
@@ -224,12 +240,12 @@ export const createChatReply = async ({
     recentMessages,
   });
 
-  const safetyTriage = await triageSafety({
+  const safetyTriage = supervised ? null : await triageSafety({
     currentUserMessage: userMessage,
     recentMessages,
     provider: safetySemanticProvider,
   });
-  if (safetyTriage.status === "blocked") {
+  if (safetyTriage?.status === "blocked") {
     const generation: AiGenerationResult = {
       text: "",
       model: "safety-gate",
@@ -293,7 +309,7 @@ export const createChatReply = async ({
     };
   }
 
-  if (safetyTriage.decision.requiresSafetyResponse) {
+  if (safetyTriage?.decision.requiresSafetyResponse) {
     const generation = createSafetyGeneration(safetyTriage.decision);
     const rewriteAttempted = false;
     const regenerateAttempted = false;
@@ -364,13 +380,28 @@ export const createChatReply = async ({
     episodeMemoryCandidates,
   });
   const deterministicInterpretation = interpretTurnDeterministically(controlContext);
-  const interpreted = await enrichTurnInterpretation(controlContext, deterministicInterpretation, inspectExternalPrompt);
+  const history = loadReplyRecall && loadApprovedReplyAdvice && userId !== "anonymous" && !supervised &&
+    safetyTriage?.decision.riskLevel === "none" && getAiProvider() === "qwen" && isAiProviderConfigured() &&
+    process.env.CONVERSATION_OS_INTERPRETER_MODEL_ENABLED !== "false" &&
+    !retrying && !deterministicInterpretation.directQuestions.length && !deterministicInterpretation.repairSignal &&
+    !deterministicInterpretation.correction && !deterministicInterpretation.interaction.stopIntent &&
+    deterministicInterpretation.groundingReference === "none" && !controlContext.interactionMoveHandoffTarget &&
+    !buildHillHelpingInput({
+      context: controlContext,
+      interpretation: deterministicInterpretation,
+      dialogueState: buildDialogueState(controlContext, deterministicInterpretation),
+    }).userBoundaries.length
+    ? await loadReplyRecall().catch(() => null)
+    : null;
+  const interpreted = await enrichTurnInterpretation(controlContext, deterministicInterpretation, inspectExternalPrompt, supervised?.signal, history);
+  supervised?.signal.throwIfAborted();
   const purposeOwnership = await runPurposeSubjectOwnershipAuthority({
     context: controlContext,
     interpretation: interpreted.interpretation,
     provider: purposeSubjectOwnershipProvider,
     inspectPrompt: inspectPurposeSubjectOwnershipPrompt,
   });
+  supervised?.signal.throwIfAborted();
   const interpretation = purposeOwnership.interpretation;
   const responseRelations = new Set(
     interpretation.responseRelation.candidates.map((candidate) => candidate.relation)
@@ -387,6 +418,7 @@ export const createChatReply = async ({
         ? await loadMemoryContext()
         : null
     : null;
+  supervised?.signal.throwIfAborted();
   if (resolvedMemoryContext?.trust === "user_confirmed") {
     controlContext.confirmedFacts.push(`Selected user-confirmed memory: ${resolvedMemoryContext.text}`);
   } else if (resolvedMemoryContext) {
@@ -455,10 +487,17 @@ export const createChatReply = async ({
     memoryUsed: { understandings: [], relationships: [], timelineEvents: [] },
     memoryExcluded: { rawMemory: "not_allowed", deterministicMemoryCaveat: [] },
   };
+  const replyRecall = history && interpreted.recalledReference && !helpingInput.userBoundaries.length
+    ? { history, reference: interpreted.recalledReference }
+    : null;
+  const authorizedRecall = resolveRecalledReplySource({
+    context: controlContext, interpretation, dialogueState, recall: replyRecall,
+  });
   const responsePlanPreflightAuthority = createResponsePlanPreflightAuthoritySnapshot({
     context: controlContext,
     interpretation,
     dialogueState,
+    replyRecall,
   });
   const baseCompatibilityClinicalTrace = compatibilityClinicalTrace;
   const createPlanAttempt = (
@@ -470,6 +509,7 @@ export const createChatReply = async ({
       interpretation,
       dialogueState,
       ordinaryHandoffBoundary,
+      replyRecall,
       recoveryDirective,
       clinicalAdviceProvider: ({ need }) => {
         const clinicalContext = buildClinicalContext({
@@ -614,8 +654,62 @@ export const createChatReply = async ({
     };
   }
 
+  const generateSurface = (
+    constraint: string | null,
+    executionPlan: typeof responsePlan,
+    signal?: AbortSignal,
+    advice?: () => Promise<string | null>,
+  ) =>
+    generateChatReply({
+      conversationId,
+      userMessage,
+      recentMessages,
+      memoryContext: null,
+      understandingContext: null,
+      responsePlan: executionPlan,
+      evaluationAdapter,
+      responsePlanRegenerateConstraint: constraint,
+      signal,
+      ...(advice ? { loadApprovedReplyAdvice: advice } : {}),
+      inspectExternalPrompt: inspectExternalPrompt
+        ? ({ messages }) => inspectExternalPrompt({ stage: "surface_realization", messages })
+        : undefined,
+    });
+
   const attemptIds: string[] = [];
   try {
+    if (supervised) {
+      const { generation: selected, candidates, publication } = await supervised.finish((signal, repair) =>
+        generateSurface(repair ? formatSafetyRewrite(repair) : null, responsePlan, signal));
+      const attempts: ChatExecutionTrace["attempts"] = candidates.map((generation, index) => ({
+        attemptId: createExecutionIdentity({}).requestId,
+        phase: selected && index === candidates.length - 1 ? "GENERATED" : "REJECTED",
+        generation,
+      }));
+      const failure = classifyPublicationFailure(publication);
+      const phase = selected ? "GENERATED" as const : "FAILED" as const;
+      const execution: ChatExecutionTrace = {
+        ...executionIdentity, conversationId, planId: responsePlan.planId, phase, planPreflight, planPreflightAttempts,
+        attempts,
+        publication: { ...publication, ...(selected ? { winnerAttemptId: attempts.at(-1)?.attemptId } : {}) },
+        transitions: [...requestStartTransitions, ...planPreflightTransitions, { phase, reason: `Two-track publication: ${publication.outcome}.` }],
+        ...(failure ? { failure } : {}),
+      };
+      const controlTrace: ConversationControlTrace = {
+        context: controlContext, interpretation, interpretationModel: interpreted.modelTrace,
+        dialogueState, responsePlan, clinicalInvoked: Boolean(responsePlan.clinicalStrategy), validation: [],
+        stateUpdate: { answeredObligations: [], remainingOpenLoops: responsePlan.answerObligations.map(item => item.id),
+          obligationTransitions: [], notes: ["Publication permission does not verify that the reply fulfilled the ResponsePlan." ] },
+      };
+      return {
+        generation: selected ?? unavailableSupervisedGeneration(), generationAttempts: candidates,
+        judge: { ...createDisabledJudge("Two-track publication is separate from ResponsePlan realization."), passed: false },
+        finalSource: selected ? "llm" : "constraint_failure",
+        rewriteAttempted: publication.stages.some(({ stage }) => stage === "safety_rewrite"),
+        regenerateAttempted: candidates.length > 1, fallbackUsed: false,
+        clinicalTrace, helpingTrace, controlTrace, execution,
+      };
+    }
     const handoffTargetMessage = responsePlan.interactionMoveHandoffPlan
       ? recentMessages.find((message) =>
           message.role === "assistant" &&
@@ -638,19 +732,14 @@ export const createChatReply = async ({
       handoffSemanticProvider: interactionMoveHandoffSemanticProvider,
       generate: async (constraint, executionPlan) => {
         attemptIds.push(createExecutionIdentity({}).requestId);
-        return generateChatReply({
-          conversationId,
-          userMessage,
-          recentMessages,
-          memoryContext: null,
-          understandingContext: null,
-          responsePlan: executionPlan,
-          evaluationAdapter,
-          responsePlanRegenerateConstraint: constraint,
-          inspectExternalPrompt: inspectExternalPrompt
-            ? ({ messages }) => inspectExternalPrompt({ stage: "surface_realization", messages })
-            : undefined,
-        });
+        const advice = authorizedRecall && loadApprovedReplyAdvice &&
+          executionPlan.recalledSourceRef === authorizedRecall.ref && !recoveryDirective &&
+          constraint === null && attemptIds.length === 1
+          ? () => loadApprovedReplyAdvice({
+              sourceTurnId: authorizedRecall.source.sourceTurnId, text: authorizedRecall.source.text,
+            })
+          : undefined;
+        return generateSurface(constraint, executionPlan, undefined, advice);
       },
     });
     const generation = enforced.generation;
@@ -874,5 +963,53 @@ export const createChatReply = async ({
         execution,
       }),
     };
+  }
+};
+
+const unavailableSupervisedGeneration = (): AiGenerationResult => ({
+  text: "", model: "not-available", promptVersion: "chat-two-track-v1", latencyMs: 0, finalReplySource: "constraint_failure",
+});
+
+const classifyPublicationFailure = (trace: ChatPublicationTrace): ChatExecutionTrace["failure"] => {
+  const failure = trace.failure;
+  if (!failure) return undefined;
+  const code = failure.reason === "timeout" ? "TIMEOUT"
+    : failure.reason === "unverified_resource" || failure.reason === "safety_issues_after_one_repair"
+      ? "GENERATION_NONCONFORMANT" : "PROVIDER_ERROR";
+  return { code, reason: `${failure.stage}:${failure.reason}`, retryable: failure.retryable };
+};
+
+export const createChatReply = async (input: CreateChatReplyInput): Promise<ChatReplyResult> => {
+  if (!input.supervision) return executeChatReply(input);
+  const identity = createExecutionIdentity({ requestId: input.requestId, turnId: input.currentTurnId });
+  const recentMessages = structuredClone(input.recentMessages);
+  const recalledContext = structuredClone(input.recalledContext);
+  const supervised = beginChatSupervisedPublication({
+    currentTurnId: identity.turnId, currentUserMessage: input.userMessage, recentMessages, recalledContext,
+  }, input.supervision);
+  try {
+    const result = await supervised.waitForTurn(() => executeChatReply({
+      ...input, recentMessages, requestId: identity.requestId, currentTurnId: identity.turnId, includeDebugTrace: false,
+    }, supervised));
+    if (!result.execution.publication) result.execution.publication = await supervised.holdBeforeGeneration();
+    return result;
+  } catch (error) {
+    if (error instanceof ExternalPromptRejectedError) throw error;
+    const publication = await supervised.holdBeforeGeneration();
+    return {
+      generation: unavailableSupervisedGeneration(), generationAttempts: [],
+      judge: { ...createDisabledJudge("Two-track publication withheld."), passed: false },
+      finalSource: "constraint_failure", rewriteAttempted: false, regenerateAttempted: false, fallbackUsed: false,
+      clinicalTrace: buildSafetySkippedClinicalTrace({ level: "low", notes: ["Supervised turn ended before publication."], conversationState: "exploring" }),
+      helpingTrace: createSkippedHillHelpingTrace("safety_pre_gate"),
+      execution: {
+        ...identity, conversationId: input.conversationId, planId: "supervision-withheld", phase: "FAILED", publication,
+        planPreflight: { passed: false, failureReasons: [] }, attempts: [],
+        transitions: [{ phase: "FAILED", reason: "Two-track publication withheld." }],
+        failure: classifyPublicationFailure(publication),
+      },
+    };
+  } finally {
+    supervised.cancel();
   }
 };

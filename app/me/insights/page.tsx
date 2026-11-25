@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiRequest, ClientApiError } from "@/lib/client-api";
+import { AUTH_CHANGED_EVENT, getAuthToken } from "@/lib/client-auth";
 
 type InsightRange = "7d" | "30d" | "90d";
 type InsightWord = { word: string; count: number };
-type LoadState = "idle" | "loading" | "ready" | "guest" | "error";
+type LoadState = "idle" | "loading" | "ready" | "error";
 type IdentityState = "checking" | "logged" | "guest" | "error";
 
 const ranges: Array<{ key: InsightRange; label: string }> = [
@@ -23,89 +24,147 @@ const wordToneClasses = [
 ];
 
 export default function InsightsPage() {
-  const [isAuthorized, setIsAuthorized] = useState(false);
   const [consentToken, setConsentToken] = useState("");
   const [userId, setUserId] = useState("");
   const [identityState, setIdentityState] = useState<IdentityState>("checking");
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
   const [selectedRange, setSelectedRange] = useState<InsightRange>("30d");
   const [words, setWords] = useState<InsightWord[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const authorizationRequest = useRef<AbortController | null>(null);
+  const observationRequest = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    apiRequest<{ user: { id: string } }>("/api/auth/me")
-      .then(({ user }) => {
-        if (cancelled) return;
-        setUserId(user.id);
-        setIsAuthorized(false);
-        setIdentityState("logged");
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        setUserId("");
-        setIsAuthorized(false);
-        setIdentityState(
-          error instanceof ClientApiError && error.status === 401 ? "guest" : "error"
-        );
-      });
-
-    return () => {
-      cancelled = true;
-    };
+  const withdrawInsights = useCallback(() => {
+    authorizationRequest.current?.abort();
+    authorizationRequest.current = null;
+    observationRequest.current?.abort();
+    setConsentToken("");
+    setSelectedRange("30d");
+    setWords([]);
+    setLoadState("idle");
+    setIsAuthorizing(false);
+    setErrorMessage("");
   }, []);
 
   useEffect(() => {
-    if (!isAuthorized || identityState !== "logged") return;
+    let authCheck: AbortController | null = null;
+    let observedToken: string | null;
+    const refreshIdentity = () => {
+      withdrawInsights();
+      authCheck?.abort();
+      const controller = new AbortController();
+      authCheck = controller;
+      const token = getAuthToken();
+      observedToken = token;
+      const isCurrent = () => !controller.signal.aborted && getAuthToken() === token;
+      setUserId("");
+      setIdentityState("checking");
+      apiRequest<{ user: { id: string } }>("/api/auth/me", { signal: controller.signal })
+        .then(({ user }) => {
+          if (!isCurrent()) return;
+          setUserId(user.id);
+          setIdentityState("logged");
+        })
+        .catch((error) => {
+          if (!isCurrent()) return;
+          setIdentityState(error instanceof ClientApiError && error.status === 401 ? "guest" : "error");
+        });
+    };
+    const onStorage = () => {
+      if (getAuthToken() !== observedToken) refreshIdentity();
+    };
+    window.addEventListener(AUTH_CHANGED_EVENT, refreshIdentity);
+    window.addEventListener("storage", onStorage);
+    refreshIdentity();
+    return () => {
+      authCheck?.abort();
+      authorizationRequest.current?.abort();
+      authorizationRequest.current = null;
+      observationRequest.current?.abort();
+      window.removeEventListener(AUTH_CHANGED_EVENT, refreshIdentity);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [withdrawInsights]);
 
-    let cancelled = false;
+  useEffect(() => {
+    if (!consentToken || identityState !== "logged") return;
+    const controller = new AbortController();
+    observationRequest.current = controller;
+    const token = getAuthToken();
+    const isCurrent = () => !controller.signal.aborted && getAuthToken() === token;
     setLoadState("loading");
+    setWords([]);
     setErrorMessage("");
 
-    apiRequest<{ user: { id: string } }>("/api/auth/me")
+    apiRequest<{ user: { id: string } }>("/api/auth/me", { signal: controller.signal })
       .then(({ user }) => {
-        if (cancelled) return null;
+        if (!isCurrent()) return null;
         if (user.id !== userId) {
+          withdrawInsights();
           setUserId(user.id);
-          setIsAuthorized(false);
-          setWords([]);
-          setLoadState("idle");
           return null;
         }
-        return apiRequest<{ words: InsightWord[] }>(
+        return apiRequest<{ rangeDays: number; words: InsightWord[] }>(
           `/api/insights?range=${selectedRange}`,
-          { headers: { "x-insights-consent": consentToken } }
+          { headers: { "x-insights-consent": consentToken }, signal: controller.signal }
         );
       })
       .then((data) => {
-        if (cancelled || !data) return;
-        setWords(data.words);
+        if (!isCurrent() || !data) return;
+        if (data.rangeDays !== Number(selectedRange.replace("d", "")) || !Array.isArray(data.words) ||
+            data.words.some((item) => typeof item?.word !== "string" || !item.word.trim() ||
+              !Number.isSafeInteger(item.count) || item.count <= 0)) {
+          throw new Error("观察暂时加载失败，请稍后再试。");
+        }
+        setWords(data.words.map(({ word, count }) => ({ word, count })));
         setLoadState("ready");
       })
       .catch((error) => {
-        if (cancelled) return;
-        setWords([]);
-        if (error instanceof ClientApiError && error.status === 401) {
-          setIdentityState("guest");
-          setUserId("");
-          setIsAuthorized(false);
-          setLoadState("guest");
-          return;
-        }
+        if (!isCurrent()) return;
+        if (error instanceof ClientApiError && error.status === 403) withdrawInsights();
         setErrorMessage(error instanceof Error ? error.message : "观察暂时加载失败");
         setLoadState("error");
       });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [consentToken, identityState, isAuthorized, selectedRange, userId]);
+    return () => controller.abort();
+  }, [consentToken, identityState, selectedRange, userId, withdrawInsights]);
 
   const authorizeInsights = async () => {
-    if (!userId) return;
-    const consent = await apiRequest<{ consentToken: string }>("/api/insights", { method: "POST" });
-    setConsentToken(consent.consentToken);
-    setIsAuthorized(true);
+    if (identityState !== "logged" || !userId || authorizationRequest.current) return;
+    const controller = new AbortController();
+    authorizationRequest.current = controller;
+    const token = getAuthToken();
+    const isCurrent = () => !controller.signal.aborted && getAuthToken() === token;
+    setIsAuthorizing(true);
+    setErrorMessage("");
+    try {
+      const consent = await apiRequest<{ consentToken: string; expiresAt: string }>(
+        "/api/insights",
+        { method: "POST", signal: controller.signal }
+      );
+      if (!isCurrent()) return;
+      if (!consent.consentToken?.trim() || !(Date.parse(consent.expiresAt) > Date.now())) {
+        throw new Error("观察授权暂时无法完成，请稍后重试。");
+      }
+      setConsentToken(consent.consentToken);
+    } catch (error) {
+      if (isCurrent()) setErrorMessage(error instanceof Error ? error.message : "观察授权暂时无法完成");
+    } finally {
+      if (authorizationRequest.current === controller) {
+        authorizationRequest.current = null;
+        if (isCurrent()) setIsAuthorizing(false);
+      }
+    }
+  };
+
+  const changeRange = (nextRange: InsightRange) => {
+    if (selectedRange === nextRange) return;
+    observationRequest.current?.abort();
+    setWords([]);
+    setErrorMessage("");
+    setLoadState("loading");
+    setSelectedRange(nextRange);
   };
 
   return (
@@ -141,7 +200,7 @@ export default function InsightsPage() {
             <h1 className="text-xl font-semibold leading-8">暂时无法加载观察</h1>
             <p className="mt-3 text-xs leading-6 text-[var(--body)]">请稍后再试。</p>
           </section>
-        ) : !isAuthorized ? (
+        ) : !consentToken ? (
           <>
             <p className="absolute left-[22px] top-[100px] h-[18px] w-[120px] text-xs font-semibold leading-[18px] text-[var(--sage)]">
               授权确认
@@ -170,8 +229,9 @@ export default function InsightsPage() {
               type="button"
               className="absolute left-[22px] top-[560px] h-[52px] w-[346px] rounded-[26px] bg-[var(--sage)] text-[13px] font-semibold leading-5 text-[var(--card-warm)]"
               onClick={authorizeInsights}
+              disabled={isAuthorizing}
             >
-              同意并查看慢聊小记观察
+              {isAuthorizing ? "正在确认授权…" : "同意并查看慢聊小记观察"}
             </button>
 
             <Link
@@ -180,6 +240,11 @@ export default function InsightsPage() {
             >
               暂时不授权
             </Link>
+            {errorMessage ? (
+              <p className="absolute left-[22px] top-[694px] w-[346px] text-center text-xs leading-5 text-[var(--body)]" role="alert">
+                {errorMessage}
+              </p>
+            ) : null}
           </>
         ) : (
           <>
@@ -203,7 +268,7 @@ export default function InsightsPage() {
                 <button
                   key={range.key}
                   type="button"
-                  onClick={() => setSelectedRange(range.key)}
+                  onClick={() => changeRange(range.key)}
                   className={
                     selectedRange === range.key
                       ? "h-[34px] rounded-[17px] bg-[var(--sage)] px-[23px] text-xs font-semibold leading-4 text-white"
@@ -222,14 +287,6 @@ export default function InsightsPage() {
             >
               {loadState === "loading" ? (
                 <p className="col-span-2 py-8 text-center text-xs text-[var(--muted)]">正在整理…</p>
-              ) : null}
-              {loadState === "guest" ? (
-                <div className="col-span-2 rounded-[18px] bg-[var(--card-warm)] px-5 py-6 text-center text-xs leading-6 text-[var(--body)]">
-                  请先登录，再查看只属于你的观察。
-                  <Link href="/me" className="mt-2 block font-semibold text-[var(--sage)]">
-                    返回登录
-                  </Link>
-                </div>
               ) : null}
               {loadState === "error" ? (
                 <p className="col-span-2 rounded-[18px] bg-[var(--card-warm)] px-5 py-6 text-center text-xs leading-6 text-[var(--body)]">
@@ -266,6 +323,13 @@ export default function InsightsPage() {
                 可以切换时间范围，看看出现次数有没有变化。
               </p>
             </section>
+            <button
+              type="button"
+              className="absolute left-[22px] top-[674px] h-[44px] w-[346px] rounded-[22px] bg-[var(--card-warm)] text-sm font-semibold text-[var(--sage)]"
+              onClick={withdrawInsights}
+            >
+              撤回本次授权
+            </button>
           </>
         )}
 

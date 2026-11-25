@@ -16,7 +16,16 @@ let greetingImpl = () => Promise.resolve({
   }
 });
 
-global.wx = { showToast: () => undefined };
+const storage = new Map();
+const app = { globalData: {} };
+global.getApp = () => app;
+global.wx = {
+  getStorageSync: (key) => storage.get(key),
+  setStorageSync: (key, value) => storage.set(key, value),
+  removeStorageSync: (key) => storage.delete(key),
+  getAccountInfoSync: () => ({ miniProgram: { envVersion: "release" } }),
+  showToast: () => undefined
+};
 
 const localData = require("../miniprogram-project/utils/local-data.js");
 localData.readChatMessages = () => storedMessages.map((message) => ({ ...message }));
@@ -26,8 +35,8 @@ localData.writeChatMessages = (messages) => {
 localData.nowIso = () => "2026-08-27T00:00:00.000Z";
 
 const auth = require("../miniprogram-project/utils/auth.js");
-let dataMode = "guest";
-auth.getDataMode = () => dataMode;
+const { isCurrentGuestAuthority } = require("../miniprogram-project/utils/guest-session.js");
+auth.enterGuest();
 const layout = require("../miniprogram-project/utils/layout.js");
 layout.getSafeLayout = () => ({
   pageTop: 0,
@@ -49,13 +58,15 @@ api.createSession = (...args) => createSessionImpl(...args);
 api.listMessages = (...args) => listMessagesImpl(...args);
 api.sendMessage = (...args) => sendMessageImpl(...args);
 api.sendGuestMessage = (...args) => sendGuestMessageImpl(...args);
-api.getGuestGreeting = (input) => {
+api.getGuestGreeting = ({ authority, isCurrent, ...input }) => {
   greetingCalls += 1;
   assert.deepEqual(input, {
     kind: "initial",
     recentMessages: [],
     recentGreetings: []
   });
+  assert.equal(isCurrentGuestAuthority(authority), true);
+  assert.equal(isCurrent(), true);
   return greetingImpl();
 };
 
@@ -155,21 +166,26 @@ assert.deepEqual(
   storedMessages.map((message) => message.id)
 );
 
-dataMode = "authenticated";
+auth.saveAuth({ token: "fixture-auth", user: { id: "fixture-user" }, expiresAt: "2999-01-01T00:00:00.000Z" });
 let createdSessions = 0;
+const initialHistoryReads = [];
 listSessionsImpl = async () => ({ items: [] });
 createSessionImpl = async () => {
   createdSessions += 1;
   return { id: "session-new" };
 };
-listMessagesImpl = async () => ({
-  items: [{
-    id: "auth-greeting",
-    role: "assistant",
-    content: "欢迎回来",
-    createdAt: "2026-08-27T00:00:00.000Z"
-  }]
-});
+listMessagesImpl = async (sessionId, options) => {
+  assert.equal(sessionId, "session-new");
+  initialHistoryReads.push(options);
+  return {
+    items: [{
+      id: "auth-greeting",
+      role: "assistant",
+      content: "欢迎回来",
+      createdAt: "2026-08-27T00:00:00.000Z"
+    }]
+  };
+};
 const authLoadPage = createPage();
 authLoadPage.loadMessages();
 authLoadPage.loadMessages();
@@ -177,6 +193,7 @@ assert.equal(authLoadPage.data.isGreetingLoading, true);
 await tick();
 await tick();
 assert.equal(createdSessions, 1);
+assert.deepEqual(initialHistoryReads, [{ historyOnly: true }, undefined]);
 assert.deepEqual(authLoadPage.data.messages.map((item) => item.id), ["auth-greeting"]);
 assert.equal(authLoadPage.data.isGreetingLoading, false);
 
@@ -197,45 +214,36 @@ assert.equal(failedSendPage.data.messages[0].text, "你好");
 assert.equal(failedSendPage.data.isTyping, true);
 await tick();
 assert.match(capturedTurnId, /^mini-auth-/);
+const failedUserMessage = {
+  id: capturedTurnId,
+  role: "user",
+  content: "你好",
+  createdAt: "2026-08-27T00:00:01.000Z"
+};
+const failedSystemMessage = {
+  id: `system-status:${capturedTurnId}`,
+  role: "system",
+  content: "回复服务暂时不可用，请重试。",
+  createdAt: "2026-08-27T00:00:02.000Z"
+};
 resolveFailedSend({
   status: "failed",
-  userMessage: {
-    id: "server-user-1",
-    content: "你好",
-    createdAt: "2026-08-27T00:00:01.000Z"
-  },
+  userMessage: failedUserMessage,
   systemStatus: { message: "回复服务暂时不可用，请重试。" },
-  systemMessage: {
-    id: "system-status:server-user-1",
-    role: "system",
-    content: "回复服务暂时不可用，请重试。",
-    createdAt: "2026-08-27T00:00:02.000Z"
-  }
+  systemMessage: failedSystemMessage
 });
 await tick();
 await tick();
 assert.deepEqual(failedSendPage.data.messages.map((item) => item.id), [
-  "server-user-1",
-  "system-status:server-user-1"
+  failedUserMessage.id,
+  failedSystemMessage.id
 ]);
 assert.equal(failedSendPage.data.messages[1].role, "system");
 assert.equal(failedSendPage.data.isTyping, false);
 assert.equal(failedSendPage.data.replyStatusText, "");
 
 listSessionsImpl = async () => ({ items: [{ id: "session-auth" }] });
-listMessagesImpl = async () => ({
-  items: [{
-    id: "server-user-1",
-    role: "user",
-    content: "你好",
-    createdAt: "2026-08-27T00:00:01.000Z"
-  }, {
-    id: "system-status:server-user-1",
-    role: "system",
-    content: "回复服务暂时不可用，请重试。",
-    createdAt: "2026-08-27T00:00:02.000Z"
-  }]
-});
+listMessagesImpl = async () => ({ items: [failedUserMessage, failedSystemMessage] });
 const failedReloadPage = createPage();
 failedReloadPage.loadMessages();
 await tick();
@@ -245,10 +253,10 @@ assert.deepEqual(
   failedSendPage.data.messages.map((item) => [item.id, item.role, item.text])
 );
 
-sendMessageImpl = async (sessionId, content) => ({
+sendMessageImpl = async (sessionId, content, turnId) => ({
   status: "committed",
   userMessage: {
-    id: "server-user-2",
+    id: turnId,
     content,
     createdAt: "2026-08-27T00:00:02.000Z"
   },
@@ -267,14 +275,40 @@ assert.equal(committedPage.data.messages.filter((item) => item.role === "user").
 assert.equal(committedPage.data.messages.filter((item) => item.role === "assistant").length, 1);
 assert.equal(committedPage.data.replyStatusText, "");
 
-sendMessageImpl = async () => { throw new Error("undefined is not an object (evaluating t.assistantMessage.id)"); };
+let unresolvedTurnId;
+let unresolvedSendCount = 0;
+sendMessageImpl = async (_sessionId, _content, turnId) => {
+  unresolvedTurnId = turnId;
+  unresolvedSendCount += 1;
+  throw new Error("undefined is not an object (evaluating t.assistantMessage.id)");
+};
 const transportFailurePage = createPage();
 transportFailurePage.data.sessionId = "session-auth";
 transportFailurePage.sendRemoteMessage("测试");
 await tick();
 await tick();
+transportFailurePage.stopPendingPolling();
 assert.doesNotMatch(transportFailurePage.data.replyStatusText, /undefined|assistantMessage/);
 assert.equal(transportFailurePage.data.statusText, "");
+assert.match(transportFailurePage.data.replyStatusText, /发送状态暂时无法确认/);
+assert.equal(transportFailurePage.data.hasPendingTurn, true);
+
+// Simulate the terminal GET envelope to validate the client without calling a server.
+listMessagesImpl = async (sessionId, options) => {
+  assert.equal(sessionId, "session-auth");
+  assert.deepEqual(options, { historyOnly: true, turnId: unresolvedTurnId });
+  return {
+    items: [], turnResult: {
+      turnId: unresolvedTurnId, status: "committed",
+      userMessage: { id: unresolvedTurnId, role: "user", content: "测试", createdAt: "2026-08-27T00:00:02.000Z" },
+      assistantMessage: { id: "recovered-reply", role: "assistant", content: "收到。", createdAt: "2026-08-27T00:00:03.000Z" }
+    }
+  };
+};
+await transportFailurePage.reconcilePendingTurn();
+assert.equal(unresolvedSendCount, 1, "The recovery path must not resend the user's message");
+assert.equal(transportFailurePage.data.hasPendingTurn, false);
+assert.deepEqual(transportFailurePage.data.messages.map(({ id }) => id), [unresolvedTurnId, "recovered-reply"]);
 
 const chatWxml = readFileSync("miniprogram-project/pages/chat/chat.wxml", "utf8");
 assert.match(chatWxml, /show-scrollbar="\{\{messages\.length > 0\}\}"/);

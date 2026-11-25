@@ -135,3 +135,7 @@
   font-weight: 400;
   line-height: 38rpx;
 }
+
+.observation-withdraw {
+  margin-top: 32rpx;
+}
