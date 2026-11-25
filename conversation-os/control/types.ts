@@ -295,6 +295,24 @@ export type EpisodeMemoryCandidate = {
   matchedDimensions: Array<"people" | "topics" | "emotions" | "text">;
 };
 
+export type RecalledEvidence = {
+  sourceTurnId: string;
+  sourceConversationId: string;
+  role: "user" | "assistant";
+  text: string;
+  createdAt: string;
+  matchedTerms: string[];
+};
+
+export type RecalledContext = {
+  referenceText: string;
+  currentTurnCreatedAt?: string;
+  candidates: RecalledEvidence[];
+  /** Only source-bound user wording; never a confirmed identity or proposition. */
+  personCandidates: string[];
+  confirmationAfterDays: number;
+};
+
 export type ConversationControlContext = {
   conversationId: string;
   currentTurnId: string;
