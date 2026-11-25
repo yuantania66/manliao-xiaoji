@@ -27,7 +27,8 @@ const visibleUserTurns = (userId: string): Prisma.ChatMessageWhereInput => ({
 
 const unique = (values: string[]) => [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 const explicitPeople = (text: string) => unique(text.match(/妈妈|母亲|爸爸|父亲|女朋友|男朋友|前任|伴侣|丈夫|妻子|同事|领导|朋友/gu) ?? []);
-const quotedTerms = (text: string) => [...text.matchAll(/[“「『"]([^”」』"\n]{2,48})[”」』"]/gu)].map((match) => match[1]);
+const quotePattern = /[“「『"]([^”」』"\n]{2,48})[”」』"]/gu;
+const quotedTerms = (text: string) => [...text.matchAll(quotePattern)].map((match) => match[1]);
 const eventTerms = (text: string) => [...text.matchAll(/(?:之前|以前|上次|那次|刚才|还记得|记不记得|记得|引用)(?:提过|说过|提到|说的|聊过|聊的|那个|那件)?的?([^，。！？；\n]{2,24})/gu)]
   .map((match) => match[1].replace(/(?:怎么样|怎么了|现在|后来|了吗|了呢|吗|呢|呀|啊|吧).*$/u, "").replace(/(?:那件事|这件事|的事情|的事)$/u, "").trim())
   .filter((term) => term.length >= 2 && !/^(?:她|他|那个人|那件事|什么|事情|说的|提过)/u.test(term));
@@ -37,7 +38,8 @@ const lexicalFragments = (terms: string[]) => unique(terms.flatMap((term) => {
     .filter((fragment) => !/[的我你他她这那]/u.test(fragment));
   return [term, ...fragments];
 }));
-const needsRecall = (text: string) => /她|(?<!其)他(?!人)|那(?:件事|个人)|之前|以前|更早|上次|刚才|还记得|记不记得|引用/u.test(text) || quotedTerms(text).length > 0;
+const recallRequest = /^(?:(?:请|麻烦|能不能|能|可以|你|帮我)\s*){0,4}(?:找回|找一下|找找|查找|查一下|翻一下|翻看|回顾|回忆|复述|还记得|记不记得|继续聊|接着聊)(?:一下)?\s*(?:我们?|你)?(?:之前|以前|更早|上次|那次|刚才)(?=说|提|聊|谈|发|写)/u;
+const cancelledRecall = /(?:不要|不用|不必|别)(?:再|帮我)*(?:查|找|翻|回顾|回忆|复述)|算了[。！!\s]*$/u;
 
 const confirmationAfterDays = () => {
   const value = Number(process.env.CHAT_RECALL_CONFIRM_AFTER_DAYS ?? "7");
@@ -106,9 +108,19 @@ export const buildConversationRetrievalContext = async ({
   recentMessages: AiConversationMessage[];
 }): Promise<{ cues: RetrievalCues; recalledContext: RecalledContext | null }> => {
   const text = currentMessage.content;
-  const explicitTopics = unique([...quotedTerms(text), ...eventTerms(text)]).slice(0, 6);
+  const quotes = quotedTerms(text);
+  const namedTopics = eventTerms(text).filter((topic) => !explicitPeople(topic).includes(topic));
+  const explicitTopics = unique([...quotes, ...namedTopics]).slice(0, 6);
   const localCues: RetrievalCues = { people: explicitPeople(text), topics: explicitTopics, emotions: [], text };
   const empty = (cues = localCues) => ({ cues, recalledContext: null });
+
+  // A mention of the past is not itself a request to read additional messages.
+  if (!recallRequest.test(text.trimStart()) || cancelledRecall.test(text.replace(quotePattern, " ")) || !explicitTopics.length) return empty();
+  const hasVisibleOriginals = quotes.length > 0 && quotes.every((quote) => recentMessages.some((message) =>
+    message.role === "user" && message.status !== "blocked" && message.content.trim() === quote.trim()
+  ));
+  if (hasVisibleOriginals) return empty();
+
   const cutoff = new Date(currentMessage.createdAt);
   if (!userId || !sessionId || !currentMessage.id || !text.trim() || !Number.isFinite(cutoff.getTime())) return empty();
 
@@ -154,7 +166,6 @@ export const buildConversationRetrievalContext = async ({
     }));
     const directNames = storedNames.filter((name) => text.includes(name));
     cues.people = unique([...cues.people, ...directNames]).slice(0, 12);
-    if (!needsRecall(text)) return empty(cues);
 
     const beforeCurrent: Prisma.ChatMessageWhereInput = {
       ...visibleUserTurns(userId),
