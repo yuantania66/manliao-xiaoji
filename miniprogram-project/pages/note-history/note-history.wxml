@@ -12,11 +12,11 @@
   </navigator>
   <view wx:if="{{isEmpty}}" class="empty body">还没有小记。先给今天留一句话。</view>
   <view wx:for="{{notes}}" wx:key="id" class="note-item">
-    <navigator url="/pages/note-detail/note-detail?id={{item.id}}&date={{item.dateKey}}" hover-class="none">
+    <view data-id="{{item.id}}" data-generation="{{resultGeneration}}" bindtap="openNote">
       <view class="note-date">{{item.dateLabel}}</view>
       <view class="note-title">{{item.title}}</view>
       <view class="note-body">{{item.content}}</view>
       <view wx:if="{{item.mood}}" class="note-mood">{{item.mood.name}} · {{item.mood.desc}}</view>
-    </navigator>
+    </view>
   </view>
 </view>

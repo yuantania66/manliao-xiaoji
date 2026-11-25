@@ -249,6 +249,94 @@ searchPage.onShow();
 inputSearch("仅本机");
 assert.equal(searchPage.data.results[0].id, guestSearchFixture.id);
 assert.equal(searchRequests.length, 0, "Guest search stays on the device");
+
+let historyPageDefinition;
+global.Page = (page) => { historyPageDefinition = page; };
+require("../miniprogram-project/pages/note-history/note-history.js");
+const createHistoryPage = (date) => {
+  const page = {
+    ...historyPageDefinition,
+    data: { ...historyPageDefinition.data },
+    setData(values, done) { Object.assign(this.data, values); done?.(); }
+  };
+  page.onLoad({ date });
+  page.onShow();
+  return page;
+};
+const takeHistoryRequest = (pageNumber) => {
+  const pending = searchRequests.shift();
+  const params = new URL(pending.url).searchParams;
+  assert.equal(params.get("date"), searchHit.recordDate);
+  assert.equal(params.get("page"), String(pageNumber));
+  return pending;
+};
+const tapHistoryResult = (page, generation) => page.openNote({ currentTarget: { dataset: { id: searchHit.id, generation } } });
+
+signInForSearch("history-a");
+const historyPage = createHistoryPage(searchHit.recordDate);
+const historyBeforeExpiry = takeHistoryRequest(1);
+const expiredHistorySession = requestModule.request({ url: "/api/notes" });
+searchRequests.shift().success({ statusCode: 401, data: {} });
+await assert.rejects(expiredHistorySession, { statusCode: 401 });
+respondToSearch(historyBeforeExpiry);
+await settleSearch();
+assert.equal(auth.getAuth(), null);
+assert.deepEqual(historyPage.data.notes, [], "An expired account's late history result must stay hidden");
+assert.match(historyPage.data.statusText, /请先登录/);
+
+signInForSearch("history-a");
+historyPage.onShow();
+respondToSearch(takeHistoryRequest(1));
+await settleSearch();
+assert.deepEqual(historyPage.data.notes.map(({ id }) => id), [searchHit.id]);
+const initialHistoryRender = historyPage.data.resultGeneration;
+const initialHistoryNavigationCount = searchNavigations.length;
+tapHistoryResult(historyPage, initialHistoryRender);
+assert.equal(searchNavigations.at(-1), "/pages/note-detail/note-detail?id=fixture-note&date=2026-11-25");
+historyPage.onInput({ detail: { value: "仅 A 的筛选" } });
+const fullHistoryBeforeSwitch = takeHistoryRequest(1);
+
+signInForSearch("history-b");
+historyPage.onShow();
+assert.equal(historyPage.data.query, "");
+assert.deepEqual(historyPage.data.notes, [], "The new account must start loading without the old account's rows");
+assert.equal(historyPage.data.isLoading, true);
+respondToSearch(takeHistoryRequest(1), fullSearchPage, 101);
+await settleSearch();
+respondToSearch(takeHistoryRequest(2), [searchHit], 101);
+await settleSearch();
+assert.equal(historyPage.data.notes.length, 101, "The current account retains full, date-filtered pagination");
+respondToSearch(fullHistoryBeforeSwitch, fullSearchPage, 101);
+await settleSearch();
+assert.equal(searchRequests.length, 0, "An outdated history page must not fetch its next page as the new account");
+assert.equal(auth.getAuth().user.id, "history-b");
+assert.equal(historyPage.data.notes.length, 101);
+tapHistoryResult(historyPage, initialHistoryRender);
+assert.equal(searchNavigations.length, initialHistoryNavigationCount + 1, "A queued tap must not retarget to the same ID rendered by the new account");
+tapHistoryResult(historyPage, historyPage.data.resultGeneration);
+assert.equal(searchNavigations.length, initialHistoryNavigationCount + 2);
+
+historyPage.onInput({ detail: { value: "返回后继续筛选" } });
+const historyBeforeHide = takeHistoryRequest(1);
+historyPage.onHide();
+respondToSearch(historyBeforeHide, fullSearchPage, 101);
+await settleSearch();
+assert.deepEqual(historyPage.data.notes, []);
+assert.equal(searchRequests.length, 0);
+historyPage.onShow();
+assert.equal(historyPage.data.query, "返回后继续筛选");
+takeHistoryRequest(1).fail();
+await settleSearch();
+assert.match(historyPage.data.statusText, /网络/);
+assert.equal(historyPage.data.isLoading, false);
+
+auth.clearAuth();
+auth.enterGuest();
+const guestHistoryPage = createHistoryPage(guestSearchFixture.dateKey);
+assert(guestHistoryPage.data.notes.some(({ id }) => id === guestSearchFixture.id));
+assert.match(guestHistoryPage.data.statusText, /游客/);
+assert.equal(searchRequests.length, 0, "Guest history stays on the device");
+
 assert(local.writeNotes(previousGuestNotes));
 global.wx = originalWx;
 storage.delete("xinqing_api_env");
@@ -304,7 +392,6 @@ assert.deepEqual(local.readPendingUploadCleanup(), []);
 
 const note = readFileSync("miniprogram-project/pages/note/note.js", "utf8");
 const detail = readFileSync("miniprogram-project/pages/note-detail/note-detail.js", "utf8");
-const history = readFileSync("miniprogram-project/pages/note-history/note-history.js", "utf8");
 const search = readFileSync("miniprogram-project/pages/note-search/note-search.js", "utf8");
 const notesApi = readFileSync("miniprogram-project/api/notes.js", "utf8");
 const uploadsApi = readFileSync("miniprogram-project/api/uploads.js", "utf8");
@@ -322,7 +409,6 @@ assert.match(note, /草稿已保存在本机，请重新登录/);
 assert.match(note, /小记无法保存在本机/);
 assert.match(detail, /updateNote\(this\.data\.note\.id, content\)/);
 assert.match(detail, /isUpdating/);
-assert.match(history, /generation !== this\.refreshGeneration/);
 assert.match(search, /dateKey:\s*note\.recordDate/);
 assert.match(notesApi, /listAllNotes/);
 assert.match(notesApi, /pageSize = 100/);
