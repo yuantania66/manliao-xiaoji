@@ -313,6 +313,17 @@ export type RecalledContext = {
   confirmationAfterDays: number;
 };
 
+export type RecalledSourceReference = {
+  sourceTurnId: string;
+  currentQuote: string;
+  sourceQuote: string;
+};
+
+export type ReplyRecallEvidence = {
+  history: RecalledContext;
+  reference: RecalledSourceReference;
+};
+
 export type ConversationControlContext = {
   conversationId: string;
   currentTurnId: string;
@@ -535,6 +546,8 @@ export type ResponsePlan = {
   prohibitedClaims: string[];
   safetyConstraints: string[];
   selectedEpisodeMemory?: EpisodeMemoryCandidate | null;
+  /** One grounded source can authorize an optional writing suggestion without adding a historical fact. */
+  recalledSourceRef?: string;
   relevanceProvenance: Array<{
     planElement: string;
     source: "current_turn" | "adjacent_turn" | "interaction_state" | "system_truth" | "safety";

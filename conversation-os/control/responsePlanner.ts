@@ -1,3 +1,4 @@
+import { canUseRecalledReplyAdvice, resolveRecalledReplySource } from "./recalledReplyAdvice";
 import type {
   ClinicalStrategyAdvice,
   ConversationControlContext,
@@ -9,6 +10,7 @@ import type {
   PositiveFunctionContract,
   ResponseAction,
   ResponsePlan,
+  ReplyRecallEvidence,
   TurnInterpretation,
 } from "./types";
 import { isProactiveGreetingPromptVersion } from "@/lib/proactive-greeting";
@@ -464,6 +466,7 @@ export const createResponsePlan = ({
   interpretation,
   dialogueState,
   ordinaryHandoffBoundary = null,
+  replyRecall,
   clinicalAdviceProvider,
   recoveryDirective = null,
 }: {
@@ -471,6 +474,7 @@ export const createResponsePlan = ({
   interpretation: TurnInterpretation;
   dialogueState: DialogueState;
   ordinaryHandoffBoundary?: OrdinaryHandoffBoundary | null;
+  replyRecall?: ReplyRecallEvidence | null;
   clinicalAdviceProvider: ClinicalAdviceProvider;
   recoveryDirective?: ResponsePlanRecoveryDirective | null;
 }): ResponsePlan => {
@@ -761,7 +765,7 @@ export const createResponsePlan = ({
     });
   }
 
-  return {
+  const plan: ResponsePlan = {
     planId: `${context.conversationId}:${context.currentTurnId}:response-plan${
       recoveryDirective ? `:recovery-${recoveryDirective.attempt}` : ""
     }`,
@@ -874,4 +878,9 @@ export const createResponsePlan = ({
       ...dialogueState.repairState.evidence,
     ]),
   };
+  if (!recoveryDirective && canUseRecalledReplyAdvice(plan)) {
+    const source = resolveRecalledReplySource({ context, interpretation, dialogueState, recall: replyRecall });
+    if (source) plan.recalledSourceRef = source.ref;
+  }
+  return plan;
 };

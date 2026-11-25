@@ -106,6 +106,7 @@ async function main() {
       { label: "ambiguous pronoun", message: await current("她后来怎么样了？"), recent: [recentUser(colleague), recentUser(otherColleague)] },
       { label: "complete progress update", message: await current("上次说的海棠预算，我已算完。"), recent: [] },
       { label: "withdrawn recall request", message: await current("帮我找回上次说的海棠预算，算了，不用查。"), recent: [] },
+      { label: "withdrawn topic continuation", message: await current("接着聊上次说的海棠预算。算了，还是别提这个了。"), recent: [] },
       { label: "request with only a generic role", message: await current("帮我找回上次说的朋友。"), recent: [] },
       { label: "quoted request", message: await current("她说「帮我找回上次说的海棠预算」，我只是在转述。"), recent: [] },
       { label: "entire quoted user turn already visible", message: await current(`帮我找回上次说的「${visibleQuote.content}」`), recent: [recentUser(visibleQuote)] },

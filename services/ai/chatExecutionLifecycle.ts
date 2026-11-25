@@ -1,3 +1,4 @@
+import { canUseRecalledReplyAdvice } from "@/conversation-os/control/recalledReplyAdvice";
 import { randomUUID } from "node:crypto";
 
 import type { CommittedAssistantMoveEnvelopeV1 } from "@/conversation-os";
@@ -132,6 +133,10 @@ export const preflightResponsePlan = (
 ) => {
   const failureReasons: string[] = [];
   if (!plan.planId.trim()) failureReasons.push("missing_plan_id");
+  if (plan.recalledSourceRef !== undefined &&
+      (authority?.recalledSourceRef !== plan.recalledSourceRef || !canUseRecalledReplyAdvice(plan))) {
+    failureReasons.push("recalled_advice_source_not_authorized");
+  }
   if (plan.decisionOwner !== "conversation_os.response_planner") {
     failureReasons.push("invalid_decision_owner");
   }

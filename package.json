@@ -26,6 +26,7 @@
     "check:chat-reply-review-access": "node --import tsx scripts/chat-reply-review-access-check.ts",
     "check:chat-reply-evaluation-batch": "node --import tsx scripts/chat-reply-evaluation-batch-check.ts",
     "check:chat-reply-training-candidate": "node --import tsx scripts/chat-reply-training-candidate-check.ts",
+    "check:chat-approved-advice-route": "node --import tsx scripts/chat-approved-advice-route-check.ts",
     "check:chat-retrieval-context-pg": "node --import tsx scripts/chat-retrieval-context-pg-check.ts",
     "check:chat-history-pagination": "tsx scripts/chat-history-pagination-check.ts",
     "check:account-cancel-e2e": "node --import tsx scripts/account-cancel-e2e-check.ts",

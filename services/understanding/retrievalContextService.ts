@@ -39,7 +39,7 @@ const lexicalFragments = (terms: string[]) => unique(terms.flatMap((term) => {
   return [term, ...fragments];
 }));
 const recallRequest = /^(?:(?:请|麻烦|能不能|能|可以|你|帮我)\s*){0,4}(?:找回|找一下|找找|查找|查一下|翻一下|翻看|回顾|回忆|复述|还记得|记不记得|继续聊|接着聊)(?:一下)?\s*(?:我们?|你)?(?:之前|以前|更早|上次|那次|刚才)(?=说|提|聊|谈|发|写)/u;
-const cancelledRecall = /(?:不要|不用|不必|别)(?:再|帮我)*(?:查|找|翻|回顾|回忆|复述)|算了[。！!\s]*$/u;
+const cancelledRecall = /(?:不要|不用|不必|别)(?:(?:再|帮我)*(?:查|找|翻|回顾|回忆|复述)|(?:再)?(?:提|聊)(?:这个|这件事|这事|上次的事))|算了[。！!\s]*$|[，,。！!；;\n]\s*算了\s*(?=[，,。！!；;\n])/u;
 
 const confirmationAfterDays = () => {
   const value = Number(process.env.CHAT_RECALL_CONFIRM_AFTER_DAYS ?? "7");
@@ -95,6 +95,23 @@ const visibleSources = async (
   });
 };
 
+const prepareHistoryLookup = (text: string, recentMessages: AiConversationMessage[]) => {
+  const quotes = quotedTerms(text);
+  const namedTopics = eventTerms(text).filter((topic) => !explicitPeople(topic).includes(topic));
+  const topics = unique([...quotes, ...namedTopics]).slice(0, 6);
+  const cues: RetrievalCues = { people: explicitPeople(text), topics, emotions: [], text };
+
+  // A mention of the past is not itself a request to read additional messages.
+  const explicitRequest = recallRequest.test(text.trimStart()) && !cancelledRecall.test(text.replace(quotePattern, " "));
+  const hasVisibleOriginals = quotes.length > 0 && quotes.every((quote) => recentMessages.some((message) =>
+    message.role === "user" && message.status !== "blocked" && message.content.trim() === quote.trim()
+  ));
+  return { cues, needed: explicitRequest && topics.length > 0 && !hasVisibleOriginals };
+};
+
+export const needsChatSourceLookup = (text: string, recentMessages: AiConversationMessage[]): boolean =>
+  prepareHistoryLookup(text, recentMessages).needed;
+
 /** Local/DB retrieval only: hints and original sources never claim an extracted fact or identity. */
 export const buildConversationRetrievalContext = async ({
   userId,
@@ -108,19 +125,10 @@ export const buildConversationRetrievalContext = async ({
   recentMessages: AiConversationMessage[];
 }): Promise<{ cues: RetrievalCues; recalledContext: RecalledContext | null }> => {
   const text = currentMessage.content;
-  const quotes = quotedTerms(text);
-  const namedTopics = eventTerms(text).filter((topic) => !explicitPeople(topic).includes(topic));
-  const explicitTopics = unique([...quotes, ...namedTopics]).slice(0, 6);
-  const localCues: RetrievalCues = { people: explicitPeople(text), topics: explicitTopics, emotions: [], text };
+  const { cues: localCues, needed } = prepareHistoryLookup(text, recentMessages);
   const empty = (cues = localCues) => ({ cues, recalledContext: null });
-
-  // A mention of the past is not itself a request to read additional messages.
-  if (!recallRequest.test(text.trimStart()) || cancelledRecall.test(text.replace(quotePattern, " ")) || !explicitTopics.length) return empty();
-  const hasVisibleOriginals = quotes.length > 0 && quotes.every((quote) => recentMessages.some((message) =>
-    message.role === "user" && message.status !== "blocked" && message.content.trim() === quote.trim()
-  ));
-  if (hasVisibleOriginals) return empty();
-
+  if (!needed) return empty();
+  const explicitTopics = localCues.topics;
   const cutoff = new Date(currentMessage.createdAt);
   if (!userId || !sessionId || !currentMessage.id || !text.trim() || !Number.isFinite(cutoff.getTime())) return empty();
 

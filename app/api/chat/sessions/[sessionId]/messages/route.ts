@@ -420,6 +420,7 @@ export async function POST(
       userId: user.id,
       sessionId,
       currentTurnId: message.id,
+      currentTurnCreatedAt: message.createdAt,
       retrying: Boolean(retryTurnId || existingCurrentMessage),
       userMessage: content,
       recentMessages: serializedRecentMessages,

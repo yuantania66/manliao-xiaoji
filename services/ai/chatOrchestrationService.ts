@@ -1,4 +1,7 @@
 import { generateChatReply } from "./aiService";
+import { getAiProvider, isAiProviderConfigured } from "./modelProvider";
+import { resolveRecalledReplySource } from "@/conversation-os/control/recalledReplyAdvice";
+import type { RecalledContext, RecalledEvidence } from "@/conversation-os/control/types";
 import { ExternalPromptRejectedError } from "./externalPromptInspection";
 import {
   beginChatSupervisedPublication,
@@ -80,6 +83,8 @@ type CreateChatReplyInput = {
   recentMessages: AiConversationMessage[];
   memoryContext?: AiMemoryContext | null;
   loadMemoryContext?: () => Promise<AiMemoryContext | null>;
+  loadReplyRecall?: () => Promise<RecalledContext | null>;
+  loadApprovedReplyAdvice?: (source: Pick<RecalledEvidence, "sourceTurnId" | "text">) => Promise<string | null>;
   understandingContext?: StructuredRagContext | null;
   episodeMemoryCandidates?: EpisodeMemoryCandidate[];
   recalledContext?: ChatSupervisionInput["recalledContext"];
@@ -201,6 +206,8 @@ const executeChatReply = async ({
   recentMessages,
   memoryContext,
   loadMemoryContext,
+  loadReplyRecall,
+  loadApprovedReplyAdvice,
   understandingContext,
   episodeMemoryCandidates = [],
   includeDebugTrace = false,
@@ -373,7 +380,20 @@ const executeChatReply = async ({
     episodeMemoryCandidates,
   });
   const deterministicInterpretation = interpretTurnDeterministically(controlContext);
-  const interpreted = await enrichTurnInterpretation(controlContext, deterministicInterpretation, inspectExternalPrompt, supervised?.signal);
+  const history = loadReplyRecall && loadApprovedReplyAdvice && userId !== "anonymous" && !supervised &&
+    safetyTriage?.decision.riskLevel === "none" && getAiProvider() === "qwen" && isAiProviderConfigured() &&
+    process.env.CONVERSATION_OS_INTERPRETER_MODEL_ENABLED !== "false" &&
+    !retrying && !deterministicInterpretation.directQuestions.length && !deterministicInterpretation.repairSignal &&
+    !deterministicInterpretation.correction && !deterministicInterpretation.interaction.stopIntent &&
+    deterministicInterpretation.groundingReference === "none" && !controlContext.interactionMoveHandoffTarget &&
+    !buildHillHelpingInput({
+      context: controlContext,
+      interpretation: deterministicInterpretation,
+      dialogueState: buildDialogueState(controlContext, deterministicInterpretation),
+    }).userBoundaries.length
+    ? await loadReplyRecall().catch(() => null)
+    : null;
+  const interpreted = await enrichTurnInterpretation(controlContext, deterministicInterpretation, inspectExternalPrompt, supervised?.signal, history);
   supervised?.signal.throwIfAborted();
   const purposeOwnership = await runPurposeSubjectOwnershipAuthority({
     context: controlContext,
@@ -467,10 +487,17 @@ const executeChatReply = async ({
     memoryUsed: { understandings: [], relationships: [], timelineEvents: [] },
     memoryExcluded: { rawMemory: "not_allowed", deterministicMemoryCaveat: [] },
   };
+  const replyRecall = history && interpreted.recalledReference && !helpingInput.userBoundaries.length
+    ? { history, reference: interpreted.recalledReference }
+    : null;
+  const authorizedRecall = resolveRecalledReplySource({
+    context: controlContext, interpretation, dialogueState, recall: replyRecall,
+  });
   const responsePlanPreflightAuthority = createResponsePlanPreflightAuthoritySnapshot({
     context: controlContext,
     interpretation,
     dialogueState,
+    replyRecall,
   });
   const baseCompatibilityClinicalTrace = compatibilityClinicalTrace;
   const createPlanAttempt = (
@@ -482,6 +509,7 @@ const executeChatReply = async ({
       interpretation,
       dialogueState,
       ordinaryHandoffBoundary,
+      replyRecall,
       recoveryDirective,
       clinicalAdviceProvider: ({ need }) => {
         const clinicalContext = buildClinicalContext({
@@ -626,7 +654,12 @@ const executeChatReply = async ({
     };
   }
 
-  const generateSurface = (constraint: string | null, executionPlan: typeof responsePlan, signal?: AbortSignal) =>
+  const generateSurface = (
+    constraint: string | null,
+    executionPlan: typeof responsePlan,
+    signal?: AbortSignal,
+    advice?: () => Promise<string | null>,
+  ) =>
     generateChatReply({
       conversationId,
       userMessage,
@@ -637,6 +670,7 @@ const executeChatReply = async ({
       evaluationAdapter,
       responsePlanRegenerateConstraint: constraint,
       signal,
+      ...(advice ? { loadApprovedReplyAdvice: advice } : {}),
       inspectExternalPrompt: inspectExternalPrompt
         ? ({ messages }) => inspectExternalPrompt({ stage: "surface_realization", messages })
         : undefined,
@@ -698,7 +732,14 @@ const executeChatReply = async ({
       handoffSemanticProvider: interactionMoveHandoffSemanticProvider,
       generate: async (constraint, executionPlan) => {
         attemptIds.push(createExecutionIdentity({}).requestId);
-        return generateSurface(constraint, executionPlan);
+        const advice = authorizedRecall && loadApprovedReplyAdvice &&
+          executionPlan.recalledSourceRef === authorizedRecall.ref && !recoveryDirective &&
+          constraint === null && attemptIds.length === 1
+          ? () => loadApprovedReplyAdvice({
+              sourceTurnId: authorizedRecall.source.sourceTurnId, text: authorizedRecall.source.text,
+            })
+          : undefined;
+        return generateSurface(constraint, executionPlan, undefined, advice);
       },
     });
     const generation = enforced.generation;

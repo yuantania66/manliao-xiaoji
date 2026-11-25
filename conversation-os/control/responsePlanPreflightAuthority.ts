@@ -5,9 +5,11 @@ import type {
   InteractionMoveHandoffPlan,
   OrdinaryPosturePlan,
   ResponsePlan,
+  ReplyRecallEvidence,
   TurnInterpretation,
 } from "./types";
 import { planInteractionMoveHandoff } from "./interactionMoveHandoffPlanner";
+import { resolveRecalledReplySource } from "./recalledReplyAdvice";
 
 type RelevanceProvenance = ResponsePlan["relevanceProvenance"][number];
 
@@ -21,6 +23,7 @@ type DeepReadonly<T> = T extends (...args: never[]) => unknown
 
 export type ResponsePlanPreflightAuthoritySnapshot = DeepReadonly<{
   expectedInteractionMoveHandoffPlan: InteractionMoveHandoffPlan | null;
+  recalledSourceRef?: string;
   currentSource: {
     conversationId: string;
     userTurnId: string;
@@ -144,10 +147,12 @@ export const createResponsePlanPreflightAuthoritySnapshot = ({
   context,
   interpretation,
   dialogueState,
+  replyRecall,
 }: {
   context: ConversationControlContext;
   interpretation: TurnInterpretation;
   dialogueState: DialogueState;
+  replyRecall?: ReplyRecallEvidence | null;
 }): ResponsePlanPreflightAuthoritySnapshot => {
   const expectedInteractionMoveHandoffPlan = context.safety.triggered
     ? null
@@ -176,8 +181,10 @@ export const createResponsePlanPreflightAuthoritySnapshot = ({
         assistantText: targetTurn?.content ?? "",
       }
     : null;
+  const recalledSource = resolveRecalledReplySource({ context, interpretation, dialogueState, recall: replyRecall });
   const snapshot = {
     expectedInteractionMoveHandoffPlan,
+    ...(recalledSource ? { recalledSourceRef: recalledSource.ref } : {}),
     currentSource: {
       conversationId: context.conversationId,
       userTurnId: context.currentTurnId,

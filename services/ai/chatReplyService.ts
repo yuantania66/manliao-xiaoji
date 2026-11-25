@@ -19,6 +19,8 @@ import {
 } from "@/conversation-os";
 
 import { createChatReply } from "./chatOrchestrationService";
+import { readApprovedChatReplyAdviceForSource } from "./chatReplyReviewPacket";
+import { buildConversationRetrievalContext, needsChatSourceLookup } from "@/services/understanding/retrievalContextService";
 import { createChatMemoryContext, createNoteMemoryContext } from "./dataLayers";
 import {
   AiConversationMessage,
@@ -507,6 +509,7 @@ export const createReviewedChatReply = async ({
   userId,
   sessionId,
   currentTurnId,
+  currentTurnCreatedAt,
   retrying = false,
   userMessage,
   recentMessages,
@@ -518,6 +521,7 @@ export const createReviewedChatReply = async ({
   userId: string;
   sessionId: string;
   currentTurnId?: string;
+  currentTurnCreatedAt?: Date;
   retrying?: boolean;
   userMessage: string;
   recentMessages: AiConversationMessage[];
@@ -551,6 +555,14 @@ export const createReviewedChatReply = async ({
     userMessage,
     recentMessages,
     loadMemoryContext: () => loadMemoryContext({ userId, sessionId }),
+    ...(currentTurnId && currentTurnCreatedAt && needsChatSourceLookup(userMessage, recentMessages) ? {
+      loadReplyRecall: async () => (await buildConversationRetrievalContext({
+        userId, sessionId,
+        currentMessage: { id: currentTurnId, content: userMessage, createdAt: currentTurnCreatedAt },
+        recentMessages,
+      })).recalledContext,
+      loadApprovedReplyAdvice: (source) => readApprovedChatReplyAdviceForSource({ userId, ...source }),
+    } : {}),
     understandingContext,
     episodeMemoryCandidates,
     includeDebugTrace: !supervision && includeDebugTrace,
