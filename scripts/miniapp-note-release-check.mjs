@@ -128,6 +128,131 @@ assert.equal(local.writeNoteDraft(restartDraft, "guest"), true);
 assert.deepEqual(local.readNoteDraft("guest"), withOwner(restartDraft, "guest"));
 
 const requestModule = require("../miniprogram-project/utils/request.js");
+const originalWx = global.wx;
+const searchRequests = [];
+const searchNavigations = [];
+const searchToasts = [];
+global.wx = {
+  ...originalWx,
+  getAccountInfoSync: () => ({ miniProgram: { envVersion: "develop" } }),
+  getSystemInfoSync: () => ({ windowWidth: 375, screenHeight: 812 }),
+  getMenuButtonBoundingClientRect: () => ({ top: 28, bottom: 60, left: 280 }),
+  request(options) {
+    assert.match(options.url, /^http:\/\/127\.0\.0\.1:3002\/api\/notes/);
+    searchRequests.push(options);
+  },
+  navigateTo: ({ url }) => searchNavigations.push(url),
+  showToast: ({ title }) => searchToasts.push(title)
+};
+storage.set("xinqing_api_env", "local");
+let searchPageDefinition;
+global.Page = (page) => { searchPageDefinition = page; };
+require("../miniprogram-project/pages/note-search/note-search.js");
+const searchPage = {
+  ...searchPageDefinition,
+  data: { ...searchPageDefinition.data },
+  setData(values) { Object.assign(this.data, values); }
+};
+const signInForSearch = (id, token = id) => auth.saveAuth({ token, user: { id }, expiresAt: "2999-01-01T00:00:00.000Z" });
+const inputSearch = (value) => searchPage.onInput({ detail: { value } });
+const searchHit = { id: "fixture-note", content: "合成小记", recordDate: "2026-11-25" };
+const respondToSearch = (pending, items = [searchHit], total = items.length) => pending.success({ statusCode: 200, data: { data: { items, total } } });
+const settleSearch = () => new Promise((resolve) => setImmediate(resolve));
+const tapSearchResult = (generation) => searchPage.openResult({ currentTarget: { dataset: { id: searchHit.id, generation } } });
+
+signInForSearch("search-a");
+searchPage.onLoad();
+searchPage.onShow?.();
+inputSearch("合成小记");
+const searchBeforeExpiry = searchRequests.shift();
+const expiredSearchSession = requestModule.request({ url: "/api/notes" });
+searchRequests.shift().success({ statusCode: 401, data: {} });
+await assert.rejects(expiredSearchSession, { statusCode: 401 });
+respondToSearch(searchBeforeExpiry);
+await settleSearch();
+assert.equal(auth.getAuth(), null);
+assert.deepEqual(searchPage.data.results, [], "A late search must not reveal old notes after another request logs the user out");
+assert.match(searchPage.data.statusText, /请先登录/);
+
+signInForSearch("search-a");
+searchPage.onShow();
+inputSearch("合成小记");
+assert.equal(searchPage.data.isSearching, true);
+const firstSearchPage = searchRequests.shift();
+assert.match(firstSearchPage.url, /page=1&pageSize=100/);
+const fullSearchPage = Array.from({ length: 100 }, (_, i) => ({ ...searchHit, id: `earlier-${i}`, content: "其他小记" }));
+respondToSearch(firstSearchPage, fullSearchPage, 101);
+await settleSearch();
+const secondSearchPage = searchRequests.shift();
+assert.match(secondSearchPage.url, /page=2&pageSize=100/);
+respondToSearch(secondSearchPage, [searchHit], 101);
+await settleSearch();
+assert.equal(searchPage.data.isSearching, false);
+assert.equal(searchPage.data.results[0].id, searchHit.id);
+const initialRender = searchPage.data.resultGeneration;
+tapSearchResult(initialRender);
+assert.deepEqual(searchNavigations, ["/pages/note-detail/note-detail?id=fixture-note&date=2026-11-25"]);
+
+inputSearch("离开前的搜索");
+const delayedHiddenSearch = searchRequests.shift();
+searchPage.onHide();
+assert.deepEqual(searchPage.data.results, []);
+searchPage.onShow();
+assert.equal(searchPage.data.query, "离开前的搜索");
+const delayedAccountSearch = searchRequests.shift();
+signInForSearch("search-a", "new-session-same-user");
+respondToSearch(delayedAccountSearch);
+await settleSearch();
+assert.deepEqual(searchPage.data.results, [], "Signing in again as the same account invalidates its older request");
+
+inputSearch("合成小记");
+const beforeSwitch = searchRequests.shift();
+const secondExpiry = requestModule.request({ url: "/api/notes" });
+searchRequests.shift().success({ statusCode: 401, data: {} });
+await assert.rejects(secondExpiry, { statusCode: 401 });
+signInForSearch("search-b");
+searchPage.onShow();
+inputSearch("合成小记");
+respondToSearch(searchRequests.shift());
+await settleSearch();
+assert.equal(searchPage.data.results[0].id, searchHit.id);
+respondToSearch(delayedHiddenSearch);
+respondToSearch(beforeSwitch, fullSearchPage, 101);
+await settleSearch();
+assert.equal(searchRequests.length, 0, "An older full page must not dispatch the next page under the new account");
+assert.equal(auth.getAuth().user.id, "search-b");
+assert.equal(searchPage.data.results.length, 1, "Older responses must not clear a fresh search on another account");
+tapSearchResult(initialRender);
+assert.equal(searchNavigations.length, 1, "An old tap cannot be retargeted to an identical ID in a new render");
+
+const currentRender = searchPage.data.resultGeneration;
+signInForSearch("search-c");
+tapSearchResult(currentRender);
+assert.deepEqual(searchPage.data.results, [], "Tapping after the account changes must clear the old rows");
+assert.equal(searchNavigations.length, 1);
+inputSearch("找不到");
+respondToSearch(searchRequests.shift(), []);
+await settleSearch();
+assert.equal(searchPage.data.showEmpty, true);
+inputSearch("网络失败");
+searchRequests.shift().fail();
+await settleSearch();
+assert.match(searchPage.data.statusText, /网络/);
+assert.equal(searchToasts.length, 1);
+
+auth.clearAuth();
+auth.enterGuest();
+const previousGuestNotes = local.readNotes();
+const guestSearchFixture = local.createNote({ content: "仅本机的合成小记" });
+assert(guestSearchFixture);
+searchPage.onShow();
+inputSearch("仅本机");
+assert.equal(searchPage.data.results[0].id, guestSearchFixture.id);
+assert.equal(searchRequests.length, 0, "Guest search stays on the device");
+assert(local.writeNotes(previousGuestNotes));
+global.wx = originalWx;
+storage.delete("xinqing_api_env");
+
 const uploads = require("../miniprogram-project/api/uploads.js");
 const cleanupUrls = ["https://manliaoxiaoji.com/api/uploads/notes/orphan-1"];
 requestModule.request = async () => { throw new Error("401"); };
@@ -198,7 +323,6 @@ assert.match(note, /小记无法保存在本机/);
 assert.match(detail, /updateNote\(this\.data\.note\.id, content\)/);
 assert.match(detail, /isUpdating/);
 assert.match(history, /generation !== this\.refreshGeneration/);
-assert.match(search, /generation !== this\.searchGeneration/);
 assert.match(search, /dateKey:\s*note\.recordDate/);
 assert.match(notesApi, /listAllNotes/);
 assert.match(notesApi, /pageSize = 100/);
