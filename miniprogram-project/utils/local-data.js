@@ -5,7 +5,8 @@ const GUEST_NOTE_KEY = "xinqingMiniGuestNotes";
 const LEGACY_NOTE_DRAFT_KEY = "xinqingMiniNoteDraft:v1";
 const LEGACY_NOTE_DRAFT_OWNER_KEY = "xinqingMiniNoteDraft:v1:owner";
 const NOTE_DRAFT_KEY_PREFIX = "xinqingMiniNoteDraft:v2:";
-const PENDING_UPLOAD_CLEANUP_KEY = "xinqingMiniPendingUploadCleanup:v1";
+// Unowned v1 cleanup entries remain untouched; they cannot safely be assigned to a login.
+const PENDING_UPLOAD_CLEANUP_KEY_PREFIX = "xinqingMiniPendingUploadCleanup:v2:";
 
 const nowIso = () => new Date().toISOString();
 
@@ -168,16 +169,26 @@ const persistNoteDraftImages = async (filePaths, owner) => {
     throw error;
   }
 };
-const readPendingUploadCleanup = () => {
-  const value = safeGet(PENDING_UPLOAD_CLEANUP_KEY);
+const getPendingUploadCleanupKey = (owner) => {
+  const expectedOwner = resolveOwner(owner);
+  return expectedOwner.startsWith("authenticated:") && expectedOwner.length > "authenticated:".length
+    ? `${PENDING_UPLOAD_CLEANUP_KEY_PREFIX}${encodeURIComponent(expectedOwner)}` : null;
+};
+const readPendingUploadCleanup = (owner) => {
+  const key = getPendingUploadCleanupKey(owner);
+  const value = key ? safeGet(key) : null;
   return Array.isArray(value) ? [...new Set(value.filter((url) => typeof url === "string" && url.length > 0))] : [];
 };
-const addPendingUploadCleanup = (urls) =>
-  safeSet(PENDING_UPLOAD_CLEANUP_KEY, [...new Set([...readPendingUploadCleanup(), ...urls])]);
-const removePendingUploadCleanup = (urls) => {
+const addPendingUploadCleanup = (urls, owner) => {
+  const key = getPendingUploadCleanupKey(owner);
+  return Boolean(key) && safeSet(key, [...new Set([...readPendingUploadCleanup(owner), ...urls])]);
+};
+const removePendingUploadCleanup = (urls, owner) => {
+  const key = getPendingUploadCleanupKey(owner);
+  if (!key) return false;
   const removed = new Set(urls);
-  const remaining = readPendingUploadCleanup().filter((url) => !removed.has(url));
-  return remaining.length ? safeSet(PENDING_UPLOAD_CLEANUP_KEY, remaining) : (safeRemove(PENDING_UPLOAD_CLEANUP_KEY), true);
+  const remaining = readPendingUploadCleanup(owner).filter((url) => !removed.has(url));
+  return remaining.length ? safeSet(key, remaining) : safeRemove(key);
 };
 
 const clearLocalGuestData = () => {

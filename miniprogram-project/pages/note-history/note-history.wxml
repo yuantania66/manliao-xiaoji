@@ -1,8 +1,11 @@
-<view class="page note-history-page">
-  <navigator url="/pages/note/note" class="back history-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
-  <navigator url="/pages/note/note" class="add-link" style="top: {{actionTop}}px; right: {{actionRight}}px;" hover-class="none">+ 记一下</navigator>
-  <view class="title">我的小记</view>
+<view class="page note-history-page" style="padding-top: {{pageTop}}px;">
+  <view bindtap="goBack" class="back history-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</view>
+  <view class="history-header">
+    <view class="title">我的小记</view>
+    <view bindtap="openComposer" class="add-link" role="button" hover-class="none">+ 记一下</view>
+  </view>
   <view class="body intro">{{introText}}</view>
+  <view wx:if="{{date}}" class="date-filter"><text>{{date}} 的小记</text><view bindtap="clearDate">查看全部</view></view>
   <view class="search-box">⌕<input value="{{query}}" bindinput="onInput" placeholder="查找小记内容" /></view>
   <view wx:if="{{statusText}}" class="history-status" aria-live="polite">{{statusText}}</view>
   <navigator url="/pages/note-calendar/note-calendar" class="calendar-entry card-sage" hover-class="none">
@@ -10,13 +13,20 @@
     <view class="entry-copy">按天气回看某一天</view>
     <view class="entry-arrow">›</view>
   </navigator>
-  <view wx:if="{{isEmpty}}" class="empty body">还没有小记。先给今天留一句话。</view>
+  <view wx:if="{{isEmpty && !isLoading && !loadError}}" class="empty body">{{date ? "这一天还没有小记。" : query ? "没有找到匹配的小记。" : "还没有小记。先给今天留一句话。"}}</view>
   <view wx:for="{{notes}}" wx:key="id" class="note-item">
-    <navigator url="/pages/note-detail/note-detail?id={{item.id}}&date={{item.dateKey}}" hover-class="none">
+    <navigator url="/pages/note-detail/note-detail?id={{item.id}}&date={{item.dateKey}}" hover-class="none" class="note-link">
+      <view class="note-main">
       <view class="note-date">{{item.dateLabel}}</view>
-      <view class="note-title">{{item.title}}</view>
-      <view class="note-body">{{item.content}}</view>
+      <view wx:if="{{!item.content}}" class="note-title">{{item.title}}</view>
+      <view wx:else class="note-body">{{item.content}}</view>
       <view wx:if="{{item.mood}}" class="note-mood">{{item.mood.name}} · {{item.mood.desc}}</view>
+      </view>
+      <view wx:if="{{item.images.length}}" class="note-thumb-wrap">
+        <image wx:if="{{item.thumbUrl}}" class="note-thumb" src="{{item.thumbUrl}}" mode="aspectFill" binderror="onThumbError" data-id="{{item.id}}" />
+        <view wx:else class="note-thumb note-thumb-fallback">图</view>
+        <view wx:if="{{item.images.length > 1}}" class="note-thumb-count">{{item.images.length}}</view>
+      </view>
     </navigator>
   </view>
 </view>

@@ -241,3 +241,141 @@
   font-size: 24rpx;
   line-height: 42rpx;
 }
+
+/* Original 120px plant around the 82px avatar; existing page sections retained. */
+.avatar-garden {
+  position: relative;
+  flex-shrink: 0;
+  width: 82px;
+  height: 82px;
+  overflow: visible;
+}
+
+.growth-plant {
+  position: absolute;
+  left: -19px;
+  top: -19px;
+  width: 120px;
+  height: 120px;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.care-effects {
+  position: absolute;
+  /* Original art was card-relative; its avatar began at (9px, 32px).
+     Keep that visual alignment while following this avatar at every width. */
+  left: -9px;
+  top: -32px;
+  width: 82px;
+  height: 82px;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.watering-can {
+  position: absolute;
+  left: -17px;
+  top: -15px;
+  width: 60px;
+  height: 50px;
+  transform-origin: 65% 65%;
+  opacity: 0;
+}
+
+.watering-can image {
+  position: absolute;
+  left: 2.39%;
+  top: 13.01%;
+  display: block;
+  width: 95.4%;
+  height: 71.23%;
+  transform: scaleX(-1);
+}
+
+.water-lines {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 96px;
+  height: 104px;
+  opacity: 0;
+}
+
+.sunlight {
+  position: absolute;
+  left: -10px;
+  top: 13px;
+  width: 144px;
+  height: 133px;
+  background: radial-gradient(ellipse at 50% 55%, rgba(235, 184, 72, 0.32), transparent 68%);
+  opacity: 0;
+}
+
+.care-playing .watering-can { animation: care-can 6s ease-in-out both; }
+.care-playing .water-lines { animation: care-water 6s ease-in-out both; }
+.care-playing .sunlight { animation: care-sun 6s ease-in-out both; }
+
+.care-playing .newest-leaf { animation: care-leaf 6s ease-out both; }
+
+/* User-requested slower care and longer, clearer sunlight. */
+@keyframes care-can {
+  0% { opacity: 0; transform: translate(-4px, -5px) rotate(-8deg); }
+  16.67% { opacity: 0.8; transform: translate(0, 0) rotate(0deg); }
+  25%, 43.33% { opacity: 0.8; transform: translate(8px, 6px) rotate(16deg); }
+  60%, 100% { opacity: 0; transform: translate(-4px, -5px) rotate(-8deg); }
+}
+@keyframes care-water {
+  0%, 16.67% { opacity: 0; transform: translateY(-3px); }
+  24%, 38% { opacity: 0.85; transform: translateY(0); }
+  43.33%, 100% { opacity: 0; transform: translateY(3px); }
+}
+@keyframes care-sun {
+  0%, 43.33% { opacity: 0; transform: translateX(-8px); }
+  57%, 68% { opacity: 1; transform: translateX(0); }
+  83.33%, 100% { opacity: 0; transform: translateX(9px); }
+}
+@keyframes care-leaf {
+  0%, 73.33% { opacity: 0; transform: scale(0.35); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .care-effects { display: none; }
+  .care-playing .newest-leaf { animation: none; opacity: 1; transform: none; }
+}
+
+.growth-label {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: #586d55;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.growth-days {
+  color: #3d553b;
+  font-weight: 700;
+}
+
+
+.profile-top {
+  display: flex;
+  align-items: center;
+  gap: 38px;
+  margin: 28rpx 0 24rpx;
+}
+.avatar-garden { margin-left: 19px; }
+.avatar-garden .avatar { width: 82px; height: 82px; line-height: 82px; }
+.account-info { flex: 1; min-width: 0; }
+.account-info .profile-title,
+.profile-card .account-info .body,
+.account-info .connection-status {
+  position: static;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.account-info .profile-title { font-size: 30rpx; }
+.profile-card .account-info .body { font-size: 24rpx; line-height: 36rpx; }
+.profile-card .settings-link { top: 16rpx; right: 24rpx; }

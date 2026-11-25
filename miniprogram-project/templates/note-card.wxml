@@ -1,0 +1,23 @@
+  <view wx:if="{{isSlipOpen}}" class="slip-layer">
+    <view class="slip-mask"></view>
+    <view class="slip-sheet" style="top: {{slipTop}}px; bottom: {{slipBottom}}px;">
+      <view class="slip-header">
+      <view class="eyebrow">{{slipTitle}}</view>
+      <view class="slip-close" bindtap="closeSlip"></view>
+      </view>
+      <view class="slip-preview">
+        <image wx:if="{{wallpaperUrl}}" class="wallpaper-image" src="{{wallpaperUrl}}" mode="aspectFit" binderror="wallpaperError" style="width: {{slipPreviewWidth}}px; height: {{slipPreviewHeight}}px;" />
+        <view wx:else class="wallpaper-placeholder">{{(sharePreparing || wallpaperBusy) ? '正在准备这份小心意…' : '图片暂未准备好，可以重试'}}</view>
+      </view>
+      <view class="slip-footer">
+      <view class="slip-actions">
+        <button wx:if="{{shareReady}}" id="share-slip" class="primary-button image-button share-button" open-type="share">分享给朋友</button>
+        <button wx:else class="primary-button image-button share-button" bindtap="prepareSlipShare" loading="{{sharePreparing || wallpaperBusy}}" disabled="{{sharePreparing || wallpaperBusy}}">{{(sharePreparing || wallpaperBusy) ? '准备图片' : '重试生成图片'}}</button>
+        <button class="primary-button image-button" loading="{{isSavingImage}}" disabled="{{isSavingImage || wallpaperBusy || sharePreparing || !wallpaperUrl}}" bindtap="saveImage">保存图片</button>
+      </view>
+      <view wx:if="{{regenerateRemaining > 0 && !wallpaperBusy && !sharePreparing && !isSavingImage && !isSaving}}" class="regenerate-button" bindtap="regenerateSlip">{{regenerateText}}</view>
+      <view wx:else class="regenerate-button regenerate-button-disabled">{{regenerateText}}</view>
+      <view class="feedback">{{shareError || slipFeedback}}</view>
+      </view>
+    </view>
+  </view>

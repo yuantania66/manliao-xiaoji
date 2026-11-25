@@ -1,3 +1,6 @@
+// Dedicated isolated experience-build flag. Never selected by device storage.
+const STAGING_TRIAL_BUILD = true;
+
 const API_ENV_KEY = "xinqing_api_env";
 const API_BASE_URL_KEY = "xinqing_api_base_url";
 
@@ -39,14 +42,14 @@ const getRuntimeEnvVersion = () => {
 };
 
 const getApiBaseUrl = () => {
-  if (getRuntimeEnvVersion() !== "develop") return API_BASE_URLS.prod;
-  const env = getApiEnv();
-  const override = getStorageValue(API_BASE_URL_KEY);
-  if (override) return override;
-  return API_BASE_URLS[env] || "";
+  const env = getRuntimeEnvVersion();
+  if (env !== "develop" && !(STAGING_TRIAL_BUILD && env === "trial")) return "";
+  return "https://staging.manliaoxiaoji.com";
 };
 
 module.exports = {
+  isPinnedStagingPreview: true,
+  isPinnedStagingTrial: STAGING_TRIAL_BUILD,
   API_ENV_KEY,
   API_BASE_URL_KEY,
   API_BASE_URLS,

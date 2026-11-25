@@ -1,0 +1,115 @@
+.slip-layer { position: fixed; inset: 0; z-index: 80; }
+.slip-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(91, 83, 77, 0.5);
+}
+
+.slip-sheet {
+  position: absolute;
+  left: 36rpx;
+  width: calc(100% - 72rpx);
+  box-sizing: border-box;
+  border-radius: 48rpx;
+  background: #fbf7f0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.slip-close {
+  position: absolute;
+  right: 30rpx;
+  top: 28rpx;
+  z-index: 2;
+  width: 64rpx;
+  height: 64rpx;
+}
+
+.slip-close::before,
+.slip-close::after {
+  content: "";
+  position: absolute;
+  left: 17rpx;
+  top: 30rpx;
+  width: 30rpx;
+  height: 4rpx;
+  border-radius: 999rpx;
+  background: #a49a91;
+}
+
+.slip-close::before {
+  transform: rotate(45deg);
+}
+
+.slip-close::after {
+  transform: rotate(-45deg);
+}
+
+.slip-sheet .eyebrow {
+  position: absolute;
+  left: 70rpx;
+  top: 48rpx;
+}
+
+.slip-actions {
+  display: block;
+  margin-top: 46rpx;
+}
+
+.image-button {
+  width: 100%;
+}
+
+.feedback {
+  min-height: 32rpx;
+  margin-top: 16rpx;
+  color: #a49a91;
+  text-align: center;
+  font-size: 22rpx;
+  padding-bottom: 32rpx;
+}
+
+.regenerate-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 360rpx;
+  height: 64rpx;
+  margin: 26rpx auto 0;
+  padding: 0;
+  border-radius: 999rpx;
+  background: transparent;
+  color: #71877b;
+  text-align: center;
+  font-size: 21rpx;
+  font-weight: 700;
+  line-height: 64rpx;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.regenerate-button-disabled {
+  color: #c7beb6;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Fixed controls and a scaled preview: no scroll container beneath the capsule. */
+.slip-header { display: flex; align-items: center; justify-content: space-between; height: 36px; flex-shrink: 0; }
+.slip-header .eyebrow { position: static; margin: 0; line-height: 24px; }
+.slip-header .slip-close { position: relative; top: auto; right: auto; width: 36px; height: 36px; }
+.slip-header .slip-close::before, .slip-header .slip-close::after { left: 9px; top: 17px; width: 18px; height: 2px; }
+.slip-preview { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; margin: 12px 0; overflow: hidden; }
+.slip-footer { flex: 0 0 140px; }
+.slip-footer .slip-actions { display: flex; gap: 12px; margin: 0; }
+.slip-footer .image-button { display: flex; align-items: center; justify-content: center; flex: 1; width: auto; min-height: 44px; height: 44px; padding: 0 12px; margin: 0; font-size: 16px; line-height: 24px; }
+.slip-footer .regenerate-button { width: auto; height: 32px; margin: 8px auto 0; font-size: 13px; line-height: 32px; }
+.slip-footer .feedback { min-height: 20px; height: auto; margin: 8px 0 0; padding: 0; font-size: 12px; line-height: 20px; white-space: normal; }
+.slip-footer .image-button { min-width: 0; font-size: 14px; padding: 0 6px; }
+.slip-footer .image-button:not(.share-button) { background: #e7eee8; color: #526b5a; }
+.wallpaper-image { display: block; flex-shrink: 0; border-radius: 0; }
+.wallpaper-placeholder { font-size: 14px; color: #71877b; }
+/* Beat app.wxss .page button.primary-button; keep the measured footer budget. */
+.page .slip-footer button.image-button { height: 44px; width: auto; font-size: 14px; line-height: 24px; }

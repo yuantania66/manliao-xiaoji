@@ -1,32 +1,39 @@
 const { API_TIMEOUT, getApiBaseUrl } = require("../config/api");
-const { getAuth, clearAuth } = require("../utils/auth");
+const { clearAuth, captureAuthAuthority, isCurrentAuthAuthority, captureIdentityAuthority } = require("../utils/auth");
 const { readPendingUploadCleanup, addPendingUploadCleanup, removePendingUploadCleanup } = require("../utils/local-data");
 
-const parseUploadResponse = (res, apiBaseUrl) => {
-  let body = res.data || {};
-  if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-    } catch (error) {
-      throw new Error("上传服务返回异常");
-    }
-  }
-
+const parseUploadResponse = (res, apiBaseUrl, authority) => {
   if (res.statusCode === 401) {
-    clearAuth();
-    throw new Error("登录状态已过期，请重新登录");
+    const error = new Error("登录状态已过期，请重新登录");
+    error.statusCode = 401;
+    if (isCurrentAuthAuthority(authority)) {
+      clearAuth();
+      error.authClearance = { source: authority, cleared: captureIdentityAuthority() };
+    }
+    throw error;
   }
 
-  if (res.statusCode >= 400 || body.ok === false) {
+  let body = res.data;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { body = null; }
+  }
+  const isObject = body && typeof body === "object" && !Array.isArray(body);
+  if (!Number.isInteger(res.statusCode) || res.statusCode < 200 || res.statusCode >= 300 ||
+      !isObject || body.ok !== true || !Object.prototype.hasOwnProperty.call(body, "data")) {
     const errorMessage =
-      body.message ||
-      (body.error && (body.error.message || body.error.code)) ||
+      (isObject && (body.message || (body.error && (body.error.message || body.error.code)))) ||
       "图片上传失败";
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage);
+    error.statusCode = res.statusCode;
+    throw error;
   }
 
   const item = body.data && Array.isArray(body.data.items) ? body.data.items[0] : null;
-  if (!item || !item.url) throw new Error("图片上传失败");
+  if (!item || typeof item.url !== "string" || !item.url.trim()) {
+    const error = new Error("图片上传失败");
+    error.statusCode = res.statusCode;
+    throw error;
+  }
 
   return {
     ...item,
@@ -34,7 +41,12 @@ const parseUploadResponse = (res, apiBaseUrl) => {
   };
 };
 
-const uploadNoteImage = (filePath) =>
+const assertUploadAuthority = (authority) => {
+  if (!authority || !isCurrentAuthAuthority(authority)) throw new Error("身份已变化，请重新进入本页");
+};
+const cleanupOwner = (authority) => authority ? `authenticated:${authority.userId}` : "none";
+
+const uploadNoteImage = (filePath, authority = captureAuthAuthority()) =>
   new Promise((resolve, reject) => {
     const apiBaseUrl = getApiBaseUrl();
     if (!apiBaseUrl) {
@@ -42,11 +54,7 @@ const uploadNoteImage = (filePath) =>
       return;
     }
 
-    const storedAuth = getAuth();
-    if (!storedAuth || !storedAuth.token) {
-      reject(new Error("请先登录"));
-      return;
-    }
+    try { assertUploadAuthority(authority); } catch (error) { reject(error); return; }
 
     wx.uploadFile({
       url: `${apiBaseUrl}/api/uploads/notes`,
@@ -54,11 +62,14 @@ const uploadNoteImage = (filePath) =>
       name: "file",
       timeout: API_TIMEOUT,
       header: {
-        Authorization: `Bearer ${storedAuth.token}`
+        Authorization: `Bearer ${authority.token}`
       },
       success: (res) => {
         try {
-          resolve(parseUploadResponse(res, apiBaseUrl));
+          const item = parseUploadResponse(res, apiBaseUrl, authority);
+          try { assertUploadAuthority(authority); }
+          catch (error) { error.uploadedUrls = [item.url]; throw error; }
+          resolve(item);
         } catch (error) {
           reject(error);
         }
@@ -69,17 +80,12 @@ const uploadNoteImage = (filePath) =>
     });
   });
 
-const uploadNoteImages = (filePaths = []) =>
-  filePaths.reduce(
-    (promise, filePath) =>
-      promise.then((items) =>
-        uploadNoteImage(filePath).then((item) => [...items, item])
-      ),
-    Promise.resolve([])
-  );
+const uploadNoteImages = (filePaths = [], authority = captureAuthAuthority()) =>
+  uploadNoteImagesWithCleanup(filePaths, authority);
 
-const cleanupNoteUploads = (urls = []) => {
+const cleanupNoteUploads = (urls = [], authority = captureAuthAuthority()) => {
   if (!urls.length) return Promise.resolve();
+  try { assertUploadAuthority(authority); } catch (error) { return Promise.reject(error); }
   return require("../utils/request").request({
     url: "/api/uploads/notes",
     method: "DELETE",
@@ -87,33 +93,35 @@ const cleanupNoteUploads = (urls = []) => {
   });
 };
 
-const cleanupOrQueueNoteUploads = async (urls = []) => {
+const cleanupOrQueueNoteUploads = async (urls = [], authority = captureAuthAuthority()) => {
   if (!urls.length) return;
   try {
-    await cleanupNoteUploads(urls);
-    removePendingUploadCleanup(urls);
+    await cleanupNoteUploads(urls, authority);
+    removePendingUploadCleanup(urls, cleanupOwner(authority));
   } catch (error) {
-    addPendingUploadCleanup(urls);
+    addPendingUploadCleanup(urls, cleanupOwner(authority));
     throw error;
   }
 };
 
 const retryPendingNoteUploadCleanup = async () => {
-  const urls = readPendingUploadCleanup();
-  if (!urls.length || !getAuth()) return false;
+  const authority = captureAuthAuthority();
+  if (!authority) return false;
+  const urls = readPendingUploadCleanup(cleanupOwner(authority));
+  if (!urls.length) return false;
   for (let index = 0; index < urls.length; index += 9) {
-    await cleanupOrQueueNoteUploads(urls.slice(index, index + 9));
+    await cleanupOrQueueNoteUploads(urls.slice(index, index + 9), authority);
   }
   return true;
 };
 
-const uploadNoteImagesWithCleanup = async (filePaths = []) => {
+const uploadNoteImagesWithCleanup = async (filePaths = [], authority = captureAuthAuthority()) => {
   const items = [];
   try {
-    for (const filePath of filePaths) items.push(await uploadNoteImage(filePath));
+    for (const filePath of filePaths) items.push(await uploadNoteImage(filePath, authority));
     return items;
   } catch (error) {
-    error.uploadedUrls = items.map((item) => item.url);
+    error.uploadedUrls = [...new Set([...items.map((item) => item.url), ...(error.uploadedUrls || [])])];
     throw error;
   }
 };

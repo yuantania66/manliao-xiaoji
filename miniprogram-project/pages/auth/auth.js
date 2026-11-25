@@ -1,3 +1,6 @@
+const { isOwnerPreview } = require("../../utils/owner-preview");
+const trialDiagnostic = require("../../utils/trial-diagnostic");
+const { getDeliveryLabel } = require("../../config/delivery");
 const {
   abandonProfileSession,
   loginWithPhone,
@@ -13,6 +16,11 @@ const {
   clearAuth,
   enterGuest,
   getAuth,
+  captureAuthAuthority,
+  isCurrentAuthAuthority,
+  isCurrentAuthFailure,
+  captureIdentityAuthority,
+  isCurrentIdentityAuthority,
   isGuest,
   saveAuth,
   setGuestProfile,
@@ -28,7 +36,8 @@ const {
   getGeneratedIdentity,
   getIdentityAt,
   getNextAvatarIndex,
-  getRandomIdentity
+  getRandomIdentity,
+  getRandomProfileIdentity
 } = require("../../utils/generated-identity");
 
 const BACKGROUNDS = Object.freeze({
@@ -49,7 +58,10 @@ const INITIAL_GUEST_IDENTITY = getRandomIdentity();
 
 Page({
   data: {
+    ownerPreview: isOwnerPreview(),
+    trialDiagnostic: { visible: false },
     stage: "choice",
+    deliveryLabel: "",
     background: getLoginBackground(),
     backgroundTopColor: getLoginBackgroundTopColor(),
     backgroundBlend: createBackgroundBlend(getLoginBackgroundTopColor()),
@@ -67,6 +79,15 @@ Page({
     originalProfileNickname: "",
     avatarLocalPath: "",
     avatarPreview: "",
+    profileAvatarSelected: false,
+    profileGeneratedAvatar: null,
+    profileRandomLabel: "随机生成",
+    profileRandomConfirm: false,
+    profileRandomMessage: "",
+    profileRandomTitle: "",
+    profileAvatarError: "",
+    profileNicknameError: "",
+    profileCanvasMounted: false,
     profileInitial: "慢",
     profileAvatarStyle: INITIAL_GUEST_IDENTITY.avatarStyle,
     guestNameIndex: INITIAL_GUEST_IDENTITY.nameIndex,
@@ -77,6 +98,7 @@ Page({
   },
 
   onLoad(options) {
+    this.setData({ deliveryLabel: getDeliveryLabel() });
     this.editMode = options.mode === "edit";
     this.loginMode = options.mode === "login";
     const auth = getAuth();
@@ -88,7 +110,17 @@ Page({
     }
   },
 
+  onReady() {
+    this._trialDiagnosticReady = true;
+    trialDiagnostic.attach(this);
+  },
+
+  onHide() {
+    if (this._trialDiagnosticReady) trialDiagnostic.detach(this);
+  },
+
   onShow() {
+    if (this._trialDiagnosticReady) trialDiagnostic.attach(this);
     const backgroundInsetTop = getLoginBackgroundInsetTop();
     if (this.data.stage === "choice") {
       const backgroundTopColor = getLoginBackgroundTopColor();
@@ -104,9 +136,14 @@ Page({
   },
 
   setStage(stage) {
+    const leavingProfile = this.data.stage === "profile" && stage !== "profile";
+    if (leavingProfile) {
+      this.profileOperationId = (this.profileOperationId || 0) + 1;
+      this.profileAuthority = null;
+    }
     const group = ["phoneMethod", "wechatPhone", "sms"].includes(stage)
       ? "phone"
-      : ["profile", "avatarSource"].includes(stage)
+      : stage === "profile"
         ? "profile"
         : ["guestWarn", "guestIdentity"].includes(stage)
           ? "guest"
@@ -120,7 +157,8 @@ Page({
       background,
       backgroundTopColor,
       backgroundBlend: createBackgroundBlend(backgroundTopColor),
-      error: ""
+      error: "",
+      ...(leavingProfile ? { busy: false, profileRandomConfirm: false, profileRandomMessage: "", profileCanvasMounted: false } : {})
     });
   },
 
@@ -245,14 +283,21 @@ Page({
       return;
     }
     saveAuth(auth);
+    attempt.identity = captureIdentityAuthority();
     this.visibleUserId = auth.user.id;
-    this.openProfile(auth);
+    const user = auth.user;
+    const hasSavedProfile = Boolean(user.nickname?.trim() && user.avatarUrl?.trim() && user.profileCompletedAt);
+    if (hasSavedProfile && !this.editMode) this.finishAccountLogin();
+    else this.openProfile(auth);
   },
 
   openProfile(auth) {
+    const operation = this.beginProfileOperation();
+    this.profileAuthority = operation.authority;
+    this.profileRandomHistory = [];
     const userId = auth.user.id;
     const generated = getGeneratedIdentity(userId);
-    const nickname = auth.user.nickname || generated.nickname;
+    const nickname = auth.user.nickname || "";
     this.visibleUserId = userId;
     this.setData({
       stage: "profile",
@@ -262,6 +307,14 @@ Page({
       originalProfileNickname: auth.user.nickname || "",
       avatarLocalPath: "",
       avatarPreview: "",
+      profileAvatarSelected: Boolean(auth.user.avatarUrl),
+      profileGeneratedAvatar: null,
+      profileRandomLabel: "随机生成",
+      profileRandomConfirm: false,
+      profileRandomMessage: "",
+      profileAvatarError: "",
+      profileNicknameError: "",
+      profileCanvasMounted: false,
       profileInitial: nickname.slice(0, 1),
       profileAvatarStyle: generated.avatarStyle,
       busy: false,
@@ -270,62 +323,107 @@ Page({
     if (auth.user.avatarUrl) {
       downloadProfileAvatar(auth.user.avatarUrl)
         .then((filePath) => {
-          if (this.visibleUserId === userId && this.data.stage === "profile" && !this.data.avatarLocalPath) {
+          if (this.isCurrentProfileOperation(operation, userId) && this.data.stage === "profile" && !this.data.avatarLocalPath && !this.data.profileGeneratedAvatar) {
             this.setData({ avatarPreview: filePath });
           }
         })
         .catch(() => {
-          if (this.visibleUserId === userId && this.data.stage === "profile") {
+          if (this.isCurrentProfileOperation(operation, userId) && this.data.stage === "profile" && !this.data.avatarLocalPath && !this.data.profileGeneratedAvatar) {
             this.setData({ error: "头像暂时没有加载出来" });
           }
         });
     }
   },
 
-  showAvatarSources() { if (!this.data.busy) this.setStage("avatarSource"); },
-  cancelAvatarSources() { this.setStage("profile"); },
   chooseWechatAvatar(event) {
+    if (!this.canEditProfile() || this.data.profileRandomConfirm) return;
     const filePath = event.detail?.avatarUrl;
     if (filePath) this.applyAvatarDraft(filePath);
     else this.setData({ error: "没有选中头像" });
   },
-  chooseAlbum() { this.chooseImage(["album"]); },
-  takePhoto() { this.chooseImage(["camera"]); },
-  chooseImage(sourceType) {
-    const userId = getAuth()?.user?.id;
-    if (!userId || this.data.busy) return;
-    wx.chooseImage({
-      count: 1,
-      sizeType: ["compressed"],
-      sourceType,
-      success: (result) => {
-        if (getAuth()?.user?.id !== userId) return;
-        const filePath = result.tempFilePaths?.[0];
-        if (filePath) this.applyAvatarDraft(filePath);
-      },
-      fail: (error) => {
-        if (!String(error?.errMsg || "").includes("cancel") && getAuth()?.user?.id === userId) {
-          this.setData({ error: "图片没有选好，请再试一次" });
-        }
-      }
-    });
-  },
   applyAvatarDraft(filePath) {
-    this.setData({ avatarLocalPath: filePath, avatarPreview: filePath, stage: "profile", background: BACKGROUNDS.profile, error: "" });
+    if (!this.canEditProfile() || this.data.profileRandomConfirm) return;
+    this.setData({ avatarLocalPath: filePath, avatarPreview: filePath, profileAvatarSelected: true,
+      profileGeneratedAvatar: null, profileAvatarError: "", error: "" });
   },
   inputNickname(event) {
+    if (!this.canEditProfile() || this.data.profileRandomConfirm) return;
     const profileNickname = String(event.detail.value || "");
-    this.setData({ profileNickname, profileInitial: profileNickname.trim().slice(0, 1) || "慢", error: "" });
+    this.setData({ profileNickname, profileNicknameError: "", error: "" });
+  },
+  canEditProfile() {
+    return this.data.stage === "profile" && !this.data.busy && isCurrentAuthAuthority(this.profileAuthority);
+  },
+  randomizeProfile() {
+    if (!this.canEditProfile() || this.data.profileRandomConfirm) return;
+    const avatar = this.data.profileAvatarSelected;
+    const nickname = Boolean(this.data.profileNickname.trim());
+    if (!avatar && !nickname) { this.generateProfileDraft(); return; }
+    const fields = avatar && nickname ? "头像和昵称" : avatar ? "头像" : "昵称";
+    this.setData({ profileRandomConfirm: true, profileRandomTitle: `确认替换${fields}？`,
+      profileRandomMessage: `你已设置过${fields}，继续操作将会替换已设置过的内容，确认继续吗？` });
+  },
+  confirmRandomProfile() {
+    if (!this.canEditProfile() || !this.data.profileRandomConfirm) return;
+    this.generateProfileDraft();
+  },
+  cancelRandomProfile() {
+    this.setData({ profileRandomConfirm: false, profileRandomMessage: "" });
+  },
+  stopProfileTap() {},
+  generateProfileDraft() {
+    const generated = getRandomProfileIdentity(this.profileRandomHistory, {
+      nickname: this.data.profileNickname.trim(), avatarStyle: this.data.profileAvatarStyle
+    });
+    this.profileRandomHistory = [...(this.profileRandomHistory || []), generated].slice(-8);
+    this.setData({ profileNickname: generated.nickname, profileInitial: generated.initial,
+      profileAvatarStyle: generated.avatarStyle, profileAvatarSelected: true,
+      profileGeneratedAvatar: { avatarStyle: generated.avatarStyle, initial: generated.initial },
+      avatarLocalPath: "", avatarPreview: "", profileRandomLabel: "重新生成",
+      profileRandomConfirm: false, profileRandomMessage: "", profileAvatarError: "", profileNicknameError: "", error: "" });
+  },
+  createProfileAvatarImage(generated, operation) {
+    const isCurrent = () => this.isCurrentProfileOperation(operation, operation.authority?.userId);
+    // Reuse the existing mounted-canvas/export pattern; no upload before Save.
+    return new Promise((resolve, reject) => {
+      this.setData({ profileCanvasMounted: true }, () => {
+        wx.nextTick(() => {
+          try {
+            if (!isCurrent()) { reject(new Error("账号已切换")); return; }
+            const ctx = wx.createCanvasContext("profileAvatarCanvas", this);
+            const colors = generated.avatarStyle.match(/#[0-9a-f]{6}/giu);
+            const gradient = ctx.createLinearGradient(0, 0, 256, 256);
+            gradient.addColorStop(0, colors[0]); gradient.addColorStop(1, colors[1]);
+            ctx.setFillStyle(gradient); ctx.fillRect(0, 0, 256, 256);
+            ctx.setFillStyle("#ffffff"); ctx.setFontSize(96); ctx.setTextAlign("center"); ctx.setTextBaseline("middle");
+            ctx.fillText(generated.initial, 128, 128);
+            ctx.draw(false, () => {
+              try {
+                if (!isCurrent()) { reject(new Error("账号已切换")); return; }
+                wx.canvasToTempFilePath({ canvasId: "profileAvatarCanvas", x: 0, y: 0,
+                  width: 256, height: 256, destWidth: 256, destHeight: 256, fileType: "png",
+                  success: (result) => result.tempFilePath ? resolve(result.tempFilePath) : reject(new Error("头像生成失败，请重试")),
+                  fail: () => reject(new Error("头像生成失败，请重试")) }, this);
+              } catch (error) { reject(error); }
+            });
+          } catch (error) { reject(error); }
+        });
+      });
+    }).finally(() => isCurrent() ? new Promise((resolve) => this.setData({ profileCanvasMounted: false }, resolve)) : undefined);
   },
 
   saveProfile() {
     const auth = getAuth();
-    if (!auth || this.data.busy) return;
+    if (!auth || !this.canEditProfile() || this.data.profileRandomConfirm) return;
     const nickname = this.data.profileNickname.trim();
     const length = Array.from(nickname).length;
-    if (length < 2 || length > 12) { this.setData({ error: "昵称请填写 2–12 个字" }); return; }
-    if (!this.data.profileRequired && !this.data.avatarLocalPath && nickname === this.data.originalProfileNickname) {
-      this.setData({ error: "资料还没有变化" });
+    const profileAvatarError = this.data.profileAvatarSelected ? "" : "请选择头像，或使用随机生成";
+    const profileNicknameError = !nickname ? "请输入昵称，或使用随机生成" :
+      length < 2 || length > 12 ? "昵称请填写 2–12 个字" : "";
+    this.setData({ profileAvatarError, profileNicknameError, error: "" });
+    if (profileAvatarError || profileNicknameError) return;
+    if (!this.data.avatarLocalPath && !this.data.profileGeneratedAvatar && nickname === this.data.originalProfileNickname) {
+      this.finishAccountLogin();
       return;
     }
     const userId = auth.user.id;
@@ -333,8 +431,15 @@ Page({
     const operation = this.beginProfileOperation();
     let uploadId = "";
     let committed = false;
+    let failure = null;
     this.setData({ busy: true, error: "" });
-    const upload = this.data.avatarLocalPath ? uploadProfileAvatar(this.data.avatarLocalPath) : Promise.resolve(null);
+    const avatarPath = this.data.profileGeneratedAvatar
+      ? this.createProfileAvatarImage({ ...this.data.profileGeneratedAvatar }, operation)
+      : Promise.resolve(this.data.avatarLocalPath);
+    const upload = avatarPath.then((filePath) => {
+      if (!this.isCurrentProfileOperation(operation, userId)) throw new Error("账号已切换");
+      return filePath ? uploadProfileAvatar(filePath) : null;
+    });
     upload
       .then((uploaded) => {
         uploadId = uploaded?.uploadId || "";
@@ -347,22 +452,20 @@ Page({
       .then(({ user }) => {
         committed = true;
         if (!this.isCurrentProfileOperation(operation, userId)) return;
-        updateCachedUser(userId, user);
+        updateCachedUser(userId, user, operation.authority);
         this.finishAccountLogin();
       })
       .catch((error) => {
+        failure = error;
         if (uploadId && !committed) discardProfileAvatar(uploadId, token).catch(() => undefined);
-        if (this.isCurrentProfileOperation(operation, userId)) {
+        if (this.isCurrentProfileOperation(operation, userId, error)) {
           const serviceMismatch = error?.statusCode === 404 || error?.statusCode === 405;
-          this.setData({
-            error: serviceMismatch
-              ? "当前预览服务尚未更新，可点“稍后再说”返回"
-              : error.message || "资料保存失败"
-          });
+          const message = serviceMismatch ? "当前预览服务尚未更新，请稍后重试" : error.message || "资料保存失败";
+          this.setData({ error: [message, error.avatarUploadDiagnostic].filter(Boolean).join("\n") });
         }
       })
       .finally(() => {
-        if (this.profileOperationId === operation) this.setData({ busy: false });
+        if (this.isCurrentProfileOperation(operation, userId, failure)) this.setData({ busy: false });
       });
   },
 
@@ -379,10 +482,11 @@ Page({
   },
 
   cancelProfileEdit() {
-    if (!this.data.profileRequired && !this.data.busy) this.finishAccountLogin();
+    if (!this.data.busy) { this.cancelRandomProfile(); this.finishAccountLogin(); }
   },
 
   showGuestWarning() {
+    if (isOwnerPreview()) return wx.showToast({ title: "此测试版暂不开放游客模式", icon: "none" });
     if (!this.assertConsent() || this.data.busy) return;
     this.invalidateAttempts();
     this.setStage("guestWarn");
@@ -415,6 +519,7 @@ Page({
     this.setData({ guestNickname, guestInitial: guestNickname.trim().slice(0, 1) || "慢", error: "" });
   },
   startGuest() {
+    if (isOwnerPreview()) return;
     const nickname = this.data.guestNickname.trim();
     const length = Array.from(nickname).length;
     if (length < 2 || length > 12) { this.setData({ error: "昵称请填写 2–12 个字" }); return; }
@@ -428,19 +533,23 @@ Page({
   beginAttempt() {
     const id = (this.loginAttemptId || 0) + 1;
     this.loginAttemptId = id;
-    return { id, userId: getAuth()?.user?.id || "" };
+    return { id, identity: captureIdentityAuthority() };
   },
   isCurrentAttempt(attempt) {
-    return this.loginAttemptId === attempt.id && (getAuth()?.user?.id || "") === attempt.userId;
+    return this.loginAttemptId === attempt.id && isCurrentIdentityAuthority(attempt.identity);
   },
   showAttemptError(attempt, error, fallback) {
-    if (this.loginAttemptId === attempt.id) this.setData({ error: error?.message || fallback });
+    if (this.isCurrentAttempt(attempt)) this.setData({ error: error?.message || fallback });
   },
-  finishAttempt(attempt) { if (this.loginAttemptId === attempt.id) this.setData({ busy: false }); },
+  finishAttempt(attempt) { if (this.isCurrentAttempt(attempt)) this.setData({ busy: false }); },
   invalidateAttempts() { this.loginAttemptId = (this.loginAttemptId || 0) + 1; },
-  beginProfileOperation() { this.profileOperationId = (this.profileOperationId || 0) + 1; return this.profileOperationId; },
-  isCurrentProfileOperation(operation, userId) {
-    return this.profileOperationId === operation && getAuth()?.user?.id === userId;
+  beginProfileOperation() {
+    this.profileOperationId = (this.profileOperationId || 0) + 1;
+    return { id: this.profileOperationId, authority: captureAuthAuthority() };
+  },
+  isCurrentProfileOperation(operation, userId, failure) {
+    return this.data.stage === "profile" && this.profileOperationId === operation.id && operation.authority?.userId === userId &&
+      (isCurrentAuthAuthority(operation.authority) || isCurrentAuthFailure(operation.authority, failure));
   },
   startCodeTimer(seconds) {
     if (this.codeTimer) clearInterval(this.codeTimer);
@@ -452,6 +561,8 @@ Page({
     }, 1000);
   },
   onUnload() {
+    this.profileAuthority = null;
+    if (this._trialDiagnosticReady) trialDiagnostic.detach(this);
     this.invalidateAttempts();
     this.profileOperationId = (this.profileOperationId || 0) + 1;
     if (this.codeTimer) clearInterval(this.codeTimer);

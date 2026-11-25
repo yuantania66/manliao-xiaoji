@@ -1,5 +1,6 @@
 <view class="page note-page" style="padding-top: {{pageTop}}px;">
-  <navigator url="/pages/home/home" class="back note-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
+<block wx:if="{{!wallpaperOnly}}">
+  <view bindtap="goBack" class="back note-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</view>
   <view class="note-menu-button" bindtap="toggleMenu">···</view>
 
   <view wx:if="{{isMenuOpen}}" class="menu-layer" bindtap="toggleMenu"></view>
@@ -138,46 +139,10 @@
     <view class="mood-note">之后仍然可以在小记里补上或修改。</view>
   </view>
 
-  <view wx:if="{{isSlipOpen}}" class="slip-layer">
-    <view class="slip-mask"></view>
-    <scroll-view scroll-y class="slip-sheet" enhanced show-scrollbar="false">
-      <view class="eyebrow">小笺</view>
-      <view class="slip-close" bindtap="closeSlip"></view>
-      <view class="slip-card {{slipStyle}}">
-        <view class="slip-tapes">
-          <view class="slip-tape slip-tape-one"></view>
-          <view class="slip-tape slip-tape-two"></view>
-          <view class="slip-tape slip-tape-three"></view>
-        </view>
-        <view class="slip-hero-panel"></view>
-        <view class="slip-side-dots slip-side-dots-left"></view>
-        <view class="slip-side-dots slip-side-dots-right"></view>
-        <view class="slip-mini-card slip-mini-card-one">{{slip.caption}}</view>
-        <view class="slip-mini-card slip-mini-card-two">{{slip.quote}}</view>
-        <view class="slip-leaf">
-          <view class="slip-leaf-circle"></view>
-          <view class="slip-leaf-stem"></view>
-          <view class="slip-leaf-petal slip-leaf-petal-left"></view>
-          <view class="slip-leaf-petal slip-leaf-petal-right"></view>
-        </view>
-        <view class="slip-notch slip-notch-left"></view>
-        <view class="slip-notch slip-notch-right"></view>
-        <view class="slip-date">{{todayLabel}}</view>
-        <view class="slip-quote">{{slip.quote}}</view>
-        <view class="slip-dash"></view>
-        <view class="slip-caption">{{slip.caption}}</view>
-        <view class="qr">
-          <view wx:for="{{qrDots}}" wx:key="*this" class="dot" style="left: {{item[0] * 10 + 10}}rpx; top: {{item[1] * 10 + 10}}rpx;"></view>
-        </view>
-        <view class="slip-brand">慢聊小记</view>
-      </view>
-      <view class="slip-actions">
-        <button class="primary-button image-button" loading="{{isSavingImage}}" disabled="{{isSavingImage}}" bindtap="saveImage">保存图片</button>
-      </view>
-      <view wx:if="{{regenerateRemaining > 0}}" class="regenerate-button" bindtap="regenerateSlip">{{regenerateText}}</view>
-      <view wx:else class="regenerate-button regenerate-button-disabled">{{regenerateText}}</view>
-      <view class="feedback">{{slipFeedback}}</view>
-    </scroll-view>
-  </view>
-  <canvas canvas-id="slipCanvas" class="slip-canvas"></canvas>
+</block>
+<view wx:if="{{wallpaperOnly && !isSlipOpen}}">
+  <view bindtap="closeSlip" class="back note-back" style="top: {{backTop}}px;">‹ 返回</view>
+  <view class="mode-notice">{{statusText}}</view>
+</view>
+<include src="../../templates/note-card.wxml" />
 </view>

@@ -1,5 +1,12 @@
-.note-history-page {
-  padding-top: 154rpx;
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.history-header .title {
+  min-width: 0;
 }
 
 .history-back {
@@ -10,8 +17,9 @@
 }
 
 .add-link {
-  position: fixed;
-  z-index: 24;
+  flex-shrink: 0;
+  padding: 16rpx 0 16rpx 16rpx;
+  white-space: nowrap;
   color: #71877b;
   font-size: 26rpx;
   font-weight: 700;
@@ -40,8 +48,10 @@
 }
 
 .calendar-entry {
-  position: relative;
-  height: 112rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  min-height: 112rpx;
   margin-top: 36rpx;
   padding: 32rpx 40rpx;
 }
@@ -61,17 +71,14 @@
 }
 
 .entry-copy {
-  position: absolute;
-  left: 220rpx;
-  top: 36rpx;
+  flex: 1;
+  min-width: 0;
   color: #71877b;
   font-size: 24rpx;
 }
 
 .entry-arrow {
-  position: absolute;
-  right: 36rpx;
-  top: 28rpx;
+  flex-shrink: 0;
   color: #71877b;
   font-size: 40rpx;
 }
@@ -95,6 +102,10 @@
 }
 
 .note-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
   margin-top: 20rpx;
   color: #6d665f;
   font-size: 26rpx;
@@ -111,3 +122,19 @@
   margin-top: 80rpx;
   text-align: center;
 }
+
+.note-title,
+.note-body,
+.note-mood,
+.entry-copy {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.date-filter, .note-link { display: flex; align-items: center; gap: 24rpx; }
+.date-filter { justify-content: space-between; margin-top: 24rpx; color: #71877b; font-size: 24rpx; }
+.note-main { flex: 1; min-width: 0; }
+.note-thumb-wrap { position: relative; flex-shrink: 0; }
+.note-thumb { width: 128rpx; height: 128rpx; border-radius: 20rpx; }
+.note-thumb-fallback { display: flex; align-items: center; justify-content: center; background: #edece5; color: #71877b; }
+.note-thumb-count { position: absolute; bottom: 8rpx; right: 8rpx; padding: 2rpx 10rpx; border-radius: 12rpx; background: #6d665f; color: white; font-size: 20rpx; }

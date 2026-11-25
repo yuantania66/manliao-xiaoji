@@ -1,5 +1,5 @@
 <view class="page calendar-page" style="padding-top: {{pageTop}}px;">
-  <navigator url="/pages/note/note" class="close" style="top: {{closeTop}}px; right: {{closeRight}}px;" hover-class="none">×</navigator>
+  <view bindtap="closeCalendar" class="close" style="top: {{closeTop}}px; right: {{closeRight}}px;" hover-class="none">×</view>
   <view class="eyebrow">我的小记</view>
   <view class="title">心情日历</view>
   <view class="body intro">点开有天气的日期，可以回看那天的小记。</view>
@@ -12,19 +12,31 @@
     <view class="days">
       <view wx:for="{{cells}}" wx:key="key" class="day-cell">
         <navigator wx:if="{{item.active}}" url="/pages/note-history/note-history?date={{item.date}}" class="active-day note-active-day" hover-class="none">
-          <view class="weather-mark">
-            <view class="weather-sun"></view>
-            <view class="weather-ray weather-ray-one"></view>
-            <view class="weather-ray weather-ray-two"></view>
-            <view class="weather-ray weather-ray-three"></view>
+          <view wx:if="{{item.moodIndex >= 0}}" class="weather-mark mood-icon-{{item.moodIndex}}" aria-label="{{item.moodLabel}}">
+            <view class="icon-part sun-core"></view>
+            <view class="icon-part sun-rays"></view>
+            <view class="icon-part cloud-sun"></view>
+            <view class="icon-part cloud-body"></view>
+            <view class="icon-part rain rain-one"></view>
+            <view class="icon-part rain rain-two"></view>
+            <view class="icon-part rain rain-three"></view>
+            <view class="icon-part fog fog-one"></view>
+            <view class="icon-part fog fog-two"></view>
+            <view class="icon-part fog fog-three"></view>
+            <view class="icon-part rainbow rainbow-one"></view>
+            <view class="icon-part rainbow rainbow-two"></view>
+            <view class="icon-part rainbow rainbow-three"></view>
+            <view class="icon-part moon-base"></view>
+            <view class="icon-part moon-cut"></view>
           </view>
-          <text>{{item.day}}</text>
+          <view wx:else class="weather-missing" aria-label="有小记，未选择可识别的天气">•</view>
+          <text>{{item.isToday ? "今" : item.day}}</text>
         </navigator>
-        <text wx:elif="{{item.day}}" class="normal-day">{{item.day}}</text>
+        <text wx:elif="{{item.day}}" class="normal-day">{{item.isToday ? "今" : item.day}}</text>
       </view>
     </view>
     <view class="calendar-hint">点开有天气的日期，回到那一天的小记。</view>
     <view class="calendar-note">有天气标记的日期，代表那天写过小记。<br />点开日期，可以回到当天慢慢看。</view>
   </view>
-  <navigator url="/pages/note/note" class="back bottom-back" hover-class="none">‹ 返回小记</navigator>
+  <view bindtap="closeCalendar" class="back bottom-back" hover-class="none">‹ 返回小记</view>
 </view>

@@ -183,3 +183,8 @@ button::after {
 .safe-bottom {
   height: 140rpx;
 }
+
+/* Developer-preview connection result; no controls or account actions. */
+.trial-diagnostic-panel { margin:16rpx 0;padding:16rpx;border-radius:12rpx;background:#fffdf9;color:#52695e;font-size:24rpx;line-height:1.5;word-break:break-all; }
+.trial-diagnostic { margin-top:4px;text-align:left;word-break:break-all; }
+.trial-diagnostic-hint { margin-top:4px;color:#6d665f; }

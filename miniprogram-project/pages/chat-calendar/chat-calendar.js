@@ -1,3 +1,4 @@
+const { returnToPage } = require("../../utils/navigation");
 const { readChatMessages, dateKey } = require("../../utils/local-data");
 const { getSafeLayout } = require("../../utils/layout");
 const { getDataMode } = require("../../utils/auth");
@@ -18,6 +19,10 @@ Page({
     monthTitle: "",
     cells: [],
     statusText: ""
+  },
+
+  closePage() {
+    returnToPage("/pages/chat/chat");
   },
 
   onShow() {

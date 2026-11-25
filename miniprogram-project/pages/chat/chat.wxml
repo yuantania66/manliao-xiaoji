@@ -1,5 +1,5 @@
 <view class="page chat-page" style="padding-top: {{pageTop}}px;">
-  <navigator url="/pages/home/home" class="back chat-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</navigator>
+  <view bindtap="goBack" role="button" class="back chat-back" style="top: {{backTop}}px;" hover-class="none">‹ 返回</view>
   <view class="chat-title">慢慢说。</view>
   <view class="menu-button" bindtap="toggleMenu">···</view>
 
@@ -35,12 +35,14 @@
       </block>
       <view wx:if="{{isTyping}}" class="typing">...</view>
       <view wx:if="{{replyStatusText}}" class="reply-status" aria-live="assertive">{{replyStatusText}}</view>
+      <button wx:if="{{hasPendingTurn}}" bindtap="checkPendingTurn" disabled="{{isReconcilingTurn || isSending}}">{{isReconcilingTurn ? "正在查询…" : "查询发送结果"}}</button>
+      <view wx:if="{{replyTimingLabel}}" class="reply-timing">仅本机测试计时：{{replyTimingLabel}}（发送处理→视图回调）</view>
       <view wx:if="{{messages.length > 0 || isTyping || replyStatusText}}" id="chat-bottom" class="chat-bottom-anchor"></view>
     </view>
   </scroll-view>
 
   <form class="chat-input" style="bottom: {{inputBottom}}px;" bindsubmit="sendMessage">
     <input name="content" value="{{input}}" focus="{{inputFocus}}" adjust-position="{{false}}" confirm-hold="{{true}}" bindkeyboardheightchange="onKeyboardHeightChange" bindinput="onInput" bindconfirm="sendMessage" confirm-type="send" placeholder="说点什么" />
-    <button form-type="submit" disabled="{{!canSend || isSending || isGreetingLoading}}">发送</button>
+    <button form-type="submit" disabled="{{!canSend || isSending || isGreetingLoading || hasPendingTurn}}">发送</button>
   </form>
 </view>

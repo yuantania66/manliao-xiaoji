@@ -1,7 +1,8 @@
+const { isOwnerPreview } = require("../../utils/owner-preview");
 const { formatDateLabel } = require("../../utils/local-data");
 const { getAuth, saveAuth, enterGuest, isGuest } = require("../../utils/auth");
 const { getSafeLayout } = require("../../utils/layout");
-const { getMe } = require("../../api/auth");
+const { getMe, downloadProfileAvatar } = require("../../api/auth");
 const { authenticateWithWechatPhone, getWechatPhoneCode } = require("../../utils/wechat-phone-login");
 const { authenticateWithWechat } = require("../../utils/wechat-login");
 const { requireWechatPrivacyAuthorization, openWechatPrivacyContract } = require("../../utils/wechat-privacy");
@@ -32,6 +33,7 @@ const pick = (items) => items[Math.floor(Math.random() * items.length)];
 
 Page({
   data: {
+    ownerPreview: isOwnerPreview(),
     pageTop: 92,
     entryBottom: 48,
     entryBackground: getLoginBackground(),
@@ -65,8 +67,12 @@ Page({
   },
 
   onShow() {
+    const app = getApp();
+    if (app && app.recordGrowth) app.recordGrowth();
     this.updateEntryBackground();
     this.reconcileAuth();
+    const avatarUrl = getAuth()?.user?.avatarUrl;
+    if (avatarUrl) downloadProfileAvatar(avatarUrl).catch(() => undefined);
   },
 
   updateEntryBackground(hour) {
@@ -264,6 +270,7 @@ Page({
   },
 
   enterGuest() {
+    if (isOwnerPreview()) return wx.showToast({ title: "此测试版暂不开放游客模式", icon: "none" });
     this.loginAttemptId = (this.loginAttemptId || 0) + 1;
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.authCheckPending = false;

@@ -1,3 +1,4 @@
+const { returnToPage } = require("../../utils/navigation");
 const { readChatMessages } = require("../../utils/local-data");
 const { getSafeLayout } = require("../../utils/layout");
 const { getDataMode } = require("../../utils/auth");
@@ -17,6 +18,10 @@ Page({
     results: [],
     showEmpty: false,
     statusText: ""
+  },
+
+  closePage() {
+    returnToPage("/pages/chat/chat");
   },
 
   onLoad() {

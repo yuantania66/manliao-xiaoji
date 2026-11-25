@@ -5,6 +5,7 @@
     <view class="detail-menu-button" bindtap="toggleMenu">···</view>
     <view wx:if="{{isMenuOpen}}" class="menu-mask" bindtap="closeMenu"></view>
     <view wx:if="{{isMenuOpen}}" class="detail-menu">
+      <view class="edit-menu-item" bindtap="openWallpaper">查看壁纸</view>
       <view class="edit-menu-item" bindtap="startEditing">修改文字</view>
       <view class="delete-menu-item" bindtap="deleteCurrentNote">
         <view class="delete-icon">
@@ -27,11 +28,13 @@
     </view>
     <view wx:elif="{{note.hasText}}" class="text-content">{{note.content}}</view>
 
+    <button wx:if="{{mediaError}}" bindtap="loadNote">{{mediaError}}</button>
     <view wx:if="{{note.hasImages}}" class="media-grid {{note.imageGridClass}}">
       <image
         wx:for="{{note.images}}"
         wx:key="url"
         class="image-content"
+        wx:if="{{item.url}}"
         src="{{item.url}}"
         mode="aspectFill"
         bindtap="previewImage"

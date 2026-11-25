@@ -19,6 +19,12 @@ Page({
     this.updateSafeLayout();
   },
 
+  goBack() {
+    const fallback = () => wx.redirectTo({ url: "/pages/note-history/note-history" });
+    if (getCurrentPages().length > 1) wx.navigateBack({ fail: fallback });
+    else fallback();
+  },
+
   updateSafeLayout() {
     const layout = getSafeLayout();
     this.setData({

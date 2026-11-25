@@ -1,10 +1,16 @@
+const { isOwnerPreview } = require("./owner-preview");
 const AUTH_KEY = "xinqingAuth";
 const GUEST_KEY = "xinqingGuestMode";
 const GUEST_PROFILE_KEY = "xinqingGuestProfile";
 const ACCOUNT_CACHE_KEYS = [
+  "xinqingMiniChatPendingTurn:v1",
+  "xinqingMiniChatPendingTurn:v2",
   "xinqingInsightsAnalysisAuthorized",
   "xinqingInsightsAuthorization:v1"
 ];
+// In-flight authority is process-local. A fresh login is a new generation even
+// when the server happens to return the same token/user/expiry again.
+let authGeneration = 0;
 
 // Login contract without the freshness check: token, expiresAt, and user.id must
 // all be well-formed. Only structurally valid sessions may mint a draft owner claim.
@@ -39,6 +45,7 @@ const readRawAuth = () => {
 const removeRawAuthQuietly = () => {
   try {
     wx.removeStorageSync(AUTH_KEY);
+    authGeneration += 1;
   } catch (error) {}
 };
 
@@ -110,19 +117,47 @@ const ensureLegacyDraftSafeBeforeIdentityChange = (nextOwner) => {
   }
 };
 
+// The existing turn ID is an ownership claim, not a credential or identity secret.
+// Keeping it in the same storage write as auth prevents stale pending revival after
+// a successful same-user login followed by failed cleanup (including after restart).
+const claimPendingChatTurn = (owner, turnId) => {
+  const auth = getAuth();
+  if (!auth || owner !== `authenticated:${auth.user.id}`) throw new Error("聊天身份已变化");
+  wx.setStorageSync(AUTH_KEY, { ...auth, pendingChatTurnId: turnId });
+  const stored = getAuth();
+  if (!stored || stored.pendingChatTurnId !== turnId || stored.token !== auth.token ||
+      stored.user.id !== auth.user.id || stored.expiresAt !== auth.expiresAt) {
+    throw new Error("待确认消息归属暂时无法保存");
+  }
+};
+
+const clearPendingChatRecords = () => {
+  ["xinqingMiniChatPendingTurn:v1", "xinqingMiniChatPendingTurn:v2"]
+    .forEach((key) => {
+      // Identity is already committed; a cleanup failure must not turn login into
+      // a false failure. The atomic null claim prevents reading the retained file.
+      try { wx.removeStorageSync(key); } catch (error) {}
+    });
+};
+
 const saveAuth = (auth) => {
   if (!isUsableAuth(auth)) throw new Error("登录响应无效");
   ensureLegacyDraftSafeBeforeIdentityChange(`authenticated:${auth.user.id}`);
   // Persist the authenticated identity before changing the active guest marker.
   // Guest-owned content stays isolated in its own keys and remains recoverable.
-  wx.setStorageSync(AUTH_KEY, auth);
+  // The claim is revoked atomically with the new login, even if later cleanup fails.
+  wx.setStorageSync(AUTH_KEY, { ...auth, pendingChatTurnId: null });
+  authGeneration += 1;
+  require("./guest-session").invalidateGuestSession();
   try { wx.removeStorageSync(GUEST_KEY); } catch (error) {}
   const app = getApp();
   app.globalData.user = auth.user || null;
   app.globalData.token = auth.token || "";
+  clearPendingChatRecords();
 };
 
-const updateCachedUser = (expectedUserId, user) => {
+const updateCachedUser = (expectedUserId, user, authority) => {
+  if (authority && !isCurrentAuthAuthority(authority)) throw new Error("账号已切换，请重试");
   const auth = getAuth();
   if (!auth || !user || auth.user.id !== expectedUserId || user.id !== expectedUserId) {
     throw new Error("账号已切换，请重试");
@@ -137,32 +172,42 @@ const updateCachedUser = (expectedUserId, user) => {
 const clearAuth = () => {
   ensureLegacyDraftSafeBeforeIdentityChange("none");
   wx.removeStorageSync(AUTH_KEY);
+  authGeneration += 1;
   wx.removeStorageSync(GUEST_KEY);
+  require("./guest-session").invalidateGuestSession();
   ACCOUNT_CACHE_KEYS.forEach((key) => wx.removeStorageSync(key));
   const app = getApp();
   app.globalData.user = null;
   app.globalData.token = "";
 };
 
-const clearCancelledAccount = (userId) => {
+const clearCancelledAccount = (userId, authority) => {
   if (!userId) throw new Error("当前账号标识不可用");
+  if (authority && !isCurrentIdentityAuthority(authority)) throw new Error("账号已切换，请重试");
   wx.removeStorageSync(AUTH_KEY);
+  authGeneration += 1;
+  // Transfer only this successful local removal to its cleanup continuation.
+  // A partial cleanup can retry locally, but a later login still invalidates it.
+  if (authority) Object.assign(authority, captureIdentityAuthority());
   ACCOUNT_CACHE_KEYS.forEach((key) => wx.removeStorageSync(key));
   if (userId) {
-    [`xinqingMiniChatMessages:${userId}`, `xinqingMiniNotes:${userId}`]
+    [`xinqingMiniChatMessages:${userId}`, `xinqingMiniNotes:${userId}`, `xinqingCareCompleted:v1:${encodeURIComponent(userId)}`]
       .forEach((key) => wx.removeStorageSync(key));
   }
-  const remainingKeys = new Set([AUTH_KEY, ...ACCOUNT_CACHE_KEYS, `xinqingMiniChatMessages:${userId}`, `xinqingMiniNotes:${userId}`]);
+  const remainingKeys = new Set([AUTH_KEY, ...ACCOUNT_CACHE_KEYS, `xinqingMiniChatMessages:${userId}`, `xinqingMiniNotes:${userId}`, `xinqingCareCompleted:v1:${encodeURIComponent(userId)}`]);
   const storedKeys = wx.getStorageInfoSync().keys || [];
   if (storedKeys.some((key) => remainingKeys.has(key))) {
     throw new Error("本机账号数据清理失败");
   }
+  require("./visit-growth").clearAccount(userId);
+  require("./guest-session").invalidateGuestSession();
   const app = getApp();
   app.globalData.user = null;
   app.globalData.token = "";
 };
 
 const enterGuest = () => {
+  if (isOwnerPreview()) throw new Error("此测试版仅限本人微信登录，暂不开放游客模式");
   const rawBefore = readRawAuth();
   const previousAuth = isUsableAuth(rawBefore) ? rawBefore : null;
   ensureLegacyDraftSafeBeforeIdentityChange("guest");
@@ -184,9 +229,12 @@ const enterGuest = () => {
       throw error;
     }
   }
+  authGeneration += 1;
+  require("./guest-session").invalidateGuestSession();
   const app = getApp();
   app.globalData.user = null;
   app.globalData.token = "";
+  clearPendingChatRecords();
 };
 
 const setGuestProfile = (profile) => {
@@ -204,7 +252,7 @@ const getGuestProfile = () => {
   return profile && typeof profile.nickname === "string" ? profile : null;
 };
 
-const isGuest = () => wx.getStorageSync(GUEST_KEY) === true;
+const isGuest = () => !isOwnerPreview() && wx.getStorageSync(GUEST_KEY) === true;
 
 const isAuthenticated = () => {
   const auth = getAuth();
@@ -217,8 +265,53 @@ const getDataMode = () => {
   return "none";
 };
 
+const captureAuthAuthority = () => {
+  const auth = getAuth();
+  return auth ? { generation: authGeneration, token: auth.token, userId: auth.user.id, expiresAt: auth.expiresAt } : null;
+};
+
+const isCurrentAuthAuthority = (authority) => {
+  if (!authority) return false;
+  const auth = getAuth();
+  return Boolean(auth && authority.generation === authGeneration && authority.token === auth.token &&
+    authority.userId === auth.user.id && authority.expiresAt === auth.expiresAt);
+};
+
+const captureIdentityAuthority = () => {
+  try {
+    // An unavailable storage read is not proof that an anonymous identity exists.
+    wx.getStorageSync(AUTH_KEY);
+    const auth = captureAuthAuthority();
+    return { generation: authGeneration, auth, guest: !auth && isGuest() };
+  } catch (error) { return null; }
+};
+
+const isCurrentIdentityAuthority = (authority) => {
+  const current = captureIdentityAuthority();
+  return Boolean(authority && current && authority.generation === current.generation &&
+    authority.guest === current.guest && (authority.auth
+      ? isCurrentAuthAuthority(authority.auth)
+      : !current.auth));
+};
+
+// Error-only continuation: the request itself cleared this exact Auth snapshot.
+// It never makes an old successful result or a follow-up request authoritative.
+const isCurrentAuthFailure = (authority, error) => {
+  const failure = error?.authClearance;
+  const source = failure?.source;
+  return Boolean(authority && source && authority.generation === source.generation &&
+    authority.token === source.token && authority.userId === source.userId &&
+    authority.expiresAt === source.expiresAt && isCurrentIdentityAuthority(failure.cleared));
+};
+
 module.exports = {
+  claimPendingChatTurn,
   getAuth,
+  captureAuthAuthority,
+  isCurrentAuthAuthority,
+  captureIdentityAuthority,
+  isCurrentIdentityAuthority,
+  isCurrentAuthFailure,
   saveAuth,
   updateCachedUser,
   clearAuth,

@@ -125,12 +125,38 @@ Page({
         return this.loadInsights(this.data.range, authorization);
       })
       .catch((error) => {
-        if (this.insightsAuthorizationId !== authorizationId || !this.isCurrentAuth(requestUserId, requestAuthToken)) return;
+        if (this.insightsAuthorizationId !== authorizationId) return;
+        if (!this.isCurrentAuth(requestUserId, requestAuthToken)) {
+          this.syncIdentity(error.message);
+          return;
+        }
         this.setData({ authorized: false, errorText: error.message || "观察授权暂时无法完成，请稍后重试。" });
       })
       .finally(() => {
         if (this.insightsAuthorizationId === authorizationId) this.authorizationPending = false;
       });
+  },
+
+  syncIdentity(errorText = "") {
+    const auth = getAuth();
+    const authorization = this.getStoredAuthorization(auth);
+    this.insightsRequestId = (this.insightsRequestId || 0) + 1;
+    this.insightsAuthorizationId = (this.insightsAuthorizationId || 0) + 1;
+    this.authorizationPending = false;
+    this.insightsIdentityKey = getIdentityKey(auth, authorization);
+    this.setData({
+      authorized: Boolean(authorization),
+      isAuthenticated: Boolean(auth),
+      words: [],
+      sourceCounts: { notes: 0, userMessages: 0 },
+      isLoading: false,
+      errorText
+    });
+  },
+
+  revokeAuthorization() {
+    wx.removeStorageSync(INSIGHTS_AUTH_KEY);
+    this.syncIdentity();
   },
 
   changeRange(event) {
@@ -161,17 +187,24 @@ Page({
         });
       })
       .catch((error) => {
-        if (this.insightsRequestId !== requestId || !this.isCurrentAuthorization(requestUserId, requestConsentToken)) return;
+        if (this.insightsRequestId !== requestId) return;
+        if (!this.isCurrentAuthorization(requestUserId, requestConsentToken)) {
+          this.syncIdentity(error.message);
+          return;
+        }
         const authorizationRejected = String(error.message || "").includes("授权慢聊小记观察");
-        if (authorizationRejected) wx.removeStorageSync(INSIGHTS_AUTH_KEY);
+        if (authorizationRejected) {
+          wx.removeStorageSync(INSIGHTS_AUTH_KEY);
+          this.syncIdentity(error.message);
+          return;
+        }
         this.setData({
-          authorized: authorizationRejected ? false : this.data.authorized,
           words: [],
           errorText: error.message || "观察暂时无法加载，请稍后重试。"
         });
       })
       .finally(() => {
-        if (this.insightsRequestId === requestId && this.isCurrentAuthorization(requestUserId, requestConsentToken)) {
+        if (this.insightsRequestId === requestId) {
           this.setData({ isLoading: false });
         }
       });

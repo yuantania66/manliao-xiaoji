@@ -42,7 +42,8 @@
       <button class="wechat-privacy-link" bindtap="openWechatPrivacy">查看微信隐私保护指引</button>
       <button class="primary-button" loading="{{isLoggingIn}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="loginWithWechatAccount">微信登录</button>
       <button class="primary-button" loading="{{isLoggingIn || isCheckingAuth}}" disabled="{{isLoggingIn || isCheckingAuth}}" bindtap="preparePhoneLogin">{{isCheckingAuth ? "正在验证..." : (isLoggingIn ? "准备中..." : "手机号登录")}}</button>
-      <button class="guest-text" bindtap="enterGuest">游客模式</button>
+      <button class="guest-text" wx:if="{{!ownerPreview}}" bindtap="enterGuest">游客模式</button>
+    <text wx:if="{{ownerPreview}}" class="text-action">仅限本人微信登录，暂不开放游客模式</text>
     </view>
     <view wx:else class="entry-sheet phone-confirm-sheet" style="bottom: {{entryBottom}}px;">
       <view class="entry-title">创建或登录慢聊小记账号</view>

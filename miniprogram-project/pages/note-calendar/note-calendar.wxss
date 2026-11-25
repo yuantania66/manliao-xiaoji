@@ -28,37 +28,241 @@
   opacity: 0.88;
 }
 
-.weather-sun {
+/* Weather shapes and palette mirror the existing note picker. */
+.icon-part {
   position: absolute;
-  left: 19rpx;
-  top: 19rpx;
-  width: 24rpx;
-  height: 24rpx;
-  border-radius: 50%;
-  border: 5rpx solid #d6b47b;
+  display: none;
 }
 
-.weather-ray {
-  position: absolute;
-  left: 29rpx;
-  top: 2rpx;
-  width: 5rpx;
-  height: 13rpx;
+.sun-core {
+  left: 21rpx;
+  top: 21rpx;
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background: #d6b47b;
+}
+
+.sun-rays {
+  left: 28rpx;
+  top: 4rpx;
+  width: 6rpx;
+  height: 14rpx;
   border-radius: 999rpx;
   background: #d6b47b;
-  transform-origin: 2.5rpx 29rpx;
+  box-shadow:
+    0 40rpx 0 #d6b47b,
+    20rpx 20rpx 0 #d6b47b,
+    -20rpx 20rpx 0 #d6b47b;
 }
 
-.weather-ray-one {
-  box-shadow: 0 45rpx 0 #d6b47b;
+.sun-rays::before,
+.sun-rays::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6rpx;
+  height: 14rpx;
+  border-radius: 999rpx;
+  background: #d6b47b;
+  transform-origin: 3rpx 27rpx;
 }
 
-.weather-ray-two {
-  transform: rotate(60deg);
-  box-shadow: 0 45rpx 0 #d6b47b;
+.sun-rays::before {
+  transform: rotate(45deg);
+  box-shadow: 0 40rpx 0 #d6b47b;
 }
 
-.weather-ray-three {
-  transform: rotate(120deg);
-  box-shadow: 0 45rpx 0 #d6b47b;
+.sun-rays::after {
+  transform: rotate(-45deg);
+  box-shadow: 0 40rpx 0 #d6b47b;
+}
+
+.cloud-sun {
+  left: 10rpx;
+  top: 11rpx;
+  width: 19rpx;
+  height: 19rpx;
+  border-radius: 50%;
+  background: #d6b47b;
+}
+
+.cloud-body {
+  left: 15rpx;
+  top: 29rpx;
+  width: 43rpx;
+  height: 19rpx;
+  border-radius: 999rpx;
+  background: #b9c8c6;
+}
+
+.cloud-body::before,
+.cloud-body::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
+}
+
+.cloud-body::before {
+  left: 16rpx;
+  top: -14rpx;
+  width: 27rpx;
+  height: 27rpx;
+}
+
+.cloud-body::after {
+  left: 0;
+  top: -5rpx;
+  width: 20rpx;
+  height: 20rpx;
+}
+
+.rain {
+  top: 48rpx;
+  width: 5rpx;
+  height: 15rpx;
+  border-radius: 999rpx;
+  background: #71877b;
+  transform: rotate(45deg);
+}
+
+.rain-one {
+  left: 19rpx;
+}
+
+.rain-two {
+  left: 32rpx;
+}
+
+.rain-three {
+  left: 45rpx;
+}
+
+.fog {
+  left: 10rpx;
+  height: 5rpx;
+  border-radius: 999rpx;
+  background: #8d9a95;
+}
+
+.fog-one {
+  top: 20rpx;
+  width: 42rpx;
+}
+
+.fog-two {
+  top: 31rpx;
+  left: 6rpx;
+  width: 50rpx;
+}
+
+.fog-three {
+  top: 43rpx;
+  left: 17rpx;
+  width: 33rpx;
+}
+
+.rainbow-one,
+.rainbow-two,
+.rainbow-three {
+  border-style: solid;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.rainbow-one {
+  left: 9rpx;
+  top: 23rpx;
+  width: 44rpx;
+  height: 25rpx;
+  border-width: 5rpx;
+  border-color: #d77b70;
+  border-radius: 44rpx 44rpx 0 0;
+}
+
+.rainbow-two {
+  left: 17rpx;
+  top: 31rpx;
+  width: 28rpx;
+  height: 16rpx;
+  border-width: 5rpx;
+  border-color: #d6b47b;
+  border-radius: 28rpx 28rpx 0 0;
+}
+
+.rainbow-three {
+  left: 25rpx;
+  top: 39rpx;
+  width: 12rpx;
+  height: 8rpx;
+  border-width: 5rpx;
+  border-color: #71877b;
+  border-radius: 12rpx 12rpx 0 0;
+}
+
+.moon-base,
+.moon-cut {
+  border-radius: 50%;
+}
+
+.moon-base {
+  left: 12rpx;
+  top: 13rpx;
+  width: 38rpx;
+  height: 38rpx;
+  background: #c89c86;
+}
+
+.moon-cut {
+  left: 24rpx;
+  top: 7rpx;
+  width: 38rpx;
+  height: 38rpx;
+  background: #fffdf9;
+}
+
+.mood-icon-0 .sun-core,
+.mood-icon-0 .sun-rays,
+.mood-icon-1 .cloud-sun,
+.mood-icon-1 .cloud-body,
+.mood-icon-2 .cloud-sun,
+.mood-icon-2 .cloud-body,
+.mood-icon-3 .cloud-body,
+.mood-icon-4 .cloud-body,
+.mood-icon-4 .rain,
+.mood-icon-5 .cloud-body,
+.mood-icon-5 .rain,
+.mood-icon-6 .fog,
+.mood-icon-7 .rainbow-one,
+.mood-icon-7 .rainbow-two,
+.mood-icon-7 .rainbow-three,
+.mood-icon-8 .moon-base,
+.mood-icon-8 .moon-cut {
+  display: block;
+}
+
+.mood-icon-2 .cloud-sun {
+  background: #d6b47b;
+}
+
+.mood-icon-2 .cloud-body {
+  background: #71877b;
+}
+
+.mood-icon-5 .cloud-body {
+  background: #6e7780;
+}
+
+.mood-icon-5 .rain {
+  background: #6e7780;
+}
+
+
+.weather-missing {
+  position: absolute;
+  top: -20rpx;
+  color: #8d9a95;
+  font-size: 24rpx;
 }

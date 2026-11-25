@@ -1,5 +1,5 @@
 <view class="page calendar-page">
-  <navigator url="/pages/chat/chat" class="close" style="top: {{closeTop}}px; right: {{closeRight}}px;" hover-class="none">×</navigator>
+  <view bindtap="closePage" role="button" aria-label="关闭聊天日历" class="close" style="top: {{closeTop}}px; right: {{closeRight}}px;" hover-class="none">×</view>
   <view class="eyebrow">聊聊</view>
   <view class="title">聊天日历</view>
   <view class="body intro">有手写爱心的日子，代表你曾经来这里聊过。</view>
@@ -24,5 +24,5 @@
     <view class="calendar-hint">点开有爱心的日期，回到那一段聊天。</view>
     <view class="calendar-note">有手写爱心的日期，代表那天聊过天。<br />点开日期，可以回到当天慢慢看。</view>
   </view>
-  <navigator url="/pages/chat/chat" class="back bottom-back" hover-class="none">‹ 返回聊天</navigator>
+  <view bindtap="closePage" role="button" class="back bottom-back" hover-class="none">‹ 返回聊天</view>
 </view>

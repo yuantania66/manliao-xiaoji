@@ -1,3 +1,6 @@
+const { isOwnerPreview } = require("../../utils/owner-preview");
+const { downloadNoteMedia, discardTempMedia } = require("../../utils/note-media");
+const { captureAuthAuthority, isCurrentAuthAuthority } = require("../../utils/auth");
 const { readNotes, writeNotes, updateNote: updateLocalNote } = require("../../utils/local-data");
 const { getDataMode } = require("../../utils/auth");
 const { getNote, updateNote, deleteNote } = require("../../api/notes");
@@ -66,14 +69,46 @@ Page({
     isEditing: false,
     isUpdating: false,
     editContent: "",
-    statusText: ""
+    statusText: "",
+    mediaError: ""
   },
 
   onLoad(options) {
     this.noteId = options.id || "";
     this.returnDate = options.date || "";
     this.updateSafeLayout();
-    this.loadNote();
+    if (!isOwnerPreview()) this.loadNote();
+  },
+
+  onShow() { if (isOwnerPreview()) this.loadNote(); },
+
+  onHide() {
+    if (!isOwnerPreview()) return;
+    this.mediaGeneration = (this.mediaGeneration || 0) + 1;
+    this.setData({ note: null, mediaError: "" });
+  },
+
+  onUnload() { this.mediaGeneration = (this.mediaGeneration || 0) + 1; this.releaseMedia(); },
+
+  releaseMedia() {
+    (this.mediaPaths || []).forEach(discardTempMedia);
+    this.mediaPaths = [];
+  },
+
+  async prepareNoteMedia(note, authority, generation) {
+    if (!isOwnerPreview()) return note;
+    const images = await Promise.all(note.images.map(async (item) => {
+      try {
+        const url = await downloadNoteMedia(item.url, authority);
+        if (generation !== this.mediaGeneration || !isCurrentAuthAuthority(authority)) {
+          discardTempMedia(url);
+          return { ...item, url: "" };
+        }
+        this.mediaPaths.push(url);
+        return { ...item, url };
+      } catch (error) { return { ...item, url: "" }; }
+    }));
+    return { ...note, images };
   },
 
   updateSafeLayout() {
@@ -83,6 +118,10 @@ Page({
 
   loadNote() {
     const dataMode = getDataMode();
+    const authority = captureAuthAuthority();
+    const generation = (this.mediaGeneration || 0) + 1;
+    this.mediaGeneration = generation;
+    if (isOwnerPreview()) { this.releaseMedia(); this.setData({ note: null, mediaError: "" }); }
     if (!this.noteId) {
       this.setData({ note: null, statusText: "这条小记暂时找不到。" });
       return;
@@ -90,11 +129,15 @@ Page({
 
     if (dataMode === "authenticated") {
       getNote(this.noteId)
-        .then((remoteNote) => {
-          const note = withViewFlags(normalizeRemoteNote(remoteNote));
-          this.setData({ note, statusText: "" });
+        .then(async (remoteNote) => {
+          if (isOwnerPreview() && (generation !== this.mediaGeneration || !isCurrentAuthAuthority(authority))) return;
+          const note = await this.prepareNoteMedia(withViewFlags(normalizeRemoteNote(remoteNote)), authority, generation);
+          if (isOwnerPreview() && (generation !== this.mediaGeneration || !isCurrentAuthAuthority(authority))) return;
+          this.mediaAuthority = authority;
+          this.setData({ note, statusText: "", mediaError: note.images.some(item => !item.url) ? "部分图片加载失败，点击重试" : "" });
         })
         .catch((error) => {
+          if (isOwnerPreview() && (generation !== this.mediaGeneration || !isCurrentAuthAuthority(authority))) return;
           const message = error.message || "小记加载失败，请稍后再试";
           this.setData({ note: null, statusText: message });
           wx.showToast({ title: message, icon: "none" });
@@ -142,6 +185,9 @@ Page({
   },
 
   previewImage(event) {
+    if (isOwnerPreview() && !isCurrentAuthAuthority(this.mediaAuthority)) {
+      this.releaseMedia(); this.setData({ note: null }); return;
+    }
     const current = event.currentTarget.dataset.url;
     const urls = ((this.data.note && this.data.note.images) || [])
       .map((item) => item.url)
@@ -159,6 +205,13 @@ Page({
 
   closeMenu() {
     this.setData({ isMenuOpen: false });
+  },
+
+  openWallpaper() {
+    if (!this.data.note || this.data.isUpdating || this.data.isDeleting) return;
+    if (getDataMode() === "authenticated" && !isCurrentAuthAuthority(this.mediaAuthority)) return;
+    this.setData({ isMenuOpen: false });
+    wx.navigateTo({ url: `/pages/note/note?wallpaperId=${encodeURIComponent(this.data.note.id)}` });
   },
 
   startEditing() {
@@ -179,10 +232,14 @@ Page({
     if (dataMode === "none") { this.setData({ statusText: "登录状态已失效，请重新登录后再保存。" }); return; }
     this.setData({ isUpdating: true, statusText: "" });
     const update = dataMode === "authenticated" ? updateNote(this.data.note.id, content) : Promise.resolve(updateLocalNote(this.data.note.id, content));
-    update.then((saved) => {
+    const authority = captureAuthAuthority();
+    const generation = this.mediaGeneration;
+    update.then(async (saved) => {
+      if (isOwnerPreview() && (generation !== this.mediaGeneration || !isCurrentAuthAuthority(authority))) return;
       if (!saved) throw new Error("小记不存在");
-      const note = withViewFlags(dataMode === "authenticated" ? normalizeRemoteNote(saved) : normalizeLocalNote(saved));
-      this.setData({ note, isEditing: false, editContent: "", statusText: "" });
+      const note = await this.prepareNoteMedia(withViewFlags(dataMode === "authenticated" ? normalizeRemoteNote(saved) : normalizeLocalNote(saved)), authority, generation);
+      if (isOwnerPreview() && (generation !== this.mediaGeneration || !isCurrentAuthAuthority(authority))) return;
+      this.setData({ note, isEditing: false, editContent: "", statusText: "", mediaError: note.images.some(item => !item.url) ? "部分图片加载失败，点击重试" : "" });
     }).catch((error) => {
       this.setData({ statusText: error.message || "修改失败，请稍后再试" });
     }).finally(() => this.setData({ isUpdating: false }));

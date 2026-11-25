@@ -4,6 +4,15 @@
   <view class="auth-mask"></view>
 
   <view wx:if="{{stage === 'choice'}}" class="sheet choice-sheet">
+    <view wx:if="{{deliveryLabel}}" class="delivery-version">
+      <view>{{deliveryLabel}}</view>
+      <view class="trial-diagnostic" wx:if="{{trialDiagnostic.visible}}" aria-live="polite">
+        <view>环境：{{trialDiagnostic.envVersion}} · {{trialDiagnostic.code}}</view>
+        <view>{{trialDiagnostic.message}}</view>
+        <view wx:if="{{trialDiagnostic.detail}}">{{trialDiagnostic.detail}}</view>
+        <view class="trial-diagnostic-hint">{{ownerPreview ? '仅限本人微信账号，可登录后继续使用。' : '请反馈本段结果，先不要登录或聊天。'}}</view>
+      </view>
+    </view>
     <view class="sheet-title compact">选择进入方式</view>
     <checkbox-group class="consent {{consentInvalid ? 'consent-invalid' : ''}} {{consentShake ? 'consent-shake' : ''}}" bindchange="togglePrivacy">
       <label><checkbox value="confirmed" checked="{{privacyConfirmed}}" color="{{consentInvalid ? '#a95f55' : '#71877b'}}" />同意</label>
@@ -11,8 +20,8 @@
     </checkbox-group>
     <view wx:if="{{error}}" class="error">{{error}}</view>
     <button class="action primary" bindtap="loginWechat" loading="{{busy}}" disabled="{{busy}}">微信登录</button>
-    <button class="action soft" bindtap="showWechatPhone" disabled="{{busy}}">微信绑定手机号码登录</button>
-    <button class="text-action guest" bindtap="showGuestWarning" disabled="{{busy}}">游客模式</button>
+    <button class="text-action guest" wx:if="{{!ownerPreview}}" bindtap="showGuestWarning" disabled="{{busy}}">游客模式</button>
+    <text wx:if="{{ownerPreview}}" class="text-action">仅限本人微信登录，暂不开放游客模式</text>
   </view>
 
   <view wx:elif="{{stage === 'wechatPhone'}}" class="sheet wechat-phone-sheet">
@@ -36,20 +45,14 @@
 
   <view wx:elif="{{stage === 'profile'}}" class="sheet profile-sheet">
     <view class="app-line"><view class="app-mark">慢</view><text>慢聊小记 个人资料</text></view>
-    <view class="sheet-title">选择你的头像和名字</view><view class="sheet-copy">已为你准备了一个名字和头像，也可以自己修改；稍后再说不影响登录。</view>
-    <view class="profile-row"><text>头像</text><button class="profile-avatar-choice" bindtap="showAvatarSources" disabled="{{busy}}" aria-label="选择头像"><image wx:if="{{avatarPreview}}" src="{{avatarPreview}}" mode="aspectFill" /><view wx:else class="generated-avatar" style="background: {{profileAvatarStyle}}">{{profileInitial}}</view></button></view>
-    <view class="divider"></view>
-    <view class="profile-row nickname-row"><text>昵称</text><input type="nickname" maxlength="12" value="{{profileNickname}}" placeholder="2–12 个字" bindinput="inputNickname" /></view>
+    <view class="sheet-title">设置你的头像和昵称</view><view class="sheet-copy">选择头像、填写昵称，也可以随机生成。</view>
+    <view class="profile-row"><text>头像 <text class="profile-required">*</text></text><button class="profile-avatar-choice" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar" disabled="{{busy || profileRandomConfirm}}" aria-label="选择头像"><image wx:if="{{avatarPreview}}" src="{{avatarPreview}}" mode="aspectFill" /><view wx:elif="{{profileGeneratedAvatar}}" class="generated-avatar" style="background: {{profileAvatarStyle}}">{{profileInitial}}</view><view wx:else class="profile-avatar-placeholder">{{profileAvatarSelected ? '已设置' : '请选择'}}</view></button></view>
+    <view wx:if="{{profileAvatarError}}" class="profile-field-error" aria-live="polite">{{profileAvatarError}}</view>
+    <view class="profile-row nickname-row"><text>昵称 <text class="profile-required">*</text></text><input type="nickname" maxlength="12" value="{{profileNickname}}" placeholder="请输入昵称" placeholder-class="profile-nickname-placeholder" bindinput="inputNickname" disabled="{{busy || profileRandomConfirm}}" /></view>
+    <view wx:if="{{profileNicknameError}}" class="profile-field-error" aria-live="polite">{{profileNicknameError}}</view>
     <view wx:if="{{error}}" class="error">{{error}}</view>
-    <button class="profile-submit" bindtap="saveProfile" loading="{{busy}}" disabled="{{busy || profileNickname.length < 2}}">保存资料</button>
-    <button class="text-action abandon" bindtap="cancelProfileEdit" disabled="{{busy}}">稍后再说</button>
-  </view>
-
-  <view wx:elif="{{stage === 'avatarSource'}}" class="sheet avatar-source-sheet">
-    <view class="sheet-title compact center">选个头像</view><view class="sheet-copy center">选一张你喜欢的图片</view>
-    <button class="source wechat" open-type="chooseAvatar" bindchooseavatar="chooseWechatAvatar">用微信头像</button>
-    <button class="source" bindtap="chooseAlbum">从相册选</button><button class="source" bindtap="takePhoto">拍一张</button>
-    <view class="source-divider"></view><button class="source cancel" bindtap="cancelAvatarSources">取消</button>
+    <button class="text-action profile-random" bindtap="randomizeProfile" disabled="{{busy || profileRandomConfirm}}">{{profileRandomLabel}}</button>
+    <button class="profile-submit" bindtap="saveProfile" loading="{{busy}}" disabled="{{busy || profileRandomConfirm}}">保存资料</button>
   </view>
 
   <view wx:elif="{{stage === 'guestWarn'}}" class="sheet guest-warn-sheet">
@@ -66,4 +69,13 @@
     <view wx:if="{{error}}" class="error">{{error}}</view>
     <button class="action primary" bindtap="startGuest">进入游客模式</button><button class="text-action" bindtap="backToGuestWarning">返回</button>
   </view>
+  <view wx:if="{{stage === 'profile' && profileRandomConfirm}}" class="profile-confirm-mask" catchtap="cancelRandomProfile" catchtouchmove="stopProfileTap">
+    <view class="profile-confirm-sheet" catchtap="stopProfileTap" aria-role="dialog" aria-modal="true">
+      <view class="profile-confirm-title">{{profileRandomTitle}}</view>
+      <view class="profile-confirm-copy">{{profileRandomMessage}}</view>
+      <button class="profile-confirm-continue" bindtap="confirmRandomProfile">继续</button>
+      <button class="profile-confirm-cancel" bindtap="cancelRandomProfile">取消</button>
+    </view>
+  </view>
+  <canvas wx:if="{{profileCanvasMounted}}" canvas-id="profileAvatarCanvas" class="profile-avatar-canvas"></canvas>
 </view>

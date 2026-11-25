@@ -54,12 +54,15 @@
   top: 250rpx;
   right: 42rpx;
   z-index: 40;
-  width: 373rpx;
-  height: 190rpx;
+  width: auto;
+  max-width: calc(100vw - 84rpx);
+  display: inline-flex;
+  flex-direction: column;
+  height: auto;
   box-sizing: border-box;
   border-radius: 31rpx;
   background: #fffdf9;
-  padding: 24rpx 40rpx 19rpx;
+  padding: 22rpx 28rpx;
   color: #2d2926;
   font-size: 28rpx;
   font-weight: 700;
@@ -75,6 +78,7 @@
 
 .menu-item text {
   display: block;
+  white-space: nowrap;
   margin-left: 22rpx;
   height: 38rpx;
   line-height: 38rpx;
@@ -296,3 +300,5 @@
 .chat-input button[disabled] {
   background: #d8d1c9;
 }
+
+.reply-timing { margin: 12rpx 0; font-size: 20rpx; line-height: 1.5; color: #758176; }

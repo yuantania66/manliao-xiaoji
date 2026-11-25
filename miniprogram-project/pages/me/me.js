@@ -1,5 +1,9 @@
+const growth = require("../../utils/visit-growth");
+const { buildPlant } = require("../../utils/growth-plant");
+const { isOwnerPreview } = require("../../utils/owner-preview");
+const trialDiagnostic = require("../../utils/trial-diagnostic");
 const authUtils = require("../../utils/auth");
-const { clearAuth, getAuth, saveAuth, updateCachedUser } = authUtils;
+const { clearAuth, getAuth, saveAuth, updateCachedUser, captureAuthAuthority, isCurrentAuthAuthority, isCurrentAuthFailure } = authUtils;
 const getGuestProfile = authUtils.getGuestProfile || (() => null);
 const isGuest = authUtils.isGuest || (() => false);
 const { getSafeLayout } = require("../../utils/layout");
@@ -8,7 +12,8 @@ const {
   updateMe,
   uploadProfileAvatar,
   discardProfileAvatar,
-  downloadProfileAvatar
+  downloadProfileAvatar,
+  getCachedProfileAvatar
 } = require("../../api/auth");
 const { authenticateWithWechatPhone, getWechatPhoneCode } = require("../../utils/wechat-phone-login");
 const { authenticateWithWechat } = require("../../utils/wechat-login");
@@ -41,6 +46,11 @@ const getVisibleIdentity = (user) => {
 
 Page({
   data: {
+    growthReady: false, growthDays: 0, growthLabel: "", growthError: "",
+    plantBackground: "", newestLeafBackground: "", newestLeafOrigin: "50% 50%", carePlaying: false, careMounts: [],
+    ownerPreview: isOwnerPreview(),
+    trialDiagnostic: { visible: false },
+    deliveryLabel: "",
     pageTop: 92,
     isLoggedIn: false,
     membershipText: "内容仅保存在本机",
@@ -67,11 +77,29 @@ Page({
     this.completeProfileAfterLogin = options.completeProfile === "1";
   },
 
+  onReady() {
+    this._trialDiagnosticReady = true;
+    trialDiagnostic.attach(this);
+  },
+
+  onHide() {
+    this.stopGrowth();
+    if (this._trialDiagnosticReady) trialDiagnostic.detach(this);
+  },
+
   onShow() {
+    this.startGrowth();
+    if (this._trialDiagnosticReady) trialDiagnostic.attach(this);
     this.updateSafeLayout();
     const auth = getAuth();
     const userId = auth?.user?.id || "";
-    const userChanged = this.visibleUserId !== undefined && this.visibleUserId !== userId;
+    const userChanged = this.visibleUserId !== undefined && (this.visibleUserId !== userId ||
+      (this.visibleAuthAuthority && !isCurrentAuthAuthority(this.visibleAuthAuthority)));
+    this.visibleAuthAuthority = captureAuthAuthority();
+    if (userChanged) {
+      this.authCheckId = (this.authCheckId || 0) + 1;
+      this.authCheckPending = false;
+    }
     if (!auth && !isGuest()) {
       this.setData({ isLoggedIn: false, profileEditing: false, profileRequired: false, isSavingProfile: false });
       wx.redirectTo({ url: "/pages/auth/auth" });
@@ -92,7 +120,7 @@ Page({
       profileNickname: preserveProfileDraft ? this.data.profileNickname : visibleNickname,
       originalProfileNickname: preserveProfileDraft ? this.data.originalProfileNickname : (auth?.user?.nickname || ""),
       avatarLocalPath: preserveProfileDraft ? this.data.avatarLocalPath : "",
-      avatarPreview: preserveProfileDraft ? this.data.avatarPreview : "",
+      avatarPreview: preserveProfileDraft ? this.data.avatarPreview : getCachedProfileAvatar(auth?.user?.avatarUrl || ""),
       guestInitial: visibleNickname.slice(0, 1) || "慢",
       guestAvatarStyle: auth ? generatedIdentity.avatarStyle : getAvatarStyle(guestProfile?.avatarIndex),
       isSavingProfile: userChanged ? false : this.data.isSavingProfile,
@@ -101,9 +129,9 @@ Page({
       profileEditing: Boolean(auth && !userChanged && this.data.profileEditing)
     });
     if (auth?.user?.avatarUrl) {
-      const userId = auth.user.id;
+      const isCurrent = this.captureProfileGuard();
       downloadProfileAvatar(auth.user.avatarUrl).then((filePath) => {
-        if (getAuth()?.user?.id === userId && !this.data.avatarLocalPath) {
+        if (isCurrent() && !this.data.avatarLocalPath) {
           this.setData({ avatarPreview: filePath });
         }
       }).catch(() => undefined);
@@ -111,23 +139,141 @@ Page({
     if (auth) this.reconcileAuth();
   },
 
+  startGrowth() {
+    this.stopGrowth();
+    this.growthHidden = false;
+    this.growthAuthority = captureAuthAuthority();
+    this.setData({ growthReady: false, growthLabel: "", growthError: "", plantBackground: "", newestLeafBackground: "" });
+    if (!this.growthAuthority) return;
+    const authority = this.growthAuthority, epoch = this.growthEpoch;
+    this.unsubscribeGrowth = growth.subscribe((value) => {
+      if (this.growthHidden || this.growthEpoch !== epoch) return;
+      if (!isCurrentAuthAuthority(authority)) { this.showGrowth(null); return; }
+      this.showGrowth(value);
+    });
+    this.showGrowth(growth.currentState(), false);
+    this.refreshGrowth();
+  },
+
+  stopGrowth() {
+    this.growthHidden = true;
+    this.growthEpoch = (this.growthEpoch || 0) + 1;
+    this.stopCare();
+    if (this.unsubscribeGrowth) this.unsubscribeGrowth();
+    this.unsubscribeGrowth = null;
+  },
+
+  showGrowth(value, allowAnimation = true) {
+    if (!value || value.userId !== this.growthAuthority?.userId || !isCurrentAuthAuthority(this.growthAuthority)) {
+      this.stopCare();
+      this.setData({ growthReady: false, growthLabel: "", plantBackground: "", newestLeafBackground: "" }); return;
+    }
+    const plant = buildPlant(value);
+    this.latestPlant = plant;
+    this.setData({ growthReady: true, growthDays: value.totalDays, growthLabel: `小慢已经陪你${value.totalDays}天`, growthError: "" });
+    const ticket = allowAnimation && !this.careTicket && growth.consumeAnimation();
+    if (ticket) {
+      this.startCare(plant, value.totalDays <= 365, ticket);
+    } else if (!this.careTicket) {
+      this.setData({ plantBackground: plant.background, newestLeafBackground: "" });
+    }
+  },
+  startCare(plant, hasNewLeaf, ticket) {
+    this.stopCare();
+    this.careTicket = ticket;
+    const run = this.careRun = {
+      id: this.careSerial = (this.careSerial || 0) + 1,
+      authority: this.growthAuthority, epoch: this.growthEpoch,
+      loaded: new Set(), mounted: false, started: false, plant, hasNewLeaf
+    };
+    this.carePrepareTimer = setTimeout(() => {
+      if (this.careRun === run) this.stopCare();
+    }, 15000);
+    // Keyed mounts give delayed image events their original run, even after re-entry.
+    this.setData({ carePlaying: false, careMounts: [{ id: run.id }] }, () => {
+      if (!this.isCurrentCare(run)) { if (this.careRun === run) this.stopCare(); return; }
+      run.mounted = true;
+      this.beginLoadedCare(run);
+    });
+  },
+  isCurrentCare(run) {
+    return Boolean(run && this.careRun === run && this.careTicket && !this.growthHidden &&
+      this.growthEpoch === run.epoch && isCurrentAuthAuthority(run.authority));
+  },
+  onCareImageLoad(event) {
+    const run = this.careRun, data = event.currentTarget.dataset;
+    if (!run || String(run.id) !== String(data.run)) return;
+    if (!this.isCurrentCare(run)) { this.stopCare(); return; }
+    if (!["can", "water", "sun"].includes(data.asset)) return;
+    run.loaded.add(data.asset);
+    this.beginLoadedCare(run);
+  },
+  onCareImageError(event) {
+    if (this.careRun && String(this.careRun.id) === String(event.currentTarget.dataset.run)) this.stopCare();
+  },
+  beginLoadedCare(run) {
+    if (!this.isCurrentCare(run) || !run.mounted || run.loaded.size !== 3 || run.started) return;
+    run.started = true;
+    const plant = run.plant;
+    this.setData({ carePlaying: true,
+      plantBackground: run.hasNewLeaf ? plant.backgroundWithoutNewestLeaf : plant.background,
+      newestLeafBackground: run.hasNewLeaf ? plant.newestLeafBackground : "", newestLeafOrigin: plant.newestLeafOrigin }, () => {
+      if (!this.isCurrentCare(run)) { if (this.careRun === run) this.stopCare(); return; }
+      clearTimeout(this.carePrepareTimer);
+      this.carePrepareTimer = null;
+      // Start the completion clock only after ready images and the playing view render.
+      this.careTimer = setTimeout(() => {
+        if (!this.isCurrentCare(run)) { if (this.careRun === run) this.stopCare(); return; }
+        growth.finishAnimation(this.careTicket);
+        this.careTicket = null;
+        this.careRun = null;
+        this.careTimer = null;
+        this.setData({ carePlaying: false, careMounts: [], plantBackground: this.latestPlant.background, newestLeafBackground: "" });
+      }, 6000);
+    });
+  },
+  stopCare() {
+    growth.cancelAnimation(this.careTicket);
+    this.careTicket = null;
+    this.careRun = null;
+    if (this.carePrepareTimer) clearTimeout(this.carePrepareTimer);
+    this.carePrepareTimer = null;
+    if (this.careTimer) clearTimeout(this.careTimer);
+    this.careTimer = null;
+    this.setData({ carePlaying: false, careMounts: [], newestLeafBackground: "",
+      ...(this.latestPlant ? { plantBackground: this.latestPlant.background } : {}) });
+  },
+  refreshGrowth() {
+    const auth = this.growthAuthority, check = this.growthEpoch;
+    if (!isCurrentAuthAuthority(auth)) return;
+    growth.recordVisit().catch(() => {
+      if (!this.growthHidden && this.growthEpoch === check && isCurrentAuthAuthority(auth)) {
+        this.setData({ growthError: "成长记录暂未更新，联网后可重试" });
+      }
+    });
+  },
   reconcileAuth() {
-    if (this.authCheckPending) return;
+    if (this.authCheckPending && this.authCheckGuard?.()) return;
     const auth = getAuth();
     if (!auth) return;
+    const authority = captureAuthAuthority();
+    const pageGuard = this.captureProfileGuard(authority);
     const checkId = (this.authCheckId || 0) + 1;
     this.authCheckId = checkId;
+    const isCurrent = (failure) => this.authCheckId === checkId && pageGuard(failure);
+    this.authCheckGuard = isCurrent;
+    let failure = null;
     this.authCheckPending = true;
     this.setData({ isCheckingAuth: true, membershipText: "正在验证登录状态...", loginError: "" });
     getMe()
       .then(({ user }) => {
-        if (this.authCheckId !== checkId || getAuth()?.user?.id !== auth.user.id || user.id !== auth.user.id) return;
+        if (!isCurrent() || user.id !== auth.user.id) return;
         const preserveProfileDraft = this.data.profileEditing;
         const generatedIdentity = getVisibleIdentity(user);
         const visibleNickname = generatedIdentity.nickname;
         let cacheWarning = "";
         try {
-          updateCachedUser(auth.user.id, user);
+          updateCachedUser(auth.user.id, user, authority);
         } catch {
           cacheWarning = "资料已从云端同步，但本机缓存暂未更新。";
         }
@@ -143,16 +289,21 @@ Page({
           profileEditing: preserveProfileDraft,
           loginError: cacheWarning
         });
+        if (!user.avatarUrl && !this.data.avatarLocalPath) {
+          getCachedProfileAvatar("");
+          this.setData({ avatarPreview: "" });
+        }
         if (user.avatarUrl) {
           downloadProfileAvatar(user.avatarUrl).then((filePath) => {
-            if (getAuth()?.user?.id === user.id && !this.data.avatarLocalPath) {
+            if (isCurrent() && !this.data.avatarLocalPath) {
               this.setData({ avatarPreview: filePath });
             }
           }).catch(() => undefined);
         }
       })
-      .catch(() => {
-        if (this.authCheckId !== checkId) return;
+      .catch((error) => {
+        failure = error;
+        if (!isCurrent(error)) return;
         const stillStored = getAuth();
         this.setData({
           isLoggedIn: Boolean(stillStored),
@@ -164,7 +315,7 @@ Page({
         });
       })
       .finally(() => {
-        if (this.authCheckId === checkId) {
+        if (isCurrent(failure)) {
           this.authCheckPending = false;
           this.setData({ isCheckingAuth: false });
         }
@@ -338,14 +489,14 @@ Page({
   chooseProfileAvatarFromMedia() {
     const auth = getAuth();
     if (!auth || this.data.isSavingProfile) return;
-    const userId = auth.user.id;
+    const isCurrent = this.captureProfileGuard();
     wx.chooseImage({
       count: 1,
       sizeType: ["compressed"],
       sourceType: ["album", "camera"],
       success: (result) => {
         const filePath = result.tempFilePaths?.[0];
-        if (getAuth()?.user?.id !== userId || this.data.isSavingProfile) return;
+        if (!isCurrent() || this.data.isSavingProfile) return;
         if (!filePath) {
           this.setData({ loginError: "未能读取头像，请重新选择。" });
           return;
@@ -354,7 +505,7 @@ Page({
       },
       fail: (error) => {
         if (String(error?.errMsg || "").includes("cancel")) return;
-        if (getAuth()?.user?.id === userId && !this.data.isSavingProfile) {
+        if (isCurrent() && !this.data.isSavingProfile) {
           this.setData({ loginError: "头像选择失败，请稍后重试。" });
         }
       }
@@ -387,14 +538,18 @@ Page({
     }
     const operationId = (this.profileSaveId || 0) + 1;
     this.profileSaveId = operationId;
+    const authority = captureAuthAuthority();
+    const pageGuard = this.captureProfileGuard(authority);
+    const isCurrent = (failure) => this.profileSaveId === operationId && pageGuard(failure);
     this.setData({ isSavingProfile: true, loginError: "" });
     let uploadedId = "";
     let committed = false;
+    let failure = null;
     const upload = avatarLocalPath ? uploadProfileAvatar(avatarLocalPath) : Promise.resolve(null);
     upload
       .then((uploaded) => {
         uploadedId = uploaded ? uploaded.uploadId : "";
-        if (this.profileSaveId !== operationId || getAuth()?.user?.id !== userId) {
+        if (!isCurrent()) {
           throw new Error("账号已切换，已停止保存");
         }
         return updateMe({
@@ -404,10 +559,10 @@ Page({
       })
       .then(({ user }) => {
         committed = true;
-        if (this.profileSaveId !== operationId || getAuth()?.user?.id !== userId || user.id !== userId) return;
+        if (!isCurrent() || user.id !== userId) return;
         let cacheWarning = "";
         try {
-          updateCachedUser(userId, user);
+          updateCachedUser(userId, user, authority);
         } catch {
           cacheWarning = "资料已保存到云端，但本机缓存暂未更新；重新进入后会再次同步。";
         }
@@ -421,20 +576,21 @@ Page({
         });
         if (user.avatarUrl) {
           return downloadProfileAvatar(user.avatarUrl).then((filePath) => {
-            if (this.profileSaveId === operationId && getAuth()?.user?.id === userId) {
+            if (isCurrent()) {
               this.setData({ avatarPreview: filePath });
             }
           }).catch(() => undefined);
         }
       })
       .catch((error) => {
+        failure = error;
         if (uploadedId && !committed) discardProfileAvatar(uploadedId, authToken).catch(() => undefined);
-        if (this.profileSaveId === operationId && getAuth()?.user?.id === userId) {
+        if (isCurrent(error)) {
           this.setData({ loginError: error.message || "资料保存失败" });
         }
       })
       .finally(() => {
-        if (this.profileSaveId === operationId) this.setData({ isSavingProfile: false });
+        if (isCurrent(failure)) this.setData({ isSavingProfile: false });
       });
   },
 
@@ -451,9 +607,9 @@ Page({
       loginError: ""
     });
     if (auth?.user?.avatarUrl) {
-      const userId = auth.user.id;
+      const isCurrent = this.captureProfileGuard();
       downloadProfileAvatar(auth.user.avatarUrl).then((filePath) => {
-        if (getAuth()?.user?.id === userId) this.setData({ avatarPreview: filePath });
+        if (isCurrent()) this.setData({ avatarPreview: filePath });
       }).catch(() => undefined);
     }
   },
@@ -499,7 +655,16 @@ Page({
     }, 190);
   },
 
+  captureProfileGuard(authority = captureAuthAuthority()) {
+    const epoch = this.profilePageEpoch || 0;
+    return (failure) => (this.profilePageEpoch || 0) === epoch &&
+      (isCurrentAuthAuthority(authority) || isCurrentAuthFailure(authority, failure));
+  },
+
   onUnload() {
+    this.stopGrowth();
+    if (this._trialDiagnosticReady) trialDiagnostic.detach(this);
+    this.profilePageEpoch = (this.profilePageEpoch || 0) + 1;
     this.loginAttemptId = (this.loginAttemptId || 0) + 1;
     this.authCheckId = (this.authCheckId || 0) + 1;
     this.profileSaveId = (this.profileSaveId || 0) + 1;
